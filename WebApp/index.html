@@ -6,20 +6,25 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=5.0"
     />
-    <link
-      rel="shortcut icon"
-      href="./imagens/logotransparente.svg"
-      type="image/x-icon"
-    />
     <meta
       name="description"
       content="LiveTagus - Monitorização em tempo real dos comboios da Fertagus. Veja horários, atrasos e supressões. App gratuita e open-source."
     />
     <meta name="theme-color" content="#09090b" />
-
     <title>LiveTagus | Fertagus em Tempo Real</title>
 
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://cdn.tailwindcss.com" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <link
+      rel="shortcut icon"
+      href="./imagens/logotransparente.svg"
+      type="image/x-icon"
+    />
+
+    <script src="./menu.js" defer></script>
+
     <script>
       tailwind.config = {
         darkMode: "class",
@@ -42,10 +47,11 @@
         },
       };
     </script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
     <link href="./style.css" rel="stylesheet" />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap"
       rel="stylesheet"
@@ -74,13 +80,12 @@
 
     <script>
       window.setupPWA = function () {
-        // Gera URLs absolutos para evitar o erro "URL is invalid" no contexto do Blob
         const basePath = window.location.href.substring(
           0,
           window.location.href.lastIndexOf("/") + 1,
         );
         const iconUrl = new URL("./imagens/icon.svg", basePath).href;
-        const startUrl = new URL("./app.html", basePath).href; // SOLUÇÃO DO ERRO #4
+        const startUrl = new URL("./app.html", basePath).href;
 
         const link = document.createElement("link");
         link.rel = "manifest";
@@ -90,7 +95,8 @@
               JSON.stringify({
                 name: "LiveTagus",
                 short_name: "LiveTagus",
-                start_url: startUrl, // Agora é um link absoluto válido
+                start_url: startUrl,
+                scope: basePath,
                 display: "standalone",
                 background_color: "#09090b",
                 theme_color: "#09090b",
@@ -120,10 +126,21 @@
       .hero-text {
         line-height: 0.95;
       }
-      /* Melhoria de acessibilidade para o focus */
       *:focus-visible {
         outline: 2px solid #3b82f6;
         outline-offset: 2px;
+      }
+
+      .spin {
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
       }
     </style>
   </head>
@@ -168,20 +185,60 @@
           style="animation-delay: 0.1s"
         >
           <button
-            id="install-btn-home"
-            onclick="installPWAHome()"
+            id="main-btn"
             class="hidden w-60 group relative px-8 py-4 bg-zinc-900 dark:bg-white text-white dark:text-black font-bold text-sm uppercase tracking-widest overflow-hidden transition-transform hover:scale-[1.02] shadow-lg text-center"
-            aria-label="Instalar Aplicação"
+            aria-label="Ação Principal"
           >
-            <span class="relative z-10 flex items-center justify-center gap-2">
+            <span
+              id="main-btn-text"
+              class="relative z-10 flex items-center justify-center gap-2"
+            >
               Instalar WebApp
             </span>
             <div
-              class="absolute inset-0 bg-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"
+              class="absolute inset-0 bg-red-600 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"
             ></div>
           </button>
 
+          <div id="installing-msg" class="hidden mt-1 max-w-xs text-left">
+            <div
+              class="flex items-center gap-2 text-zinc-900 dark:text-white mb-2"
+            >
+              <svg
+                class="w-3 h-3 spin"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 6v6l4 2"></path>
+              </svg>
+              <span class="text-[10px] font-bold uppercase tracking-widest"
+                >A preparar instalação...</span
+              >
+            </div>
+            <p
+              class="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed"
+            >
+              A aplicação vai aparecer no menu principal do seu telemóvel.<br />Por
+              favor, abra-a por lá.
+            </p>
+          </div>
+
+          <div id="installed-msg" class="hidden mt-1 max-w-xs text-left">
+            <p
+              class="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed flex items-start gap-1.5"
+            >
+              <span class="text-green-500 font-bold">✓</span>
+              <span>
+                Aplicação instalada. Aceda pelo <strong>menu principal</strong>.
+              </span>
+            </p>
+          </div>
+
           <a
+            id="browser-btn"
             href="./app.html"
             class="w-60 px-8 py-4 border border-zinc-200 dark:border-white/20 text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-white/5 font-medium text-sm uppercase tracking-widest transition-all text-center flex items-center justify-center"
             aria-label="Abrir LiveTagus no Navegador"
@@ -191,7 +248,7 @@
 
           <p
             id="web-hint"
-            class="hidden text-[10px] text-zinc-400 uppercase tracking-wide w-full text-left ml-1"
+            class="text-[10px] text-zinc-400 uppercase tracking-wide w-full text-left ml-1"
           >
             Rápida • Leve • Prática
           </p>
@@ -247,36 +304,113 @@
 
     <div id="global-footer"></div>
 
-    <script src="./menu.js"></script>
     <script>
-      // Lógica PWA exclusiva da Homepage
-      let deferredPrompt;
+      // === GESTOR PWA v8.0 (Lógica Estrita: 30s Wait) ===
 
+      let deferredPrompt;
+      const mainBtn = document.getElementById("main-btn");
+      const mainBtnText = document.getElementById("main-btn-text");
+      const installingMsg = document.getElementById("installing-msg");
+      const installedMsg = document.getElementById("installed-msg");
+      const browserBtn = document.getElementById("browser-btn");
+      const webHint = document.getElementById("web-hint");
+
+      // 1. Deteção Inicial (Simples)
+      const isStandalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        window.navigator.standalone ||
+        document.referrer.includes("android-app://");
+
+      if (isStandalone) {
+        // DENTRO DA APP: Botão "Ver Tempo Real"
+        setupUIForApp();
+      } else if (localStorage.getItem("pwa_installed") === "true") {
+        // NO BROWSER (Instalada): Nota simples
+        setupUIForInstalled();
+      }
+
+      // 2. Evento de Prompt de Instalação
       window.addEventListener("beforeinstallprompt", (e) => {
         e.preventDefault();
         deferredPrompt = e;
 
-        const btn = document.getElementById("install-btn-home");
-        const hint = document.getElementById("web-hint");
-
-        if (btn) btn.classList.remove("hidden");
-        if (hint) hint.classList.remove("hidden");
+        // Se o browser diz que pode instalar, mostramos o botão
+        // (Ignorando se já tínhamos guardado antes, pois o user pode ter desinstalado)
+        if (!isStandalone) {
+          localStorage.removeItem("pwa_installed");
+          setupUIForInstall();
+        }
       });
 
-      async function installPWAHome() {
-        if (deferredPrompt) {
-          deferredPrompt.prompt();
-          const { outcome } = await deferredPrompt.userChoice;
-          deferredPrompt = null;
-          if (outcome === "accepted") {
-            document.getElementById("install-btn-home").classList.add("hidden");
-            document.getElementById("web-hint").classList.add("hidden");
-          }
-        } else {
+      // --- SETUP DE UI ---
+
+      function setupUIForApp() {
+        mainBtn.classList.remove("hidden");
+        mainBtnText.innerHTML =
+          'Ver Tempo Real&nbsp&nbsp<span id="status-dot-footer" class="w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-700"></span>';
+        mainBtn.onclick = () => (window.location.href = "./app.html");
+
+        browserBtn.style.display = "none";
+        webHint.innerText = "Verifica se há atrasos";
+        installedMsg.classList.add("hidden");
+        installingMsg.classList.add("hidden");
+      }
+
+      function setupUIForInstall() {
+        mainBtn.classList.remove("hidden");
+        mainBtnText.textContent = "Instalar WebApp";
+        mainBtn.onclick = handleInstallClick;
+
+        installedMsg.classList.add("hidden");
+        installingMsg.classList.add("hidden");
+        browserBtn.style.display = "flex";
+        webHint.style.display = "block";
+      }
+
+      function setupUIForInstalled() {
+        mainBtn.classList.add("hidden"); // Esconde botão instalar
+        installingMsg.classList.add("hidden");
+        installedMsg.classList.remove("hidden"); // Mostra a nota
+
+        browserBtn.style.display = "flex";
+        webHint.style.display = "block";
+      }
+
+      // --- LOGICA DE CLIQUE (ESTRITA 30s) ---
+
+      async function handleInstallClick() {
+        if (!deferredPrompt) {
           alert(
             "Para instalar: \niOS: Partilhar -> Ecrã Principal\nAndroid: Menu -> Instalar App",
           );
+          return;
         }
+
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+
+        if (outcome === "accepted") {
+          // 1. Esconde botão
+          mainBtn.classList.add("hidden");
+
+          // 2. Mostra nota de "A preparar..."
+          installingMsg.classList.remove("hidden");
+
+          // 3. AGUARDA ESTRITAMENTE 30 SEGUNDOS
+          setTimeout(() => {
+            finishInstallation();
+          }, 30000);
+        }
+
+        deferredPrompt = null;
+      }
+
+      function finishInstallation() {
+        // 4. Conclui: guarda memória e mostra nota final
+        localStorage.setItem("pwa_installed", "true");
+
+        installingMsg.classList.add("hidden");
+        installedMsg.classList.remove("hidden");
       }
     </script>
   </body>

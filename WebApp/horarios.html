@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="pt-PT">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=5.0"
+    />
+    <meta
+      name="description"
+      content="Horários dos comboios Fertagus. Página em construção."
+    />
+    <meta name="theme-color" content="#09090b" />
+    <title>Horários | LiveTagus</title>
+
+    <link rel="preconnect" href="https://cdn.tailwindcss.com" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <link
+      rel="shortcut icon"
+      href="./imagens/logotransparente.svg"
+      type="image/x-icon"
+    />
+
+    <script src="./menu.js" defer></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+              mono: ["JetBrains Mono", "monospace"],
+            },
+            animation: {
+              "fade-in-up": "fadeInUp 0.8s ease-out forwards",
+            },
+            keyframes: {
+              fadeInUp: {
+                "0%": { opacity: "0", transform: "translateY(20px)" },
+                "100%": { opacity: "1", transform: "translateY(0)" },
+              },
+            },
+          },
+        },
+      };
+    </script>
+
+    <link href="./style.css" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body
+    class="bg-white text-zinc-900 dark:bg-[#09090b] dark:text-white overflow-x-hidden selection:bg-blue-500/30 transition-colors duration-500 flex flex-col min-h-screen"
+  >
+    <div id="global-nav"></div>
+
+    <main
+      class="flex-grow flex flex-col items-center justify-center relative px-6 py-20"
+    >
+      <div
+        class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vw] bg-zinc-200/50 dark:bg-zinc-800/20 rounded-full blur-[100px] pointer-events-none -z-10"
+      ></div>
+
+      <div class="max-w-md w-full text-center animate-fade-in-up">
+        <div
+          class="w-20 h-20 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-full flex items-center justify-center mx-auto mb-8"
+        >
+          <svg
+            class="w-8 h-8 text-zinc-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+            ></path>
+          </svg>
+        </div>
+
+        <h1
+          class="text-4xl md:text-5xl font-light tracking-tighter mb-4 text-zinc-900 dark:text-white"
+        >
+          EM CONSTRUÇÃO.
+        </h1>
+
+        <p
+          class="text-zinc-500 dark:text-zinc-400 font-light leading-relaxed mb-10"
+        >
+          Estamos a desenhar uma nova experiência para consultares os horários
+          completos. Volta em breve.
+        </p>
+
+        <a
+          href="./index.html"
+          class="inline-flex items-center gap-2 px-6 py-3 border border-zinc-200 dark:border-white/10 rounded-sm text-xs font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+        >
+          ← Voltar ao Início
+        </a>
+      </div>
+    </main>
+
+    <div id="global-footer"></div>
+  </body>
+</html>

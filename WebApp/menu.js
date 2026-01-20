@@ -15,18 +15,20 @@ function injectNavigation() {
   const navContainer = document.getElementById("global-nav");
   if (!navContainer) return;
 
-  // Definição dos ícones e logótipos
   const logoSrc = "./imagens/logotransparente.svg";
 
-  // Ícone GitHub reutilizável
   const githubIcon = `<svg viewBox="0 0 24 24" class="w-5 h-5 fill-current"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>`;
 
+  /* ALTERAÇÕES DE ACESSIBILIDADE:
+     1. Links do Menu: text-zinc-400 -> text-zinc-500 (Melhora contraste para texto grande)
+     2. Botões de Tema: text-zinc-400 -> text-zinc-600 (Melhora contraste para texto pequeno)
+  */
   navContainer.innerHTML = `
         <header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 py-4 transition-all duration-500 bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-md border-b border-zinc-200/50 dark:border-white/5 supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-[#09090b]/60">
             
             <a href="./index.html" class="flex items-center gap-3 group" aria-label="Ir para a página inicial">
                 <img id="nav-logo" src="${logoSrc}" class="w-8 h-8 opacity-100 transition-opacity object-contain" alt="LiveTagus Logo" width="32" height="32">
-                <span class="font-sans font-bold tracking-tighter text-lg hidden sm:block text-zinc-900 dark:text-white">LIVETAGUS</span>
+                <span class="font-sans font-bold tracking-tighter text-lg text-zinc-900 dark:text-white">LIVETAGUS</span>
             </a>
             
             <button id="menu-trigger" class="flex flex-col items-end gap-1.5 group cursor-pointer p-2 text-zinc-900 dark:text-white" aria-label="Abrir Menu">
@@ -40,11 +42,11 @@ function injectNavigation() {
             <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 dark:bg-blue-900/10 rounded-full blur-[120px] pointer-events-none"></div>
 
             <nav class="flex flex-col gap-2 relative z-10">
-                <a href="./index.html" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Início</a>
+                <a href="./index.html" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Início</a>
                 <a href="./app.html" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-black dark:text-white transition-colors uppercase italic">Tempo Real</a>
-                <a href="./horarios.html" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Horários</a>
-                <a href="./status.html" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Estado</a>
-                <a href="./sobre.html" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Sobre</a>
+                <a href="./horarios.html" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Horários</a>
+                <a href="./status.html" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Estado</a>
+                <a href="./sobre.html" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Sobre</a>
             </nav>
 
             <div class="relative z-10 border-t border-zinc-200 dark:border-white/10 pt-8 mt-8 md:pb-0">
@@ -53,9 +55,9 @@ function injectNavigation() {
                     <div class="space-y-4 w-full md:w-auto">
                         <span class="text-xs font-bold tracking-widest text-zinc-500 uppercase">Aparência</span>
                         <div class="flex gap-4">
-                            <button onclick="setTheme('light')" class="theme-btn text-sm text-zinc-400 hover:text-black dark:hover:text-white uppercase tracking-wider transition-colors" data-mode="light">Light</button>
-                            <button onclick="setTheme('dark')" class="theme-btn text-sm text-zinc-400 hover:text-black dark:hover:text-white uppercase tracking-wider transition-colors" data-mode="dark">Dark</button>
-                            <button onclick="setTheme('system')" class="theme-btn text-sm text-zinc-400 hover:text-black dark:hover:text-white uppercase tracking-wider transition-colors" data-mode="system">Auto</button>
+                            <button onclick="setTheme('light')" class="theme-btn text-sm text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white uppercase tracking-wider transition-colors" data-mode="light">Light</button>
+                            <button onclick="setTheme('dark')" class="theme-btn text-sm text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white uppercase tracking-wider transition-colors" data-mode="dark">Dark</button>
+                            <button onclick="setTheme('system')" class="theme-btn text-sm text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white uppercase tracking-wider transition-colors" data-mode="system">Auto</button>
                         </div>
                     </div>
 
@@ -96,7 +98,9 @@ function injectFooter() {
             <div class="max-w-4xl mx-auto flex flex-col md:flex-row justify-between gap-10">
                 
                 <div class="space-y-4 md:w-1/2">
-                    <img id="footer-logo" src="${logoSrc}" class="w-10 h-10 opacity-100" alt="LiveTagus" width="40" height="40">
+                    <a href="./" class="inline-block hover:opacity-70 transition-opacity" aria-label="Voltar ao início">
+                        <img id="footer-logo" src="${logoSrc}" class="w-10 h-10 opacity-100" alt="LiveTagus" width="40" height="40">
+                    </a>
                     
                     <p class="text-xs text-zinc-500 max-w-xs leading-relaxed">
                         LiveTagus • v20.01.2026<br><br>
@@ -113,7 +117,12 @@ function injectFooter() {
                     <span class="text-[10px] uppercase font-bold text-zinc-400 tracking-widest mb-2">Links & Info</span>
                     
                     <a href="./license.html" class="text-xs text-zinc-500 hover:text-black dark:hover:text-white transition-colors">Licença</a>
-                    <a href="./app.html" class="text-xs text-zinc-500 hover:text-black dark:hover:text-white transition-colors">Tempo Real</a>
+                    
+                    <a href="./app.html" class="text-xs w-full flex justify-end items-center gap-2 text-zinc-500 hover:text-black dark:hover:text-white transition-colors">
+                        <span id="status-dot-footer" class="w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-700"></span>
+                        Tempo Real
+                    </a>
+
                     <a href="./sobre.html#apoio" class="text-xs text-zinc-500 hover:text-black dark:hover:text-white transition-colors">Apoia o Projeto</a>
                     <a href="./code_of_conduct.html" class="text-xs text-zinc-500 hover:text-black dark:hover:text-white transition-colors">Código de Conduta</a>
                     <a href="./sobre.html#termos" class="text-xs text-zinc-500 hover:text-black dark:hover:text-white transition-colors">Termos & Privacidade</a>
@@ -199,7 +208,7 @@ function setTheme(mode) {
     if (netlifyBadgeFooter) netlifyBadgeFooter.src = badgeLight;
   }
 
-  // Atualiza estado visual dos botões de tema
+  // Atualiza estado visual dos botões de tema (AGORA USA ZINC-600 para contraste)
   document.querySelectorAll(".theme-btn").forEach((btn) => {
     btn.classList.remove("font-bold", "text-black", "dark:text-white");
     if (btn.dataset.mode === mode) {
@@ -208,9 +217,10 @@ function setTheme(mode) {
   });
 }
 
-// --- 5. API STATUS CHECKER (NOVO) ---
+// --- 5. API STATUS CHECKER ---
 async function checkApiStatus() {
   const dot = document.getElementById("status-dot");
+  const dot_footer = document.getElementById("status-dot-footer"); // Elemento do Footer
   const text = document.getElementById("status-text");
 
   // Se o menu ainda não foi injetado, tenta de novo em breve
@@ -225,16 +235,17 @@ async function checkApiStatus() {
   // BLOQUEIO: Entre as 02:00 e as 05:00 não gastamos recursos
   if (hour >= 2 && hour < 5) {
     dot.className = "w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-700";
+    if (dot_footer)
+      dot_footer.className =
+        "w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-700"; // Atualiza footer também
     text.textContent = "Modo Poupança 🌙";
     return;
   }
 
   try {
-    // Timeout de 5s para não ficar pendurado
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-    // Fazemos um pedido simples para ver se a API respira
     const res = await fetch(
       "https://api-transportes.onrender.com/api/fertagus",
       {
@@ -245,11 +256,12 @@ async function checkApiStatus() {
     clearTimeout(timeoutId);
 
     if (res.ok) {
-      // ONLINE: Bola Verde Pulsante com Shadow
-      dot.className =
+      // ONLINE
+      const successClass =
         "w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse";
+      dot.className = successClass;
+      if (dot_footer) dot_footer.className = successClass; // Atualiza footer também
 
-      // Formata a hora: "14:05"
       const timeStr = now.toLocaleTimeString("pt-PT", {
         hour: "2-digit",
         minute: "2-digit",
@@ -261,10 +273,12 @@ async function checkApiStatus() {
       throw new Error("Non-200");
     }
   } catch (err) {
-    // OFFLINE: Bola Cinzenta/Amarela (Render pode estar a acordar)
-    dot.className = "w-2 h-2 rounded-full bg-amber-500/50";
+    // OFFLINE
+    const errorClass = "w-2 h-2 rounded-full bg-amber-500/50";
+    dot.className = errorClass;
+    if (dot_footer) dot_footer.className = errorClass; // Atualiza footer também
+
     text.textContent = "A iniciar servidor...";
-    // Tenta de novo passados 30 segundos se falhar (Render demora a acordar)
     setTimeout(checkApiStatus, 30000);
   }
 }
