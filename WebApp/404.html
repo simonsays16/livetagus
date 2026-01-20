@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="pt-PT">
+  <head>
+    <meta charset="UTF-8" />
+    <link
+      rel="shortcut icon"
+      href="./imagens/logotransparente.svg"
+      type="image/x-icon"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>404 | Comboio Perdido - LiveTagus</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+              mono: ["JetBrains Mono", "monospace"],
+            },
+            animation: {
+              float: "float 6s ease-in-out infinite",
+            },
+            keyframes: {
+              float: {
+                "0%, 100%": { transform: "translateY(0)" },
+                "50%": { transform: "translateY(-20px)" },
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <link href="./style.css" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body
+    class="bg-white text-zinc-900 dark:bg-[#09090b] dark:text-white overflow-x-hidden transition-colors duration-500 flex flex-col min-h-screen"
+  >
+    <div id="global-nav"></div>
+
+    <main
+      class="flex-grow flex flex-col items-center justify-center px-6 relative pt-20"
+    >
+      <div
+        class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vh] bg-red-500/10 dark:bg-red-900/10 rounded-full blur-[120px] pointer-events-none z-0"
+      ></div>
+
+      <div class="relative z-10 text-center max-w-2xl">
+        <h1
+          class="text-[120px] md:text-[180px] font-thin leading-none tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-zinc-300 to-transparent dark:from-zinc-700 dark:to-transparent select-none animate-float"
+        >
+          404
+        </h1>
+
+        <h2
+          class="text-2xl md:text-4xl font-light tracking-tight mb-4 mt-[-20px]"
+        >
+          Ups! Este comboio descarrilou.
+        </h2>
+
+        <p
+          class="text-zinc-500 dark:text-zinc-400 font-light mb-10 text-lg leading-relaxed"
+        >
+          A página que procuras não existe. <br />
+          Volta à página principal
+        </p>
+
+        <a
+          href="./app.html"
+          class="inline-flex items-center w-72 justify-center px-8 py-4 mb-2 border border-zinc-200 dark:border-white/20 text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-white/5 font-medium text-sm uppercase tracking-widest transition-all rounded-sm group"
+        >
+          <span class="mr-2 group-hover:-translate-x-1 transition-transform"
+            >←</span
+          >
+          Voltar ao Tempo Real
+        </a>
+        <br />
+        <a
+          href="./index.html"
+          class="inline-flex items-center w-72 justify-center px-8 py-4 mb-2 border border-zinc-200 dark:border-white/20 text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-white/5 font-medium text-sm uppercase tracking-widest transition-all rounded-sm group"
+        >
+          <span class="mr-2 group-hover:-translate-x-1 transition-transform"
+            >←</span
+          >
+          Voltar ao Início
+        </a>
+      </div>
+    </main>
+
+    <div id="global-footer"></div>
+
+    <script src="./menu.js"></script>
+  </body>
+</html>

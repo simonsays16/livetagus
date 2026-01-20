@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="pt-PT">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=5.0"
+    />
+    <link
+      rel="shortcut icon"
+      href="./imagens/logotransparente.svg"
+      type="image/x-icon"
+    />
+    <meta
+      name="description"
+      content="LiveTagus - Monitorização em tempo real dos comboios da Fertagus. Veja horários, atrasos e supressões. App gratuita e open-source."
+    />
+    <meta name="theme-color" content="#09090b" />
+
+    <title>LiveTagus | Fertagus em Tempo Real</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+              mono: ["JetBrains Mono", "monospace"],
+            },
+            animation: {
+              "fade-in-up": "fadeInUp 0.8s ease-out forwards",
+            },
+            keyframes: {
+              fadeInUp: {
+                "0%": { opacity: "0", transform: "translateY(20px)" },
+                "100%": { opacity: "1", transform: "translateY(0)" },
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <link href="./style.css" rel="stylesheet" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap"
+      rel="stylesheet"
+    />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "LiveTagus",
+        "url": "https://livetagus.pt",
+        "description": "Monitorização em tempo real dos comboios da Fertagus.",
+        "applicationCategory": "TravelApplication",
+        "operatingSystem": "Any",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "EUR"
+        },
+        "author": {
+          "@type": "Person",
+          "name": "Simão Dias"
+        }
+      }
+    </script>
+
+    <script>
+      window.setupPWA = function () {
+        // Gera URLs absolutos para evitar o erro "URL is invalid" no contexto do Blob
+        const basePath = window.location.href.substring(
+          0,
+          window.location.href.lastIndexOf("/") + 1,
+        );
+        const iconUrl = new URL("./imagens/icon.svg", basePath).href;
+        const startUrl = new URL("./app.html", basePath).href; // SOLUÇÃO DO ERRO #4
+
+        const link = document.createElement("link");
+        link.rel = "manifest";
+        link.href = URL.createObjectURL(
+          new Blob(
+            [
+              JSON.stringify({
+                name: "LiveTagus",
+                short_name: "LiveTagus",
+                start_url: startUrl, // Agora é um link absoluto válido
+                display: "standalone",
+                background_color: "#09090b",
+                theme_color: "#09090b",
+                orientation: "portrait",
+                icons: [
+                  {
+                    src: iconUrl,
+                    sizes: "512x512",
+                    type: "image/svg+xml",
+                    purpose: "any maskable",
+                  },
+                ],
+              }),
+            ],
+            { type: "application/json" },
+          ),
+        );
+        document.head.appendChild(link);
+      };
+      window.setupPWA();
+    </script>
+
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+      }
+      .hero-text {
+        line-height: 0.95;
+      }
+      /* Melhoria de acessibilidade para o focus */
+      *:focus-visible {
+        outline: 2px solid #3b82f6;
+        outline-offset: 2px;
+      }
+    </style>
+  </head>
+
+  <body
+    class="bg-white text-zinc-900 dark:bg-[#09090b] dark:text-white overflow-x-hidden selection:bg-blue-500/30 transition-colors duration-500"
+  >
+    <div id="global-nav"></div>
+
+    <main
+      class="relative min-h-screen flex flex-col justify-center px-6 pt-24 pb-12"
+    >
+      <div
+        class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vh] bg-blue-600/10 rounded-full blur-[150px] pointer-events-none z-0 hidden dark:block"
+      ></div>
+
+      <div class="relative z-10 max-w-4xl mx-auto w-full">
+        <div class="mb-12 animate-fade-in-up">
+          <h1
+            class="hero-text text-5xl md:text-8xl font-light tracking-tighter mb-6 text-transparent bg-clip-text bg-gradient-to-br from-zinc-900 via-zinc-700 to-zinc-500 dark:from-white dark:via-zinc-200 dark:to-zinc-500"
+          >
+            A FERTAGUS <br />
+            <span class="font-semibold text-zinc-900 dark:text-white"
+              >EM TEMPO REAL.</span
+            >
+          </h1>
+
+          <p
+            class="text-lg md:text-xl text-zinc-600 dark:text-zinc-400 font-light max-w-lg leading-relaxed"
+          >
+            Esquece as tabelas estáticas. A
+            <span class="text-zinc-900 dark:text-white font-medium"
+              >LiveTagus</span
+            >
+            mostra-te onde anda o comboio, calcula atrasos ao segundo e avisa-te
+            de supressões.
+          </p>
+        </div>
+
+        <div
+          class="flex flex-col gap-3 w-full max-w-xs items-start animate-fade-in-up"
+          style="animation-delay: 0.1s"
+        >
+          <button
+            id="install-btn-home"
+            onclick="installPWAHome()"
+            class="hidden w-60 group relative px-8 py-4 bg-zinc-900 dark:bg-white text-white dark:text-black font-bold text-sm uppercase tracking-widest overflow-hidden transition-transform hover:scale-[1.02] shadow-lg text-center"
+            aria-label="Instalar Aplicação"
+          >
+            <span class="relative z-10 flex items-center justify-center gap-2">
+              Instalar WebApp
+            </span>
+            <div
+              class="absolute inset-0 bg-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"
+            ></div>
+          </button>
+
+          <a
+            href="./app.html"
+            class="w-60 px-8 py-4 border border-zinc-200 dark:border-white/20 text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-white/5 font-medium text-sm uppercase tracking-widest transition-all text-center flex items-center justify-center"
+            aria-label="Abrir LiveTagus no Navegador"
+          >
+            Abrir no Browser
+          </a>
+
+          <p
+            id="web-hint"
+            class="hidden text-[10px] text-zinc-400 uppercase tracking-wide w-full text-left ml-1"
+          >
+            Rápida • Leve • Prática
+          </p>
+        </div>
+
+        <div
+          class="grid grid-cols-2 md:grid-cols-4 gap-8 mt-20 border-t border-zinc-200 dark:border-white/10 pt-10 animate-fade-in-up"
+          style="animation-delay: 0.2s"
+        >
+          <div class="flex flex-col gap-2">
+            <h3
+              class="text-xs font-bold text-zinc-500 uppercase tracking-widest"
+            >
+              Precisão
+            </h3>
+            <p class="text-sm text-zinc-600 dark:text-zinc-300 leading-snug">
+              Dados oficiais das infraestruturas em direto.
+            </p>
+          </div>
+          <div class="flex flex-col gap-2">
+            <h3
+              class="text-xs font-bold text-zinc-500 uppercase tracking-widest"
+            >
+              Privacidade
+            </h3>
+            <p class="text-sm text-zinc-600 dark:text-zinc-300 leading-snug">
+              Zero tracking. Sem anúncios. 100% Local.
+            </p>
+          </div>
+          <div class="flex flex-col gap-2">
+            <h3
+              class="text-xs font-bold text-zinc-500 uppercase tracking-widest"
+            >
+              Velocidade
+            </h3>
+            <p class="text-sm text-zinc-600 dark:text-zinc-300 leading-snug">
+              Interface leve otimizada para rede móvel.
+            </p>
+          </div>
+          <div class="flex flex-col gap-2">
+            <h3
+              class="text-xs font-bold text-zinc-500 uppercase tracking-widest"
+            >
+              Gratuito
+            </h3>
+            <p class="text-sm text-zinc-600 dark:text-zinc-300 leading-snug">
+              Serviço totalmente gratuito e sem anúncios.
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <div id="global-footer"></div>
+
+    <script src="./menu.js"></script>
+    <script>
+      // Lógica PWA exclusiva da Homepage
+      let deferredPrompt;
+
+      window.addEventListener("beforeinstallprompt", (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+
+        const btn = document.getElementById("install-btn-home");
+        const hint = document.getElementById("web-hint");
+
+        if (btn) btn.classList.remove("hidden");
+        if (hint) hint.classList.remove("hidden");
+      });
+
+      async function installPWAHome() {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          deferredPrompt = null;
+          if (outcome === "accepted") {
+            document.getElementById("install-btn-home").classList.add("hidden");
+            document.getElementById("web-hint").classList.add("hidden");
+          }
+        } else {
+          alert(
+            "Para instalar: \niOS: Partilhar -> Ecrã Principal\nAndroid: Menu -> Instalar App",
+          );
+        }
+      }
+    </script>
+  </body>
+</html>

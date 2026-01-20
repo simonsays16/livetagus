@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="pt-PT">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=5.0"
+    />
+    <meta
+      name="description"
+      content="Estado dos serviços LiveTagus em tempo real."
+    />
+    <meta name="theme-color" content="#09090b" />
+
+    <link
+      rel="shortcut icon"
+      href="./imagens/logotransparente.svg"
+      type="image/x-icon"
+    />
+
+    <title>Estado do Serviço | LiveTagus</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+              mono: ["JetBrains Mono", "monospace"],
+            },
+            animation: {
+              "pulse-slow": "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+            },
+          },
+        },
+      };
+    </script>
+    <link href="./style.css" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body
+    class="bg-white text-zinc-900 dark:bg-[#09090b] dark:text-white overflow-x-hidden transition-colors duration-500 flex flex-col min-h-screen"
+  >
+    <div id="global-nav"></div>
+
+    <main class="flex-grow pt-24 pb-20 px-6">
+      <div class="max-w-3xl mx-auto space-y-12">
+        <section class="space-y-4">
+          <div class="flex items-center gap-3">
+            <span class="relative flex h-3 w-3">
+              <span
+                id="global-ping"
+                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-zinc-400 opacity-75"
+              ></span>
+              <span
+                id="global-dot"
+                class="relative inline-flex rounded-full h-3 w-3 bg-zinc-500"
+              ></span>
+            </span>
+            <span
+              id="global-text"
+              class="text-sm font-bold uppercase tracking-widest text-zinc-500"
+              >A verificar estado...</span
+            >
+          </div>
+          <h1
+            class="text-4xl md:text-6xl font-light tracking-tighter text-zinc-900 dark:text-white"
+          >
+            ESTADO DO SISTEMA.
+          </h1>
+          <p
+            class="text-lg text-zinc-600 dark:text-zinc-400 font-light max-w-xl"
+          >
+            Monitorização em tempo real da infraestrutura LiveTagus e das
+            ligações externas à IP.
+          </p>
+        </section>
+
+        <hr class="border-zinc-200 dark:border-white/10" />
+
+        <section class="grid grid-cols-1 gap-4">
+          <div
+            class="p-6 border border-zinc-200 dark:border-white/10 bg-zinc-50/50 dark:bg-white/5 rounded-sm flex items-center justify-between group hover:border-zinc-400 dark:hover:border-white/20 transition-colors"
+          >
+            <div class="flex items-center gap-4">
+              <div class="p-2 bg-white dark:bg-white/10 rounded-full">
+                <svg
+                  class="w-5 h-5 text-zinc-900 dark:text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.5"
+                    d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  ></path>
+                </svg>
+              </div>
+              <div>
+                <h3
+                  class="text-sm font-bold uppercase tracking-wide text-zinc-900 dark:text-white"
+                >
+                  LiveTagus Web
+                </h3>
+                <p class="text-xs text-zinc-500">Frontend & CDN (Netlify)</p>
+              </div>
+            </div>
+            <span
+              class="text-xs font-bold uppercase tracking-widest text-green-600 dark:text-green-400 px-3 py-1 bg-green-100 dark:bg-green-900/20 rounded-full"
+              >Operacional</span
+            >
+          </div>
+
+          <div
+            class="p-6 border border-zinc-200 dark:border-white/10 bg-zinc-50/50 dark:bg-white/5 rounded-sm flex items-center justify-between group transition-colors"
+          >
+            <div class="flex items-center gap-4">
+              <div class="p-2 bg-white dark:bg-white/10 rounded-full">
+                <svg
+                  class="w-5 h-5 text-zinc-900 dark:text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.5"
+                    d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"
+                  ></path>
+                </svg>
+              </div>
+              <div>
+                <h3
+                  class="text-sm font-bold uppercase tracking-wide text-zinc-900 dark:text-white"
+                >
+                  LiveTagus API
+                </h3>
+                <p class="text-xs text-zinc-500">
+                  Backend & Processamento (Azure/Render)
+                </p>
+              </div>
+            </div>
+            <div id="api-status-badge" class="flex flex-col items-end">
+              <span
+                class="text-xs font-bold uppercase tracking-widest text-zinc-400 animate-pulse"
+                >A verificar...</span
+              >
+            </div>
+          </div>
+
+          <div
+            class="p-6 border border-zinc-200 dark:border-white/10 bg-zinc-50/50 dark:bg-white/5 rounded-sm flex items-center justify-between transition-colors"
+          >
+            <div class="flex items-center gap-4">
+              <div class="p-2 bg-white dark:bg-white/10 rounded-full">
+                <svg
+                  class="w-5 h-5 text-zinc-900 dark:text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.5"
+                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                  ></path>
+                </svg>
+              </div>
+              <div>
+                <h3
+                  class="text-sm font-bold uppercase tracking-wide text-zinc-900 dark:text-white"
+                >
+                  Infraestruturas de Portugal
+                </h3>
+                <p class="text-xs text-zinc-500">Fonte Oficial (Externo)</p>
+              </div>
+            </div>
+            <div id="ip-status-badge" class="flex flex-col items-end">
+              <span
+                class="text-xs font-bold uppercase tracking-widest text-zinc-400 animate-pulse"
+                >A verificar...</span
+              >
+            </div>
+          </div>
+        </section>
+
+        <section
+          class="bg-blue-50 dark:bg-blue-900/10 p-6 rounded-sm border border-blue-100 dark:border-blue-500/10"
+        >
+          <h4
+            class="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-2"
+          >
+            Nota Técnica
+          </h4>
+          <p class="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">
+            A monitorização é feita em tempo real. O sistema da LiveTagus entra
+            em modo de poupança de energia entre as 02:00 e as 05:00 da manhã.
+          </p>
+        </section>
+      </div>
+    </main>
+
+    <div id="global-footer"></div>
+
+    <script src="./menu.js"></script>
+    <script>
+      async function checkDetailedStatus() {
+        const apiBadge = document.getElementById("api-status-badge");
+        const ipBadge = document.getElementById("ip-status-badge");
+        const globalText = document.getElementById("global-text");
+        const globalPing = document.getElementById("global-ping");
+        const globalDot = document.getElementById("global-dot");
+
+        const now = new Date();
+        const hour = now.getHours();
+
+        // Lógica de Poupança SÓ para a API LiveTagus
+        const isApiSavingsMode = hour >= 2 && hour < 5;
+
+        try {
+          // 1. Configurar pedido à IP (Sempre ativo)
+          const year = now.getFullYear();
+          const month = String(now.getMonth() + 1).padStart(2, "0");
+          const day = String(now.getDate()).padStart(2, "0");
+          const dateStr = `${year}-${month}-${day}`;
+          const ipUrl = `https://www.infraestruturasdeportugal.pt/negocios-e-servicos/horarios-ncombio/14228/${dateStr}`;
+
+          // 2. Configurar pedido à API (Depende da hora)
+          const apiUrl = "https://api-transportes.onrender.com/api/fertagus";
+
+          // Promises Array
+          const promises = [];
+
+          // Pedido API: Se for hora de poupança, resolvemos logo com 'paused'
+          if (isApiSavingsMode) {
+            promises.push(Promise.resolve("paused"));
+          } else {
+            promises.push(fetch(apiUrl, { method: "GET" }));
+          }
+
+          // Pedido IP: Sempre fetch
+          promises.push(fetch(ipUrl, { mode: "no-cors" }));
+
+          // Executar em paralelo
+          const [apiRes, ipRes] = await Promise.allSettled(promises);
+
+          // --- ANÁLISE API LIVETAGUS ---
+          let apiStatus = "offline";
+          if (apiRes.status === "fulfilled") {
+            if (apiRes.value === "paused") {
+              apiStatus = "paused";
+            } else if (apiRes.value.ok) {
+              apiStatus = "online";
+            }
+          }
+
+          // --- ANÁLISE IP ---
+          // no-cors retorna opaque response, mas promise fulfilled = servidor respondeu
+          let ipStatus = "offline";
+          if (ipRes.status === "fulfilled") {
+            ipStatus = "online";
+          }
+
+          // Atualizar UI
+          updateApiUI(apiBadge, apiStatus);
+          updateIpUI(ipBadge, ipStatus);
+          updateGlobalUI(
+            globalText,
+            globalPing,
+            globalDot,
+            apiStatus,
+            ipStatus,
+          );
+        } catch (err) {
+          console.error("Erro crítico na verificação:", err);
+          setOfflineUI(apiBadge, ipBadge, globalText, globalPing, globalDot);
+        }
+      }
+
+      // --- FUNÇÕES DE UI ---
+
+      function updateApiUI(el, status) {
+        if (status === "online") {
+          el.innerHTML = `<span class="text-xs font-bold uppercase tracking-widest text-green-600 dark:text-green-400 px-3 py-1 bg-green-100 dark:bg-green-900/20 rounded-full">Operacional</span>`;
+        } else if (status === "paused") {
+          el.innerHTML = `<span class="text-xs font-bold uppercase tracking-widest text-zinc-500 px-3 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-full">Modo Poupança</span>`;
+        } else {
+          el.innerHTML = `<span class="text-xs font-bold uppercase tracking-widest text-red-600 dark:text-red-400 px-3 py-1 bg-red-100 dark:bg-red-900/20 rounded-full">Indisponível</span>`;
+        }
+      }
+
+      function updateIpUI(el, status) {
+        if (status === "online") {
+          el.innerHTML = `<span class="text-xs font-bold uppercase tracking-widest text-green-600 dark:text-green-400 px-3 py-1 bg-green-100 dark:bg-green-900/20 rounded-full">Operacional</span>`;
+        } else {
+          el.innerHTML = `<span class="text-xs font-bold uppercase tracking-widest text-red-600 dark:text-red-400 px-3 py-1 bg-red-100 dark:bg-red-900/20 rounded-full">Falha Ligação</span>`;
+        }
+      }
+
+      function updateGlobalUI(text, ping, dot, api, ip) {
+        // Cenário Perfeito
+        if (api === "online" && ip === "online") {
+          text.innerText = "Todos os sistemas operacionais";
+          text.className =
+            "text-sm font-bold uppercase tracking-widest text-green-600 dark:text-green-400";
+          ping.className =
+            "animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75";
+          dot.className =
+            "relative inline-flex rounded-full h-3 w-3 bg-green-500";
+          ping.classList.remove("hidden");
+          return;
+        }
+
+        // Cenário Noite (API Pausada + IP Online) - Isto é considerado "Normal" à noite
+        if (api === "paused" && ip === "online") {
+          text.innerText = "Operacional (Modo Noturno)";
+          text.className =
+            "text-sm font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400";
+          ping.className =
+            "animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75";
+          dot.className =
+            "relative inline-flex rounded-full h-3 w-3 bg-blue-500";
+          ping.classList.remove("hidden");
+          return;
+        }
+
+        // Cenário Problema na IP
+        if ((api === "online" || api === "paused") && ip === "offline") {
+          text.innerText = "Falha na Infraestruturas de Portugal";
+          text.className =
+            "text-sm font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400";
+          ping.className =
+            "animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75";
+          dot.className =
+            "relative inline-flex rounded-full h-3 w-3 bg-amber-500";
+          ping.classList.remove("hidden");
+          return;
+        }
+
+        // Tudo em baixo
+        text.innerText = "Sistemas Indisponíveis";
+        text.className =
+          "text-sm font-bold uppercase tracking-widest text-red-600 dark:text-red-400";
+        ping.className =
+          "animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75";
+        dot.className = "relative inline-flex rounded-full h-3 w-3 bg-red-500";
+        ping.classList.remove("hidden");
+      }
+
+      function setOfflineUI(api, ip, text, ping, dot) {
+        updateApiUI(api, "offline");
+        updateIpUI(ip, "offline");
+        updateGlobalUI(text, ping, dot, "offline", "offline");
+      }
+
+      // Corre ao iniciar
+      checkDetailedStatus();
+      // Atualiza a cada 60s
+      setInterval(checkDetailedStatus, 60000);
+    </script>
+  </body>
+</html>

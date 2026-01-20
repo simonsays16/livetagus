@@ -1,0 +1,33 @@
+# Configurações de Build (Standard)
+[build]
+  publish = "."
+
+# Regra 404: A Netlify faz isto automático, mas ser explícito é boa prática
+[[redirects]]
+  from = "/*"
+  to = "/404.html"
+  status = 404
+
+# --- CABEÇALHOS DE SEGURANÇA (PRO LEVEL) ---
+# Isto melhora a tua pontuação em auditorias de segurança (Lighthouse/Mozilla Observatory)
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Proteção contra XSS
+    X-Content-Type-Options = "nosniff"
+    # Proteção contra Clickjacking (impede que outros sites ponham o teu num iframe)
+    X-Frame-Options = "DENY"
+    # Proteção XSS básica para browsers antigos
+    X-XSS-Protection = "1; mode=block"
+    # Referrer Policy (Privacidade)
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    # HSTS (Força HTTPS estrito durante 1 ano)
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+    # Permissions Policy (Bloqueia uso não autorizado de câmara/mic/localização pelo browser)
+    Permissions-Policy = "camera=(), microphone=(), payment=()"
+
+# Cache eficiente para imagens e fontes (Performance)
+[[headers]]
+  for = "*.{png,jpg,jpeg,gif,svg,woff,woff2}"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
