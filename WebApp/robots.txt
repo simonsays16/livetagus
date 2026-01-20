@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /license
+Disallow: /code_of_conduct
+Disallow: /404
+Allow: /
+
+Sitemap: https://livetagus.pt/sitemap.xml

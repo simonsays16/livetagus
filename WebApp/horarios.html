@@ -8,14 +8,9 @@
     />
     <meta
       name="description"
-      content="Horários dos comboios Fertagus. Página em construção."
+      content="Horários completos da Fertagus em tempo real. Consulte partidas, chegadas e tipologia dos comboios."
     />
     <meta name="theme-color" content="#09090b" />
-    <title>Horários | LiveTagus</title>
-
-    <link rel="preconnect" href="https://cdn.tailwindcss.com" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
     <link
       rel="shortcut icon"
@@ -23,9 +18,9 @@
       type="image/x-icon"
     />
 
-    <script src="./menu.js" defer></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Horários | LiveTagus</title>
 
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         darkMode: "class",
@@ -35,13 +30,9 @@
               sans: ["Inter", "sans-serif"],
               mono: ["JetBrains Mono", "monospace"],
             },
-            animation: {
-              "fade-in-up": "fadeInUp 0.8s ease-out forwards",
-            },
-            keyframes: {
-              fadeInUp: {
-                "0%": { opacity: "0", transform: "translateY(20px)" },
-                "100%": { opacity: "1", transform: "translateY(0)" },
+            colors: {
+              fertagus: {
+                blue: "#006495",
               },
             },
           },
@@ -50,65 +41,462 @@
     </script>
 
     <link href="./style.css" rel="stylesheet" />
+
+    <style>
+      /* --- CORREÇÃO DO LAYOUT --- */
+
+      body {
+        overflow-y: auto;
+        height: auto;
+      }
+
+      /* --- A JANELA DA TABELA --- */
+      #table-wrapper {
+        position: relative;
+        width: 100%;
+        height: 70vh;
+        max-height: 800px;
+
+        overflow: auto; /* Scroll X e Y automático */
+        -webkit-overflow-scrolling: touch;
+
+        border: 1px solid #e4e4e7;
+        border-radius: 0.5rem;
+        background-color: #ffffff;
+      }
+
+      .dark #table-wrapper {
+        border-color: #27272a;
+        background-color: #09090b;
+      }
+
+      .schedule-table {
+        border-collapse: separate;
+        border-spacing: 0;
+      }
+
+      /* --- CÉLULAS --- */
+      .schedule-table th,
+      .schedule-table td {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.85rem;
+        border-right: 1px solid #e5e7eb;
+        border-bottom: 1px solid #e5e7eb;
+        text-align: center;
+        vertical-align: middle;
+      }
+      .dark .schedule-table th,
+      .dark .schedule-table td {
+        border-right-color: #27272a;
+        border-bottom-color: #27272a;
+      }
+
+      /* --- STICKY HEADER (TOPO APENAS) --- */
+      .schedule-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+
+        background-color: #f4f4f5;
+        color: #52525b;
+
+        border-bottom: 2px solid #d4d4d8;
+
+        height: 50px;
+        white-space: normal;
+      }
+
+      .dark .schedule-table thead th {
+        background-color: #18181b;
+        color: #a1a1aa;
+        border-bottom: 2px solid #3f3f46;
+      }
+
+      /* --- LARGURAS FIXAS UNIFORMES --- */
+      .station-col {
+        width: 130px;
+        min-width: 130px;
+        max-width: 130px;
+        word-wrap: break-word;
+        line-height: 1.1;
+      }
+
+      /* --- ALTERAÇÃO AQUI: REMOVIDO O STICKY DA COLUNA DESTINO --- */
+      /* Agora é uma coluna normal, apenas com formatação de texto */
+      .details-col {
+        width: 110px;
+        min-width: 110px;
+        max-width: 110px;
+        text-align: left !important;
+        padding-left: 0.75rem !important;
+        font-weight: 700;
+
+        /* REMOVIDO: position: sticky, left: 0, z-index: 30 */
+      }
+
+      /* REMOVIDO: O bloco .schedule-table thead th:first-child que forçava
+         o canto superior esquerdo a ficar sticky left. 
+         Agora ele usa a regra geral do thead th (apenas sticky top). */
+
+      /* Estilo do Sublinhado (Comboios Duplos) */
+      .train-underline {
+        text-decoration: underline;
+        text-decoration-thickness: 2px;
+        text-underline-offset: 3px;
+        text-decoration-color: currentColor;
+      }
+    </style>
+
+    <script src="./menu.js" defer></script>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400&display=swap"
       rel="stylesheet"
     />
   </head>
 
   <body
-    class="bg-white text-zinc-900 dark:bg-[#09090b] dark:text-white overflow-x-hidden selection:bg-blue-500/30 transition-colors duration-500 flex flex-col min-h-screen"
+    class="bg-white text-zinc-900 dark:bg-[#09090b] dark:text-white transition-colors duration-500 flex flex-col min-h-screen"
   >
     <div id="global-nav"></div>
 
-    <main
-      class="flex-grow flex flex-col items-center justify-center relative px-6 py-20"
-    >
-      <div
-        class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vw] bg-zinc-200/50 dark:bg-zinc-800/20 rounded-full blur-[100px] pointer-events-none -z-10"
-      ></div>
-
-      <div class="max-w-md w-full text-center animate-fade-in-up">
+    <main class="flex-grow pt-24 pb-12 px-4 md:px-6">
+      <div class="max-w-7xl mx-auto space-y-6">
         <div
-          class="w-20 h-20 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-full flex items-center justify-center mx-auto mb-8"
+          class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-zinc-200 dark:border-white/10 pb-4"
         >
-          <svg
-            class="w-8 h-8 text-zinc-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+          <div class="space-y-1">
+            <span
+              class="inline-block py-0.5 px-2 border border-zinc-200 dark:border-white/10 rounded-full text-[10px] uppercase tracking-widest text-zinc-500"
+            >
+              Planeamento
+            </span>
+            <h1
+              class="text-3xl font-light tracking-tighter text-zinc-900 dark:text-white"
+            >
+              HORÁRIOS.
+            </h1>
+          </div>
+
+          <div
+            class="flex flex-wrap gap-3 text-xs font-medium bg-zinc-50 dark:bg-white/5 p-2 rounded-lg"
           >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="1.5"
-              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-            ></path>
-          </svg>
+            <div
+              class="flex items-center gap-1.5 text-blue-700 dark:text-blue-400"
+            >
+              <span class="font-bold">Coina</span>
+              <span class="text-[10px] font-normal opacity-70">Azul</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-black dark:text-white">
+              <span class="font-bold">Setúbal</span>
+              <span class="text-[10px] font-normal opacity-70"
+                >Preto/Branco</span
+              >
+            </div>
+
+            <div class="w-px h-4 bg-zinc-300 dark:bg-zinc-700 mx-1"></div>
+
+            <div class="flex items-center gap-1.5">
+              <span
+                class="inline-flex items-center justify-center w-4 h-4 rounded text-[9px] font-bold border border-zinc-400 text-zinc-500"
+                >4</span
+              >
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span
+                class="inline-flex items-center justify-center w-4 h-4 rounded text-[9px] font-bold bg-zinc-900 text-white dark:bg-white dark:text-black"
+                >8</span
+              >
+              <span
+                class="text-zinc-500 text-[10px] underline decoration-2 underline-offset-2"
+                >Sublinhado</span
+              >
+            </div>
+          </div>
         </div>
 
-        <h1
-          class="text-4xl md:text-5xl font-light tracking-tighter mb-4 text-zinc-900 dark:text-white"
-        >
-          EM CONSTRUÇÃO.
-        </h1>
+        <div class="flex flex-col sm:flex-row gap-4 justify-between">
+          <div
+            class="flex bg-zinc-100 dark:bg-white/5 rounded p-1 w-full sm:w-auto"
+          >
+            <button
+              onclick="changeDirection('lisboa')"
+              id="btn-lisboa"
+              class="flex-1 sm:flex-none px-4 py-2 text-sm font-bold uppercase tracking-wide rounded transition-all shadow-sm bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+            >
+              Para Lisboa
+            </button>
+            <button
+              onclick="changeDirection('margem')"
+              id="btn-margem"
+              class="flex-1 sm:flex-none px-4 py-2 text-sm font-bold uppercase tracking-wide rounded transition-all text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+            >
+              Para Margem
+            </button>
+          </div>
 
-        <p
-          class="text-zinc-500 dark:text-zinc-400 font-light leading-relaxed mb-10"
-        >
-          Estamos a desenhar uma nova experiência para consultares os horários
-          completos. Volta em breve.
+          <div
+            class="flex bg-zinc-100 dark:bg-white/5 rounded p-1 w-full sm:w-auto"
+          >
+            <button
+              onclick="changeDay('semana')"
+              id="btn-semana"
+              class="flex-1 sm:flex-none px-4 py-2 text-sm font-bold uppercase tracking-wide rounded transition-all shadow-sm bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+            >
+              Dias Úteis
+            </button>
+            <button
+              onclick="changeDay('fimdesemana')"
+              id="btn-fimdesemana"
+              class="flex-1 sm:flex-none px-4 py-2 text-sm font-bold uppercase tracking-wide rounded transition-all text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+            >
+              Fim de Semana
+            </button>
+          </div>
+        </div>
+
+        <div id="schedule-container" class="relative">
+          <div
+            id="loader"
+            class="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-black/80 z-50 rounded-lg"
+          >
+            <div
+              class="animate-spin rounded-full h-8 w-8 border-b-2 border-zinc-900 dark:border-white"
+            ></div>
+          </div>
+
+          <div id="table-wrapper"></div>
+
+          <div
+            id="weekend-warning"
+            class="hidden absolute inset-0 h-64 flex flex-col items-center justify-center bg-white dark:bg-[#09090b] z-40 rounded-lg border border-zinc-200 dark:border-white/10"
+          >
+            <i data-lucide="cone" class="w-12 h-12 text-amber-500 mb-4"></i>
+            <h3 class="text-xl font-bold text-zinc-900 dark:text-white">
+              Em Construção
+            </h3>
+            <p class="text-zinc-500 mt-2">
+              Horários de fim de semana em breve.
+            </p>
+          </div>
+        </div>
+
+        <p class="text-[10px] text-center text-zinc-400 mt-4">
+          Horários oficiais Fertagus. Sujeitos a alterações.
         </p>
-
-        <a
-          href="./index.html"
-          class="inline-flex items-center gap-2 px-6 py-3 border border-zinc-200 dark:border-white/10 rounded-sm text-xs font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
-        >
-          ← Voltar ao Início
-        </a>
       </div>
     </main>
 
     <div id="global-footer"></div>
+
+    <script>
+      // --- CONFIGURAÇÃO ---
+      const stationsMap = {
+        setubal: "Setúbal",
+        palmela: "Palmela",
+        venda_do_alcaide: "Venda do Alcaide",
+        pinhal_novo: "Pinhal Novo",
+        penalva: "Penalva",
+        coina: "Coina",
+        fogueteiro: "Fogueteiro",
+        foros_de_amora: "Foros de Amora",
+        corroios: "Corroios",
+        pragal: "Pragal",
+        campolide: "Campolide",
+        sete_rios: "Sete Rios",
+        entrecampos: "Entrecampos",
+        roma_areeiro: "Roma-Areeiro",
+      };
+
+      const orderNorth = [
+        "setubal",
+        "palmela",
+        "venda_do_alcaide",
+        "pinhal_novo",
+        "penalva",
+        "coina",
+        "fogueteiro",
+        "foros_de_amora",
+        "corroios",
+        "pragal",
+        "campolide",
+        "sete_rios",
+        "entrecampos",
+        "roma_areeiro",
+      ];
+
+      const orderSouth = [...orderNorth].reverse();
+
+      let currentDirection = "lisboa";
+      let currentDay = "semana";
+      let cachedData = {};
+
+      const tableWrapper = document.getElementById("table-wrapper");
+      const loader = document.getElementById("loader");
+      const weekendWarning = document.getElementById("weekend-warning");
+
+      document.addEventListener("DOMContentLoaded", () => {
+        loadSchedules();
+        if (window.lucide) lucide.createIcons();
+      });
+
+      // --- FUNÇÕES UI ---
+      function changeDirection(dir) {
+        if (currentDirection === dir) return;
+        currentDirection = dir;
+        updateButtonState("btn-lisboa", dir === "lisboa");
+        updateButtonState("btn-margem", dir === "margem");
+        render();
+        // Reset do scroll da tabela
+        tableWrapper.scrollTop = 0;
+        tableWrapper.scrollLeft = 0;
+      }
+
+      function changeDay(day) {
+        if (currentDay === day) return;
+        currentDay = day;
+        updateButtonState("btn-semana", day === "semana");
+        updateButtonState("btn-fimdesemana", day === "fimdesemana");
+        render();
+      }
+
+      function updateButtonState(id, isActive) {
+        const el = document.getElementById(id);
+        if (isActive) {
+          el.classList.remove(
+            "text-zinc-500",
+            "hover:text-zinc-700",
+            "dark:hover:text-zinc-300",
+          );
+          el.classList.add(
+            "bg-white",
+            "dark:bg-zinc-800",
+            "text-zinc-900",
+            "dark:text-white",
+            "shadow-sm",
+          );
+        } else {
+          el.classList.add(
+            "text-zinc-500",
+            "hover:text-zinc-700",
+            "dark:hover:text-zinc-300",
+          );
+          el.classList.remove(
+            "bg-white",
+            "dark:bg-zinc-800",
+            "text-zinc-900",
+            "dark:text-white",
+            "shadow-sm",
+          );
+        }
+      }
+
+      // --- RENDER ---
+      async function loadSchedules() {
+        loader.classList.remove("hidden");
+        try {
+          const [lisboaRes, margemRes] = await Promise.all([
+            fetch("./json/fertagus_lisboa_semana.json"),
+            fetch("./json/fertagus_margem_semana.json"),
+          ]);
+          cachedData.lisboa = await lisboaRes.json();
+          cachedData.margem = await margemRes.json();
+          render();
+        } catch (error) {
+          console.error("Erro:", error);
+          tableWrapper.innerHTML = `<div class="p-8 text-center text-red-500">Erro de carregamento.</div>`;
+        } finally {
+          loader.classList.add("hidden");
+        }
+      }
+
+      function render() {
+        if (currentDay === "fimdesemana") {
+          tableWrapper.classList.add("hidden");
+          weekendWarning.classList.remove("hidden");
+          return;
+        }
+
+        tableWrapper.classList.remove("hidden");
+        weekendWarning.classList.add("hidden");
+
+        const data =
+          currentDirection === "lisboa" ? cachedData.lisboa : cachedData.margem;
+        const stationsOrder =
+          currentDirection === "lisboa" ? orderNorth : orderSouth;
+
+        let html = `
+                <table class="schedule-table">
+                    <thead>
+                        <tr>
+                            <th class="details-col font-bold uppercase tracking-wider text-xs">Destino</th>
+                            ${stationsOrder.map((key) => `<th class="station-col font-bold uppercase tracking-wider text-xs">${stationsMap[key]}</th>`).join("")}
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+        data.trips.forEach((trip, index) => {
+          // Zebra Striping (Linha sim, Linha não)
+          const isEven = index % 2 === 0;
+          // Cores de fundo
+          const rowBgClass = isEven
+            ? "bg-zinc-50 dark:bg-[#18181b]"
+            : "bg-white dark:bg-[#09090b]";
+
+          // --- LÓGICA DE CORES ---
+          const isSetubal = trip.service === 1;
+
+          // COINA = AZUL
+          // SETÚBAL = PRETO/BRANCO
+          const textClass = !isSetubal
+            ? "text-blue-700 dark:text-blue-400 font-bold"
+            : "text-zinc-900 dark:text-white font-medium";
+
+          // 8 Carruagens = Sublinhado
+          const isDouble = trip.carruagens === 8;
+          const underlineClass = isDouble ? "train-underline" : "";
+
+          // Badges (4 ou 8)
+          const badgeClass = isDouble
+            ? "bg-zinc-900 text-white dark:bg-white dark:text-black border-transparent"
+            : "bg-transparent text-zinc-400 border-zinc-300 dark:border-zinc-700 border";
+
+          const carruagensNum = trip.carruagens;
+
+          const trainBadge = `<span class="inline-flex items-center justify-center w-5 h-5 rounded text-[10px] font-bold ml-2 ${badgeClass}" title="${carruagensNum} Carruagens">${carruagensNum}</span>`;
+
+          const destText = isSetubal ? "Setúbal" : "Coina";
+
+          // REMOVIDO: style="background-color: inherit;" na primeira coluna já não é preciso porque não é sticky
+          html += `
+                    <tr class="${rowBgClass} hover:bg-zinc-200 dark:hover:bg-white/10 transition-colors" data-train-id="${trip.id}">
+                        <td class="details-col">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs uppercase tracking-tight ${textClass}">${destText}</span>
+                                ${trainBadge}
+                            </div>
+                        </td>
+                        ${stationsOrder
+                          .map((station) => {
+                            const time = trip[station];
+                            return `
+                                <td class="station-col ${textClass} ${underlineClass}">
+                                    ${time || '<span class="opacity-20 font-light">—</span>'}
+                                </td>`;
+                          })
+                          .join("")}
+                    </tr>
+                `;
+        });
+
+        html += `</tbody></table>`;
+        tableWrapper.innerHTML = html;
+      }
+    </script>
   </body>
 </html>
