@@ -100,7 +100,7 @@ function injectFooter() {
                     
                     <p class="text-xs text-zinc-500 max-w-xs leading-relaxed">
                         LiveTagus • v20.01.2026<br><br>
-                        Um projeto independente. Não temos afiliação oficial com a Fertagus ou IP. Os dados são fornecidos "como estão".<br><br>
+                        Projeto independente e não oficial. Sem afiliação à Fertagus ou IP. Todos os direitos sobre os dados de circulação pertencem aos respetivos proprietários<br><br>
                         Em caso de dúvida, erro ou sugestão contacte-nos:
                     </p>                    
                     <a href="mailto:geral@livetagus.pt" class="text-xs underline text-zinc-500 hover:text-black dark:hover:text-white transition-colors">geral@livetagus.pt</a>
@@ -112,8 +112,10 @@ function injectFooter() {
                 <div class="flex flex-col items-end text-right gap-2 md:w-1/2">
                     <span class="text-[10px] uppercase font-bold text-zinc-400 tracking-widest mb-2">Links & Info</span>
                     
+                    <a href="./license.html" class="text-xs text-zinc-500 hover:text-black dark:hover:text-white transition-colors">Licença</a>
                     <a href="./app.html" class="text-xs text-zinc-500 hover:text-black dark:hover:text-white transition-colors">Tempo Real</a>
                     <a href="./sobre.html#apoio" class="text-xs text-zinc-500 hover:text-black dark:hover:text-white transition-colors">Apoia o Projeto</a>
+                    <a href="./code_of_conduct.html" class="text-xs text-zinc-500 hover:text-black dark:hover:text-white transition-colors">Código de Conduta</a>
                     <a href="./sobre.html#termos" class="text-xs text-zinc-500 hover:text-black dark:hover:text-white transition-colors">Termos & Privacidade</a>
                     <a href="./status.html" class="text-xs text-zinc-500 hover:text-black dark:hover:text-white transition-colors">Estado dos servidores</a>
                     <a href="./sobre.html" class="text-xs text-zinc-500 hover:text-black dark:hover:text-white transition-colors">Sobre Nós e Contactos</a>

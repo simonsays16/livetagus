@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="pt-PT">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=5.0"
+    />
+    <meta
+      name="description"
+      content="Código de Conduta para contribuidores do LiveTagus."
+    />
+    <meta name="theme-color" content="#09090b" />
+
+    <link
+      rel="shortcut icon"
+      href="./imagens/logotransparente.svg"
+      type="image/x-icon"
+    />
+
+    <title>Código de Conduta | LiveTagus</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+              mono: ["JetBrains Mono", "monospace"],
+            },
+            animation: {
+              "fade-in": "fadeIn 0.5s ease-out forwards",
+            },
+            keyframes: {
+              fadeIn: {
+                "0%": { opacity: "0", transform: "translateY(10px)" },
+                "100%": { opacity: "1", transform: "translateY(0)" },
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <link href="./style.css" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body
+    class="bg-white text-zinc-900 dark:bg-[#09090b] dark:text-white overflow-x-hidden transition-colors duration-500 flex flex-col min-h-screen"
+  >
+    <div id="global-nav"></div>
+
+    <main class="flex-grow pt-24 pb-20 px-6">
+      <div class="max-w-3xl mx-auto animate-fade-in space-y-12">
+        <div
+          class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-zinc-200 dark:border-white/10 pb-6"
+        >
+          <div class="space-y-2">
+            <span
+              class="inline-block py-1 px-3 border border-zinc-200 mb-2 dark:border-white/10 rounded-full text-[10px] uppercase tracking-widest text-zinc-500"
+            >
+              Comunidade
+            </span>
+            <h1
+              class="text-3xl md:text-5xl font-light tracking-tighter text-zinc-900 dark:text-white"
+            >
+              CÓDIGO DE CONDUTA
+            </h1>
+          </div>
+
+          <div
+            class="flex items-center gap-2 bg-zinc-100 dark:bg-white/5 p-1 rounded-sm"
+          >
+            <button
+              onclick="switchLang('pt')"
+              id="btn-pt"
+              class="px-4 py-1.5 text-xs font-bold uppercase tracking-widest rounded-sm transition-all bg-white dark:bg-zinc-800 shadow-sm text-zinc-900 dark:text-white"
+            >
+              PT
+            </button>
+            <button
+              onclick="switchLang('en')"
+              id="btn-en"
+              class="px-4 py-1.5 text-xs font-bold uppercase tracking-widest rounded-sm transition-all text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+            >
+              EN
+            </button>
+          </div>
+        </div>
+
+        <article class="prose prose-zinc dark:prose-invert max-w-none">
+          <div
+            id="content-pt"
+            class="space-y-8 leading-relaxed text-zinc-700 dark:text-zinc-300"
+          >
+            <section>
+              <h2 class="text-xl font-bold text-zinc-900 dark:text-white mb-4">
+                O Nosso Compromisso
+              </h2>
+              <p>
+                Nós, como membros, colaboradores e líderes, comprometemo-nos a
+                fazer da participação na nossa comunidade uma experiência livre
+                de assédio para todos, independentemente da idade, tamanho
+                corporal, deficiência visível ou invisível, etnia,
+                características sexuais, identidade e expressão de género, nível
+                de experiência, educação, estatuto socioeconómico,
+                nacionalidade, aparência pessoal, raça, religião ou identidade e
+                orientação sexual.
+              </p>
+              <p>
+                Comprometemo-nos a agir e interagir de formas que contribuam
+                para uma comunidade aberta, acolhedora, diversa, inclusiva e
+                saudável.
+              </p>
+            </section>
+
+            <section>
+              <h2 class="text-xl font-bold text-zinc-900 dark:text-white mb-4">
+                Os Nossos Padrões
+              </h2>
+              <p
+                class="font-bold text-sm uppercase tracking-wide text-zinc-500 mb-2"
+              >
+                Exemplos de comportamento que contribuem para um ambiente
+                positivo:
+              </p>
+              <ul class="list-disc pl-5 space-y-2 mb-6">
+                <li>Demonstrar empatia e bondade para com outras pessoas.</li>
+                <li>
+                  Ser respeitoso com opiniões, pontos de vista e experiências
+                  diferentes.
+                </li>
+                <li>Dar e aceitar graciosamente feedback construtivo.</li>
+                <li>
+                  Aceitar a responsabilidade e pedir desculpa àqueles afetados
+                  pelos nossos erros, e aprender com a experiência.
+                </li>
+                <li>
+                  Focar no que é melhor não apenas para nós como indivíduos, mas
+                  para a comunidade em geral.
+                </li>
+              </ul>
+
+              <p
+                class="font-bold text-sm uppercase tracking-wide text-zinc-500 mb-2"
+              >
+                Exemplos de comportamento inaceitável:
+              </p>
+              <ul class="list-disc pl-5 space-y-2">
+                <li>
+                  O uso de linguagem ou imagens sexualizadas, e atenção ou
+                  avanços sexuais de qualquer tipo.
+                </li>
+                <li>
+                  Trolling, insultos ou comentários depreciativos, e ataques
+                  pessoais ou políticos.
+                </li>
+                <li>Assédio público ou privado.</li>
+                <li>
+                  Publicação de informações privadas de outros, como endereço
+                  físico ou de e-mail, sem a sua permissão explícita.
+                </li>
+                <li>
+                  Outra conduta que poderia ser razoavelmente considerada
+                  inadequada num ambiente profissional.
+                </li>
+              </ul>
+            </section>
+
+            <section>
+              <h2 class="text-xl font-bold text-zinc-900 dark:text-white mb-4">
+                Responsabilidades de Aplicação
+              </h2>
+              <p>
+                Os líderes da comunidade são responsáveis por esclarecer e fazer
+                cumprir os nossos padrões de comportamento aceitável e tomarão
+                medidas corretivas apropriadas e justas em resposta a qualquer
+                comportamento que considerem inadequado, ameaçador, ofensivo ou
+                prejudicial.
+              </p>
+              <p>
+                Os líderes da comunidade têm o direito e a responsabilidade de
+                remover, editar ou rejeitar comentários, commits, código,
+                edições de wiki, problemas e outras contribuições que não
+                estejam alinhadas com este Código de Conduta, e comunicarão os
+                motivos das decisões de moderação quando apropriado.
+              </p>
+            </section>
+
+            <section>
+              <h2 class="text-xl font-bold text-zinc-900 dark:text-white mb-4">
+                Aplicação (Denúncias)
+              </h2>
+              <div
+                class="p-6 bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-sm"
+              >
+                <p class="mb-4">
+                  Casos de comportamento abusivo, de assédio ou de outra forma
+                  inaceitável podem ser relatados aos líderes da comunidade
+                  responsáveis pela aplicação em:
+                </p>
+                <a
+                  href="mailto:geral@livetagus.pt"
+                  class="text-lg font-mono font-bold border-b border-zinc-900 dark:border-white"
+                  >geral@livetagus.pt</a
+                >
+                <p class="mt-4 text-xs text-zinc-500">
+                  Todas as queixas serão revistas e investigadas prontamente e
+                  de forma justa.
+                </p>
+              </div>
+            </section>
+          </div>
+
+          <div
+            id="content-en"
+            class="hidden space-y-8 leading-relaxed text-zinc-700 dark:text-zinc-300"
+          >
+            <section>
+              <h2 class="text-xl font-bold text-zinc-900 dark:text-white mb-4">
+                Our Pledge
+              </h2>
+              <p>
+                We as members, contributors, and leaders pledge to make
+                participation in our community a harassment-free experience for
+                everyone, regardless of age, body size, visible or invisible
+                disability, ethnicity, sex characteristics, gender identity and
+                expression, level of experience, education, socio-economic
+                status, nationality, personal appearance, race, religion, or
+                sexual identity and orientation.
+              </p>
+              <p>
+                We pledge to act and interact in ways that contribute to an
+                open, welcoming, diverse, inclusive, and healthy community.
+              </p>
+            </section>
+
+            <section>
+              <h2 class="text-xl font-bold text-zinc-900 dark:text-white mb-4">
+                Our Standards
+              </h2>
+              <p
+                class="font-bold text-sm uppercase tracking-wide text-zinc-500 mb-2"
+              >
+                Examples of behavior that contributes to a positive environment:
+              </p>
+              <ul class="list-disc pl-5 space-y-2 mb-6">
+                <li>Demonstrating empathy and kindness toward other people</li>
+                <li>
+                  Being respectful of differing opinions, viewpoints, and
+                  experiences
+                </li>
+                <li>Giving and gracefully accepting constructive feedback</li>
+                <li>
+                  Accepting responsibility and apologizing to those affected by
+                  our mistakes, and learning from the experience
+                </li>
+                <li>
+                  Focusing on what is best not just for us as individuals, but
+                  for the overall community
+                </li>
+              </ul>
+
+              <p
+                class="font-bold text-sm uppercase tracking-wide text-zinc-500 mb-2"
+              >
+                Examples of unacceptable behavior:
+              </p>
+              <ul class="list-disc pl-5 space-y-2">
+                <li>
+                  The use of sexualized language or imagery, and sexual
+                  attention or advances of any kind
+                </li>
+                <li>
+                  Trolling, insulting or derogatory comments, and personal or
+                  political attacks
+                </li>
+                <li>Public or private harassment</li>
+                <li>
+                  Publishing others' private information, such as a physical or
+                  email address, without their explicit permission
+                </li>
+                <li>
+                  Other conduct which could reasonably be considered
+                  inappropriate in a professional setting
+                </li>
+              </ul>
+            </section>
+
+            <section>
+              <h2 class="text-xl font-bold text-zinc-900 dark:text-white mb-4">
+                Enforcement Responsibilities
+              </h2>
+              <p>
+                Community leaders are responsible for clarifying and enforcing
+                our standards of acceptable behavior and will take appropriate
+                and fair corrective action in response to any behavior that they
+                deem inappropriate, threatening, offensive, or harmful.
+              </p>
+              <p>
+                Community leaders have the right and responsibility to remove,
+                edit, or reject comments, commits, code, wiki edits, issues, and
+                other contributions that are not aligned to this Code of
+                Conduct, and will communicate reasons for moderation decisions
+                when appropriate.
+              </p>
+            </section>
+
+            <section>
+              <h2 class="text-xl font-bold text-zinc-900 dark:text-white mb-4">
+                Enforcement
+              </h2>
+              <div
+                class="p-6 bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-sm"
+              >
+                <p class="mb-4">
+                  Instances of abusive, harassing, or otherwise unacceptable
+                  behavior may be reported to the community leaders responsible
+                  for enforcement at:
+                </p>
+                <a
+                  href="mailto:geral@livetagus.pt"
+                  class="text-lg font-mono font-bold border-b border-zinc-900 dark:border-white"
+                  >geral@livetagus.pt</a
+                >
+                <p class="mt-4 text-xs text-zinc-500">
+                  All complaints will be reviewed and investigated promptly and
+                  fairly.
+                </p>
+              </div>
+            </section>
+          </div>
+        </article>
+
+        <div class="pt-8 border-t border-zinc-200 dark:border-white/10 mt-12">
+          <a
+            href="./"
+            class="inline-flex items-center text-xs font-bold uppercase tracking-widest text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors group"
+          >
+            <span class="group-hover:-translate-x-1 transition-transform mr-2"
+              >←</span
+            >
+            Voltar
+          </a>
+        </div>
+      </div>
+    </main>
+
+    <div id="global-footer"></div>
+
+    <script src="./menu.js"></script>
+    <script>
+      function switchLang(lang) {
+        const ptContent = document.getElementById("content-pt");
+        const enContent = document.getElementById("content-en");
+        const btnPt = document.getElementById("btn-pt");
+        const btnEn = document.getElementById("btn-en");
+
+        const activeClass = [
+          "bg-white",
+          "dark:bg-zinc-800",
+          "shadow-sm",
+          "text-zinc-900",
+          "dark:text-white",
+        ];
+        const inactiveClass = [
+          "text-zinc-400",
+          "hover:text-zinc-600",
+          "dark:hover:text-zinc-200",
+          "bg-transparent",
+          "shadow-none",
+        ];
+
+        if (lang === "pt") {
+          ptContent.classList.remove("hidden");
+          enContent.classList.add("hidden");
+
+          btnPt.classList.add(...activeClass);
+          btnPt.classList.remove(...inactiveClass);
+          btnEn.classList.remove(...activeClass);
+          btnEn.classList.add(...inactiveClass);
+        } else {
+          ptContent.classList.add("hidden");
+          enContent.classList.remove("hidden");
+
+          btnEn.classList.add(...activeClass);
+          btnEn.classList.remove(...inactiveClass);
+          btnPt.classList.remove(...activeClass);
+          btnPt.classList.add(...inactiveClass);
+        }
+      }
+    </script>
+  </body>
+</html>

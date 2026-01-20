@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="pt-PT">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=5.0"
+    />
+    <meta
+      name="description"
+      content="Licença MIT do projeto LiveTagus (Open Source)."
+    />
+    <meta name="theme-color" content="#09090b" />
+
+    <link
+      rel="shortcut icon"
+      href="./imagens/logotransparente.svg"
+      type="image/x-icon"
+    />
+
+    <title>Licença (License) | LiveTagus</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+              mono: ["JetBrains Mono", "monospace"],
+            },
+            animation: {
+              "fade-in": "fadeIn 0.5s ease-out forwards",
+            },
+            keyframes: {
+              fadeIn: {
+                "0%": { opacity: "0", transform: "translateY(10px)" },
+                "100%": { opacity: "1", transform: "translateY(0)" },
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <link href="./style.css" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body
+    class="bg-white text-zinc-900 dark:bg-[#09090b] dark:text-white overflow-x-hidden transition-colors duration-500 flex flex-col min-h-screen"
+  >
+    <div id="global-nav"></div>
+
+    <main class="flex-grow pt-24 pb-20 px-6">
+      <div class="max-w-3xl mx-auto animate-fade-in space-y-8">
+        <div
+          class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-zinc-200 dark:border-white/10 pb-6"
+        >
+          <div class="space-y-2">
+            <span
+              class="inline-block py-1 px-3 border border-zinc-200 dark:border-white/10 rounded-full text-[10px] uppercase tracking-widest text-zinc-500"
+            >
+              Open Source
+            </span>
+            <h1
+              class="text-3xl md:text-5xl font-light tracking-tighter text-zinc-900 dark:text-white"
+            >
+              LICENÇA MIT
+            </h1>
+          </div>
+
+          <div
+            class="flex items-center gap-2 bg-zinc-100 dark:bg-white/5 p-1 rounded-sm"
+          >
+            <button
+              onclick="switchLang('pt')"
+              id="btn-pt"
+              class="px-4 py-1.5 text-xs font-bold uppercase tracking-widest rounded-sm transition-all bg-white dark:bg-zinc-800 shadow-sm text-zinc-900 dark:text-white"
+            >
+              PT
+            </button>
+            <button
+              onclick="switchLang('en')"
+              id="btn-en"
+              class="px-4 py-1.5 text-xs font-bold uppercase tracking-widest rounded-sm transition-all text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+            >
+              EN
+            </button>
+          </div>
+        </div>
+
+        <div class="relative group">
+          <div
+            class="absolute -inset-1 bg-gradient-to-r from-zinc-200 to-zinc-100 dark:from-zinc-800 dark:to-zinc-900 rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"
+          ></div>
+
+          <article
+            class="relative p-8 md:p-12 bg-zinc-50 dark:bg-[#0c0c0e] border border-zinc-200 dark:border-white/10 rounded-sm shadow-sm"
+          >
+            <div
+              id="content-pt"
+              class="font-mono text-xs md:text-sm leading-relaxed text-zinc-700 dark:text-zinc-300 space-y-6"
+            >
+              <p class="font-bold text-zinc-900 dark:text-white">Licença MIT</p>
+              <p>Copyright (c) 2026 Simão Dias</p>
+
+              <p>
+                É concedida permissão, gratuitamente, a qualquer pessoa que
+                obtenha uma cópia deste software e dos arquivos de documentação
+                associados (o "Software"), para lidar com o Software sem
+                restrições, incluindo, sem limitação, os direitos de usar,
+                copiar, modificar, mesclar, publicar, distribuir, sublicenciar
+                e/ou vender cópias do Software, e para permitir que as pessoas a
+                quem o Software é fornecido o façam, sujeito às seguintes
+                condições:
+              </p>
+
+              <p>
+                O aviso de direitos autorais acima e este aviso de permissão
+                devem ser incluídos em todas as cópias ou partes substanciais do
+                Software.
+              </p>
+
+              <p
+                class="uppercase font-bold text-zinc-900 dark:text-white border-l-2 border-zinc-900 dark:border-white pl-4 py-2 bg-zinc-100 dark:bg-white/5"
+              >
+                O SOFTWARE É FORNECIDO "NO ESTADO EM QUE SE ENCONTRA", SEM
+                GARANTIA DE QUALQUER TIPO, EXPRESSA OU IMPLÍCITA, INCLUINDO, MAS
+                NÃO SE LIMITANDO ÀS GARANTIAS DE COMERCIALIZAÇÃO, ADEQUAÇÃO A UM
+                DETERMINADO FIM E NÃO VIOLAÇÃO. EM NENHUMA CIRCUNSTÂNCIA OS
+                AUTORES OU TITULARES DE DIREITOS AUTORAIS SERÃO RESPONSÁVEIS POR
+                QUALQUER RECLAMAÇÃO, DANOS OU OUTRA RESPONSABILIDADE, SEJA EM
+                UMA AÇÃO DE CONTRATO, ILÍCITO OU DE OUTRA FORMA, DECORRENTE DE,
+                FORA DE OU EM CONEXÃO COM O SOFTWARE OU O USO OU OUTRAS
+                NEGOCIAÇÕES NO SOFTWARE.
+              </p>
+            </div>
+
+            <div
+              id="content-en"
+              class="hidden font-mono text-xs md:text-sm leading-relaxed text-zinc-700 dark:text-zinc-300 space-y-6"
+            >
+              <p class="font-bold text-zinc-900 dark:text-white">MIT License</p>
+              <p>Copyright (c) 2026 Simão Dias</p>
+
+              <p>
+                Permission is hereby granted, free of charge, to any person
+                obtaining a copy of this software and associated documentation
+                files (the "Software"), to deal in the Software without
+                restriction, including without limitation the rights to use,
+                copy, modify, merge, publish, distribute, sublicense, and/or
+                sell copies of the Software, and to permit persons to whom the
+                Software is furnished to do so, subject to the following
+                conditions:
+              </p>
+
+              <p>
+                The above copyright notice and this permission notice shall be
+                included in all copies or substantial portions of the Software.
+              </p>
+
+              <p
+                class="uppercase font-bold text-zinc-900 dark:text-white border-l-2 border-zinc-900 dark:border-white pl-4 py-2 bg-zinc-100 dark:bg-white/5"
+              >
+                THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+                EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+                OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+                NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+                HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+                WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+                FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+                OTHER DEALINGS IN THE SOFTWARE.
+              </p>
+            </div>
+          </article>
+        </div>
+
+        <div class="pt-8">
+          <a
+            href="./"
+            class="inline-flex items-center text-xs font-bold uppercase tracking-widest text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors group"
+          >
+            <span class="group-hover:-translate-x-1 transition-transform mr-2"
+              >←</span
+            >
+            Voltar
+          </a>
+        </div>
+      </div>
+    </main>
+
+    <div id="global-footer"></div>
+
+    <script src="./menu.js"></script>
+    <script>
+      function switchLang(lang) {
+        const ptContent = document.getElementById("content-pt");
+        const enContent = document.getElementById("content-en");
+        const btnPt = document.getElementById("btn-pt");
+        const btnEn = document.getElementById("btn-en");
+
+        // Classe ativa e inativa para os botões
+        const activeClass = [
+          "bg-white",
+          "dark:bg-zinc-800",
+          "shadow-sm",
+          "text-zinc-900",
+          "dark:text-white",
+        ];
+        const inactiveClass = [
+          "text-zinc-400",
+          "hover:text-zinc-600",
+          "dark:hover:text-zinc-200",
+          "bg-transparent",
+          "shadow-none",
+        ];
+
+        if (lang === "pt") {
+          ptContent.classList.remove("hidden");
+          enContent.classList.add("hidden");
+
+          // Atualiza estilos botões
+          btnPt.classList.add(...activeClass);
+          btnPt.classList.remove(...inactiveClass);
+          btnEn.classList.remove(...activeClass);
+          btnEn.classList.add(...inactiveClass);
+        } else {
+          ptContent.classList.add("hidden");
+          enContent.classList.remove("hidden");
+
+          // Atualiza estilos botões
+          btnEn.classList.add(...activeClass);
+          btnEn.classList.remove(...inactiveClass);
+          btnPt.classList.remove(...activeClass);
+          btnPt.classList.add(...inactiveClass);
+        }
+      }
+    </script>
+  </body>
+</html>
