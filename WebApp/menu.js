@@ -129,7 +129,18 @@ function injectFooter() {
                     <a href="./status.html" class="text-xs text-zinc-500 hover:text-black dark:hover:text-white transition-colors">Estado dos servidores</a>
                     <a href="./sobre.html" class="text-xs text-zinc-500 hover:text-black dark:hover:text-white transition-colors">Sobre Nós e Contactos</a>
                     
-                    <div class="flex items-center justify-end gap-3 mt-4">
+                    
+                    <div class="flex justify-center mt-2">
+                      <a href="./">                     
+                        <img
+                          src="./imagens/badge europeu.webp"
+                          alt="Badge saying Made in Europe, Portugal"
+                          width="149.84px"
+                          height="50px"
+                        />
+                      </a>
+                    </div>
+                    <div class="flex items-center justify-end gap-3 mt-2">
                         <a href="https://github.com/simonsays16/livetagus" target="_blank" class="text-zinc-400 hover:text-black dark:hover:text-white transition-colors p-1" aria-label="Ver Código no GitHub">
                             ${githubIcon}
                         </a>

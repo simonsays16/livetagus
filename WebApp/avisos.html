@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="pt-PT">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=5.0"
+    />
+    <meta
+      name="description"
+      content="Avisos e comunicados oficiais da Fertagus em tempo real."
+    />
+    <meta name="theme-color" content="#09090b" />
+
+    <link
+      rel="shortcut icon"
+      href="./imagens/logotransparente.svg"
+      type="image/x-icon"
+    />
+
+    <title>Avisos | LiveTagus</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+              mono: ["JetBrains Mono", "monospace"],
+            },
+            animation: {
+              "pulse-fast": "pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+              "fade-in": "fadeIn 0.5s ease-out forwards",
+            },
+            keyframes: {
+              fadeIn: {
+                "0%": { opacity: "0", transform: "translateY(10px)" },
+                "100%": { opacity: "1", transform: "translateY(0)" },
+              },
+            },
+          },
+        },
+      };
+    </script>
+
+    <link href="./style.css" rel="stylesheet" />
+    <script src="./menu.js" defer></script>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body
+    class="bg-white text-zinc-900 dark:bg-[#09090b] dark:text-white transition-colors duration-500 flex flex-col min-h-screen"
+  >
+    <div id="global-nav"></div>
+
+    <main class="flex-grow pt-24 pb-12 px-6">
+      <div class="max-w-3xl mx-auto space-y-8">
+        <div class="border-b border-zinc-200 dark:border-white/10 pb-6">
+          <span
+            class="inline-block py-1 px-3 border border-zinc-200 dark:border-white/10 rounded-full text-[10px] uppercase tracking-widest text-zinc-500 mb-2"
+          >
+            Comunicados Oficiais
+          </span>
+          <h1
+            class="text-3xl md:text-5xl font-light tracking-tighter text-zinc-900 dark:text-white"
+          >
+            AVISOS FERTAGUS.
+          </h1>
+          <p
+            class="mt-4 text-zinc-500 dark:text-zinc-400 max-w-xl text-sm leading-relaxed"
+          >
+            Consulte aqui os últimos comunicados, greves, perturbações e
+            campanhas publicados oficialmente no site da Fertagus.
+          </p>
+        </div>
+
+        <div
+          class="bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-lg p-6 flex flex-col items-center justify-center text-center space-y-4 min-h-[200px]"
+        >
+          <div id="initial-state" class="contents">
+            <i data-lucide="bell" class="w-10 h-10 text-zinc-400 mb-2"></i>
+            <h2 class="text-lg font-bold">Verificar Comunicados</h2>
+            <p class="text-xs text-zinc-500 max-w-sm">
+              Clique no botão abaixo para verificar o site oficial da Fertagus
+              em tempo real.
+            </p>
+            <button
+              onclick="fetchNotices()"
+              class="mt-4 px-6 py-3 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black font-bold uppercase tracking-widest text-xs rounded transition-all shadow-lg hover:scale-105 active:scale-95"
+            >
+              Verificar Agora
+            </button>
+          </div>
+
+          <div id="loader" class="hidden flex flex-col items-center space-y-3">
+            <div
+              class="animate-spin rounded-full h-8 w-8 border-b-2 border-zinc-900 dark:border-white"
+            ></div>
+            <span class="text-xs font-mono animate-pulse text-zinc-500"
+              >A ler dados da Fertagus...</span
+            >
+          </div>
+
+          <div
+            id="error-state"
+            class="hidden flex flex-col items-center space-y-2 text-red-500"
+          >
+            <i data-lucide="alert-circle" class="w-8 h-8"></i>
+            <p class="text-sm font-bold">Não foi possível obter os dados.</p>
+            <p class="text-xs opacity-70">
+              O site oficial pode estar lento ou o proxy bloqueado.
+            </p>
+            <button
+              onclick="location.reload()"
+              class="mt-2 text-xs border-b border-red-500 hover:text-red-600 pb-0.5"
+            >
+              Tentar novamente
+            </button>
+          </div>
+        </div>
+
+        <div id="notices-list" class="space-y-4 hidden animate-fade-in"></div>
+
+        <p
+          class="text-[10px] text-zinc-400 text-center pt-8 border-t border-zinc-100 dark:border-white/5"
+        >
+          Fonte: fertagus.pt/Viajar/Comunicados-e-Campanhas
+        </p>
+      </div>
+    </main>
+
+    <div id="global-footer"></div>
+
+    <script>
+      // Inicializar ícones
+      lucide.createIcons();
+
+      async function fetchNotices() {
+        const btnState = document.getElementById("initial-state");
+        const loader = document.getElementById("loader");
+        const list = document.getElementById("notices-list");
+        const errorState = document.getElementById("error-state");
+
+        // UI Updates
+        btnState.classList.add("hidden");
+        loader.classList.remove("hidden");
+        errorState.classList.add("hidden");
+        list.innerHTML = ""; // Limpar antigos
+
+        const targetUrl =
+          "https://www.fertagus.pt/Fertagus-pt/Viajar/Comunicados-e-Campanhas/Informa%C3%A7%C3%A3o-ao-P%C3%BAblico";
+
+        // Usamos o corsproxy.io que é rápido e devolve HTML puro
+        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+
+        try {
+          const response = await fetch(proxyUrl);
+
+          if (!response.ok) throw new Error("Falha na ligação ao proxy");
+
+          const htmlText = await response.text();
+
+          if (!htmlText || htmlText.length < 100)
+            throw new Error("Conteúdo vazio ou inválido");
+
+          // Parse do HTML
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(htmlText, "text/html");
+
+          // --- NOVA LÓGICA DE EXTRAÇÃO ---
+          // O texto real está dentro de uma div com classe 'Normal' (padrão DNN)
+          // Vamos procurar todos os <p> dentro dessa classe na área principal
+
+          // Primeiro tentamos encontrar o módulo de conteúdo HTML específico
+          // O ID costuma conter "HtmlModule_lblContent"
+          let contentContainer = doc.querySelector(
+            'div[id$="HtmlModule_lblContent"]',
+          );
+
+          // Fallback: se não encontrar pelo ID, procura pela classe genérica .Normal
+          if (!contentContainer) {
+            contentContainer = doc.querySelector(".Normal");
+          }
+
+          if (!contentContainer)
+            throw new Error(
+              "Estrutura da página mudou (container não encontrado).",
+            );
+
+          // Extrair todos os parágrafos
+          const paragraphs = Array.from(contentContainer.querySelectorAll("p"));
+
+          // Filtrar parágrafos vazios ou só com espaços/HTML entities
+          const notices = paragraphs
+            .map((p) => p.innerText.trim())
+            .filter((text) => text.length > 2 && text !== "&nbsp;");
+
+          // Renderizar
+          loader.classList.add("hidden");
+          list.classList.remove("hidden");
+
+          if (notices.length === 0) {
+            list.innerHTML = `
+                        <div class="p-6 border border-zinc-200 dark:border-white/10 rounded-lg text-center text-sm text-zinc-500 bg-zinc-50 dark:bg-white/5">
+                            <p>Não foram encontrados comunicados de texto na página pública.</p>
+                            <a href="${targetUrl}" target="_blank" class="text-blue-500 underline mt-2 block">Ver no site oficial</a>
+                        </div>
+                    `;
+            return;
+          }
+
+          // Renderizar cada aviso como um item de timeline
+          notices.forEach((text) => {
+            // Detetar se é uma hora (ex: "13:55 - ...") para destacar
+            const isTimeUpdate = /^\d{2}[:\.]\d{2}/.test(text);
+            const highlightClass = isTimeUpdate
+              ? "border-l-4 border-blue-500 pl-4"
+              : "";
+            const textClass = isTimeUpdate
+              ? "font-bold text-zinc-900 dark:text-white"
+              : "text-zinc-600 dark:text-zinc-300";
+
+            const div = document.createElement("div");
+            div.className = `p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-lg shadow-sm ${highlightClass}`;
+
+            div.innerHTML = `
+                        <p class="${textClass} text-sm leading-relaxed">
+                            ${text}
+                        </p>
+                    `;
+            list.appendChild(div);
+          });
+
+          // Adicionar botão final para ver a fonte original
+          const footerLink = document.createElement("div");
+          footerLink.className = "text-center mt-4";
+          footerLink.innerHTML = `<a href="${targetUrl}" target="_blank" class="text-xs text-blue-500 hover:underline">Ver página original &rarr;</a>`;
+          list.appendChild(footerLink);
+
+          lucide.createIcons();
+        } catch (err) {
+          console.error("Erro no fetch:", err);
+          loader.classList.add("hidden");
+          errorState.classList.remove("hidden");
+        }
+      }
+    </script>
+  </body>
+</html>
