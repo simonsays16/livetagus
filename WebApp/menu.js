@@ -15,14 +15,11 @@ function injectNavigation() {
   const navContainer = document.getElementById("global-nav");
   if (!navContainer) return;
 
+  // O src inicial não importa muito pois o initTheme corre logo a seguir e corrige
   const logoSrc = "./imagens/logotransparente.svg";
 
   const githubIcon = `<svg viewBox="0 0 24 24" class="w-5 h-5 fill-current"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>`;
 
-  /* ALTERAÇÕES DE ACESSIBILIDADE:
-     1. Links do Menu: text-zinc-400 -> text-zinc-500 (Melhora contraste para texto grande)
-     2. Botões de Tema: text-zinc-400 -> text-zinc-600 (Melhora contraste para texto pequeno)
-  */
   navContainer.innerHTML = `
         <header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 py-4 transition-all duration-500 bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-md border-b border-zinc-200/50 dark:border-white/5 supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-[#09090b]/60">
             
@@ -131,9 +128,9 @@ function injectFooter() {
                     
                     
                     <div class="flex justify-center mt-2">
-                      <a href="./">                     
+                      <a href="./sobre.html">                     
                         <img
-                          src="./imagens/badge europeu.webp"
+                          src="./imagens/badge_made_in_europe_portugal.svg"
                           alt="Badge saying Made in Europe, Portugal"
                           width="149.84px"
                           height="50px"
@@ -197,11 +194,18 @@ function setTheme(mode) {
   }
 
   const html = document.documentElement;
-  // Seleciona AMBOS os badges (Menu e Footer)
+
+  // === GESTÃO DOS LOGOS (NAV E FOOTER) ===
+  const navLogo = document.getElementById("nav-logo");
+  const footerLogo = document.getElementById("footer-logo");
+
+  // Caminhos dos teus logos
+  const logoLight = "./imagens/logotransparente.svg";
+  const logoDark = "./imagens/icon.svg"; // O comboio novo!
+
+  // === GESTÃO DOS BADGES NETLIFY ===
   const netlifyBadgeMenu = document.getElementById("netlify-badge-menu");
   const netlifyBadgeFooter = document.getElementById("netlify-badge-footer");
-
-  // Caminhos das imagens
   const badgeDark =
     "https://www.netlify.com/img/global/badges/netlify-dark.svg";
   const badgeLight =
@@ -209,17 +213,27 @@ function setTheme(mode) {
 
   if (isDark) {
     html.classList.add("dark");
-    // Modo Escuro: Badge Escuro
+
+    // Mudar logos para versão Escura
+    if (navLogo) navLogo.src = logoDark;
+    if (footerLogo) footerLogo.src = logoDark;
+
+    // Badge Netlify Escuro
     if (netlifyBadgeMenu) netlifyBadgeMenu.src = badgeDark;
     if (netlifyBadgeFooter) netlifyBadgeFooter.src = badgeDark;
   } else {
     html.classList.remove("dark");
-    // Modo Claro: Badge Claro
+
+    // Mudar logos para versão Clara
+    if (navLogo) navLogo.src = logoLight;
+    if (footerLogo) footerLogo.src = logoLight;
+
+    // Badge Netlify Claro
     if (netlifyBadgeMenu) netlifyBadgeMenu.src = badgeLight;
     if (netlifyBadgeFooter) netlifyBadgeFooter.src = badgeLight;
   }
 
-  // Atualiza estado visual dos botões de tema (AGORA USA ZINC-600 para contraste)
+  // Atualiza estado visual dos botões de tema
   document.querySelectorAll(".theme-btn").forEach((btn) => {
     btn.classList.remove("font-bold", "text-black", "dark:text-white");
     if (btn.dataset.mode === mode) {

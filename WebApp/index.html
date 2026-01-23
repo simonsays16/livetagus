@@ -66,11 +66,17 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
+    <link rel="icon" type="image/svg+xml" href="./imagens/favicon-96x96.png" />
+
+    <link rel="alternate icon" href="./imagens/favicon-96x96.png" />
+
     <link
-      rel="shortcut icon"
-      href="./imagens/logotransparente.svg"
-      type="image/x-icon"
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="./imagens/apple-touch-icon.png"
     />
+
+    <link rel="manifest" href="/site.webmanifest" />
 
     <link href="./style.css" rel="stylesheet" />
 
@@ -98,47 +104,6 @@
           "name": "Simão Dias"
         }
       }
-    </script>
-
-    <script>
-      window.setupPWA = function () {
-        const basePath = window.location.href.substring(
-          0,
-          window.location.href.lastIndexOf("/") + 1,
-        );
-        const iconUrl = new URL("./imagens/icon.svg", basePath).href;
-        const startUrl = new URL("./app.html", basePath).href;
-
-        const link = document.createElement("link");
-        link.rel = "manifest";
-        link.href = URL.createObjectURL(
-          new Blob(
-            [
-              JSON.stringify({
-                name: "LiveTagus",
-                short_name: "LiveTagus",
-                start_url: startUrl,
-                scope: basePath,
-                display: "standalone",
-                background_color: "#09090b",
-                theme_color: "#09090b",
-                orientation: "portrait",
-                icons: [
-                  {
-                    src: iconUrl,
-                    sizes: "512x512",
-                    type: "image/svg+xml",
-                    purpose: "any maskable",
-                  },
-                ],
-              }),
-            ],
-            { type: "application/json" },
-          ),
-        );
-        document.head.appendChild(link);
-      };
-      window.setupPWA();
     </script>
 
     <style>
