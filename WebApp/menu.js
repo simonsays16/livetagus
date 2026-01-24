@@ -59,7 +59,7 @@ function injectNavigation() {
                     </div>
 
                     <div class="flex flex-col items-start gap-3">
-                        <p class="text-[10px] text-zinc-600 font-mono mb-0 leading-none">LiveTagus • v20.01.2026</p>
+                        <p class="text-[10px] text-zinc-600 font-mono mb-0 leading-none">LiveTagus • v.b24.01.2026 • BETA</p>
                         
                         <div id="api-status-display" class="flex items-center gap-2 mb-1">
                             <span id="status-dot" class="w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-700"></span>
@@ -100,7 +100,7 @@ function injectFooter() {
                     </a>
                     
                     <p class="text-xs text-zinc-500 max-w-xs leading-relaxed">
-                        LiveTagus • v20.01.2026<br><br>
+                        LiveTagus • v.b24.01.2026 • BETA<br><br>
                         Projeto independente e não oficial. Sem afiliação à Fertagus ou IP. Todos os direitos sobre os dados de circulação pertencem aos respetivos proprietários<br><br>
                         Em caso de dúvida, erro ou sugestão contacte-nos:
                     </p>                    
@@ -128,12 +128,12 @@ function injectFooter() {
                     
                     
                     <div class="flex justify-center mt-2">
-                      <a href="./sobre.html">                     
+                      <a href="./sobre.html" class="opacity-80 hover:opacity-100 transition-opacity">                     
                         <img
-                          src="./imagens/badge_made_in_europe_portugal.svg"
-                          alt="Badge saying Made in Europe, Portugal"
-                          width="149.84px"
-                          height="50px"
+                          src="./imagens/badge_coded_in_europe_portugal_margem_sul.svg"
+                          alt="Badge saying Coded in Europe, Portugal"
+                          width="140px"
+                          height="46.72px"
                         />
                       </a>
                     </div>
@@ -201,7 +201,7 @@ function setTheme(mode) {
 
   // Caminhos dos teus logos
   const logoLight = "./imagens/logotransparente.svg";
-  const logoDark = "./imagens/icon.svg"; // O comboio novo!
+  const logoDark = "./imagens/icon.svg";
 
   // === GESTÃO DOS BADGES NETLIFY ===
   const netlifyBadgeMenu = document.getElementById("netlify-badge-menu");

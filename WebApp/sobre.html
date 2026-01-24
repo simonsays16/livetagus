@@ -6,18 +6,23 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=5.0"
     />
+
+    <link rel="icon" type="image/svg+xml" href="imagens/favicon-96x96.png" />
+    <link rel="alternate icon" href="imagens/favicon.png" />
     <link
-      rel="shortcut icon"
-      href="./imagens/favicon-96x96.png"
-      type="image/x-icon"
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="imagens/apple-touch-icon.png"
     />
+    <link rel="manifest" href="/site.webmanifest" />
+
     <meta
       name="description"
-      content="Sobre o LiveTagus, Termos de Serviço, Política de Privacidade e Contactos."
+      content="Sobre o LiveTagus, Guia de Utilização, Termos de Serviço e Política de Privacidade."
     />
     <meta name="theme-color" content="#09090b" />
 
-    <title>Sobre & Legal | LiveTagus</title>
+    <title>Sobre & Ajuda | LiveTagus</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -29,11 +34,11 @@
               mono: ["JetBrains Mono", "monospace"],
             },
             animation: {
-              "fade-in": "fadeIn 0.6s ease-out forwards",
+              "fade-in": "fadeIn 0.4s ease-out forwards",
             },
             keyframes: {
               fadeIn: {
-                "0%": { opacity: "0", transform: "translateY(10px)" },
+                "0%": { opacity: "0", transform: "translateY(5px)" },
                 "100%": { opacity: "1", transform: "translateY(0)" },
               },
             },
@@ -46,9 +51,46 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400&display=swap"
       rel="stylesheet"
     />
+
+    <style>
+      /* Esconder scrollbar nas tabs para mobile */
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+
+      /* Estilo da Tab Ativa */
+      .tab-active {
+        background-color: #18181b; /* zinc-900 */
+        color: white;
+        border-color: #18181b;
+      }
+      .dark .tab-active {
+        background-color: white;
+        color: black;
+        border-color: white;
+      }
+
+      /* Estilo da Tab Inativa */
+      .tab-inactive {
+        color: #71717a; /* zinc-500 */
+        border-color: transparent;
+      }
+      .tab-inactive:hover {
+        background-color: #f4f4f5; /* zinc-100 */
+        color: #18181b;
+      }
+      .dark .tab-inactive:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+        color: white;
+      }
+    </style>
   </head>
 
   <body
@@ -56,449 +98,1143 @@
   >
     <div id="global-nav"></div>
 
-    <main class="flex-grow pt-24 pb-20 px-6">
-      <div class="max-w-3xl mx-auto animate-fade-in space-y-16">
-        <section class="space-y-6 text-center md:text-left">
+    <main class="flex-grow pt-24 pb-20 px-4 md:px-6">
+      <div class="max-w-4xl mx-auto space-y-8">
+        <section class="space-y-4 text-center md:text-left animate-fade-in">
           <span
             class="inline-block py-1 px-3 border border-zinc-200 dark:border-white/10 rounded-full text-[10px] uppercase tracking-widest text-zinc-500 backdrop-blur-sm"
           >
-            Transparência • LiveTagus
+            Centro de Informação
           </span>
           <h1
             class="text-4xl md:text-6xl font-light tracking-tighter text-zinc-900 dark:text-white"
           >
-            O PROJETO.
+            SOBRE A <span class="font-semibold">LIVETAGUS</span>.
           </h1>
-          <p
-            class="text-lg text-left text-zinc-600 dark:text-zinc-400 font-light leading-relaxed max-w-xl"
-          >
-            A LiveTagus é uma iniciativa independente, desenvolvida por um
-            utilizador da Fertagus para melhorar a experiência diária dos
-            passageiros na Margem Sul. É um projeto sem fins lucrativos, sem
-            rastreio e focado apenas em dados úteis. <br /><br />
-            Importa esclarecer que este projeto
-            <strong class="underline">não é oficial</strong> e não possui
-            qualquer afiliação, vínculo contratual ou reconhecimento formal por
-            parte da Fertagus ou da Infraestruturas de Portugal (IP). Toda a
-            informação disponibilizada e propriedade intelectual relacionada com
-            o serviço ferroviário permanecem propriedade exclusiva das
-            respetivas entidades.
-            <span style="font-size: 0" id="apoio"></span>
-          </p>
         </section>
 
-        <hr class="border-zinc-200 dark:border-white/10" />
-
-        <div class="space-y-4">
-          <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div
-              class="p-8 bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/5 rounded-sm flex flex-col justify-between h-full"
+        <div
+          class="sticky rounded-b-3xl top-[60px] z-30 bg-white/60 dark:bg-[#09090b]/60 backdrop-blur-md py-4 -mx-4 px-4 md:mx-0 md:px-0 border-b border-zinc-200 dark:border-white/10"
+        >
+          <nav
+            class="flex space-x-2 px-4 overflow-x-auto no-scrollbar"
+            role="tablist"
+            aria-label="Secções de Informação"
+          >
+            <button
+              onclick="switchTab('geral')"
+              id="tab-btn-geral"
+              class="px-5 py-2.5 text-sm font-medium rounded-full border transition-all whitespace-nowrap tab-active"
+              role="tab"
+              aria-selected="true"
+              aria-controls="content-geral"
             >
-              <div>
-                <h3
-                  class="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4"
-                >
-                  Suporte & Contacto
-                </h3>
-                <p
-                  class="text-2xl font-mono text-zinc-900 dark:text-white break-all"
-                >
-                  geral@livetagus.pt
-                </p>
-                <p class="text-sm text-zinc-500 mt-2">
-                  Dúvidas, bugs ou sugestões.
-                </p>
-              </div>
-              <a
-                href="mailto:geral@livetagus.pt"
-                class="mt-8 text-sm font-bold uppercase tracking-widest border-b border-zinc-900 dark:border-white self-start hover:opacity-70 transition-opacity"
+              O Projeto
+            </button>
+            <button
+              onclick="switchTab('ajuda')"
+              id="tab-btn-ajuda"
+              class="px-5 py-2.5 text-sm font-medium rounded-full border transition-all whitespace-nowrap tab-inactive"
+              role="tab"
+              aria-selected="false"
+              aria-controls="content-ajuda"
+            >
+              Guia de Utilização
+            </button>
+            <button
+              onclick="switchTab('tech')"
+              id="tab-btn-tech"
+              class="px-5 py-2.5 text-sm font-medium rounded-full border transition-all whitespace-nowrap tab-inactive"
+              role="tab"
+              aria-selected="false"
+              aria-controls="content-tech"
+            >
+              Bastidores
+            </button>
+            <button
+              onclick="switchTab('legal')"
+              id="tab-btn-legal"
+              class="px-5 py-2.5 text-sm font-medium rounded-full border transition-all whitespace-nowrap tab-inactive"
+              role="tab"
+              aria-selected="false"
+              aria-controls="content-legal"
+            >
+              Legal & Privacidade
+            </button>
+          </nav>
+        </div>
+
+        <div class="min-h-[50vh] relative">
+          <div
+            id="content-geral"
+            class="tab-content animate-fade-in space-y-10"
+            role="tabpanel"
+          >
+            <div class="prose dark:prose-invert max-w-none">
+              <p
+                class="text-lg text-zinc-600 dark:text-zinc-400 font-light leading-relaxed"
               >
-                Enviar Email →
-              </a>
+                A LiveTagus é uma iniciativa independente, desenvolvida por um
+                utilizador da Fertagus para melhorar a experiência diária dos
+                passageiros na Margem Sul. É um projeto sem fins lucrativos,
+                <strong>Open Source</strong>, sem rastreio e focado apenas em
+                dados úteis.
+              </p>
+              <div
+                class="mt-4 p-4 border-l-4 border-amber-500 bg-amber-50 dark:bg-amber-900/10 text-sm text-amber-900 dark:text-amber-100 rounded-r"
+              >
+                <strong>Nota Importante:</strong> Este projeto
+                <span class="underline">não é oficial</span> e não possui
+                qualquer afiliação, vínculo contratual ou reconhecimento formal
+                por parte da Fertagus ou da Infraestruturas de Portugal (IP).
+                Toda a informação disponibilizada e propriedade intelectual
+                relacionada com o serviço ferroviário permanecem propriedade
+                exclusiva das respetivas entidades.
+              </div>
             </div>
 
-            <div
-              class="p-8 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-500/10 rounded-sm flex flex-col justify-between h-full relative overflow-hidden"
-            >
-              <div class="relative z-10">
-                <h3
-                  class="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-4"
-                >
-                  Apoiar o Projeto
-                </h3>
-                <p class="text-lg text-zinc-900 dark:text-white font-light">
-                  Os servidores têm custos mensais. Ajuda-nos a manter a
-                  LiveTagus online e sem anúncios.
-                </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div
+                class="p-6 bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/5 rounded-lg flex flex-col justify-between h-full"
+              >
+                <div>
+                  <h3
+                    class="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-widest mb-4 flex items-center gap-2"
+                  >
+                    <svg
+                      class="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.5"
+                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                      ></path>
+                    </svg>
+                    Suporte LiveTagus
+                  </h3>
+                  <a
+                    href="mailto:geral@livetagus.pt"
+                    class="text-xl font-mono text-zinc-900 dark:text-white break-all hover:text-blue-600 transition-colors"
+                  >
+                    geral@livetagus.pt
+                  </a>
+                  <p class="text-sm text-zinc-500 mt-2">
+                    Para reportar erros na aplicação, sugestões ou feedback
+                    técnico.
+                  </p>
+                </div>
               </div>
-
-              <!--<a
-                href="https://www.buymeacoffee.com/livetagus"
-                target="_blank"
-                class="relative z-10 mt-8 px-6 py-3 text-center hover:scale-[1.02] transition-transform w-max"
-                ><img
-                  src="https://img.buymeacoffee.com/button-api/?text=Apoia o Projeto&emoji=💙&slug=livetagus&button_colour=000000&font_colour=ffffff&font_family=Inter&outline_colour=ffffff&coffee_colour=FFDD00"
-              /></a>
-
-              <script
-                type="text/javascript"
-                src="https://storage.ko-fi.com/cdn/widget/Widget_2.js"
-              ></script>
-              <script type="text/javascript">
-                kofiwidget2.init("Apoia o projeto!", "#000000", "H2H51SQYIO");
-                kofiwidget2.draw();
-              </script>-->
 
               <div
-                class="absolute -bottom-10 -right-10 w-40 h-40 bg-blue-500/20 rounded-full blur-[50px] pointer-events-none"
-              ></div>
-            </div>
-          </section>
-          <iframe
-            id="kofiframe"
-            src="https://ko-fi.com/livetagus/?hidefeed=true&widget=true&embed=true&preview=true"
-            style="
-              margin-top: 50px;
-              border: none;
-              width: 100%;
-              padding: 4px;
-              background: #f9f9f910;
-            "
-            height="712"
-            title="livetagus"
-          ></iframe>
-          <div
-            class="w-full p-8 border border-zinc-200 dark:border-white/10 bg-white dark:bg-zinc-900/50 rounded-sm"
-          >
-            <div class="flex items-center gap-2 mb-6">
-              <svg
-                class="w-4 h-4 text-zinc-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+                id="apoio"
+                class="p-6 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-500/10 rounded-lg flex flex-col justify-between h-full relative overflow-hidden group"
               >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="1.5"
-                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                ></path>
-              </svg>
-              <h3
-                class="text-xs font-bold text-zinc-500 uppercase tracking-widest"
-              >
-                Contactos Oficiais da Operadora (Fertagus)
-              </h3>
+                <div class="relative z-10">
+                  <h3
+                    class="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-4 flex items-center gap-2"
+                  >
+                    <svg
+                      class="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.5"
+                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                      ></path>
+                    </svg>
+                    Apoiar o Projeto
+                  </h3>
+                  <p class="text-sm text-zinc-700 dark:text-zinc-300 mb-4">
+                    Os servidores têm custos mensais. Ajuda a manter a LiveTagus
+                    online, gratuita e sem anúncios.
+                  </p>
+                  <button
+                    class="px-4 py-2 bg-zinc-900 dark:bg-white text-white dark:text-black text-xs font-bold uppercase tracking-widest rounded opacity-50 cursor-not-allowed"
+                  >
+                    Doações Brevemente
+                  </button>
+                </div>
+              </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div>
-                <p class="text-xs text-zinc-500 mb-1">Linha de Apoio</p>
-                <div class="flex items-baseline gap-1">
+            <!--<div
+              class="mt-8 pt-8 border-t border-zinc-200 dark:border-white/10"
+            >
+              <div class="flex items-center gap-2 mb-6">
+                <svg
+                  class="w-4 h-4 text-zinc-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.5"
+                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                  ></path>
+                </svg>
+                <h3
+                  class="text-xs font-bold text-zinc-500 uppercase tracking-widest"
+                >
+                  Contactos Oficiais da Operadora (Fertagus)
+                </h3>
+              </div>
+
+              <div
+                class="bg-zinc-100 dark:bg-zinc-800/50 p-6 rounded-lg grid grid-cols-1 sm:grid-cols-3 gap-6"
+              >
+                <div>
+                  <p
+                    class="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase mb-1"
+                  >
+                    Apoio Cliente
+                  </p>
                   <a
                     href="tel:211066363"
-                    class="text-xl font-mono text-zinc-900 dark:text-white hover:text-blue-600 transition-colors"
+                    class="block text-lg font-mono text-zinc-900 dark:text-white hover:text-blue-500"
                     >211 066 363</a
                   >
-                  <span class="text-zinc-400">*</span>
                 </div>
-                <p class="text-[10px] text-zinc-400 mt-1">
-                  *Chamada para a rede fixa nacional
+                <div>
+                  <p
+                    class="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase mb-1"
+                  >
+                    Linha Gratuita
+                  </p>
+                  <a
+                    href="tel:800127127"
+                    class="block text-lg font-mono text-green-600 dark:text-green-400 font-bold hover:text-green-500"
+                    >800 127 127</a
+                  >
+                </div>
+                <div>
+                  <p
+                    class="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase mb-1"
+                  >
+                    Email Oficial
+                  </p>
+                  <a
+                    href="mailto:info@fertagus.pt"
+                    class="block text-lg font-mono text-zinc-900 dark:text-white hover:text-blue-500"
+                    >info@fertagus.pt</a
+                  >
+                </div>
+                <p
+                  class="text-[10px] text-zinc-400 col-span-full mt-2 border-t border-zinc-200 dark:border-white/10 pt-2"
+                >
+                  * Use estes contactos para assuntos relacionados com bilhetes,
+                  perdidos e achados ou reclamações sobre o serviço de
+                  transporte.
                 </p>
               </div>
+            </div>-->
 
-              <div>
-                <p class="text-xs text-zinc-500 mb-1">Número Gratuito</p>
-                <a
-                  href="tel:800127127"
-                  class="text-xl font-mono text-green-600 dark:text-green-400 font-bold hover:opacity-80 transition-opacity"
-                  >800 127 127</a
+            <div class="flex flex-col items-center gap-6 pt-10 pb-4">
+              <!--<img
+                src="./imagens/badge_coded_in_europe_portugal_margem_sul.svg"
+                alt="Badge saying Coded in Europe, Portugal"
+                class="h-12 w-auto opacity-80 hover:opacity-100 transition-opacity"
+              />-->
+
+              <div class="text-center space-y-4">
+                <div class="flex flex-col gap-2">
+                  <p
+                    class="text-[10px] text-zinc-400 uppercase tracking-widest"
+                  >
+                    Design Credits (Train in Logo)
+                  </p>
+                  <div class="text-[10px] text-zinc-500 max-w-md">
+                    Double decker train icons by
+                    <strong
+                      ><a
+                        href="https://thenounproject.com/creator/schneck/"
+                        target="_blank"
+                        class="hover:text-zinc-900 dark:hover:text-zinc-300"
+                        >Fabio Schneck</a
+                      ></strong
+                    >
+                    from
+                    <a
+                      href="https://thenounproject.com/browse/icons/term/double-decker-train/"
+                      target="_blank"
+                      class="underline hover:text-zinc-900 dark:hover:text-zinc-300"
+                      >Noun Project</a
+                    >
+                    (CC BY 3.0).
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            id="content-ajuda"
+            class="tab-content hidden animate-fade-in space-y-12"
+            role="tabpanel"
+          >
+            <section>
+              <h2
+                class="text-xl font-light text-zinc-900 dark:text-white mb-6 flex items-center gap-2"
+              >
+                <svg
+                  class="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                <p class="text-[10px] text-zinc-400 mt-1">
-                  Apoio ao Cliente 365 Dias
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.5"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                  ></path>
+                </svg>
+                Instalar a App (PWA)
+              </h2>
+              <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
+                A LiveTagus é uma PWA. Não precisa de ir à loja de aplicações. É
+                mais leve, rápido e funciona offline.
+              </p>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div
+                  class="p-5 border border-zinc-200 dark:border-white/10 rounded-lg bg-zinc-50/50 dark:bg-white/5"
+                >
+                  <h3
+                    class="font-bold text-zinc-900 dark:text-white mb-3 flex items-center gap-2 text-sm"
+                  >
+                    iPhone (Safari)
+                  </h3>
+                  <ol
+                    class="list-decimal pl-4 space-y-2 text-xs text-zinc-600 dark:text-zinc-400"
+                  >
+                    <li>Abra o site no <strong>Safari</strong>.</li>
+                    <li>
+                      Toque no botão de <strong>Partilha</strong> (quadrado com
+                      seta).
+                    </li>
+                    <li>
+                      Deslize e escolha
+                      <strong>"Adicionar ao Ecrã Principal"</strong>.
+                    </li>
+                  </ol>
+                </div>
+                <div
+                  class="p-5 border border-zinc-200 dark:border-white/10 rounded-lg bg-zinc-50/50 dark:bg-white/5"
+                >
+                  <h3
+                    class="font-bold text-zinc-900 dark:text-white mb-3 flex items-center gap-2 text-sm"
+                  >
+                    Android (Chrome)
+                  </h3>
+                  <ol
+                    class="list-decimal pl-4 space-y-2 text-xs text-zinc-600 dark:text-zinc-400"
+                  >
+                    <li>Abra o <strong>Chrome</strong>.</li>
+                    <li>
+                      Toque nos <strong>3 pontos</strong> (canto superior
+                      direito).
+                    </li>
+                    <li>
+                      Escolha <strong>"Instalar Aplicação"</strong> ou
+                      "Adicionar ao Ecrã Principal".
+                    </li>
+                  </ol>
+                </div>
+              </div>
+            </section>
+
+            <hr class="border-zinc-200 dark:border-white/10" />
+
+            <section>
+              <h2
+                class="text-xl font-light text-zinc-900 dark:text-white mb-6 flex items-center gap-2"
+              >
+                <svg
+                  class="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.5"
+                    d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"
+                  ></path>
+                </svg>
+                Navegação
+              </h2>
+              <div class="space-y-4">
+                <div class="flex gap-4 items-start">
+                  <div
+                    class="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 text-xs font-bold"
+                  >
+                    1
+                  </div>
+                  <div>
+                    <h4 class="text-sm font-bold text-zinc-900 dark:text-white">
+                      Escolha o Sentido
+                    </h4>
+                    <p class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">
+                      Utilize as abas na parte inferior do ecrã para alternar
+                      entre <strong>Sentido Lisboa</strong> (Sul → Norte) e
+                      <strong>Sentido Margem</strong> (Norte → Sul).
+                    </p>
+                  </div>
+                </div>
+                <div class="flex gap-4 items-start">
+                  <div
+                    class="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 text-xs font-bold"
+                  >
+                    2
+                  </div>
+                  <div>
+                    <h4 class="text-sm font-bold text-zinc-900 dark:text-white">
+                      Selecione o Percurso
+                    </h4>
+                    <p class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">
+                      No topo da aplicação, toque nas estações para alterar a
+                      sua <strong>Origem</strong> e <strong>Destino</strong>. A
+                      app memoriza a sua escolha.
+                    </p>
+                  </div>
+                </div>
+                <div class="flex gap-4 items-start">
+                  <div
+                    class="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 text-xs font-bold"
+                  >
+                    3
+                  </div>
+                  <div>
+                    <h4 class="text-sm font-bold text-zinc-900 dark:text-white">
+                      Horário Inteligente
+                    </h4>
+                    <p class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">
+                      Nas definições (ícone ⚙️), pode ativar o Horário
+                      Inteligente. Isto fará a app abrir automaticamente no
+                      sentido correto dependendo da hora do dia (Ex: Manhã →
+                      Lisboa / Tarde → Margem).
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <hr class="border-zinc-200 dark:border-white/10" />
+
+            <section>
+              <h2
+                class="text-xl font-light text-zinc-900 dark:text-white mb-2 flex items-center gap-2"
+              >
+                <svg
+                  class="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.5"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
+                </svg>
+                Estados de Circulação
+              </h2>
+              <p class="text-xs text-zinc-600 dark:text-zinc-400 mt-1 mb-4">
+                Comboios em circulação ou suprimidos
+              </p>
+              <div class="space-y-3">
+                <div
+                  class="flex items-center gap-4 p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800"
+                >
+                  <span
+                    class="flex-shrink-0 w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)] animate-pulse"
+                  ></span>
+                  <div>
+                    <p class="text-sm font-bold text-zinc-900 dark:text-white">
+                      A Horas (Verde)
+                    </p>
+                    <p class="text-xs text-zinc-500">
+                      O comboio circula conforme o previsto.
+                    </p>
+                  </div>
+                </div>
+                <div
+                  class="flex items-center gap-4 p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800"
+                >
+                  <span
+                    class="flex-shrink-0 w-3 h-3 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)] animate-pulse"
+                  ></span>
+                  <div>
+                    <p class="text-sm font-bold text-zinc-900 dark:text-white">
+                      Atrasado (Amarelo)
+                    </p>
+                    <p class="text-xs text-zinc-500">
+                      Atraso estimado. O horário na lista já inclui o atraso
+                      estimado somado.
+                    </p>
+                  </div>
+                </div>
+                <div
+                  class="flex items-center gap-4 p-3 mb-4 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800"
+                >
+                  <span
+                    class="flex-shrink-0 w-3 h-3 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)] animate-pulse"
+                  ></span>
+                  <div>
+                    <p class="text-sm font-bold text-zinc-900 dark:text-white">
+                      Suprimido (Vermelho)
+                    </p>
+                    <p class="text-xs text-zinc-500">
+                      O comboio foi cancelado e não irá circular.
+                    </p>
+                  </div>
+                </div>
+                <h2
+                  class="text-xl font-light text-zinc-900 dark:text-white flex items-center gap-2 mt-6"
+                >
+                  <svg
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="1.5"
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    ></path>
+                  </svg>
+                  Estados de Programação
+                </h2>
+                <p class="text-xs text-zinc-600 dark:text-zinc-400">
+                  Comboios que ainda não estão em circulação
                 </p>
+                <div
+                  class="flex items-center mt-4 gap-4 p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800"
+                >
+                  <span
+                    class="flex-shrink-0 w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)] animate-pulse"
+                  ></span>
+                  <div>
+                    <p class="text-sm font-bold text-zinc-900 dark:text-white">
+                      Programado (Verde)
+                    </p>
+                    <p class="text-xs text-zinc-500">
+                      Ainda não partiu da origem, mas o comboio está confirmado
+                      (não suprimido).
+                    </p>
+                  </div>
+                </div>
+                <div
+                  class="flex items-center gap-4 p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800"
+                >
+                  <span
+                    class="flex-shrink-0 w-3 h-3 rounded-full bg-zinc-400"
+                  ></span>
+                  <div>
+                    <p class="text-sm font-bold text-zinc-900 dark:text-white">
+                      Programado (Cinzento)
+                    </p>
+                    <p class="text-xs text-zinc-500">
+                      Não temos dados sobre o comboio. Não significa que esteja
+                      suprimido.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div
+            id="content-tech"
+            class="tab-content hidden animate-fade-in space-y-10"
+            role="tabpanel"
+          >
+            <section>
+              <h2
+                class="text-2xl font-light text-zinc-900 dark:text-white mb-6"
+              >
+                Como funciona a magia?
+              </h2>
+              <p
+                class="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed mb-6"
+              >
+                A LiveTagus acredita na transparência total. Aqui está o
+                percurso dos dados, desde o comboio até ao seu telemóvel:
+              </p>
+
+              <div
+                class="relative pl-8 space-y-8 border-l border-zinc-200 dark:border-zinc-800 ml-2"
+              >
+                <div class="relative">
+                  <span
+                    class="absolute -left-[37px] w-4 h-4 rounded-full bg-zinc-200 dark:bg-zinc-700 border-4 border-white dark:border-[#09090b]"
+                  ></span>
+                  <h4
+                    class="text-sm font-bold text-zinc-900 dark:text-white uppercase tracking-wide"
+                  >
+                    1. A Fonte
+                  </h4>
+                  <p class="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+                    Os comboios emitem sinais de chegada para os sistemas
+                    oficiais das Infraestruturas de Portugal.
+                  </p>
+                </div>
+                <div class="relative">
+                  <span
+                    class="absolute -left-[37px] w-4 h-4 rounded-full bg-blue-500 border-4 border-white dark:border-[#09090b]"
+                  ></span>
+                  <h4
+                    class="text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide"
+                  >
+                    2. A Nossa API
+                  </h4>
+                  <p class="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+                    Um servidor seguro (alojado na Europa via Render/AlwaysData)
+                    consulta estes dados públicos em tempo real e calcula os
+                    atrasos.
+                  </p>
+                </div>
+                <div class="relative">
+                  <span
+                    class="absolute -left-[37px] w-4 h-4 rounded-full bg-emerald-500 border-4 border-white dark:border-[#09090b]"
+                  ></span>
+                  <h4
+                    class="text-sm font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide"
+                  >
+                    3. O Seu Telemóvel
+                  </h4>
+                  <p class="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+                    O site (Netlify) recebe os dados "limpos" e desenha o
+                    horário no seu ecrã instantaneamente.
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <hr class="border-zinc-200 dark:border-white/10" />
+
+            <section>
+              <h3
+                class="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4"
+              >
+                Stack Tecnológica
+              </h3>
+              <div
+                class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm font-mono text-zinc-600 dark:text-zinc-400"
+              >
+                <div
+                  class="flex flex-col gap-2 p-4 border border-zinc-200 dark:border-white/10 rounded"
+                >
+                  <span class="text-xs uppercase text-zinc-400">Frontend</span>
+                  <span class="font-bold text-zinc-900 dark:text-white"
+                    >Netlify CDN</span
+                  >
+                  <span>HTML5 • TailwindCSS • Vanilla JS</span>
+                </div>
+                <div
+                  class="flex flex-col gap-2 p-4 border border-zinc-200 dark:border-white/10 rounded"
+                >
+                  <span class="text-xs uppercase text-zinc-400"
+                    >Backend API</span
+                  >
+                  <span class="font-bold text-zinc-900 dark:text-white"
+                    >Microsoft Azure / Render</span
+                  >
+                  <span>Node.js • Proxy Services</span>
+                </div>
               </div>
 
-              <div>
-                <p class="text-xs text-zinc-500 mb-1">Email Oficial</p>
+              <div class="mt-8 text-center">
                 <a
-                  href="mailto:info@fertagus.pt"
-                  class="text-xl font-mono text-zinc-900 dark:text-white border-b border-zinc-300 dark:border-zinc-700 hover:border-black dark:hover:border-white transition-colors"
-                  >info@fertagus.pt</a
+                  href="https://github.com/simonsays16/livetagus"
+                  target="_blank"
+                  class="inline-flex items-center gap-2 text-sm text-zinc-900 dark:text-white border-b border-zinc-300 dark:border-zinc-700 hover:border-black dark:hover:border-white transition-colors pb-0.5"
                 >
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path
+                      d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
+                    />
+                  </svg>
+                  Ver Código no GitHub
+                </a>
               </div>
+              <div class="flex flex-wrap justify-center gap-4 pt-2">
+                <a
+                  href="./license.html"
+                  class="text-[10px] font-mono border-b border-zinc-300 dark:border-zinc-700 hover:text-black dark:hover:text-white transition-colors"
+                >
+                  LER LICENÇA MIT →
+                </a>
+                <a
+                  href="./code_of_conduct.html"
+                  class="text-[10px] font-mono border-b border-zinc-300 dark:border-zinc-700 hover:text-black dark:hover:text-white transition-colors"
+                >
+                  CÓDIGO DE CONDUTA →
+                </a>
+              </div>
+            </section>
+          </div>
+
+          <div
+            id="content-legal"
+            class="tab-content hidden animate-fade-in"
+            role="tabpanel"
+          >
+            <div
+              class="prose dark:prose-invert prose-sm max-w-none text-zinc-600 dark:text-zinc-400"
+            >
+              <h2
+                class="text-xl font-bold text-zinc-900 dark:text-white uppercase tracking-wider mb-6 pb-2 border-b border-zinc-200 dark:border-zinc-800"
+              >
+                Termos e Condições de Utilização
+              </h2>
+              <p class="text-xs mb-4">Última atualização: 22-01-2026</p>
+
+              <h3 class="text-zinc-900 dark:text-white font-bold">
+                1. Introdução e Aceitação
+              </h3>
+              <p>
+                Bem-vindo ao LiveTagus (acessível via livetagus.pt). Ao aceder
+                ou utilizar este website e a respetiva Aplicação Web Progressiva
+                (PWA), o utilizador concorda em cumprir e ficar vinculado aos
+                presentes Termos e Condições. Se não concordar com alguma parte
+                destes termos, não deverá utilizar o serviço.
+              </p>
+
+              <h3 class="text-zinc-900 dark:text-white font-bold mt-6">
+                2. Natureza do Serviço e Isenção de Afiliação
+              </h3>
+              <p>
+                O LiveTagus é uma ferramenta independente, não oficial e sem
+                fins lucrativos.
+              </p>
+              <ol class="list-decimal pl-5 space-y-1">
+                <li>
+                  <strong>Sem Vínculo Oficial:</strong> Este projeto não tem
+                  qualquer afiliação, parceria, contrato ou vínculo oficial com
+                  a Fertagus - Travessia do Tejo, Transportes, S.A., nem com as
+                  Infraestruturas de Portugal (IP).
+                </li>
+                <li>
+                  <strong>Fonte dos Dados:</strong> Os dados de horários e
+                  estados da circulação apresentados são obtidos através de
+                  fontes de informação públicas. O LiveTagus atua apenas como
+                  uma interface de visualização simplificada para o utilizador
+                  final.
+                </li>
+              </ol>
+
+              <h3 class="text-zinc-900 dark:text-white font-bold mt-6">
+                3. Limitação de Responsabilidade
+              </h3>
+              <p>
+                O serviço é fornecido "tal como está" (as is) e "conforme
+                disponível", sem garantias de qualquer tipo.
+              </p>
+              <ol class="list-decimal pl-5 space-y-1">
+                <li>
+                  <strong>Precisão dos Dados:</strong> Embora nos esforcemos
+                  para apresentar informações em tempo real, não garantimos que
+                  os horários, supressões ou estimativas de atraso estejam 100%
+                  corretos ou isentos de erros. Falhas na API de origem ou na
+                  rede podem resultar em informações desatualizadas.
+                </li>
+                <li>
+                  <strong>Danos e Prejuízos:</strong> O LiveTagus e o seu
+                  criador não se responsabilizam por quaisquer danos diretos,
+                  indiretos ou consequentes, incluindo, mas não se limitando a:
+                  perda de comboios, atrasos, perda de ligações, prejuízos
+                  financeiros ou inconvenientes causados pela utilização ou
+                  impossibilidade de utilização da aplicação.
+                </li>
+                <li>
+                  <strong>Verificação Oficial:</strong> O utilizador deve sempre
+                  validar as informações críticas através dos canais oficiais da
+                  operadora ou da sinalética presente nas estações.
+                </li>
+              </ol>
+
+              <h3 class="text-zinc-900 dark:text-white font-bold mt-6">
+                4. Propriedade Intelectual e Licença Open Source
+              </h3>
+              <ol class="list-decimal pl-5 space-y-1">
+                <li>
+                  <strong>Código Fonte:</strong> O código-fonte do LiveTagus é
+                  disponibilizado publicamente sob a Licença MIT. O utilizador é
+                  livre de inspecionar, modificar e distribuir o código, desde
+                  que mantenha os créditos originais do autor.
+                </li>
+                <li>
+                  <strong>Marcas de Terceiros:</strong> Quaisquer nomes de
+                  estações, logótipos de operadoras ou marcas registadas (como
+                  "Fertagus") mencionados na aplicação pertencem aos respetivos
+                  proprietários e são utilizados apenas para fins de
+                  identificação informativa (Nominative Fair Use).
+                </li>
+              </ol>
+
+              <h3 class="text-zinc-900 dark:text-white font-bold mt-6">
+                5. Doações e Apoio ao Projeto
+              </h3>
+              <p>
+                O LiveTagus aceita contribuições voluntárias (donativos) através
+                de plataformas externas (como Ko-fi ou Stripe) para cobrir
+                custos de manutenção.
+              </p>
+              <ol class="list-decimal pl-5 space-y-1">
+                <li>
+                  <strong>Natureza da Doação:</strong> Qualquer valor entregue
+                  pelo utilizador é considerado uma liberalidade pura, efetuada
+                  de forma voluntária e espontânea, sem expectativa de
+                  contrapartida de bens ou serviços.
+                </li>
+                <li>
+                  <strong>Não Comercial:</strong> O apoio financeiro não
+                  constitui uma compra, subscrição ou contrato comercial.
+                </li>
+                <li>
+                  <strong>Reembolsos:</strong> Dada a natureza de donativo, os
+                  valores não são reembolsáveis.
+                </li>
+                <li>
+                  <strong>Impostos:</strong> O utilizador compreende que, para
+                  efeitos fiscais, não será emitida fatura comercial, servindo o
+                  comprovativo da plataforma de pagamento como registo da
+                  transação.
+                </li>
+              </ol>
+
+              <h3 class="text-zinc-900 dark:text-white font-bold mt-6">
+                6. Links Externos e Infraestrutura
+              </h3>
+              <p>
+                A aplicação pode conter links para sites de terceiros ou
+                depender de infraestruturas externas (ver Política de
+                Privacidade). Não temos controlo sobre o conteúdo, políticas de
+                privacidade ou práticas de sites ou serviços de terceiros e não
+                assumimos qualquer responsabilidade pelos mesmos.
+              </p>
+
+              <h3 class="text-zinc-900 dark:text-white font-bold mt-6">
+                7. Alterações aos Termos
+              </h3>
+              <p>
+                Reservamo-nos o direito de alterar estes termos a qualquer
+                momento para refletir mudanças na lei ou nas funcionalidades da
+                aplicação. O uso continuado da aplicação após tais alterações
+                constitui a aceitação dos novos termos.
+              </p>
+
+              <h3 class="text-zinc-900 dark:text-white font-bold mt-6">
+                8. Contacto
+              </h3>
+              <p>
+                Para questões relacionadas com estes termos ou funcionamento da
+                app, o utilizador pode contactar-nos através do email de suporte
+                disponibilizado na aplicação.
+              </p>
+
+              <h2
+                class="text-xl font-bold text-zinc-900 dark:text-white uppercase tracking-wider mt-12 mb-6 pb-2 border-b border-zinc-200 dark:border-zinc-800"
+              >
+                Política de Privacidade
+              </h2>
+              <p class="text-xs mb-4">Última atualização: 22-01-2026</p>
+
+              <h3 class="text-zinc-900 dark:text-white font-bold">
+                1. Princípio "Privacy by Design"
+              </h3>
+              <p>
+                A tua privacidade é o pilar central do LiveTagus. A aplicação
+                foi desenhada para funcionar sem saber quem és. Não recolhemos,
+                não vendemos e não processamos dados pessoais identificáveis
+                (PII) nos nossos servidores. Não sabemos o teu nome, a tua
+                localização GPS ou os teus hábitos de viagem.
+              </p>
+
+              <h3 class="text-zinc-900 dark:text-white font-bold mt-6">
+                2. Recolha de Dados e Infraestrutura
+              </h3>
+              <p>
+                O LiveTagus utiliza serviços de terceiros para alojamento e
+                funcionamento técnico, mas limita ao máximo a exposição de
+                dados.
+              </p>
+              <h4 class="text-zinc-800 dark:text-zinc-200 font-semibold mt-2">
+                2.1. Alojamento e Backend
+              </h4>
+              <ul class="list-disc pl-5 space-y-1">
+                <li><strong>Frontend:</strong> O site é alojado na Netlify.</li>
+                <li>
+                  <strong>API/Backend:</strong> O servidor que processa os dados
+                  está alojado em fornecedores de infraestrutura cloud
+                  (atualmente Render ou AlwaysData).
+                </li>
+                <li>
+                  <strong>Logs Técnicos:</strong> Estes fornecedores podem
+                  recolher logs técnicos padrão (como endereço IP, User-Agent e
+                  data de acesso) estritamente para fins de segurança (prevenção
+                  de DDoS), manutenção da rede e diagnóstico de erros. O criador
+                  do LiveTagus não utiliza estes logs para rastreamento
+                  individual nem os cruza com outras informações.
+                </li>
+              </ul>
+              <h4 class="text-zinc-800 dark:text-zinc-200 font-semibold mt-2">
+                2.2. Email e Suporte
+              </h4>
+              <p>
+                Se entrares em contacto connosco via email (ex: para reportar
+                bugs):
+              </p>
+              <ul class="list-disc pl-5 space-y-1">
+                <li>
+                  O teu endereço de email e o conteúdo da mensagem serão
+                  armazenados apenas pelo tempo estritamente necessário para
+                  responder à tua questão e resolver o problema.
+                </li>
+                <li>
+                  Após a resolução, os dados são arquivados ou eliminados.
+                </li>
+                <li>
+                  Nunca utilizaremos o teu email para listas de marketing,
+                  newsletters ou partilha com terceiros.
+                </li>
+              </ul>
+
+              <h3 class="text-zinc-900 dark:text-white font-bold mt-6">
+                3. Cookies e Armazenamento Local (LocalStorage)
+              </h3>
+              <p>
+                O LiveTagus não utiliza cookies de rastreio, publicidade
+                comportamental ou analítica invasiva (como Google Analytics).
+                Utilizamos exclusivamente a tecnologia Web LocalStorage do teu
+                navegador. Isto funciona como uma "memória interna" do teu
+                telemóvel, onde guardamos pequenas configurações para que não
+                tenhas de as repetir sempre que abres a app.
+              </p>
+              <p class="mt-2">
+                Lista detalhada dos dados guardados no teu dispositivo:
+              </p>
+
+              <div
+                class="mt-4 overflow-x-auto border border-zinc-200 dark:border-white/10 rounded-lg"
+              >
+                <table class="min-w-full text-xs text-left">
+                  <thead
+                    class="bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white uppercase tracking-wider font-bold"
+                  >
+                    <tr>
+                      <th
+                        class="px-4 py-3 border-b border-zinc-200 dark:border-zinc-700"
+                      >
+                        Chave (Key)
+                      </th>
+                      <th
+                        class="px-4 py-3 border-b border-zinc-200 dark:border-zinc-700"
+                      >
+                        Finalidade
+                      </th>
+                      <th
+                        class="px-4 py-3 border-b border-zinc-200 dark:border-zinc-700"
+                      >
+                        Tipo
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody
+                    class="divide-y divide-zinc-200 dark:divide-zinc-700 bg-zinc-50 dark:bg-zinc-900/50"
+                  >
+                    <tr>
+                      <td class="px-4 py-2 font-mono">theme / system</td>
+                      <td class="px-4 py-2">
+                        Guarda a tua preferência visual (Modo Claro, Escuro ou
+                        Sistema).
+                      </td>
+                      <td class="px-4 py-2">Preferência</td>
+                    </tr>
+                    <tr>
+                      <td class="px-4 py-2 font-mono">
+                        pref_margem_org / pref_margem_dest
+                      </td>
+                      <td class="px-4 py-2">
+                        Memoriza as estações de origem/destino escolhidas no
+                        sentido Margem Sul.
+                      </td>
+                      <td class="px-4 py-2">Funcionalidade</td>
+                    </tr>
+                    <tr>
+                      <td class="px-4 py-2 font-mono">
+                        pref_lisboa_org / pref_lisboa_dest
+                      </td>
+                      <td class="px-4 py-2">
+                        Memoriza as estações de origem/destino escolhidas no
+                        sentido Lisboa.
+                      </td>
+                      <td class="px-4 py-2">Funcionalidade</td>
+                    </tr>
+                    <tr>
+                      <td class="px-4 py-2 font-mono">pref_sync_stations</td>
+                      <td class="px-4 py-2">
+                        Define se queres sincronizar as estações entre abas
+                        (inverter origem/destino automaticamente).
+                      </td>
+                      <td class="px-4 py-2">Funcionalidade</td>
+                    </tr>
+                    <tr>
+                      <td class="px-4 py-2 font-mono">ft_tab</td>
+                      <td class="px-4 py-2">
+                        Memoriza qual a última aba que tinhas aberta (Lisboa ou
+                        Margem Sul).
+                      </td>
+                      <td class="px-4 py-2">Navegação</td>
+                    </tr>
+                    <tr>
+                      <td class="px-4 py-2 font-mono">ft_org / ft_dst</td>
+                      <td class="px-4 py-2">
+                        Cache temporária para funcionamento da interface.
+                      </td>
+                      <td class="px-4 py-2">Técnico</td>
+                    </tr>
+                    <tr>
+                      <td class="px-4 py-2 font-mono">enable_smart</td>
+                      <td class="px-4 py-2">
+                        Guarda a tua preferência sobre a funcionalidade "Smart
+                        Schedule" (Horário Inteligente).
+                      </td>
+                      <td class="px-4 py-2">Configuração</td>
+                    </tr>
+                    <tr>
+                      <td class="px-4 py-2 font-mono">enable_regular</td>
+                      <td class="px-4 py-2">
+                        Guarda a tua preferência sobre a visualização de
+                        horários regulares vs. tempo real.
+                      </td>
+                      <td class="px-4 py-2">Configuração</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p class="mt-2 text-[10px] text-zinc-500">
+                Nota Legal: Estes dados são considerados "Estritamente
+                Necessários" para o fornecimento do serviço solicitado pelo
+                utilizador (nos termos da Diretiva ePrivacy e RGPD), dispensando
+                consentimento prévio via banner de cookies. Estes dados residem
+                apenas no teu dispositivo e nunca são enviados para uma base de
+                dados nossa.
+              </p>
+
+              <h3 class="text-zinc-900 dark:text-white font-bold mt-6">
+                4. Doações e Dados Financeiros
+              </h3>
+              <p>
+                Ao realizares um donativo através de plataformas externas (ex:
+                Ko-fi, Stripe ou PayPal):
+              </p>
+              <ul class="list-disc pl-5 space-y-1">
+                <li>
+                  O LiveTagus não tem acesso aos teus dados bancários ou de
+                  cartão de crédito. Todo o processamento é gerido pela
+                  plataforma de pagamento.
+                </li>
+                <li>
+                  Podemos ter acesso ao nome associado à doação e ao email
+                  (dependendo da plataforma) apenas para fins de confirmação de
+                  transação e agradecimento. Estes dados não são inseridos em
+                  nenhuma base de dados comercial.
+                </li>
+              </ul>
+
+              <h3 class="text-zinc-900 dark:text-white font-bold mt-6">
+                5. Os teus Direitos
+              </h3>
+              <p>
+                Embora o LiveTagus não mantenha uma base de dados de
+                utilizadores, nos termos do RGPD, tens o direito de:
+              </p>
+              <ol class="list-decimal pl-5 space-y-1">
+                <li>
+                  <strong>Limpar os teus dados:</strong> Podes a qualquer
+                  momento apagar todos os dados do LiveTagus limpando a "Cache e
+                  Dados de Sites" do teu navegador ou clicando na opção de
+                  "Reset" nas definições da app (se disponível).
+                </li>
+                <li>
+                  <strong>Acesso e Retificação:</strong> No caso de contacto via
+                  email, podes solicitar o acesso, retificação ou eliminação das
+                  tuas mensagens enviadas.
+                </li>
+              </ol>
+
+              <h3 class="text-zinc-900 dark:text-white font-bold mt-6">
+                6. Alterações à Política de Privacidade
+              </h3>
+              <p>
+                Esta política pode ser atualizada ocasionalmente. Recomendamos
+                que a consultes periodicamente. A utilização continuada do
+                serviço pressupõe a aceitação das práticas descritas.
+              </p>
+
+              <h3 class="text-zinc-900 dark:text-white font-bold mt-6">
+                7. Contacto
+              </h3>
+              <p>
+                Para questões de privacidade, contacta-nos através do email de
+                suporte do projeto.
+              </p>
             </div>
           </div>
         </div>
-
-        <hr id="termos" class="border-zinc-200 mb-1 dark:border-white/10" />
-
-        <section class="space-y-4">
-          <h2 class="text-2xl font-light text-zinc-900 dark:text-white mb-6">
-            Informação Legal & Open Source
-          </h2>
-
-          <div
-            class="p-6 border border-zinc-200 dark:border-white/10 bg-zinc-50/50 dark:bg-white/5 rounded-sm space-y-3"
-          >
-            <div class="flex items-center gap-2 mb-2">
-              <svg
-                class="w-5 h-5 text-zinc-900 dark:text-white"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
-                />
-              </svg>
-              <h4
-                class="font-bold uppercase tracking-widest text-zinc-900 dark:text-white text-sm"
-              >
-                Licença & Conduta
-              </h4>
-            </div>
-
-            <p class="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              Este projeto é <strong>Open Source</strong>. O código é livre para
-              auditoria e contribuição.
-            </p>
-
-            <div class="flex flex-wrap gap-4 pt-2">
-              <a
-                href="./license.html"
-                class="text-xs font-mono border-b border-zinc-400 dark:border-zinc-600 hover:text-black dark:hover:text-white transition-colors"
-              >
-                LER LICENÇA MIT →
-              </a>
-              <a
-                href="./code_of_conduct.html"
-                class="text-xs font-mono border-b border-zinc-400 dark:border-zinc-600 hover:text-black dark:hover:text-white transition-colors"
-              >
-                CÓDIGO DE CONDUTA →
-              </a>
-            </div>
-          </div>
-
-          <details
-            class="group border border-zinc-200 dark:border-white/10 bg-zinc-50/50 dark:bg-white/5 rounded-sm"
-          >
-            <summary
-              class="flex justify-between items-center cursor-pointer p-6 list-none"
-            >
-              <span
-                class="text-sm font-bold uppercase tracking-widest text-zinc-900 dark:text-white"
-                >Política de Privacidade</span
-              >
-              <span class="transition group-open:rotate-180">
-                <svg
-                  fill="none"
-                  height="24"
-                  shape-rendering="geometricPrecision"
-                  stroke="currentColor"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="1.5"
-                  viewBox="0 0 24 24"
-                  width="24"
-                >
-                  <path d="M6 9l6 6 6-6"></path>
-                </svg>
-              </span>
-            </summary>
-            <div
-              class="text-sm text-zinc-600 dark:text-zinc-400 px-6 pb-6 leading-relaxed space-y-4"
-            >
-              <p><strong>Última atualização: 19 de Janeiro de 2026</strong></p>
-              <p>
-                A tua privacidade é fundamental. A LiveTagus foi desenhado
-                segundo o princípio de "Privacy by Design".
-              </p>
-
-              <h4 class="font-bold text-zinc-900 dark:text-white">
-                1. Recolha de Dados
-              </h4>
-              <p>
-                A LiveTagus <strong>NÃO</strong> recolhe, armazena ou processa
-                qualquer dado pessoal identificável nos nossos servidores. Não
-                sabemos quem és, onde estás ou para onde vais.
-              </p>
-
-              <h4 class="font-bold text-zinc-900 dark:text-white">
-                2. Cookies e Armazenamento Local
-              </h4>
-              <p>
-                Este website não utiliza cookies de rastreio de terceiros,
-                publicidade ou analítica invasiva.
-              </p>
-              <p>
-                Utilizamos exclusivamente a tecnologia
-                <code>localStorage</code> do teu navegador para funcionalidades
-                essenciais:
-              </p>
-              <ul class="list-disc pl-5 space-y-1">
-                <li>Guardar a tua preferência de tema (Claro/Escuro).</li>
-                <li>
-                  Guardar a tua estação ou rota favorita para acesso rápido.
-                </li>
-                <li>
-                  Memorizar que já visitaste o site para melhorar a navegação.
-                </li>
-              </ul>
-              <p>
-                Estes dados ficam guardados apenas no teu dispositivo e nunca
-                são enviados para os nossos servidores. Ao abrigo da Diretiva
-                ePrivacy e RGPD, estes são considerados estritamente necessários
-                para o funcionamento do serviço solicitado pelo utilizador.
-              </p>
-
-              <h4 class="font-bold text-zinc-900 dark:text-white">
-                3. Alojamento
-              </h4>
-              <p>
-                O website é alojado na Netlify e Azure. Estes fornecedores podem
-                recolher logs técnicos padrão (endereço IP, user-agent) para
-                segurança e manutenção da rede, sobre os quais não temos
-                controlo direto, mas que são geridos em conformidade com as leis
-                da UE.
-              </p>
-            </div>
-          </details>
-
-          <details
-            class="group border border-zinc-200 dark:border-white/10 bg-zinc-50/50 dark:bg-white/5 rounded-sm"
-          >
-            <summary
-              class="flex justify-between items-center cursor-pointer p-6 list-none"
-            >
-              <span
-                class="text-sm font-bold uppercase tracking-widest text-zinc-900 dark:text-white"
-                >Termos e Condições</span
-              >
-              <span class="transition group-open:rotate-180">
-                <svg
-                  fill="none"
-                  height="24"
-                  shape-rendering="geometricPrecision"
-                  stroke="currentColor"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="1.5"
-                  viewBox="0 0 24 24"
-                  width="24"
-                >
-                  <path d="M6 9l6 6 6-6"></path>
-                </svg>
-              </span>
-            </summary>
-            <div
-              class="text-sm text-zinc-600 dark:text-zinc-400 px-6 pb-6 leading-relaxed space-y-4"
-            >
-              <p>Ao utilizar a LiveTagus, concordas com os seguintes termos:</p>
-
-              <h4 class="font-bold text-zinc-900 dark:text-white">
-                1. Natureza do Serviço
-              </h4>
-              <p>
-                A LiveTagus é uma ferramenta independente e não oficial. Não
-                temos qualquer vínculo contratual ou oficial com a Fertagus ou
-                as Infraestruturas de Portugal.
-              </p>
-
-              <h4 class="font-bold text-zinc-900 dark:text-white">
-                2. Isenção de Responsabilidade
-              </h4>
-              <p>
-                Os dados apresentados são baseados em fontes públicas e
-                algoritmos de estimativa. Embora nos esforcemos pela máxima
-                precisão:
-              </p>
-              <ul class="list-disc pl-5 space-y-1">
-                <li>
-                  Não garantimos que a informação esteja 100% correta ou livre
-                  de erros.
-                </li>
-                <li>
-                  Não nos responsabilizamos por perdas de comboios, atrasos,
-                  prejuízos financeiros ou inconvenientes causados pelo uso
-                  desta aplicação.
-                </li>
-                <li>
-                  A informação oficial deve ser sempre verificada nos canais das
-                  operadoras competentes.
-                </li>
-              </ul>
-
-              <h4 class="font-bold text-zinc-900 dark:text-white">
-                3. Licença (Open Source)
-              </h4>
-              <p>
-                O código deste projeto é disponibilizado sob a Licença MIT. És
-                livre de inspecionar, modificar e distribuir o código, desde que
-                mantenhas os créditos originais.
-              </p>
-            </div>
-          </details>
-        </section>
-
-        <section class="space-y-4">
-          <h3 class="text-xs font-bold text-zinc-500 uppercase tracking-widest">
-            Infraestrutura & Segurança
-          </h3>
-          <div
-            class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm font-mono text-zinc-600 dark:text-zinc-400"
-          >
-            <div
-              class="flex items-center gap-3 p-4 border border-zinc-200 dark:border-white/10"
-            >
-              <svg
-                class="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="1.5"
-                  d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                ></path>
-              </svg>
-              <span>Backend: Microsoft Azure (EU)</span>
-            </div>
-            <div
-              class="flex items-center gap-3 p-4 border border-zinc-200 dark:border-white/10"
-              id="termos"
-            >
-              <svg
-                class="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="1.5"
-                  d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                ></path>
-              </svg>
-              <span>Frontend: Netlify CDN (Global)</span>
-            </div>
-          </div>
-        </section>
       </div>
     </main>
 
     <div id="global-footer"></div>
+
     <script>
-      // Pequena animação para os Details (opcional, mas fica bonito)
-      document.querySelectorAll("details").forEach((detail) => {
-        detail.addEventListener("toggle", (e) => {
-          if (detail.open) {
-            detail.querySelector("div").classList.add("animate-fade-in");
-          }
+      function switchTab(tabId) {
+        // 1. Esconder todos os conteúdos
+        document.querySelectorAll(".tab-content").forEach((content) => {
+          content.classList.add("hidden");
         });
-      });
+
+        // 2. Desativar todos os botões (remover estilo ativo)
+        document.querySelectorAll('button[role="tab"]').forEach((btn) => {
+          btn.classList.remove("tab-active");
+          btn.classList.add("tab-inactive");
+          btn.setAttribute("aria-selected", "false");
+        });
+
+        // 3. Mostrar o conteúdo selecionado
+        const selectedContent = document.getElementById("content-" + tabId);
+        if (selectedContent) {
+          selectedContent.classList.remove("hidden");
+          // Reiniciar a animação
+          selectedContent.style.animation = "none";
+          selectedContent.offsetHeight; /* trigger reflow */
+          selectedContent.style.animation = null;
+        }
+
+        // 4. Ativar o botão selecionado
+        const selectedBtn = document.getElementById("tab-btn-" + tabId);
+        if (selectedBtn) {
+          selectedBtn.classList.remove("tab-inactive");
+          selectedBtn.classList.add("tab-active");
+          selectedBtn.setAttribute("aria-selected", "true");
+        }
+      }
     </script>
   </body>
 </html>
