@@ -8,9 +8,9 @@
    </url>
 
    <url>
-      <loc>https://livetagus.pt/status</loc>
+      <loc>https://livetagus.pt/app</loc>
       <lastmod>2025-01-20</lastmod>
-      <changefreq>always</changefreq>
+      <changefreq>monthly</changefreq>
       <priority>0.9</priority>
    </url>
 
@@ -22,10 +22,10 @@
    </url>
 
    <url>
-      <loc>https://livetagus.pt/app</loc>
+      <loc>https://livetagus.pt/status</loc>
       <lastmod>2025-01-20</lastmod>
-      <changefreq>monthly</changefreq>
-      <priority>0.7</priority>
+      <changefreq>always</changefreq>
+      <priority>0.6</priority>
    </url>
 
    <url>

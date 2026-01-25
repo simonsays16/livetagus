@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="pt-PT" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=5.0"
+    />
+    <link
+      rel="shortcut icon"
+      href="./imagens/favicon-96x96.png"
+      type="image/x-icon"
+    />
+    <meta
+      name="description"
+      content="Roadmap de desenvolvimento e histórico de atualizações do LiveTagus."
+    />
+    <meta name="theme-color" content="#09090b" />
+
+    <title>Roadmap & Updates | LiveTagus</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+              mono: ["JetBrains Mono", "monospace"],
+            },
+            animation: {
+              "fade-in": "fadeIn 0.6s ease-out forwards",
+            },
+            keyframes: {
+              fadeIn: {
+                "0%": { opacity: "0", transform: "translateY(10px)" },
+                "100%": { opacity: "1", transform: "translateY(0)" },
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <link href="./style.css" rel="stylesheet" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="./menu.js" defer></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body
+    class="bg-white text-zinc-900 dark:bg-[#09090b] dark:text-white overflow-x-hidden transition-colors duration-500 flex flex-col min-h-screen"
+  >
+    <div id="global-nav"></div>
+
+    <main class="flex-grow pt-24 pb-20 px-6">
+      <div class="max-w-3xl mx-auto animate-fade-in space-y-12">
+        <section class="space-y-4 text-center md:text-left">
+          <span
+            class="inline-block py-1 px-3 border border-zinc-200 dark:border-white/10 rounded-full text-[10px] uppercase tracking-widest text-blue-600 dark:text-blue-400 backdrop-blur-sm font-bold bg-blue-50 dark:bg-blue-900/10"
+          >
+            Dev Log
+          </span>
+          <h1
+            class="text-4xl md:text-5xl font-light tracking-tighter text-zinc-900 dark:text-white"
+          >
+            ROADMAP &
+            <br />
+            <span class="font-bold">ATUALIZAÇÕES.</span>
+          </h1>
+          <p
+            class="text-left text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed max-w-xl"
+          >
+            Acompanha o desenvolvimento da LiveTagus. O projeto é vivo e está em
+            constante evolução. Aqui podes ver o que estamos a preparar para o
+            futuro e o que acabou de ser lançado.
+            <br />
+            <br />
+            Estamos sempre abertos a sugestões! Se tiveres alguma ideia para
+            melhorar a WebApp envia para:
+            <a
+              class="min-w-20 text-xs font-mono text-zinc-500 hover:text-black dark:hover:text-white underline decoration-zinc-700 underline-offset-4 transition-colors"
+              href="mailto:geral@livetagus.pt"
+            >
+              geral@livetagus.pt
+            </a>
+          </p>
+        </section>
+
+        <hr class="border-zinc-200 dark:border-white/10" />
+
+        <section>
+          <div class="flex items-center gap-2 mb-8">
+            <i
+              data-lucide="map"
+              class="w-5 h-5 text-zinc-900 dark:text-white"
+            ></i>
+            <h2
+              class="text-xl font-bold uppercase tracking-widest text-zinc-900 dark:text-white"
+            >
+              Futuro da LiveTagus
+            </h2>
+          </div>
+
+          <div
+            class="space-y-12 relative border-l border-zinc-200 dark:border-zinc-800 ml-3"
+          >
+            <div class="relative pl-8">
+              <span
+                class="absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse ring-4 ring-white dark:ring-[#09090b]"
+              ></span>
+              <div class="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                <span
+                  class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-500 border border-blue-500/20 uppercase tracking-wider w-fit"
+                >
+                  Em Desenvolvimento
+                </span>
+                <span class="text-xs font-mono text-zinc-400">
+                  ETA: 1 Fev 2026
+                </span>
+              </div>
+              <h3 class="text-lg font-bold text-zinc-900 dark:text-white mb-1">
+                Integração Fins de Semana
+              </h3>
+              <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-6">
+                Suporte completo para horários de Sábados, Domingos e Feriados.
+                O sistema deixará de entrar em modo de suspensão nestes dias.
+              </p>
+              <div
+                class="relative border-l border-zinc-200/50 dark:border-zinc-700/50 ml-2 space-y-8 pl-8 py-2"
+              >
+                <div class="relative">
+                  <span
+                    class="absolute -left-[37px] top-1.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-white dark:ring-[#09090b]"
+                  ></span>
+                  <h4 class="text-sm font-bold text-emerald-500 mb-1">
+                    Fase 0: Planeamento e Design
+                  </h4>
+                  <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                    Definição do funcionamento geral, UI/UX e arquitetura de
+                    dados.
+                  </p>
+                </div>
+                <div class="relative">
+                  <span
+                    class="absolute -left-[37px] top-1.5 w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse ring-4 ring-white dark:ring-[#09090b]"
+                  ></span>
+                  <h4 class="text-sm font-bold text-blue-500 mb-1">
+                    Fase 1: Bases de Dados de Horários
+                  </h4>
+                  <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                    Criação de Horário em JSON com Horários, ID's dos comboios,
+                    Ocupação (se disponível) e Nº Carruagens.
+                  </p>
+                </div>
+                <div class="relative">
+                  <span
+                    class="absolute -left-[37px] top-1.5 w-2.5 h-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700 ring-4 ring-white dark:ring-[#09090b]"
+                  ></span>
+                  <h4
+                    class="text-sm font-bold text-zinc-900 dark:text-zinc-300 mb-1"
+                  >
+                    Fase 2: Lógica de Calendário
+                  </h4>
+                  <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                    Base de Dados para distinção entre dias úteis, fim de
+                    semanas e feriados para WebApp e API.
+                  </p>
+                </div>
+                <div class="relative">
+                  <span
+                    class="absolute -left-[37px] top-1.5 w-2.5 h-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700 ring-4 ring-white dark:ring-[#09090b]"
+                  ></span>
+                  <h4
+                    class="text-sm font-bold text-zinc-900 dark:text-zinc-300 mb-1"
+                  >
+                    Fase 3: Dados para API
+                  </h4>
+                  <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                    Adaptação da API para servir o conjunto de dados correto
+                    consoante o dia atual.
+                  </p>
+                </div>
+                <div class="relative">
+                  <span
+                    class="absolute -left-[37px] top-1.5 w-2.5 h-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700 ring-4 ring-white dark:ring-[#09090b]"
+                  ></span>
+                  <h4
+                    class="text-sm font-bold text-zinc-900 dark:text-zinc-300 mb-1"
+                  >
+                    Fase 4: Dados para WebApp
+                  </h4>
+                  <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                    Atualização da interface para remover o "modo de suspensão"
+                    e mostrar os horários.
+                  </p>
+                </div>
+                <div class="relative">
+                  <span
+                    class="absolute -left-[37px] top-1.5 w-2.5 h-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700 ring-4 ring-white dark:ring-[#09090b]"
+                  ></span>
+                  <h4
+                    class="text-sm font-bold text-zinc-900 dark:text-zinc-300 mb-1"
+                  >
+                    Fase 5: Conclusão
+                  </h4>
+                  <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                    Lançamento oficial (1 Fev) e monitorização de estabilidade.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="relative pl-8 pb-4">
+              <span
+                class="absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700 ring-4 ring-white dark:ring-[#09090b]"
+              ></span>
+              <div class="mb-4">
+                <span
+                  class="px-2 py-0.5 rounded text-[10px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border border-zinc-200 dark:border-zinc-700 uppercase tracking-wider w-fit"
+                >
+                  Planeado (Q1 2026)
+                </span>
+              </div>
+              <h3 class="text-xl font-bold text-zinc-900 dark:text-white mb-2">
+                Ligações Intermodais
+              </h3>
+              <p
+                class="text-sm text-zinc-600 dark:text-zinc-400 mb-6 max-w-2xl"
+              >
+                Ver que autocarros e metros podes apanhar quando chegas ao
+                destino. Integração com Carris Metropolitana, Metro de Lisboa,
+                CP e MTS diretamente no cartão do comboio.
+              </p>
+
+              <div
+                class="relative border-l border-zinc-200/50 dark:border-zinc-700/50 ml-2 space-y-8 pl-8 py-2"
+              >
+                <div class="relative">
+                  <span
+                    class="absolute -left-[37px] top-1.5 w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse ring-4 ring-white dark:ring-[#09090b]"
+                  ></span>
+                  <h4 class="text-sm font-bold text-blue-500 mb-1">
+                    Fase 0: Planeamento e Design
+                  </h4>
+                  <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                    Definição do funcionamento geral, UI/UX e arquitetura de
+                    dados.
+                  </p>
+                </div>
+
+                <div class="relative">
+                  <span
+                    class="absolute -left-[37px] top-1.5 w-2.5 h-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700 ring-4 ring-white dark:ring-[#09090b]"
+                  ></span>
+                  <h4
+                    class="text-sm font-bold text-zinc-900 dark:text-zinc-300 mb-1"
+                  >
+                    Fase 1: Detalhes de Viagem & "Lock"
+                  </h4>
+                  <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                    Melhoria nos detalhes de chegada. Funcionalidade de "Seguir
+                    Comboio" (guardado no telemóvel até ao fim da viagem), com
+                    informação detalhada (ocupação, localização atual, horas
+                    previstas nas próximas estações).
+                  </p>
+                </div>
+
+                <div class="relative">
+                  <span
+                    class="absolute -left-[37px] top-1.5 w-2.5 h-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700 ring-4 ring-white dark:ring-[#09090b]"
+                  ></span>
+                  <h4
+                    class="text-sm font-bold text-zinc-900 dark:text-zinc-300 mb-1"
+                  >
+                    Fase 2: Estrutura Base (Offline)
+                  </h4>
+                  <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                    Listagem de conexões em todas as estações (apenas serviços
+                    disponíveis). Detalhes específicos para CP Lisboa, Metro de
+                    Lisboa e MTS (linhas visíveis, sem horários).
+                  </p>
+                </div>
+
+                <div class="relative">
+                  <span
+                    class="absolute -left-[37px] top-1.5 w-2.5 h-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700 ring-4 ring-white dark:ring-[#09090b]"
+                  ></span>
+                  <h4
+                    class="text-sm font-bold text-zinc-900 dark:text-zinc-300 mb-1"
+                  >
+                    Fase 3: Integração de Carreiras
+                  </h4>
+                  <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                    Mapeamento das linhas da Carris Metropolitana, Carris Lisboa
+                    e TCB. Preparação dos IDs de estação para futuro tempo real.
+                  </p>
+                </div>
+
+                <div class="relative">
+                  <span
+                    class="absolute -left-[37px] top-1.5 w-2.5 h-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700 ring-4 ring-white dark:ring-[#09090b]"
+                  ></span>
+                  <h4
+                    class="text-sm font-bold text-zinc-900 dark:text-zinc-300 mb-1"
+                  >
+                    Fase 4: Testes Realtime (Piloto)
+                  </h4>
+                  <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                    Lançamento de horários em tempo real para Metro de Lisboa e
+                    C. Metropolitana nas estações principais: Sete-Rios,
+                    Entrecampos, Roma-Areeiro, Pragal, Corroios e Coina.
+                    Integração de avisos de serviço (Metro e C. Metropolitana).
+                  </p>
+                </div>
+
+                <div class="relative">
+                  <span
+                    class="absolute -left-[37px] top-1.5 w-2.5 h-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700 ring-4 ring-white dark:ring-[#09090b]"
+                  ></span>
+                  <h4
+                    class="text-sm font-bold text-zinc-900 dark:text-zinc-300 mb-1"
+                  >
+                    Fase 5: Expansão Carris Metropolitana
+                  </h4>
+                  <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                    Disponibilização de horários em tempo real para todas as
+                    estações servidas pela rede.
+                  </p>
+                </div>
+
+                <div class="relative">
+                  <span
+                    class="absolute -left-[37px] top-1.5 w-2.5 h-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700 ring-4 ring-white dark:ring-[#09090b]"
+                  ></span>
+                  <h4
+                    class="text-sm font-bold text-zinc-900 dark:text-zinc-300 mb-1"
+                  >
+                    Fase 6: CP Lisboa (Sintra/Azambuja)
+                  </h4>
+                  <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                    Integração de dados em tempo real da CP. Inicialmente em
+                    Sete-Rios (teste), expandindo depois a toda a rede de
+                    Lisboa.
+                  </p>
+                </div>
+
+                <div class="relative">
+                  <span
+                    class="absolute -left-[37px] top-1.5 w-2.5 h-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700 ring-4 ring-white dark:ring-[#09090b]"
+                  ></span>
+                  <h4
+                    class="text-sm font-bold text-zinc-900 dark:text-zinc-300 mb-1"
+                  >
+                    Fase 7: CP Lisboa (Sado)
+                  </h4>
+                  <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                    Integração da Linha do Sado em tempo real. Teste inicial em
+                    Pinhal Novo.
+                  </p>
+                </div>
+
+                <div class="relative">
+                  <span
+                    class="absolute -left-[37px] top-1.5 w-2.5 h-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700 ring-4 ring-white dark:ring-[#09090b]"
+                  ></span>
+                  <h4
+                    class="text-sm font-bold text-zinc-900 dark:text-zinc-300 mb-1"
+                  >
+                    Fase 8: TCB (Barreiro)
+                  </h4>
+                  <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                    Disponibilização de horários estáticos (offline) para os
+                    Transportes Colectivos do Barreiro (sem previsão de tempo
+                    real).
+                  </p>
+                </div>
+                <div class="relative">
+                  <span
+                    class="absolute -left-[37px] top-1.5 w-2.5 h-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700 ring-4 ring-white dark:ring-[#09090b]"
+                  ></span>
+                  <h4
+                    class="text-sm font-bold text-zinc-900 dark:text-zinc-300 mb-1"
+                  >
+                    Fase 9: Conclusão
+                  </h4>
+                  <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                    Finalização de todo o processo com monitorização constante.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="relative pl-8">
+              <span
+                class="absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full bg-purple-500/50 ring-4 ring-white dark:ring-[#09090b]"
+              ></span>
+              <div class="mb-2">
+                <span
+                  class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/10 text-purple-500 border border-purple-500/20 uppercase tracking-wider w-fit"
+                >
+                  Em Estudo
+                </span>
+              </div>
+              <h3 class="text-lg font-bold text-zinc-900 dark:text-white mb-1">
+                Notificações Push
+              </h3>
+              <p class="text-sm text-zinc-600 dark:text-zinc-400">
+                Receber alertas de supressões ou atrasos graves diretamente no
+                telemóvel antes de sair de casa.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="pt-8">
+          <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-2">
+              <i
+                data-lucide="git-commit-horizontal"
+                class="w-5 h-5 text-zinc-900 dark:text-white"
+              ></i>
+              <h2
+                class="text-xl font-bold uppercase tracking-widest text-zinc-900 dark:text-white"
+              >
+                Registo de Alterações
+              </h2>
+            </div>
+            <a
+              href="https://github.com/simonsays16/livetagus/commits/main"
+              target="_blank"
+              class="min-w-20 text-xs font-mono text-zinc-500 hover:text-black dark:hover:text-white underline decoration-zinc-700 underline-offset-4 transition-colors"
+            >
+              Ver Todos
+            </a>
+          </div>
+
+          <div id="commits-container" class="space-y-4">
+            <div class="animate-pulse space-y-4">
+              <div
+                class="h-20 bg-zinc-100 dark:bg-white/5 rounded-lg border border-zinc-200 dark:border-white/5"
+              ></div>
+              <div
+                class="h-20 bg-zinc-100 dark:bg-white/5 rounded-lg border border-zinc-200 dark:border-white/5"
+              ></div>
+              <div
+                class="h-20 bg-zinc-100 dark:bg-white/5 rounded-lg border border-zinc-200 dark:border-white/5"
+              ></div>
+            </div>
+          </div>
+
+          <p class="text-[10px] text-zinc-400 mt-4 text-center">
+            Dados obtidos em tempo real do repositório público GitHub.
+          </p>
+        </section>
+        <div class="pt-8">
+          <a
+            href="./sobre.html"
+            class="inline-flex items-center text-xs font-bold uppercase tracking-widest text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors group"
+          >
+            <span class="group-hover:-translate-x-1 transition-transform mr-2">
+              ←
+            </span>
+            Voltar
+          </a>
+        </div>
+      </div>
+    </main>
+
+    <div id="global-footer"></div>
+
+    <script>
+      lucide.createIcons();
+
+      async function loadGitHubCommits() {
+        const container = document.getElementById("commits-container");
+        const repo = "simonsays16/livetagus";
+        const apiUrl = `https://api.github.com/repos/${repo}/commits?per_page=10`;
+
+        try {
+          const response = await fetch(apiUrl);
+          if (!response.ok) throw new Error("Falha ao carregar commits");
+          const commits = await response.json();
+
+          let html = "";
+
+          commits.forEach((item) => {
+            const msg = item.commit.message.split("\n")[0];
+            if (msg.startsWith("Merge pull request")) return;
+
+            const date = new Date(item.commit.author.date);
+            const formattedDate = date.toLocaleDateString("pt-PT", {
+              day: "numeric",
+              month: "short",
+            });
+            const sha = item.sha.substring(0, 7);
+            const author = item.commit.author.name;
+
+            html += `
+                        <div class="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-lg border border-zinc-200 dark:border-white/5 bg-zinc-50/50 dark:bg-white/5 hover:border-zinc-300 dark:hover:border-white/20 transition-all">
+                            <div class="flex flex-col gap-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
+                                        ${sha}
+                                    </span>
+                                    <span class="text-[10px] text-zinc-400 uppercase tracking-wide">
+                                        ${formattedDate}
+                                    </span>
+                                </div>
+                                <p class="text-sm font-medium text-zinc-900 dark:text-white line-clamp-1 group-hover:line-clamp-none transition-all">
+                                    ${msg}
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-4 shrink-0">
+                                <span class="text-[10px] text-zinc-500">
+                                    por <span class="text-zinc-900 dark:text-zinc-300 font-bold">${author}</span>
+                                </span>
+                                <a href="${item.html_url}" target="_blank" class="p-2 rounded-full bg-white dark:bg-black border border-zinc-200 dark:border-white/10 text-zinc-400 hover:text-black dark:hover:text-white transition-colors">
+                                    <i data-lucide="code-2" class="w-4 h-4"></i>
+                                </a>
+                            </div>
+                        </div>
+                    `;
+          });
+
+          container.innerHTML = html;
+          lucide.createIcons();
+        } catch (error) {
+          console.error(error);
+          container.innerHTML = `
+                    <div class="text-center py-8 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-lg">
+                        <p class="text-zinc-500 mb-2">Não foi possível carregar o histórico automático.</p>
+                        <a href="https://github.com/${repo}/commits/main" target="_blank" class="text-sm font-bold underline">Ver no GitHub</a>
+                    </div>
+                `;
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", loadGitHubCommits);
+    </script>
+  </body>
+</html>
