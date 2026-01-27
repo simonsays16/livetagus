@@ -1,0 +1,188 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 1. VARIÁVEIS DE CORES */
+@layer base {
+  :root {
+    --bg-color: #09090b;
+    --text-primary: #e4e4e7;
+    --text-secondary: #a1a1aa;
+    --glass-bg: rgba(24, 24, 27, 0.65);
+    --glass-border: hsla(0, 0%, 100%, 0.08);
+    --card-bg: linear-gradient(145deg, rgba(39, 39, 42, 0.4), rgba(24, 24, 27, 0.4));
+    --modal-bg: #09090b;
+    --input-bg: rgba(0, 0, 0, 0.2);
+    --accent: #3b82f6;
+    --accent-dim: rgba(59, 130, 246, 0.15);
+    color-scheme: dark;
+  }
+
+  [data-theme="light"] {
+    --bg-color: #f0f2f5;
+    --text-primary: #18181b;
+    --text-secondary: #52525b;
+    --glass-bg: hsla(0, 0%, 100%, 0.85);
+    --glass-border: rgba(0, 0, 0, 0.1);
+    --card-bg: hsla(0, 0%, 100%, 0.9);
+    --modal-bg: #fff;
+    --input-bg: rgba(0, 0, 0, 0.05);
+    --accent: #2563eb;
+    --accent-dim: rgba(37, 99, 235, 0.1);
+    color-scheme: light;
+  }
+
+  body {
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* 2. COMPONENTES PERSONALIZADOS */
+@layer components {
+  /* --- ELEMENTOS EM FALTA (DIVISORES E AVISOS) --- */
+  .next-divider {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem 0 0.5rem;
+    opacity: 0.8;
+    scroll-margin-top: 180px; /* Para o scroll não ficar tapado pelo header */
+  }
+
+  .next-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.5;
+  }
+
+  .next-text {
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  .warning-text {
+    font-size: 0.6rem;
+    text-align: center;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    opacity: 0.7;
+    display: block;
+    width: 100%;
+  }
+
+  /* --- PWA INSTALL PROMPT --- */
+  .install-pwa {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--bg-color);
+    border-top: 1px solid var(--glass-border);
+    padding: 1rem;
+    z-index: 100; /* Tem de estar por cima de tudo */
+    
+    /* Flexbox para alinhar */
+    display: none; /* JS controla isto, mas por defeito escondido */
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    text-align: center;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+  }
+
+  /* --- RESTO DOS COMPONENTES --- */
+  .glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+  }
+
+  .glass-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  }
+
+  .select-input {
+    background-color: var(--input-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--text-primary);
+    outline: none;
+    transition: all 0.2s;
+  }
+
+  .tabs-container {
+    position: relative;
+    display: flex;
+    background: var(--glass-bg);
+    border-radius: 999px;
+    padding: 4px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(12px);
+  }
+
+  .tab-btn {
+    flex: 1;
+    position: relative;
+    z-index: 10;
+    padding: 8px 12px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    transition: color 0.3s;
+    text-align: center;
+  }
+
+  .tab-btn.active {
+    color: #fff;
+  }
+
+  .glider {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    height: calc(100% - 8px);
+    width: calc(50% - 4px);
+    background: var(--accent);
+    border-radius: 999px;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 0 20px var(--accent-dim);
+    z-index: 5;
+  }
+
+  .mask-gradient {
+    mask-image: linear-gradient(to bottom, black 90%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 90%, transparent 100%);
+  }
+
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+}
+
+@layer utilities {
+  .dot-ping { animation: pulse-dot 2s infinite; }
+  .station-name { overflow-wrap: break-word; word-break: break-word; hyphens: auto; }
+}
+
+@keyframes pulse-dot {
+  0% { box-shadow: 0 0 0 0 var(--dot-color-glow, rgba(59, 130, 246, 0.5)); opacity: 1; }
+  70% { box-shadow: 0 0 0 6px transparent; opacity: 1; }
+  to { box-shadow: 0 0 0 0 transparent; opacity: 1; }
+}

@@ -29,7 +29,7 @@
     />
     <meta
       property="og:image"
-      content="https://livetagus.pt/imagens/logo-email.png"
+      content="https://livetagus.pt/imagens/logo_og.webp"
     />
 
     <meta property="twitter:card" content="summary_large_image" />
@@ -44,7 +44,7 @@
     />
     <meta
       property="twitter:image"
-      content="https://livetagus.pt/imagens/logo-email.png"
+      content="https://livetagus.pt/imagens/logo_og.webp"
     />
     <link
       rel="shortcut icon"
@@ -63,7 +63,7 @@
     />
   </head>
   <body class="h-screen flex flex-col overflow-hidden">
-    <!-- Maintenance Overlay -->
+    <!-- Maintenance Overlay
     <div
       id="maintenance-overlay"
       class="fixed inset-0 z-[100] bg-[#09090b] flex flex-col items-center justify-center p-8 hidden text-center"
@@ -85,16 +85,18 @@
           Estamos a descansar
         </h1>
         <p class="text-sm text-zinc-400 leading-relaxed mb-6">
-          <!--Para reduzir a pegada ecológica e poupar recursos, a app entra em modo
+          Para reduzir a pegada ecológica e poupar recursos, a app entra em modo
           de suspensão enquanto não há comboios. <br />
           Está prevista a integração dos horários de fim de semana a 1 de
-          fevereiro. Pedimos desculpa pelo incómodo causado :)-->
+          fevereiro. Pedimos desculpa pelo incómodo causado :)
           O sistema de Tempo Real funciona nos Dias Úteis. A integração de Fins
-          de Semana chega dia 1 de Fevereiro. <br /><br />
+          de Semana chega dia 1 de Fevereiro.
+          <br />
+          <br />
           Até lá, vemo-nos na segunda-feira de manhã!
         </p>
 
-        <!--<div
+        <div
           class="bg-white/5 rounded-xl p-4 w-full border border-white/5 mb-8"
         >
           <div
@@ -118,7 +120,7 @@
               <span class="text-xs font-mono text-blue-400">Segunda 05:00</span>
             </div>
           </div>
-        </div>-->
+        </div>
 
         <button
           onclick="window.location.reload()"
@@ -130,11 +132,12 @@
         <a
           class="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold uppercase tracking-widest rounded-lg transition-all shadow-lg hover:shadow-blue-500/25 active:scale-95"
           href="./"
-          >Página Inicial</a
         >
+          Página Inicial
+        </a>
       </div>
     </div>
-    <!--<div id="global-nav"></div>-->
+    <div id="global-nav"></div>-->
 
     <!-- PWA Install Prompt -->
     <div id="pwa-install-prompt" class="install-pwa">
@@ -183,9 +186,9 @@
               >
                 Corroios
               </h1>
-              <span class="font-light" style="color: var(--text-secondary)"
-                >/</span
-              >
+              <span class="font-light" style="color: var(--text-secondary)">
+                /
+              </span>
               <h2
                 id="dest-display"
                 class="text-xl font-medium tracking-tight leading-none station-name"
@@ -235,15 +238,16 @@
               background-color: var(--input-bg);
             "
           >
-            <span class="uppercase tracking-widest text-[9px] font-bold"
-              >Próximo</span
-            >
+            <span class="uppercase tracking-widest text-[9px] font-bold">
+              Próximo
+            </span>
             <span
               id="countdown-display"
               class="text-sm font-bold font-mono"
               style="color: var(--accent)"
-              >-- min -- s</span
             >
+              -- min -- s
+            </span>
           </p>
         </div>
 
@@ -258,16 +262,18 @@
                 <label
                   class="text-[9px] uppercase font-bold tracking-wider"
                   style="color: var(--text-secondary)"
-                  >De</label
                 >
+                  De
+                </label>
                 <select id="sel-origin" class="select-input w-full"></select>
               </div>
               <div class="space-y-1.5">
                 <label
                   class="text-[9px] uppercase font-bold tracking-wider"
                   style="color: var(--text-secondary)"
-                  >Para</label
                 >
+                  Para
+                </label>
                 <select id="sel-dest" class="select-input w-full"></select>
               </div>
             </div>
@@ -285,15 +291,17 @@
                     id="status-text"
                     class="text-[10px] font-bold uppercase tracking-wider"
                     style="color: var(--text-secondary)"
-                    >Online</span
                   >
+                    Online
+                  </span>
                 </div>
                 <span
                   id="last-updated"
                   class="text-[9px] font-mono pl-3.5"
                   style="color: var(--text-secondary)"
-                  >--:--</span
                 >
+                  --:--
+                </span>
               </div>
             </div>
           </div>
@@ -314,6 +322,75 @@
         >
           Ver Mais Comboios
         </button>
+        <div class="next-divider" id="next-divider">
+          <div class="next-line"></div>
+          <span class="next-text">A Nossa Sugestão Para a Viagem</span>
+          <div class="next-line"></div>
+        </div>
+        <div
+          id="spotify-card-container"
+          class="glass-card rounded-2xl overflow-hidden mb-8 mt-4 hidden animate-fade-in w-full relative group shadow-lg"
+        >
+          <div class="flex h-36">
+            <div
+              class="w-36 h-36 shrink-0 relative bg-zinc-800 border-r border-white/5"
+            >
+              <img
+                id="sp-cover"
+                src="./imagens/icon.svg"
+                class="absolute inset-0 w-full h-full object-cover"
+                alt="Capa"
+              />
+            </div>
+
+            <div class="flex-1 p-4 flex flex-col justify-between min-w-0">
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <span
+                    id="quinzena-badge"
+                    class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-zinc-400 tracking-wider uppercase"
+                  >
+                    Quinzena Atual
+                  </span>
+                  <i data-lucide="music" class="w-3 h-3 text-zinc-600"></i>
+                </div>
+
+                <h2
+                  id="sp-title"
+                  class="text-base font-bold text-zinc-100 leading-tight line-clamp-2 mt-1"
+                  style="color: var(--text-primary)"
+                >
+                  A carregar...
+                </h2>
+
+                <p
+                  id="sp-artist"
+                  class="text-xs text-zinc-400 font-medium truncate mt-1"
+                >
+                  Spotify
+                </p>
+              </div>
+
+              <a
+                id="sp-link"
+                href="#"
+                target="_blank"
+                class="mt-2 flex items-center justify-center gap-2 w-full py-2 bg-[#1DB954] hover:bg-[#1ed760] text-black rounded-lg transition-all active:scale-95"
+              >
+                <svg class="w-4 h-4 fill-black shrink-0" viewBox="0 0 24 24">
+                  <path
+                    d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"
+                  />
+                </svg>
+                <span
+                  class="text-[10px] font-bold uppercase tracking-widest truncate"
+                >
+                  Ouvir no Spotify
+                </span>
+              </a>
+            </div>
+          </div>
+        </div>
         <div id="global-footer"></div>
       </div>
 
@@ -404,8 +481,9 @@
                 <span
                   class="text-xs font-medium"
                   style="color: var(--text-primary)"
-                  >Usar Mesmas Estações (Invertidas)</span
                 >
+                  Usar Mesmas Estações (Invertidas)
+                </span>
                 <button
                   id="btn-sync-stations"
                   onclick="toggleSyncStations()"
@@ -492,8 +570,9 @@
                 <span
                   class="text-xs font-medium"
                   style="color: var(--text-primary)"
-                  >Manhã (05:30 - 13:00)</span
                 >
+                  Manhã (05:30 - 13:00)
+                </span>
                 <select
                   id="smart-morning"
                   class="select-input w-32"
@@ -511,8 +590,9 @@
                 <span
                   class="text-xs font-medium"
                   style="color: var(--text-primary)"
-                  >Tarde (13:00 - 02:00)</span
                 >
+                  Tarde (13:00 - 02:00)
+                </span>
                 <select
                   id="smart-afternoon"
                   class="select-input w-32"
@@ -540,13 +620,21 @@
                   Esta aplicação cruza dados de horários estáticos com
                   informações em tempo real disponibilizadas publicamente pelas
                   Infraestruturas de Portugal.
-                  <br /><br />
+                  <br />
+                  <br />
                   <strong>Status dos Comboios:</strong>
-                  <br />🟢
-                  <span class="text-emerald-500">Verde:</span> Programado/A
-                  Horas <br />🟡
-                  <span class="text-yellow-500">Amarelo:</span> Atraso detetado
-                  <br />🔴 <span class="text-red-500">Vermelho:</span> Suprimido
+                  <br />
+                  🟢
+                  <span class="text-emerald-500">Verde:</span>
+                  Programado/A Horas
+                  <br />
+                  🟡
+                  <span class="text-yellow-500">Amarelo:</span>
+                  Atraso detetado
+                  <br />
+                  🔴
+                  <span class="text-red-500">Vermelho:</span>
+                  Suprimido
                 </p>
               </div>
               <div
@@ -587,13 +675,16 @@
                 <span
                   class="text-[9px] font-mono"
                   style="color: var(--text-secondary)"
-                  >v1.3.1 • LiveTagus</span
-                ><br />
+                >
+                  v1.3.1 • LiveTagus
+                </span>
+                <br />
                 <span
                   class="text-[9px] font-mono"
                   style="color: var(--text-secondary)"
-                  >v2.24.3 • API LiveTagus</span
                 >
+                  v2.24.3 • API LiveTagus
+                </span>
               </div>
             </div>
           </div>
@@ -617,10 +708,14 @@
             id="tab-lisboa"
             class="tab-btn active"
           >
-            Sentido<br />Lisboa
+            Sentido
+            <br />
+            Lisboa
           </button>
           <button onclick="switchTab('margem')" id="tab-margem" class="tab-btn">
-            Sentido<br />Margem
+            Sentido
+            <br />
+            Margem
           </button>
         </div>
       </div>
@@ -670,27 +765,6 @@
       let enableSmartSchedule = false;
 
       // --- FUNCTIONS DECLARATIONS ---
-
-      function checkMaintenanceMode() {
-        const now = new Date();
-        const hour = now.getHours();
-        const day = now.getDay();
-
-        let isMaintenance = false;
-        if (hour >= 2 && hour < 5) isMaintenance = true;
-        if (day === 6 && hour >= 2) isMaintenance = true;
-        if (day === 0) isMaintenance = true;
-        if (day === 1 && hour < 5) isMaintenance = true;
-
-        if (isMaintenance) {
-          document
-            .getElementById("maintenance-overlay")
-            .classList.remove("hidden");
-          if (window.lucide) lucide.createIcons();
-          return true;
-        }
-        return false;
-      }
 
       window.loadSettings = function () {
         const savedTheme = localStorage.getItem("theme");
@@ -1818,8 +1892,6 @@
       };
 
       async function init() {
-        if (checkMaintenanceMode()) return;
-
         setupPWA();
         loadSettings();
 
@@ -1893,6 +1965,79 @@
 
         if (window.lucide) lucide.createIcons();
       }
+      // --- Lógica do Cartão Spotify (Dados Mistos: Manual + Auto) ---
+      const SPOTIFY_API_URL = "https://api.npoint.io/0f0a3c1ca3b044f666e8";
+
+      async function loadSpotifyCard() {
+        const container = document.getElementById("spotify-card-container");
+        const coverImg = document.getElementById("sp-cover");
+        const titleText = document.getElementById("sp-title");
+        const artistText = document.getElementById("sp-artist");
+        const btnLink = document.getElementById("sp-link");
+        const badge = document.getElementById("quinzena-badge");
+
+        try {
+          // 1. Ler o JSON do npoint
+          const response = await fetch(SPOTIFY_API_URL, { cache: "no-store" });
+          if (!response.ok) return;
+          const data = await response.json();
+
+          if (data.album_id) {
+            // --- A. DADOS MANUAIS (Vêm do teu JSON) ---
+
+            // Artista (Garantido pelo teu JSON)
+            if (data.artist_name) {
+              artistText.innerText = data.artist_name;
+            } else {
+              artistText.innerText = "Spotify"; // Fallback se te esqueceres
+            }
+
+            // Link do Botão
+            const spotifyUrl = `https://open.spotify.com/album/${data.album_id}`;
+            btnLink.href = spotifyUrl;
+
+            // Badge da Quinzena
+            const agora = new Date();
+            const mes = agora
+              .toLocaleString("pt-PT", { month: "short" })
+              .replace(".", "");
+            const mesCap = mes.charAt(0).toUpperCase() + mes.slice(1);
+            const parte = agora.getDate() <= 15 ? "1.ª" : "2.ª";
+            if (badge) badge.innerText = `${parte} Quiz. ${mesCap}`;
+
+            // --- B. DADO AUTOMÁTICO (Apenas o Título) ---
+            // Vamos tentar buscar o título. Se falhar, pomos um genérico.
+            try {
+              const oEmbedUrl = `https://open.spotify.com/oembed?url=${encodeURIComponent(spotifyUrl)}`;
+              const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(oEmbedUrl)}`;
+
+              const metaRes = await fetch(proxyUrl);
+
+              if (metaRes.ok) {
+                const meta = await metaRes.json();
+                // O Spotify manda "Título", mas às vezes é "Artista - Título"
+                // Como tu já puseste o Artista manualmente, usamos o título direto
+                titleText.innerText = meta.title || "Sugestão da Quinzena";
+                coverImg.src = meta.thumbnail_url;
+              } else {
+                throw new Error("Falha no título automático");
+              }
+            } catch (titleError) {
+              // Se o proxy falhar, usamos um título genérico seguro
+              console.warn("Não foi possível obter o título automático.");
+              titleText.innerText = "Álbum da Quinzena";
+            }
+
+            // Mostrar o cartão
+            container.classList.remove("hidden");
+            if (window.lucide) lucide.createIcons();
+          }
+        } catch (e) {
+          console.error("Erro no widget:", e);
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", loadSpotifyCard);
     </script>
   </body>
 </html>

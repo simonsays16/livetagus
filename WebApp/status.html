@@ -68,8 +68,9 @@
             <span
               id="global-text"
               class="text-sm font-bold uppercase tracking-widest text-zinc-500"
-              >A verificar estado...</span
             >
+              A verificar estado...
+            </span>
           </div>
           <h1
             class="text-4xl md:text-6xl font-light tracking-tighter text-zinc-900 dark:text-white"
@@ -117,8 +118,9 @@
             </div>
             <span
               class="text-xs font-bold uppercase tracking-widest text-green-600 dark:text-green-400 px-3 py-1 bg-green-100 dark:bg-green-900/20 rounded-full"
-              >Operacional</span
             >
+              Operacional
+            </span>
           </div>
 
           <div
@@ -147,15 +149,16 @@
                   LiveTagus API
                 </h3>
                 <p class="text-xs text-zinc-500">
-                  Backend & Processamento (Azure/Render)
+                  Backend & Processamento (Azure)
                 </p>
               </div>
             </div>
             <div id="api-status-badge" class="flex flex-col items-end">
               <span
                 class="text-xs font-bold uppercase tracking-widest text-zinc-400 animate-pulse"
-                >A verificar...</span
               >
+                A verificar...
+              </span>
             </div>
           </div>
 
@@ -190,8 +193,9 @@
             <div id="ip-status-badge" class="flex flex-col items-end">
               <span
                 class="text-xs font-bold uppercase tracking-widest text-zinc-400 animate-pulse"
-                >A verificar...</span
               >
+                A verificar...
+              </span>
             </div>
           </div>
         </section>
@@ -205,10 +209,8 @@
             Nota Técnica
           </h4>
           <p class="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">
-            A monitorização é feita em tempo real. O sistema da LiveTagus entra
-            em modo de poupança de energia entre as 02:00 e as 05:00 da manhã.
-            De momento e até 1 de fevereiro a API da Fertagus encontra-se
-            desligada aos fim de semana.
+            A monitorização é feita em tempo real. De momento e até 1 de
+            fevereiro a API da Fertagus encontra-se desligada aos fim de semana.
           </p>
         </section>
       </div>
@@ -227,7 +229,7 @@
         const hour = now.getHours();
 
         // Lógica de Poupança SÓ para a API LiveTagus
-        const isApiSavingsMode = hour >= 2 && hour < 5;
+        // const isApiSavingsMode = hour >= 2 && hour < 5;
 
         try {
           // 1. Configurar pedido à IP (Sempre ativo)
@@ -238,17 +240,13 @@
           const ipUrl = `https://www.infraestruturasdeportugal.pt/negocios-e-servicos/horarios-ncombio/14228/${dateStr}`;
 
           // 2. Configurar pedido à API (Depende da hora)
-          const apiUrl = "https://api-transportes.onrender.com/api/fertagus";
+          const apiUrl = "https://api.livetagus.pt/";
 
           // Promises Array
           const promises = [];
 
           // Pedido API: Se for hora de poupança, resolvemos logo com 'paused'
-          if (isApiSavingsMode) {
-            promises.push(Promise.resolve("paused"));
-          } else {
-            promises.push(fetch(apiUrl, { method: "GET" }));
-          }
+          promises.push(fetch(apiUrl, { method: "GET" }));
 
           // Pedido IP: Sempre fetch
           promises.push(fetch(ipUrl, { mode: "no-cors" }));

@@ -246,7 +246,7 @@ function setTheme(mode) {
 // --- 5. API STATUS CHECKER ---
 async function checkApiStatus() {
   const dot = document.getElementById("status-dot");
-  const dot_footer = document.getElementById("status-dot-footer"); // Elemento do Footer
+  const dot_footer = document.getElementById("status-dot-footer");
   const text = document.getElementById("status-text");
 
   // Se o menu ainda não foi injetado, tenta de novo em breve
@@ -256,55 +256,61 @@ async function checkApiStatus() {
   }
 
   const now = new Date();
-  const hour = now.getHours();
 
+  // --- MODO POUPANÇA (COMENTADO PARA TESTES) ---
+  /* const hour = now.getHours();
   // BLOQUEIO: Entre as 02:00 e as 05:00 não gastamos recursos
   if (hour >= 2 && hour < 5) {
     dot.className = "w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-700";
     if (dot_footer)
-      dot_footer.className =
-        "w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-700"; // Atualiza footer também
+      dot_footer.className = "w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-700"; 
     text.textContent = "Modo Poupança 🌙";
     return;
   }
+  */
 
   try {
     const controller = new AbortController();
+    // Timeout curto (5s) para o status check
     const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-    const res = await fetch(
-      "https://api-transportes.onrender.com/api/fertagus",
-      {
-        method: "GET",
-        signal: controller.signal,
-      },
-    );
+    // ✅ USAR O ENDPOINT RAIZ (Mais leve e rápido para health-check)
+    const res = await fetch("https://api.livetagus.pt/", {
+      method: "GET",
+      signal: controller.signal,
+    });
+
     clearTimeout(timeoutId);
 
     if (res.ok) {
-      // ONLINE
+      // ONLINE 🟢
       const successClass =
         "w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse";
+
       dot.className = successClass;
-      if (dot_footer) dot_footer.className = successClass; // Atualiza footer também
+      if (dot_footer) dot_footer.className = successClass;
 
       const timeStr = now.toLocaleTimeString("pt-PT", {
         hour: "2-digit",
         minute: "2-digit",
       });
+
       text.textContent = `Online • ${timeStr}`;
       text.className =
         "text-[10px] font-mono text-zinc-600 dark:text-zinc-400 font-bold uppercase tracking-wide";
     } else {
-      throw new Error("Non-200");
+      throw new Error("Servidor respondeu com erro");
     }
   } catch (err) {
-    // OFFLINE
+    // OFFLINE 🟠
     const errorClass = "w-2 h-2 rounded-full bg-amber-500/50";
-    dot.className = errorClass;
-    if (dot_footer) dot_footer.className = errorClass; // Atualiza footer também
 
-    text.textContent = "A iniciar servidor...";
+    dot.className = errorClass;
+    if (dot_footer) dot_footer.className = errorClass;
+
+    text.textContent = "A ligar ao servidor...";
+
+    // Tenta novamente daqui a 30 segundos
     setTimeout(checkApiStatus, 30000);
   }
 }

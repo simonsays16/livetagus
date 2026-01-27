@@ -1,0 +1,16 @@
+# Dependências (O monstro)
+node_modules/
+
+# Logs de erros
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Ficheiros de Sistema (Lixo do Mac/Windows)
+.DS_Store
+Thumbs.db
+
+# Output do Tailwind (Opcional)
+# Se quiseres que o Netlify construa o CSS, descomenta a linha abaixo.
+# Se vais construir no PC e enviar o CSS pronto, DEIXA COMO ESTÁ (não ignores).
+# style.css
