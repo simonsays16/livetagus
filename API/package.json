@@ -1,0 +1,17 @@
+{
+  "name": "livetagus-api",
+  "version": "1.0.0",
+  "description": "API Backend para o LiveTagus",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "node-fetch": "^2.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
