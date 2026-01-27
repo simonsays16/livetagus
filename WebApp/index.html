@@ -38,6 +38,23 @@
     />
     <meta name="theme-color" content="#09090b" />
     <title>LiveTagus | Fertagus em Tempo Real</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+              mono: ["JetBrains Mono", "monospace"],
+            },
+            animation: {
+              "pulse-slow": "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+            },
+          },
+        },
+      };
+    </script>
     <script src="./menu.js" defer></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />

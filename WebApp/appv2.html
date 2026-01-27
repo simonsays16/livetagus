@@ -787,8 +787,7 @@
 
     <script>
       const PROXY = "https://corsproxy.io/?";
-      const API_FERTAGUS_NEW =
-        "https://api-transportes.onrender.com/api/fertagus";
+      const API_FERTAGUS_NEW = "https://api.livetagus.pt/fertagus";
 
       const FERTAGUS_STATIONS = [
         { id: "9468122", key: "setubal", name: "Setúbal" },
@@ -829,27 +828,6 @@
       let enableSmartSchedule = false;
 
       // --- FUNCTIONS DECLARATIONS ---
-
-      function checkMaintenanceMode() {
-        const now = new Date();
-        const hour = now.getHours();
-        const day = now.getDay();
-
-        let isMaintenance = false;
-        if (hour >= 2 && hour < 5) isMaintenance = false;
-        if (day === 6 && hour >= 2) isMaintenance = false;
-        if (day === 0) isMaintenance = false;
-        if (day === 1 && hour < 5) isMaintenance = false;
-
-        if (isMaintenance) {
-          document
-            .getElementById("maintenance-overlay")
-            .classList.remove("block");
-          if (window.lucide) lucide.createIcons();
-          return true;
-        }
-        return false;
-      }
 
       window.loadSettings = function () {
         const savedTheme = localStorage.getItem("theme");
@@ -1970,8 +1948,6 @@
       };
 
       async function init() {
-        if (checkMaintenanceMode()) return;
-
         setupPWA();
         loadSettings();
 

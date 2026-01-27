@@ -228,18 +228,18 @@
         const now = new Date();
         const hour = now.getHours();
 
-        // Lógica de Poupança SÓ para a API LiveTagus
-        // const isApiSavingsMode = hour >= 2 && hour < 5;
+        // Lógica de Poupança para a API LiveTagus e IP (desligar entre 02:00 e 05:00)
+        // const isApiSavingsMode = hour >= 2 && hour < 5; (desativado)
 
         try {
-          // 1. Configurar pedido à IP (Sempre ativo)
+          // Configuração pedido à IP
           const year = now.getFullYear();
           const month = String(now.getMonth() + 1).padStart(2, "0");
           const day = String(now.getDate()).padStart(2, "0");
           const dateStr = `${year}-${month}-${day}`;
           const ipUrl = `https://www.infraestruturasdeportugal.pt/negocios-e-servicos/horarios-ncombio/14228/${dateStr}`;
 
-          // 2. Configurar pedido à API (Depende da hora)
+          // Configuração pedido à API
           const apiUrl = "https://api.livetagus.pt/";
 
           // Promises Array
