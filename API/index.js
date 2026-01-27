@@ -699,8 +699,15 @@ const scheduleNextTick = () => {
   }, delay);
 };
 
-app.get("/api/fertagus", (req, res) => res.json(OUTPUT_CACHE));
-app.get("/", (req, res) => res.send("API LiveTagus v2.24"));
+app.get("/fertagus", (req, res) => res.json(OUTPUT_CACHE));
+app.get("/", (req, res) => {
+  res.json({
+    status: "online",
+    message: "API LiveTagus a Funcionar Corretamente na Azure",
+    version: "3.0.2",
+    timestamp: new Date().toISOString(),
+  });
+});
 
 app.listen(PORT, () => {
   console.log(`Server running on ${PORT}`);
