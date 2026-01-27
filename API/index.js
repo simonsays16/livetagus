@@ -708,6 +708,13 @@ app.get("/", (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+app.use((req, res) => {
+  res.status(404).json({
+    status: "error",
+    code: 404,
+    message: "Ups! Perdeste te? Vai para o nosso site https://livetagus.pt",
+  });
+});
 
 app.listen(PORT, () => {
   console.log(`Server running on ${PORT}`);
