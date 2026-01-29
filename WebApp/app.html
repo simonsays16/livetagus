@@ -2213,8 +2213,9 @@
         if (window.lucide) lucide.createIcons();
       }
 
-      // --- Lógica do Cartão Spotify ---
+      // --- Lógica do Cartão Spotify (Leitura Direta do JSON) ---
       const SPOTIFY_API_URL = "https://api.npoint.io/0f0a3c1ca3b044f666e8";
+
       async function loadSpotifyCard() {
         const container = document.getElementById("spotify-card-container");
         const coverImg = document.getElementById("sp-cover");
@@ -2224,18 +2225,34 @@
         const badge = document.getElementById("quinzena-badge");
 
         try {
-          const response = await fetch(SPOTIFY_API_URL, { cache: "no-store" });
+          // Adiciona timestamp para evitar cache antiga do JSON
+          const response = await fetch(`${SPOTIFY_API_URL}?t=${Date.now()}`, {
+            cache: "no-store",
+          });
           if (!response.ok) return;
           const data = await response.json();
 
-          if (data.album_id) {
-            artistText.innerText = data.artist_name || "Spotify";
-            const spotifyUrl = `https://open.spotify.com/album/${data.album_id}`;
-            btnLink.href = spotifyUrl;
+          // Verifica se temos os dados mínimos
+          if (data.album_link || data.album_id) {
+            // 1. Preencher Textos
+            artistText.innerText = data.artist_name || "Artista";
+            titleText.innerText = data.album_name || "Sugestão Musical";
 
+            // 2. Preencher Link
+            btnLink.href =
+              data.album_link ||
+              `https://open.spotify.com/album/${data.album_id}`;
+
+            // 3. Preencher Imagem (Direta do JSON)
+            if (data.album_cover) {
+              coverImg.src = data.album_cover;
+            }
+
+            // 4. Lógica da Nota/Badge
             if (data.nota && data.nota.trim() !== "") {
               if (badge) badge.innerText = data.nota;
             } else {
+              // Fallback automático se o campo "nota" estiver vazio
               const agora = new Date();
               const mes = agora
                 .toLocaleString("pt-PT", { month: "short" })
@@ -2245,26 +2262,12 @@
               if (badge) badge.innerText = `${parte} Quiz. ${mesCap}`;
             }
 
-            try {
-              const oEmbedUrl = `https://open.spotify.com/oembed?url=${encodeURIComponent(spotifyUrl)}`;
-              const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(oEmbedUrl)}`;
-              const metaRes = await fetch(proxyUrl);
-              if (metaRes.ok) {
-                const meta = await metaRes.json();
-                titleText.innerText = meta.title || "Sugestão da Quinzena";
-                coverImg.src = meta.thumbnail_url;
-              } else {
-                throw new Error("Falha no título automático");
-              }
-            } catch (titleError) {
-              console.warn("Não foi possível obter o título automático.");
-              titleText.innerText = data.album_name || "Álbum da Quinzena";
-            }
+            // Mostrar o cartão
             container.classList.remove("hidden");
             if (window.lucide) lucide.createIcons();
           }
         } catch (e) {
-          console.error("Erro no widget:", e);
+          console.error("Erro no widget Spotify:", e);
         }
       }
       document.addEventListener("DOMContentLoaded", loadSpotifyCard);
