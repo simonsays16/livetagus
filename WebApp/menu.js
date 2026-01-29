@@ -59,7 +59,7 @@ function injectNavigation() {
                     </div>
 
                     <div class="flex flex-col items-start gap-3">
-                        <p class="text-[10px] text-zinc-600 font-mono mb-0 leading-none">LiveTagus • v.b25.01.2026 • BETA</p>
+                        <p class="text-[10px] text-zinc-600 font-mono mb-0 leading-none">LiveTagus • v.b29.01.2026 • BETA</p>
                         
                         <div id="api-status-display" class="flex items-center gap-2 mb-1">
                             <span id="status-dot" class="w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-700"></span>
@@ -100,7 +100,7 @@ function injectFooter() {
                     </a>
                     
                     <p class="text-xs text-zinc-500 max-w-xs leading-relaxed">
-                        LiveTagus • v.b25.01.2026 • BETA<br><br>
+                        LiveTagus • v.b29.01.2026 • BETA<br><br>
                         Projeto independente e não oficial. Sem afiliação à Fertagus ou IP. Todos os direitos sobre os dados de circulação pertencem aos respetivos proprietários<br><br>
                         Em caso de dúvida, erro ou sugestão contacte-nos:
                     </p>                    
@@ -259,7 +259,7 @@ async function checkApiStatus() {
 
   // --- MODO POUPANÇA (COMENTADO PARA TESTES) ---
   /* const hour = now.getHours();
-  // BLOQUEIO: Entre as 02:00 e as 05:00 não gastamos recursos
+  BLOQUEIO: Entre as 02:00 e as 05:00 não gastamos recursos
   if (hour >= 2 && hour < 5) {
     dot.className = "w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-700";
     if (dot_footer)

@@ -1,10 +1,8 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  // Mantém o content como estava
   content: ["./*.{html,js}"],
-  darkMode: ["class", '[data-theme="dark"]'],
+  darkMode: "class",
 
-  // --- AQUI ESTÁ A CORREÇÃO ---
   safelist: [
     // Cores de Status (Verde, Amarelo, Vermelho, Cinza)
     "bg-emerald-500",

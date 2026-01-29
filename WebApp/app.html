@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="pt">
+<html lang="pt" class="scroll-smooth">
   <head>
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <meta name="theme-color" content="#09090b" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -17,6 +17,7 @@
       name="description"
       content="LiveTagus - Monitorização em tempo real dos comboios da Fertagus. Veja horários, atrasos e supressões. App gratuita e open-source."
     />
+    <meta name="robots" content="index, follow" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://livetagus.pt/" />
     <meta
@@ -52,300 +53,285 @@
       type="image/x-icon"
     />
     <title>App LiveTagus | Fertagus em Tempo Real</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ["Inter", "sans-serif"],
-              mono: ["JetBrains Mono", "monospace"],
-            },
-            animation: {
-              "pulse-slow": "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-            },
-          },
-        },
-      };
-    </script>
-    <script src="./menu.js"></script>
-    <link href="./style.css" rel="stylesheet" />
-    <script src="./lucide.js"></script>
+    <link rel="stylesheet" href="./style.css" />
+    <script src="./menu.js" defer></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
+
+    <style>
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+      }
+      .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+
+      @keyframes pulse-dot {
+        0% {
+          box-shadow: 0 0 0 0 var(--dot-color-glow, rgba(59, 130, 246, 0.5));
+          opacity: 1;
+        }
+        70% {
+          box-shadow: 0 0 0 6px transparent;
+          opacity: 1;
+        }
+        to {
+          box-shadow: 0 0 0 0 transparent;
+          opacity: 1;
+        }
+      }
+      .dot-ping {
+        animation: pulse-dot 2s infinite;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .animate-fade-in {
+        animation: fadeIn 0.6s ease-out forwards;
+      }
+
+      .mask-gradient {
+        mask-image: linear-gradient(180deg, #000 90%, transparent);
+        -webkit-mask-image: linear-gradient(180deg, #000 90%, transparent);
+      }
+
+      /* Custom Select Styles */
+      .select-header {
+        appearance: none;
+        background-color: transparent;
+        border: none;
+        padding: 0;
+        margin: 0;
+        font-family: inherit;
+        font-size: inherit;
+        cursor: pointer;
+        line-height: 1;
+        outline: none;
+        width: 100%;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
+      }
+      .select-header option {
+        background-color: #09090b;
+        color: white;
+      }
+
+      /* Light mode option override */
+      :root:not(.dark) .select-header option {
+        background-color: #ffffff;
+        color: #000000;
+      }
+    </style>
+    <script>
+      window.lucide = {
+        createIcons: () => {
+          const icons = {
+            moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+            "arrow-right": '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+            "arrow-right-left":
+              '<path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/>',
+            "refresh-cw":
+              '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+            x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+            "train-track":
+              '<path d="M2 17 17 2"/><path d="m2 14 8 8"/><path d="m5 11 8 8"/><path d="m8 8 8 8"/><path d="m11 5 8 8"/><path d="m14 2 8 8"/><path d="M7 22 22 7"/>',
+            info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+            "alert-triangle":
+              '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+            "gamepad-2":
+              '<line x1="6" x2="10" y1="12" y2="12"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="15" x2="15.01" y1="13" y2="13"/><line x1="18" x2="18.01" y1="11" y2="11"/><rect width="20" height="12" x="2" y="6" rx="2"/>',
+            download:
+              '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
+            "chevron-down": '<path d="m6 9 6 6 6-6"/>',
+          };
+
+          document.querySelectorAll("[data-lucide]").forEach((element) => {
+            const key = element.getAttribute("data-lucide");
+            if (!icons[key]) return;
+
+            const svg = document.createElementNS(
+              "http://www.w3.org/2000/svg",
+              "svg",
+            );
+            svg.setAttribute("width", "24");
+            svg.setAttribute("height", "24");
+            svg.setAttribute("viewBox", "0 0 24 24");
+            svg.setAttribute("fill", "none");
+            svg.setAttribute("stroke", "currentColor");
+            svg.setAttribute("stroke-width", "2");
+            svg.setAttribute("stroke-linecap", "round");
+            svg.setAttribute("stroke-linejoin", "round");
+            const currentClasses = element.getAttribute("class") || "";
+            svg.setAttribute(
+              "class",
+              `lucide lucide-${key} ${currentClasses}`.trim(),
+            );
+            if (element.id) svg.setAttribute("id", element.id);
+            svg.innerHTML = icons[key];
+            element.parentNode.replaceChild(svg, element);
+          });
+        },
+      };
+    </script>
   </head>
-  <body class="h-screen flex flex-col overflow-hidden">
-    <!-- Maintenance Overlay
-    <div
-      id="maintenance-overlay"
-      class="fixed inset-0 z-[100] bg-[#09090b] flex flex-col items-center justify-center p-8 hidden text-center"
-    >
-      <div class="absolute inset-0 overflow-hidden">
-        <div
-          class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-blue-900/20 rounded-full blur-[100px] pointer-events-none animate-pulse"
-        ></div>
-      </div>
+  <body
+    class="h-[100dvh] flex flex-col overflow-hidden bg-zinc-50 dark:bg-[#09090b] text-zinc-900 dark:text-zinc-200 font-sans transition-colors duration-300 selection:bg-blue-500/30"
+  >
+    <div id="global-nav"></div>
 
-      <div class="relative z-10 flex flex-col items-center max-w-sm">
-        <div
-          class="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-6 border border-white/10 shadow-xl"
-        >
-          <i data-lucide="moon" class="w-8 h-8 text-blue-400"></i>
-        </div>
-
-        <h1 class="text-2xl font-bold text-white mb-2 tracking-tight">
-          Estamos a descansar
-        </h1>
-        <p class="text-sm text-zinc-400 leading-relaxed mb-6">
-          Para reduzir a pegada ecológica e poupar recursos, a app entra em modo
-          de suspensão enquanto não há comboios. <br />
-          Está prevista a integração dos horários de fim de semana a 1 de
-          fevereiro. Pedimos desculpa pelo incómodo causado :)
-          O sistema de Tempo Real funciona nos Dias Úteis. A integração de Fins
-          de Semana chega dia 1 de Fevereiro.
-          <br />
-          <br />
-          Até lá, vemo-nos na segunda-feira de manhã!
-        </p>
-
-        <div
-          class="bg-white/5 rounded-xl p-4 w-full border border-white/5 mb-8"
-        >
-          <div
-            class="flex items-center justify-between mb-2 pb-2 border-b border-white/5"
-          >
-            <span
-              class="text-xs font-bold uppercase text-zinc-500 tracking-wider"
-              >Diariamente</span
-            >
-            <span class="text-xs font-mono text-blue-400">02:00 - 05:00</span>
-          </div>
-          <div class="flex items-center justify-between">
-            <span
-              class="text-xs font-bold uppercase text-zinc-500 tracking-wider"
-              >Fim de Semana</span
-            >
-            <div class="text-right">
-              <span class="text-[10px] text-zinc-500 block"
-                >Sábado 02:00 até</span
-              >
-              <span class="text-xs font-mono text-blue-400">Segunda 05:00</span>
-            </div>
-          </div>
-        </div>
-
-        <button
-          onclick="window.location.reload()"
-          class="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold uppercase tracking-widest rounded-lg transition-all shadow-lg hover:shadow-blue-500/25 active:scale-95"
-        >
-          Tentar Novamente
-        </button>
-        <br />
-        <a
-          class="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold uppercase tracking-widest rounded-lg transition-all shadow-lg hover:shadow-blue-500/25 active:scale-95"
-          href="./"
-        >
-          Página Inicial
-        </a>
-      </div>
-    </div>
-    <div id="global-nav"></div>-->
-
-    <!-- PWA Install Prompt -->
-    <div id="pwa-install-prompt" class="install-pwa">
-      <p class="text-xs font-medium" style="color: var(--text-primary)">
-        Para uma melhor experiência, instale a Web App.
-      </p>
-      <button
-        onclick="installPWA()"
-        class="px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg w-full"
-      >
-        Instalar App
-      </button>
-      <button
-        onclick="
-          document.getElementById('pwa-install-prompt').style.display = 'none'
-        "
-        class="text-[10px] text-zinc-500"
-      >
-        Mais tarde
-      </button>
-    </div>
-
+    <!-- Background Ambient Light -->
     <div
       id="ambient-light"
       class="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none transition-colors duration-1000"
     ></div>
 
-    <div class="relative z-10 w-full max-w-md mx-auto flex flex-col h-full">
-      <!-- Header -->
-      <div class="px-6 pt-8 pb-2 z-20 flex flex-col gap-4">
-        <div class="flex justify-between items-end">
-          <div class="flex flex-col gap-1 min-w-0 flex-1 mr-2">
-            <div
-              class="flex items-center gap-2 text-[10px] font-bold tracking-wider uppercase opacity-80"
-              style="color: var(--text-secondary)"
+    <!-- Main Container -->
+    <main
+      class="relative z-10 w-full max-w-md mx-auto flex flex-col h-full pt-24"
+      role="main"
+    >
+      <!-- Compact Header Area (One Line) -->
+      <div class="px-6 pt-0 pb-1 z-20 flex flex-col flex-none">
+        <div class="flex items-center justify-between w-full gap-2 relative">
+          <!-- Origin Select -->
+          <div class="flex-1 min-w-0 relative group">
+            <label
+              for="sel-origin"
+              class="text-[9px] font-bold uppercase tracking-wider text-zinc-400 absolute -top-3 left-0"
             >
-              <span>Partida</span>
-              <i data-lucide="arrow-right" class="w-3 h-3"></i>
-              <span>Destino</span>
-            </div>
-            <div class="flex items-center gap-2 flex-wrap">
-              <h1
-                id="station-display"
-                class="text-2xl font-bold tracking-tight leading-none station-name"
-                style="color: var(--text-primary)"
-              >
-                Corroios
-              </h1>
-              <span class="font-light" style="color: var(--text-secondary)">
-                /
-              </span>
-              <h2
-                id="dest-display"
-                class="text-xl font-medium tracking-tight leading-none station-name"
-                style="color: var(--accent)"
-              >
-                Roma-Areeiro
-              </h2>
-            </div>
+              Partida
+            </label>
+            <select
+              id="sel-origin"
+              onchange="handleOriginChange()"
+              class="select-header text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors cursor-pointer py-0 pr-4"
+              aria-label="Selecione a estação de partida"
+            ></select>
+            <i
+              data-lucide="chevron-down"
+              class="w-3.5 h-3.5 absolute right-0 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none opacity-50 group-hover:opacity-100 transition-opacity"
+            ></i>
           </div>
-          <div class="flex gap-2 flex-shrink-0">
-            <button
-              id="config-btn"
-              onclick="toggleConfig()"
-              class="p-3 glass-panel hover:bg-white/10 rounded-xl transition-all text-zinc-400 hover:text-white hidden shadow-sm"
-              style="color: var(--text-secondary)"
+
+          <!-- Swap Button -->
+          <button
+            onclick="swapStations()"
+            class="shrink-0 p-2 rounded-full bg-zinc-100 dark:bg-white/5 text-zinc-500 dark:text-zinc-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors active:scale-90 relative top-1"
+            aria-label="Trocar estações de partida e destino"
+          >
+            <i data-lucide="arrow-right-left" class="w-3.5 h-3.5"></i>
+          </button>
+
+          <!-- Destination Select -->
+          <div class="flex-1 min-w-0 relative group text-right">
+            <label
+              for="sel-dest"
+              class="text-[9px] font-bold uppercase tracking-wider text-zinc-400 absolute -top-3 right-0"
             >
-              <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
-            </button>
-            <!-- Settings Button -->
-            <button
-              onclick="openSettings()"
-              class="p-3 glass-panel hover:bg-white/10 rounded-xl transition-all text-zinc-400 hover:text-white shadow-sm"
-              style="color: var(--text-secondary)"
-            >
-              <i data-lucide="settings" class="w-4 h-4"></i>
-            </button>
-            <button
-              onclick="manualRefresh()"
-              id="refresh-btn"
-              class="p-3 glass-panel hover:bg-white/10 rounded-xl transition-all active:scale-90 text-zinc-400 hover:text-white shadow-sm"
-              style="color: var(--text-secondary)"
-            >
-              <i data-lucide="refresh-cw" id="refresh-icon" class="w-4 h-4"></i>
-            </button>
+              Destino
+            </label>
+            <select
+              id="sel-dest"
+              onchange="handleDestChange()"
+              style="font-size: 1.125rem; line-height: 1.75rem"
+              class="select-header text-lg font-medium tracking-tight text-blue-500 hover:text-blue-400 transition-colors cursor-pointer py-0 pl-4 text-right"
+              dir="rtl"
+              aria-label="Selecione a estação de destino"
+            ></select>
+            <i
+              data-lucide="chevron-down"
+              class="w-3 h-3 absolute left-0 top-1/2 -translate-y-1/2 text-blue-500/50 pointer-events-none opacity-50 group-hover:opacity-100 transition-opacity"
+            ></i>
           </div>
         </div>
 
-        <!-- Next Train Countdown Header -->
+        <!-- Compact Next Train Countdown -->
         <div
           id="next-train-header"
-          class="hidden opacity-0 transition-opacity duration-500"
+          class="hidden opacity-0 transition-opacity duration-500 mt-3"
         >
-          <p
-            class="text-xs font-medium flex items-center gap-2 px-3 py-1.5 rounded-full w-fit"
-            style="
-              color: var(--text-secondary);
-              background-color: var(--input-bg);
-            "
-          >
-            <span class="uppercase tracking-widest text-[9px] font-bold">
-              Próximo
-            </span>
-            <span
-              id="countdown-display"
-              class="text-sm font-bold font-mono"
-              style="color: var(--accent)"
-            >
-              -- min -- s
-            </span>
-          </p>
-        </div>
-
-        <!-- Configuration Panel -->
-        <div
-          id="config-panel"
-          class="hidden overflow-hidden transition-all duration-300"
-        >
-          <div class="p-5 glass-panel rounded-2xl space-y-4 mt-2 shadow-lg">
-            <div class="grid grid-cols-2 gap-4">
-              <div class="space-y-1.5">
-                <label
-                  class="text-[9px] uppercase font-bold tracking-wider"
-                  style="color: var(--text-secondary)"
-                >
-                  De
-                </label>
-                <select id="sel-origin" class="select-input w-full"></select>
-              </div>
-              <div class="space-y-1.5">
-                <label
-                  class="text-[9px] uppercase font-bold tracking-wider"
-                  style="color: var(--text-secondary)"
-                >
-                  Para
-                </label>
-                <select id="sel-dest" class="select-input w-full"></select>
-              </div>
-            </div>
+          <div class="flex items-center gap-2 text-xs">
             <div
-              class="pt-3 border-t flex justify-between items-center"
-              style="border-color: var(--glass-border)"
+              class="flex items-baseline gap-1.5 px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/5"
             >
-              <div class="flex flex-col gap-0.5">
-                <div class="flex items-center gap-2">
-                  <span
-                    id="status-ping"
-                    class="relative inline-flex h-1.5 w-1.5 rounded-full bg-blue-500 dot-ping"
-                  ></span>
-                  <span
-                    id="status-text"
-                    class="text-[10px] font-bold uppercase tracking-wider"
-                    style="color: var(--text-secondary)"
-                  >
-                    Online
-                  </span>
-                </div>
-                <span
-                  id="last-updated"
-                  class="text-[9px] font-mono pl-3.5"
-                  style="color: var(--text-secondary)"
-                >
-                  --:--
-                </span>
-              </div>
+              <span
+                class="uppercase tracking-widest text-[9px] font-bold text-zinc-500"
+              >
+                Próximo
+              </span>
+              <span
+                id="countdown-display"
+                class="font-mono font-bold text-blue-500"
+              >
+                -- min -- s
+              </span>
+            </div>
+
+            <!-- Live Status Indicator -->
+            <div class="flex items-center gap-1.5 ml-auto opacity-70">
+              <span
+                id="status-ping"
+                class="relative inline-flex h-1.5 w-1.5 rounded-full bg-blue-500"
+              ></span>
+              <span
+                id="last-updated"
+                class="text-[9px] font-mono text-zinc-400 leading-none"
+              >
+                --:--
+              </span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Train List -->
+      <!-- Train List Area -->
       <div
         id="train-container"
-        class="flex-grow overflow-y-auto px-6 pb-32 pt-0 scrollbar-hide mask-gradient"
+        class="flex-grow overflow-y-auto px-6 pb-32 pt-2 scrollbar-hide mask-gradient"
       >
-        <div id="train-list" class="space-y-4 pb-12"></div>
+        <div id="train-list" class="space-y-3 pb-12"></div>
         <button
           id="load-more-btn"
           onclick="loadMore()"
-          class="hidden w-full pb-12 text-xs font-bold uppercase tracking-widest hover:text-zinc-300 transition-colors"
-          style="color: var(--text-secondary)"
+          class="hidden w-full pb-12 text-xs font-bold uppercase tracking-widest text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 transition-colors text-center mt-4"
         >
           Ver Mais Comboios
         </button>
-        <div class="next-divider" id="next-divider">
-          <div class="next-line"></div>
-          <span class="next-text">A Nossa Sugestão Para a Viagem</span>
-          <div class="next-line"></div>
+        <div
+          class="flex items-center gap-4 pb-2 opacity-80 scroll-mt-[180px]"
+          id="next-divider"
+        >
+          <div
+            class="flex-1 h-px bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50"
+          ></div>
+          <span
+            class="text-[0.65rem] font-extrabold uppercase tracking-[0.2em] text-blue-500 whitespace-nowrap"
+          >
+            A nossa sugestão para a Viagem
+          </span>
+          <div
+            class="flex-1 h-px bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50"
+          ></div>
         </div>
+
+        <!-- Spotify Card -->
         <div
           id="spotify-card-container"
-          class="glass-card rounded-2xl overflow-hidden mb-8 mt-4 hidden animate-fade-in w-full relative group shadow-lg"
+          class="bg-white/90 dark:bg-zinc-800/40 backdrop-blur-sm border border-black/5 dark:border-white/5 shadow-lg rounded-2xl overflow-hidden mb-8 mt-4 hidden animate-fade-in w-full relative group"
         >
           <div class="flex h-36">
             <div
@@ -355,11 +341,14 @@
                 id="sp-cover"
                 src="./imagens/icon.svg"
                 class="absolute inset-0 w-full h-full object-cover"
-                alt="Capa"
+                alt="Capa do Álbum"
+                width="144"
+                height="144"
+                loading="lazy"
               />
             </div>
 
-            <div class="flex-1 p-4 flex flex-col justify-between min-w-0">
+            <div class="flex-1 p-3 flex flex-col justify-between min-w-0">
               <div>
                 <div class="flex items-center justify-between mb-1">
                   <span
@@ -368,13 +357,11 @@
                   >
                     Quinzena Atual
                   </span>
-                  <i data-lucide="music" class="w-3 h-3 text-zinc-600"></i>
                 </div>
 
                 <h2
                   id="sp-title"
-                  class="text-base font-bold text-zinc-100 leading-tight line-clamp-2 mt-1"
-                  style="color: var(--text-primary)"
+                  class="text-base font-bold text-zinc-900 dark:text-zinc-100 leading-tight line-clamp-2 mt-1"
                 >
                   A carregar...
                 </h2>
@@ -391,7 +378,9 @@
                 id="sp-link"
                 href="#"
                 target="_blank"
+                rel="noopener noreferrer"
                 class="mt-2 flex items-center justify-center gap-2 w-full py-2 bg-[#1DB954] hover:bg-[#1ed760] text-black rounded-lg transition-all active:scale-95"
+                aria-label="Ouvir no Spotify"
               >
                 <svg class="w-4 h-4 fill-black shrink-0" viewBox="0 0 24 24">
                   <path
@@ -413,300 +402,9 @@
       <!-- Train Details Modal -->
       <div
         id="train-details-modal"
-        class="fixed inset-x-0 bottom-0 h-[85vh] glass-panel rounded-t-[2rem] z-50 transform translate-y-full transition-transform duration-300 flex flex-col shadow-2xl border-t overflow-hidden"
-        style="
-          border-color: var(--glass-border);
-          background-color: var(--modal-bg);
-        "
+        class="fixed inset-x-0 bottom-0 h-[85vh] bg-white/85 dark:bg-[#09090b]/95 backdrop-blur-xl border-t border-black/5 dark:border-white/10 rounded-t-[2rem] z-50 transform translate-y-full transition-transform duration-300 flex flex-col shadow-2xl overflow-hidden"
       >
         <!-- Content Injected via JS -->
-      </div>
-
-      <!-- Settings Modal -->
-      <div
-        id="settings-modal"
-        class="fixed inset-0 z-[60] transform translate-x-full transition-transform duration-300 flex flex-col"
-        style="background-color: var(--bg-color)"
-      >
-        <div
-          class="p-6 border-b flex justify-between items-center sticky top-0 z-10"
-          style="
-            border-color: var(--glass-border);
-            background-color: var(--modal-bg);
-          "
-        >
-          <h2 class="text-xl font-bold" style="color: var(--text-primary)">
-            Definições
-          </h2>
-          <button
-            onclick="closeSettings()"
-            class="p-2 bg-white/5 hover:bg-white/10 rounded-full transition-all"
-            style="color: var(--text-secondary)"
-          >
-            <i data-lucide="x" class="w-5 h-5"></i>
-          </button>
-        </div>
-
-        <div class="flex-grow overflow-y-auto p-6 space-y-8">
-          <!-- Theme -->
-          <div class="settings-section">
-            <span class="settings-title">Aparência</span>
-            <div class="glass-card rounded-xl p-1 flex">
-              <button
-                onclick="setTheme('dark')"
-                id="btn-theme-dark"
-                class="flex-1 py-2 text-xs font-bold uppercase rounded-lg transition-colors"
-              >
-                Escuro
-              </button>
-              <button
-                onclick="setTheme('light')"
-                id="btn-theme-light"
-                class="flex-1 py-2 text-xs font-bold uppercase rounded-lg transition-colors"
-              >
-                Claro
-              </button>
-              <button
-                onclick="setTheme('system')"
-                id="btn-theme-system"
-                class="flex-1 py-2 text-xs font-bold uppercase rounded-lg transition-colors"
-              >
-                Auto
-              </button>
-            </div>
-          </div>
-
-          <!-- Regular Stations Toggle -->
-          <div class="settings-section">
-            <div class="flex justify-between items-center mb-3">
-              <span class="settings-title mb-0">Estações Regulares</span>
-              <button
-                id="toggle-regular"
-                onclick="toggleRegularStations()"
-                class="toggle-btn bg-zinc-600"
-              >
-                <div class="toggle-dot translate-x-0"></div>
-              </button>
-            </div>
-
-            <div
-              id="regular-stations-content"
-              class="glass-card rounded-xl p-4 space-y-4 opacity-50 pointer-events-none transition-opacity"
-            >
-              <div class="flex items-center justify-between">
-                <span
-                  class="text-xs font-medium"
-                  style="color: var(--text-primary)"
-                >
-                  Usar Mesmas Estações (Invertidas)
-                </span>
-                <button
-                  id="btn-sync-stations"
-                  onclick="toggleSyncStations()"
-                  class="toggle-btn bg-zinc-600"
-                >
-                  <div class="toggle-dot translate-x-0"></div>
-                </button>
-              </div>
-
-              <div
-                class="space-y-3 pt-2 border-t"
-                style="border-color: var(--glass-border)"
-              >
-                <p
-                  class="text-[10px] uppercase font-bold"
-                  style="color: var(--text-secondary)"
-                >
-                  Sentido Lisboa (Sul → Norte)
-                </p>
-                <div class="grid grid-cols-2 gap-2">
-                  <select
-                    id="set-lisboa-org"
-                    class="select-input w-full"
-                    onchange="saveRegularStations()"
-                  ></select>
-                  <select
-                    id="set-lisboa-dest"
-                    class="select-input w-full"
-                    onchange="saveRegularStations()"
-                  ></select>
-                </div>
-              </div>
-
-              <div
-                id="settings-margem-group"
-                class="space-y-3 pt-2 border-t hidden"
-                style="border-color: var(--glass-border)"
-              >
-                <p
-                  class="text-[10px] uppercase font-bold"
-                  style="color: var(--text-secondary)"
-                >
-                  Sentido Margem (Norte → Sul)
-                </p>
-                <div class="grid grid-cols-2 gap-2">
-                  <select
-                    id="set-margem-org"
-                    class="select-input w-full"
-                    onchange="saveRegularStations()"
-                  ></select>
-                  <select
-                    id="set-margem-dest"
-                    class="select-input w-full"
-                    onchange="saveRegularStations()"
-                  ></select>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Smart Schedule Toggle -->
-          <div class="settings-section">
-            <div class="flex justify-between items-center mb-3">
-              <span class="settings-title mb-0">Horário Inteligente</span>
-              <button
-                id="toggle-smart"
-                onclick="toggleSmartSchedule()"
-                class="toggle-btn bg-zinc-600"
-              >
-                <div class="toggle-dot translate-x-0"></div>
-              </button>
-            </div>
-
-            <div
-              id="smart-schedule-content"
-              class="glass-card rounded-xl p-4 space-y-4 opacity-50 pointer-events-none transition-opacity"
-            >
-              <p class="text-xs text-zinc-400 mb-2">
-                Abre automaticamente o sentido correto dependendo da hora do
-                dia.
-              </p>
-
-              <div class="flex items-center justify-between">
-                <span
-                  class="text-xs font-medium"
-                  style="color: var(--text-primary)"
-                >
-                  Manhã (05:30 - 13:00)
-                </span>
-                <select
-                  id="smart-morning"
-                  class="select-input w-32"
-                  onchange="saveSmartSchedule()"
-                >
-                  <option value="lisboa">Sentido Lisboa</option>
-                  <option value="margem">Sentido Margem</option>
-                </select>
-              </div>
-
-              <div
-                class="flex items-center justify-between border-t pt-3"
-                style="border-color: var(--glass-border)"
-              >
-                <span
-                  class="text-xs font-medium"
-                  style="color: var(--text-primary)"
-                >
-                  Tarde (13:00 - 02:00)
-                </span>
-                <select
-                  id="smart-afternoon"
-                  class="select-input w-32"
-                  onchange="saveSmartSchedule()"
-                >
-                  <option value="margem">Sentido Margem</option>
-                  <option value="lisboa">Sentido Lisboa</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <!-- Legal & Info -->
-          <div class="settings-section">
-            <span class="settings-title">Sobre & Legal</span>
-            <div class="glass-card rounded-xl p-4 space-y-4">
-              <div>
-                <h4
-                  class="text-xs font-bold mb-1"
-                  style="color: var(--text-primary)"
-                >
-                  Funcionamento
-                </h4>
-                <p class="legal-text">
-                  Esta aplicação cruza dados de horários estáticos com
-                  informações em tempo real disponibilizadas publicamente pelas
-                  Infraestruturas de Portugal.
-                  <br />
-                  <br />
-                  <strong>Status dos Comboios:</strong>
-                  <br />
-                  🟢
-                  <span class="text-emerald-500">Verde:</span>
-                  Programado/A Horas
-                  <br />
-                  🟡
-                  <span class="text-yellow-500">Amarelo:</span>
-                  Atraso detetado
-                  <br />
-                  🔴
-                  <span class="text-red-500">Vermelho:</span>
-                  Suprimido
-                </p>
-              </div>
-              <div
-                class="border-t pt-3"
-                style="border-color: var(--glass-border)"
-              >
-                <h4
-                  class="text-xs font-bold mb-1"
-                  style="color: var(--text-primary)"
-                >
-                  Privacidade & Dados
-                </h4>
-                <p class="legal-text">
-                  Esta aplicação funciona maioritariamente no seu dispositivo.
-                  Todas as preferências (estações, temas) são guardadas
-                  localmente (LocalStorage) e nunca são enviadas para servidores
-                  externos. Não existe recolha de dados analíticos ou pessoais.
-                </p>
-              </div>
-              <div
-                class="border-t pt-3"
-                style="border-color: var(--glass-border)"
-              >
-                <h4
-                  class="text-xs font-bold mb-1"
-                  style="color: var(--text-primary)"
-                >
-                  Isenção de Responsabilidade
-                </h4>
-                <p class="legal-text">
-                  Esta é uma aplicação não oficial desenvolvida pela comunidade
-                  e sem afiliação direta à Fertagus ou à IP. Os dados são
-                  fornecidos "tal como estão", podendo existir falhas de serviço
-                  alheias à nossa vontade.
-                </p>
-              </div>
-              <div class="text-center pt-2">
-                <span
-                  class="text-[9px] font-mono"
-                  style="color: var(--text-secondary)"
-                >
-                  v1.3.1 • LiveTagus
-                </span>
-                <br />
-                <span
-                  class="text-[9px] font-mono"
-                  style="color: var(--text-secondary)"
-                >
-                  v2.24.3 • API LiveTagus
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div class="h-10"></div>
-        </div>
       </div>
 
       <div
@@ -714,25 +412,165 @@
         onclick="closeDetails()"
         class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 hidden transition-opacity opacity-0"
       ></div>
+    </main>
 
-      <!-- Tabs -->
-      <div class="absolute bottom-8 left-1/2 -translate-x-1/2 w-[60%] z-30">
-        <div class="tabs-container">
-          <div id="tab-glider" class="glider"></div>
-          <button
-            onclick="switchTab('lisboa')"
-            id="tab-lisboa"
-            class="tab-btn active"
+    <!-- Hidden HTML Templates for Menu Injection -->
+    <div id="menu-settings-template" class="hidden">
+      <div
+        class="mt-8 pt-8 border-t border-zinc-200 dark:border-white/10 space-y-6"
+      >
+        <!-- Regular Stations -->
+        <div>
+          <div class="flex justify-between items-center mb-3">
+            <span
+              class="text-xs font-bold tracking-widest text-zinc-500 uppercase"
+            >
+              Estações Regulares (Fase de Testes)
+            </span>
+            <button
+              id="toggle-regular"
+              onclick="toggleRegularStations()"
+              class="w-10 h-5 rounded-full relative transition-colors cursor-pointer bg-zinc-600"
+              aria-label="Alternar estações regulares"
+            >
+              <div
+                class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform duration-300 toggle-dot"
+              ></div>
+            </button>
+          </div>
+
+          <div
+            id="regular-stations-content"
+            class="bg-zinc-100 dark:bg-zinc-800/50 rounded-xl p-4 space-y-4 opacity-50 pointer-events-none transition-opacity"
           >
-            Sentido
-            <br />
-            Lisboa
-          </button>
-          <button onclick="switchTab('margem')" id="tab-margem" class="tab-btn">
-            Sentido
-            <br />
-            Margem
-          </button>
+            <div class="flex items-center justify-between">
+              <span
+                class="text-xs font-medium text-zinc-900 dark:text-zinc-100"
+              >
+                Usar Mesmas Estações (Invertidas)
+              </span>
+              <button
+                id="btn-sync-stations"
+                onclick="toggleSyncStations()"
+                class="w-8 h-4 rounded-full relative transition-colors cursor-pointer bg-zinc-600"
+                aria-label="Sincronizar estações"
+              >
+                <div
+                  class="absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform duration-300 toggle-dot"
+                ></div>
+              </button>
+            </div>
+
+            <div
+              class="space-y-3 pt-2 border-t border-black/5 dark:border-white/10"
+            >
+              <p
+                class="text-[9px] uppercase font-bold text-zinc-500 dark:text-zinc-400"
+              >
+                Sentido Lisboa
+              </p>
+              <div class="grid grid-cols-2 gap-2">
+                <select
+                  id="set-lisboa-org"
+                  class="bg-white/50 dark:bg-black/20 border border-black/5 dark:border-white/10 rounded-lg p-2 text-xs w-full text-zinc-900 dark:text-zinc-100"
+                  onchange="saveRegularStations()"
+                  aria-label="Partida Lisboa"
+                ></select>
+                <select
+                  id="set-lisboa-dest"
+                  class="bg-white/50 dark:bg-black/20 border border-black/5 dark:border-white/10 rounded-lg p-2 text-xs w-full text-zinc-900 dark:text-zinc-100"
+                  onchange="saveRegularStations()"
+                  aria-label="Destino Lisboa"
+                ></select>
+              </div>
+            </div>
+
+            <div
+              id="settings-margem-group"
+              class="space-y-3 pt-2 border-t border-black/5 dark:border-white/10 hidden"
+            >
+              <p
+                class="text-[9px] uppercase font-bold text-zinc-500 dark:text-zinc-400"
+              >
+                Sentido Margem
+              </p>
+              <div class="grid grid-cols-2 gap-2">
+                <select
+                  id="set-margem-org"
+                  class="bg-white/50 dark:bg-black/20 border border-black/5 dark:border-white/10 rounded-lg p-2 text-xs w-full text-zinc-900 dark:text-zinc-100"
+                  onchange="saveRegularStations()"
+                  aria-label="Partida Margem"
+                ></select>
+                <select
+                  id="set-margem-dest"
+                  class="bg-white/50 dark:bg-black/20 border border-black/5 dark:border-white/10 rounded-lg p-2 text-xs w-full text-zinc-900 dark:text-zinc-100"
+                  onchange="saveRegularStations()"
+                  aria-label="Destino Margem"
+                ></select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Smart Schedule -->
+        <div>
+          <div class="flex justify-between items-center mb-3">
+            <span
+              class="text-xs font-bold tracking-widest text-zinc-500 uppercase"
+            >
+              Horário Inteligente (Fase de Testes)
+            </span>
+            <button
+              id="toggle-smart"
+              onclick="toggleSmartSchedule()"
+              class="w-10 h-5 rounded-full relative transition-colors cursor-pointer bg-zinc-600"
+              aria-label="Alternar horário inteligente"
+            >
+              <div
+                class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform duration-300 toggle-dot"
+              ></div>
+            </button>
+          </div>
+
+          <div
+            id="smart-schedule-content"
+            class="bg-zinc-100 dark:bg-zinc-800/50 rounded-xl p-4 space-y-4 opacity-50 pointer-events-none transition-opacity"
+          >
+            <div class="flex items-center justify-between">
+              <span
+                class="text-xs font-medium text-zinc-900 dark:text-zinc-100"
+              >
+                Manhã (05:30 - 13:00)
+              </span>
+              <select
+                id="smart-morning"
+                class="bg-white/50 dark:bg-black/20 border border-black/5 dark:border-white/10 rounded-lg p-1.5 text-xs w-28 text-zinc-900 dark:text-zinc-100"
+                onchange="saveSmartSchedule()"
+                aria-label="Sentido Manhã"
+              >
+                <option value="lisboa">Sentido Lisboa</option>
+                <option value="margem">Sentido Margem</option>
+              </select>
+            </div>
+            <div
+              class="flex items-center justify-between border-t border-black/5 dark:border-white/10 pt-3"
+            >
+              <span
+                class="text-xs font-medium text-zinc-900 dark:text-zinc-100"
+              >
+                Tarde (13:00 - 02:00)
+              </span>
+              <select
+                id="smart-afternoon"
+                class="bg-white/50 dark:bg-black/20 border border-black/5 dark:border-white/10 rounded-lg p-1.5 text-xs w-28 text-zinc-900 dark:text-zinc-100"
+                onchange="saveSmartSchedule()"
+                aria-label="Sentido Tarde"
+              >
+                <option value="margem">Sentido Margem</option>
+                <option value="lisboa">Sentido Lisboa</option>
+              </select>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -740,6 +578,8 @@
     <script>
       const PROXY = "https://corsproxy.io/?";
       const API_FERTAGUS_NEW = "https://api.livetagus.pt/fertagus/";
+      // Added timestamp to bust cache
+      const API_ALERTS = "https://api.npoint.io/fe6b8c687169feff5f87";
 
       const FERTAGUS_STATIONS = [
         { id: "9468122", key: "setubal", name: "Setúbal" },
@@ -770,7 +610,6 @@
       let refreshInterval = null;
       let nextTrainInterval = null;
       let isDarkMode = true;
-      let currentTheme = "system";
       let currentTrainList = [];
       let displayLimit = 10;
       let nextTrainDate = null;
@@ -778,6 +617,527 @@
 
       let enableRegularStations = false;
       let enableSmartSchedule = false;
+
+      let activeAlerts = [];
+
+      // --- CRITICAL FUNCTIONS DEFINED GLOBALLY ---
+
+      window.setTheme = function (mode) {
+        currentTheme = mode;
+        localStorage.setItem("theme", mode);
+        applyTheme();
+      };
+
+      window
+        .matchMedia("(prefers-color-scheme: dark)")
+        .addEventListener("change", (e) => {
+          if (currentTheme === "system") applyTheme();
+        });
+
+      window.applyTheme = function () {
+        let effectiveDark = false;
+        if (currentTheme === "system") {
+          effectiveDark = window.matchMedia(
+            "(prefers-color-scheme: dark)",
+          ).matches;
+        } else {
+          effectiveDark = currentTheme === "dark";
+        }
+        isDarkMode = effectiveDark;
+
+        // Toggle class 'dark' on html element
+        if (isDarkMode) {
+          document.documentElement.classList.add("dark");
+        } else {
+          document.documentElement.classList.remove("dark");
+        }
+
+        // Update menu buttons visual state
+        document.querySelectorAll(".theme-btn").forEach((btn) => {
+          btn.classList.remove(
+            "font-bold",
+            "text-black",
+            "dark:text-white",
+            "bg-black/5",
+            "dark:bg-white/10",
+          );
+          if (btn.dataset.mode === currentTheme) {
+            btn.classList.add(
+              "font-bold",
+              "text-black",
+              "dark:text-white",
+              "bg-black/5",
+              "dark:bg-white/10",
+            );
+          }
+        });
+
+        // --- UPDATE LOGOS & BADGES (Replicating menu.js logic) ---
+        const navLogo = document.getElementById("nav-logo");
+        const footerLogo = document.getElementById("footer-logo");
+        const netlifyBadgeMenu = document.getElementById("netlify-badge-menu");
+        const netlifyBadgeFooter = document.getElementById(
+          "netlify-badge-footer",
+        );
+
+        const logoLight = "./imagens/logotransparente.svg";
+        const logoDark = "./imagens/icon.svg";
+        const badgeDark =
+          "https://www.netlify.com/img/global/badges/netlify-dark.svg";
+        const badgeLight =
+          "https://www.netlify.com/img/global/badges/netlify-light.svg";
+
+        if (isDarkMode) {
+          if (navLogo) navLogo.src = logoDark;
+          if (footerLogo) footerLogo.src = logoDark;
+          if (netlifyBadgeMenu) netlifyBadgeMenu.src = badgeDark;
+          if (netlifyBadgeFooter) netlifyBadgeFooter.src = badgeDark;
+        } else {
+          if (navLogo) navLogo.src = logoLight;
+          if (footerLogo) footerLogo.src = logoLight;
+          if (netlifyBadgeMenu) netlifyBadgeMenu.src = badgeLight;
+          if (netlifyBadgeFooter) netlifyBadgeFooter.src = badgeLight;
+        }
+      };
+
+      // Helper to calculate direction based on indices
+      function calculateDirection(orgKey, dstKey) {
+        const orgIdx = FERTAGUS_STATIONS.findIndex((s) => s.key === orgKey);
+        const dstIdx = FERTAGUS_STATIONS.findIndex((s) => s.key === dstKey);
+        if (orgIdx === -1 || dstIdx === -1) return "lisboa"; // fallback
+
+        // 0 = Setubal (South), 13 = Roma-Areeiro (North)
+        // If moving towards higher index -> North -> Lisboa
+        if (orgIdx < dstIdx) return "lisboa";
+        return "margem";
+      }
+
+      function focusOnContent() {
+        // Delay slightly to ensure rendering is complete
+        setTimeout(() => {
+          // Prioritize alerts container, fallback to divider
+          const alerts = document.getElementById("alerts-dynamic-container");
+          const divider = document.getElementById("next-divider");
+
+          if (alerts) {
+            alerts.scrollIntoView({ behavior: "smooth", block: "start" });
+          } else if (divider) {
+            divider.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }, 750);
+      }
+
+      window.handleOriginChange = function () {
+        const orgSel = document.getElementById("sel-origin");
+        if (!orgSel) return;
+
+        fertagusOrigin = orgSel.value;
+
+        // Update destination options to exclude new origin
+        populateDestSelect(fertagusOrigin);
+
+        // If current dest is same as new origin, we must change it
+        if (fertagusDest === fertagusOrigin) {
+          const dstSel = document.getElementById("sel-dest");
+          // Pick first available option
+          if (dstSel && dstSel.options.length > 0) {
+            fertagusDest = dstSel.options[0].value;
+            dstSel.value = fertagusDest;
+          }
+        } else {
+          // Ensure dropdown visual matches state
+          const dstSel = document.getElementById("sel-dest");
+          if (dstSel) dstSel.value = fertagusDest;
+        }
+
+        updateAppState();
+      };
+
+      window.handleDestChange = function () {
+        const dstSel = document.getElementById("sel-dest");
+        if (!dstSel) return;
+
+        fertagusDest = dstSel.value;
+        updateAppState();
+      };
+
+      window.swapStations = function () {
+        const temp = fertagusOrigin;
+        fertagusOrigin = fertagusDest;
+        fertagusDest = temp;
+
+        // Sync UI
+        const orgSel = document.getElementById("sel-origin");
+        if (orgSel) orgSel.value = fertagusOrigin;
+
+        populateDestSelect(fertagusOrigin);
+
+        const dstSel = document.getElementById("sel-dest");
+        if (dstSel) dstSel.value = fertagusDest;
+
+        updateAppState();
+      };
+
+      function updateAppState() {
+        // Calculate direction
+        const newDirection = calculateDirection(fertagusOrigin, fertagusDest);
+        if (newDirection !== activeTab) {
+          activeTab = newDirection;
+        }
+
+        saveState();
+        loadData();
+        focusOnContent();
+      }
+
+      // Ensure validateRoute exists (legacy support)
+      window.validateRoute = function () {
+        return true;
+      };
+
+      window.populateOriginSelect = function () {
+        const orgSel = document.getElementById("sel-origin");
+        if (!orgSel) return;
+
+        // Origin can be ANY station
+        orgSel.innerHTML = FERTAGUS_STATIONS.map(
+          (s) => `<option value="${s.key}">${s.name}</option>`,
+        ).join("");
+        orgSel.value = fertagusOrigin;
+      };
+
+      window.populateDestSelect = function (currentOrigin) {
+        const dstSel = document.getElementById("sel-dest");
+        if (!dstSel) return;
+
+        // Dest can be any station EXCEPT current origin
+        const validDests = FERTAGUS_STATIONS.filter(
+          (s) => s.key !== currentOrigin,
+        );
+        dstSel.innerHTML = validDests
+          .map((s) => `<option value="${s.key}">${s.name}</option>`)
+          .join("");
+
+        // Try to keep current selection if valid
+        if (validDests.find((s) => s.key === fertagusDest)) {
+          dstSel.value = fertagusDest;
+        } else {
+          // Default to first if invalid
+          if (validDests.length > 0) {
+            // Logic to pick reasonable default: usually farthest
+            // But simple approach first item is fine as user just changed origin
+            fertagusDest = validDests[0].key;
+            dstSel.value = fertagusDest;
+          }
+        }
+      };
+
+      // Legacy function name mapping for compatibility
+      window.updateStations = function () {
+        handleOriginChange();
+      };
+      window.updateDestinationOptions = function () {
+        populateDestSelect(fertagusOrigin);
+      };
+      window.updateStationLabels = function () {}; // No-op now as UI is selects
+
+      window.parseTimeStr = function (str) {
+        if (!str) return null;
+        const [h, m] = str.split(":").map(Number);
+        const d = new Date();
+        d.setHours(h, m, 0, 0);
+        if (d < new Date(Date.now() - 4 * 3600000)) d.setDate(d.getDate() + 1);
+        return d;
+      };
+
+      window.addMinutes = function (str, min) {
+        const d = parseTimeStr(str);
+        if (!d) return "--:--";
+        d.setMinutes(d.getMinutes() + min);
+        return d.toLocaleTimeString("pt-PT", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      };
+
+      window.updateNextCountdown = function () {
+        if (!nextTrainDate) {
+          document
+            .getElementById("next-train-header")
+            .classList.add("opacity-0", "hidden");
+          return;
+        }
+        const now = new Date();
+        let diff = Math.floor((nextTrainDate - now) / 1000);
+        if (diff < 0) diff = 0;
+        const min = Math.floor(diff / 60);
+        const sec = Math.floor((diff % 60) / 10) * 10;
+        document.getElementById("countdown-display").innerText =
+          `${min} min ${sec.toString().padStart(2, "0")} s`;
+        const header = document.getElementById("next-train-header");
+        header.classList.remove("hidden");
+        requestAnimationFrame(() => header.classList.remove("opacity-0"));
+      };
+
+      // --- ALERTS SYSTEM ---
+      const AlertsManager = {
+        fetch: async () => {
+          try {
+            // Added cache buster
+            const res = await fetch(API_ALERTS + "?t=" + Date.now());
+            if (!res.ok) return [];
+            const data = await res.json();
+            return Object.values(data);
+          } catch (e) {
+            console.error(e);
+            return [];
+          }
+        },
+
+        parseDatePT: (str) => {
+          if (!str || typeof str !== "string" || !str.includes("/"))
+            return null;
+          const [d, m, y] = str.split("/");
+          const date = new Date(y, m - 1, d);
+          date.setHours(0, 0, 0, 0);
+          return date;
+        },
+
+        isActive: (alert) => {
+          const now = new Date();
+          now.setHours(0, 0, 0, 0);
+
+          if (alert.datainicio && alert.datainicio.trim() !== "") {
+            const start = AlertsManager.parseDatePT(alert.datainicio);
+            if (start && now < start) return false;
+          }
+
+          if (alert.datafim && alert.datafim.trim() !== "") {
+            const end = AlertsManager.parseDatePT(alert.datafim);
+            if (end && now > end) return false;
+          }
+          return true;
+        },
+
+        checkSudoku: (trains) => {
+          const hasSignificantDelay = trains.some((t) => {
+            if (t.status.includes("Atraso")) {
+              const match = t.status.match(/(\d+)/);
+              if (match && parseInt(match[1]) >= 5) return true;
+            }
+            return false;
+          });
+
+          if (hasSignificantDelay) {
+            return {
+              id: "sudoku-promo",
+              tipo: "informacao",
+              nome: "Tempo de Espera?",
+              mensagem: "Aborrecido? Joga Sudoku!",
+              textolink: "Brevemente",
+              link: "#",
+              isSudoku: true,
+              icon: "gamepad-2",
+            };
+          }
+          return null;
+        },
+
+        checkPWA: () => {
+          const isStandalone = window.matchMedia(
+            "(display-mode: standalone)",
+          ).matches;
+          const dismissed = sessionStorage.getItem("pwa_dismissed");
+
+          if (!isStandalone && !dismissed) {
+            return {
+              id: "pwa-install",
+              tipo: "informacao",
+              nome: "Instalar App",
+              mensagem: "Para acesso rápido e direto.",
+              textolink: "Instalar",
+              isPWA: true,
+              icon: "download",
+            };
+          }
+          return null;
+        },
+
+        generateHTML: (alerts) => {
+          if (!alerts || alerts.length === 0) return "";
+
+          let html =
+            '<div id="alerts-dynamic-container" class="mt-4 mb-1 relative group w-full animate-fade-in">';
+          html +=
+            '<div id="alerts-slider" class="w-full flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide py-1">';
+
+          alerts.forEach((alert, index) => {
+            const isWarning = alert.tipo === "aviso";
+            const bgColor = isWarning
+              ? "bg-amber-500/10 dark:bg-amber-500/5"
+              : "bg-white/90 dark:bg-zinc-800/40";
+            const borderColor = isWarning
+              ? "border-amber-500/30"
+              : "border-black/5 dark:border-white/5";
+            const iconColor = isWarning ? "text-amber-500" : "text-blue-500";
+            const textColor = "text-zinc-500 dark:text-zinc-400";
+            const titleColor = "text-zinc-800 dark:text-zinc-200";
+            const lucideIcon = alert.icon
+              ? alert.icon
+              : isWarning
+                ? "alert-triangle"
+                : "info";
+
+            let actionHtml = "";
+            if (alert.isPWA) {
+              actionHtml = `<button onclick="installPWA()" class="ml-auto shrink-0 text-[9px] font-bold uppercase tracking-wider text-white bg-blue-600 px-3 py-1.5 rounded transition-colors shadow-sm active:scale-95">Instalar</button>`;
+            } else if (alert.link && alert.link !== "#" && !alert.isSudoku) {
+              const txt = alert.textolink || "Ver";
+              actionHtml = `<a href="${alert.link}" target="_blank" class="ml-auto shrink-0 text-[9px] font-bold uppercase tracking-wider text-blue-500 border border-blue-500/30 px-3 py-1.5 rounded transition-colors active:scale-95">${txt}</a>`;
+            } else if (alert.isSudoku) {
+              actionHtml = `<span class="ml-auto shrink-0 text-[9px] font-bold uppercase text-zinc-400 px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 rounded cursor-not-allowed">Brevemente</span>`;
+            }
+
+            html += `
+                    <div id="alert-${index}" class="min-w-full snap-center h-16 ${bgColor} backdrop-blur-sm border ${borderColor} rounded-xl px-4 flex items-center gap-3 shadow-sm relative pr-10">
+                        <div class="shrink-0">
+                            <i data-lucide="${lucideIcon}" class="w-5 h-5 ${iconColor}"></i>
+                        </div>
+                        <div class="flex-1 min-w-0 flex flex-col justify-center pr-2">
+                            <h3 class="text-xs font-bold ${titleColor} leading-none truncate mb-1">${alert.nome}</h3>
+                            <p class="text-[10px] ${textColor} leading-tight line-clamp-2">${alert.mensagem}</p>
+                        </div>
+                        <div class="flex items-center self-center">
+                            ${actionHtml}
+                        </div>
+                        <button onclick="AlertsManager.dismiss(${index}, '${alert.id}')" class="absolute top-2 right-2 p-1.5 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors z-10" aria-label="Fechar aviso">
+                            <i data-lucide="x" class="w-3 h-3"></i>
+                        </button>
+                    </div>
+                `;
+          });
+          html += "</div>"; // End slider
+
+          if (alerts.length > 1) {
+            html +=
+              '<div id="alerts-pagination" class="flex justify-center gap-1 mt-1.5">';
+            alerts.forEach((_, i) => {
+              const activeClass =
+                i === 0
+                  ? "bg-blue-500 w-3"
+                  : "bg-zinc-300 dark:bg-zinc-700 w-1.5";
+              html += `<div class="h-1.5 rounded-full transition-all duration-300 ${activeClass}" data-index="${i}"></div>`;
+            });
+            html += "</div>";
+          }
+
+          html += "</div>";
+          return html;
+        },
+
+        dismiss: (index, id) => {
+          const el = document.getElementById(`alert-${index}`);
+          if (el) el.remove();
+          if (id === "pwa-install")
+            sessionStorage.setItem("pwa_dismissed", "true");
+          const container = document.getElementById("alerts-slider");
+          if (!container || container.children.length === 0) {
+            const wrapper = document.getElementById("alerts-dynamic-container");
+            if (wrapper) wrapper.remove();
+          } else {
+            const dots = document.getElementById("alerts-pagination");
+            if (dots && dots.lastChild) dots.lastChild.remove();
+          }
+        },
+      };
+
+      async function updateAlertsSystem(trainList) {
+        let tempAlerts = [];
+        const pwa = AlertsManager.checkPWA();
+        if (pwa) tempAlerts.push(pwa);
+        const sudoku = AlertsManager.checkSudoku(trainList);
+        if (sudoku) tempAlerts.push(sudoku);
+        const external = await AlertsManager.fetch();
+        external.forEach((alert) => {
+          if (AlertsManager.isActive(alert)) {
+            tempAlerts.push(alert);
+          }
+        });
+        tempAlerts.sort((a, b) => {
+          if (a.tipo === "aviso" && b.tipo !== "aviso") return -1;
+          if (a.tipo !== "aviso" && b.tipo === "aviso") return 1;
+          return 0;
+        });
+        activeAlerts = tempAlerts;
+      }
+
+      // --- MENU INTEGRATION LOGIC ---
+      function injectCustomMenuElements() {
+        // 1. Inject Settings
+        const menuOverlay = document.getElementById("menu-overlay");
+        const settingsTemplate = document.getElementById(
+          "menu-settings-template",
+        );
+
+        if (menuOverlay && settingsTemplate) {
+          const nav = menuOverlay.querySelector("nav");
+          if (nav) {
+            // Create container for new settings after nav
+            const container = document.createElement("div");
+            container.innerHTML = settingsTemplate.innerHTML;
+            nav.parentNode.insertBefore(container, nav.nextSibling);
+
+            // Initialize settings UI
+            populateSettingsUI();
+
+            // FIX: Remove the template source to prevent duplicate IDs in the DOM
+            settingsTemplate.remove();
+          }
+        }
+
+        // 2. Inject Refresh Button CORRECTLY (Left of Trigger)
+        const header = document.querySelector("#global-nav header");
+        const trigger = document.getElementById("menu-trigger");
+
+        if (
+          header &&
+          trigger &&
+          !document.getElementById("menu-controls-wrapper")
+        ) {
+          // Create wrapper for controls
+          const wrapper = document.createElement("div");
+          wrapper.id = "menu-controls-wrapper";
+          wrapper.className = "flex items-center gap-1";
+
+          // Move trigger inside wrapper
+          header.insertBefore(wrapper, trigger);
+          wrapper.appendChild(trigger);
+
+          // Create refresh button
+          const btn = document.createElement("button");
+          btn.onclick = manualRefresh;
+          btn.className =
+            "p-2 rounded-full transition-colors text-zinc-900 dark:text-white group";
+          btn.setAttribute("aria-label", "Atualizar");
+          btn.innerHTML = `<i data-lucide="refresh-cw" id="refresh-icon-menu" class="w-5 h-5 transition-transform group-active:scale-90"></i>`;
+
+          // Insert refresh button BEFORE trigger inside wrapper
+          wrapper.insertBefore(btn, trigger);
+
+          if (window.lucide) lucide.createIcons();
+        }
+
+        // Inject Legal Warning Footer
+        const footer = document.getElementById("global-footer");
+        if (footer) {
+          const p = document.createElement("p");
+          p.className =
+            "text-[0.6rem] text-center text-zinc-500 dark:text-zinc-400 mb-6 opacity-60 block w-full px-4";
+          p.innerText =
+            "Atenção: Os horários e estado de circulação podem sofrer alterações sem aviso prévio. Esteja na estação à hora programada.";
+          footer.insertBefore(p, footer.firstChild);
+        }
+      }
 
       // --- FUNCTIONS DECLARATIONS ---
 
@@ -823,95 +1183,33 @@
           (s) => `<option value="${s.key}">${s.name}</option>`,
         ).join("");
 
-        [
+        // Populate Regular Stations Selects (Injected in Menu)
+        const ids = [
           "set-lisboa-org",
           "set-lisboa-dest",
           "set-margem-org",
           "set-margem-dest",
-        ].forEach((id) => {
-          document.getElementById(id).innerHTML = optsLisboa;
+        ];
+        ids.forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) el.innerHTML = optsLisboa;
         });
 
-        document.getElementById("set-lisboa-org").value =
-          localStorage.getItem("pref_lisboa_org") || "setubal";
-        document.getElementById("set-lisboa-dest").value =
-          localStorage.getItem("pref_lisboa_dest") || "roma_areeiro";
-        document.getElementById("set-margem-org").value =
-          localStorage.getItem("pref_margem_org") || "roma_areeiro";
-        document.getElementById("set-margem-dest").value =
-          localStorage.getItem("pref_margem_dest") || "setubal";
+        const setVal = (id, key, def) => {
+          const el = document.getElementById(id);
+          if (el) el.value = localStorage.getItem(key) || def;
+        };
 
-        document.getElementById("smart-morning").value =
-          localStorage.getItem("pref_morning") || "lisboa";
-        document.getElementById("smart-afternoon").value =
-          localStorage.getItem("pref_afternoon") || "margem";
+        setVal("set-lisboa-org", "pref_lisboa_org", "setubal");
+        setVal("set-lisboa-dest", "pref_lisboa_dest", "roma_areeiro");
+        setVal("set-margem-org", "pref_margem_org", "roma_areeiro");
+        setVal("set-margem-dest", "pref_margem_dest", "setubal");
+
+        setVal("smart-morning", "pref_morning", "lisboa");
+        setVal("smart-afternoon", "pref_afternoon", "margem");
 
         updateSyncUI();
       };
-
-      window.openSettings = function () {
-        populateSettingsUI();
-        updateSettingsToggles();
-        document
-          .getElementById("settings-modal")
-          .classList.remove("translate-x-full");
-      };
-
-      window.closeSettings = function () {
-        document
-          .getElementById("settings-modal")
-          .classList.add("translate-x-full");
-        loadStationPrefs(activeTab);
-        populateOriginSelect();
-        updateDestinationOptions();
-        updateStationLabels();
-        loadData();
-      };
-
-      window.setTheme = function (mode) {
-        currentTheme = mode;
-        localStorage.setItem("theme", mode);
-        applyTheme();
-      };
-
-      window.applyTheme = function () {
-        let effectiveDark = false;
-        if (currentTheme === "system") {
-          effectiveDark = window.matchMedia(
-            "(prefers-color-scheme: dark)",
-          ).matches;
-        } else {
-          effectiveDark = currentTheme === "dark";
-        }
-
-        isDarkMode = effectiveDark;
-        document.documentElement.setAttribute(
-          "data-theme",
-          isDarkMode ? "dark" : "light",
-        );
-
-        const btnDark = document.getElementById("btn-theme-dark");
-        const btnLight = document.getElementById("btn-theme-light");
-        const btnSystem = document.getElementById("btn-theme-system");
-
-        const activeStyle = "background-color: var(--accent); color: white;";
-        const inactiveStyle =
-          "background-color: var(--input-bg); color: var(--text-secondary);";
-
-        if (btnDark && btnLight && btnSystem) {
-          btnDark.style = currentTheme === "dark" ? activeStyle : inactiveStyle;
-          btnLight.style =
-            currentTheme === "light" ? activeStyle : inactiveStyle;
-          btnSystem.style =
-            currentTheme === "system" ? activeStyle : inactiveStyle;
-        }
-      };
-
-      window
-        .matchMedia("(prefers-color-scheme: dark)")
-        .addEventListener("change", (e) => {
-          if (currentTheme === "system") applyTheme();
-        });
 
       window.toggleRegularStations = function () {
         enableRegularStations = !enableRegularStations;
@@ -946,6 +1244,7 @@
 
       function updateToggleVisual(btnId, contentId, isEnabled) {
         const btn = document.getElementById(btnId);
+        if (!btn) return;
         const dot = btn.querySelector(".toggle-dot");
         const content = document.getElementById(contentId);
 
@@ -953,33 +1252,38 @@
           btn.classList.remove("bg-zinc-600");
           btn.classList.add("bg-blue-600");
           dot.classList.remove("translate-x-0");
-          dot.classList.add("translate-x-5");
+          dot.classList.add(
+            btnId === "btn-sync-stations" ? "translate-x-3" : "translate-x-5",
+          );
           content.classList.remove("opacity-50", "pointer-events-none");
         } else {
           btn.classList.add("bg-zinc-600");
           btn.classList.remove("bg-blue-600");
           dot.classList.add("translate-x-0");
-          dot.classList.remove("translate-x-5");
+          dot.classList.remove(
+            btnId === "btn-sync-stations" ? "translate-x-3" : "translate-x-5",
+          );
           content.classList.add("opacity-50", "pointer-events-none");
         }
       }
 
       window.updateSyncUI = function () {
         const btn = document.getElementById("btn-sync-stations");
+        if (!btn) return;
         const dot = btn.querySelector("div");
         const margemGroup = document.getElementById("settings-margem-group");
 
         if (syncStations) {
           btn.classList.add("bg-blue-600");
           btn.classList.remove("bg-zinc-600");
-          dot.classList.add("translate-x-5");
+          dot.classList.add("translate-x-3");
           dot.classList.remove("translate-x-0");
           margemGroup.classList.add("hidden");
         } else {
           btn.classList.add("bg-zinc-600");
           btn.classList.remove("bg-blue-600");
           dot.classList.add("translate-x-0");
-          dot.classList.remove("translate-x-5");
+          dot.classList.remove("translate-x-3");
           margemGroup.classList.remove("hidden");
         }
       };
@@ -989,8 +1293,6 @@
         const lDest = document.getElementById("set-lisboa-dest").value;
         const mOrg = document.getElementById("set-margem-org").value;
         const mDest = document.getElementById("set-margem-dest").value;
-
-        // Remove validation here, let user choose freely
 
         localStorage.setItem("pref_lisboa_org", lOrg);
         localStorage.setItem("pref_lisboa_dest", lDest);
@@ -1012,12 +1314,10 @@
       };
 
       window.setupPWA = function () {
-        // Remove start_url property from manifest as requested
         const iconUrl = new URL("./imagens/icon.svg", window.location.href)
           .href;
         const link = document.createElement("link");
         link.rel = "manifest";
-        // Removed start_url to fix console error
         link.href = URL.createObjectURL(
           new Blob(
             [
@@ -1029,11 +1329,7 @@
                 theme_color: "#09090b",
                 orientation: "portrait",
                 icons: [
-                  {
-                    src: iconUrl,
-                    sizes: "512x512",
-                    type: "image/svg+xml",
-                  },
+                  { src: iconUrl, sizes: "512x512", type: "image/svg+xml" },
                 ],
               }),
             ],
@@ -1042,15 +1338,12 @@
         );
         document.head.appendChild(link);
 
-        // Install Prompt Logic
         window.addEventListener("beforeinstallprompt", (e) => {
           e.preventDefault();
           deferredPrompt = e;
-          // Check if already running standalone
-          if (!window.matchMedia("(display-mode: standalone)").matches) {
-            document.getElementById("pwa-install-prompt").style.display =
-              "flex";
-          }
+          updateAlertsSystem(currentTrainList).then(() => {
+            renderList(currentTrainList);
+          });
         });
       };
 
@@ -1059,82 +1352,61 @@
           deferredPrompt.prompt();
           const { outcome } = await deferredPrompt.userChoice;
           deferredPrompt = null;
-          document.getElementById("pwa-install-prompt").style.display = "none";
+          AlertsManager.dismiss(null, "pwa-install");
         }
-      };
-
-      window.populateSelects = function () {
-        const orgSel = document.getElementById("sel-origin");
-        const dstSel = document.getElementById("sel-dest");
-        const opts = FERTAGUS_STATIONS.map(
-          (s) => `<option value="${s.key}">${s.name}</option>`,
-        ).join("");
-        orgSel.innerHTML = opts;
-        dstSel.innerHTML = opts;
-      };
-
-      window.toggleConfig = function () {
-        const p = document.getElementById("config-panel");
-        p.classList.toggle("hidden");
-      };
-
-      window.updateStations = function () {
-        updateStationLabels();
-        loadData();
-      };
-
-      window.updateStationLabels = function () {
-        const org = FERTAGUS_STATIONS.find((s) => s.key === fertagusOrigin);
-        const dst = FERTAGUS_STATIONS.find((s) => s.key === fertagusDest);
-        if (org)
-          document.getElementById("station-display").innerText = org.name;
-        if (dst) document.getElementById("dest-display").innerText = dst.name;
       };
 
       window.populateOriginSelect = function () {
         const orgSel = document.getElementById("sel-origin");
-        orgSel.innerHTML = "";
+        const dstSel = document.getElementById("sel-dest");
+
+        if (!orgSel || !dstSel) return;
+
+        // Populate options
         let options = [];
         if (activeTab === "lisboa") {
           options = FERTAGUS_STATIONS.slice(0, FERTAGUS_STATIONS.length - 1);
         } else {
           options = FERTAGUS_STATIONS.slice(1).reverse();
         }
-        options.forEach((s) => {
-          const opt = document.createElement("option");
-          opt.value = s.key;
-          opt.text = s.name;
-          orgSel.appendChild(opt);
-        });
+
+        const createOpts = (list) =>
+          list
+            .map((s) => `<option value="${s.key}">${s.name}</option>`)
+            .join("");
+
+        orgSel.innerHTML = createOpts(options);
+
         if (options.find((o) => o.key === fertagusOrigin)) {
           orgSel.value = fertagusOrigin;
         } else {
-          if (activeTab === "lisboa") orgSel.value = "setubal";
-          else orgSel.value = "roma_areeiro";
+          orgSel.value = activeTab === "lisboa" ? "setubal" : "roma_areeiro";
           fertagusOrigin = orgSel.value;
         }
+
+        // After setting origin, update dest
+        updateDestinationOptions();
       };
 
       window.updateDestinationOptions = function () {
         const destSel = document.getElementById("sel-dest");
-        destSel.innerHTML = "";
+        if (!destSel) return;
+
         const orgIdx = FERTAGUS_STATIONS.findIndex(
           (s) => s.key === fertagusOrigin,
         );
+
         let validDestinations = [];
         if (activeTab === "lisboa") {
           validDestinations = FERTAGUS_STATIONS.slice(orgIdx + 1);
         } else {
           validDestinations = FERTAGUS_STATIONS.slice(0, orgIdx).reverse();
         }
-        validDestinations.forEach((s) => {
-          const opt = document.createElement("option");
-          opt.value = s.key;
-          opt.text = s.name;
-          destSel.appendChild(opt);
-        });
 
-        // Auto select first valid if current is invalid
+        destSel.innerHTML = validDestinations
+          .map((s) => `<option value="${s.key}">${s.name}</option>`)
+          .join("");
+
         if (validDestinations.find((o) => o.key === fertagusDest)) {
           destSel.value = fertagusDest;
         } else {
@@ -1143,10 +1415,6 @@
             fertagusDest = destSel.value;
           }
         }
-      };
-
-      window.validateRoute = function () {
-        // Validation removed as requested, using default updateDestinationOptions logic
       };
 
       window.parseTimeStr = function (str) {
@@ -1428,18 +1696,16 @@
       function openDetails(trainId) {
         const t = currentTrainList.find((train) => train.id == trainId);
         if (!t) return;
-        let occColorClass = "text-emerald-500";
-        let barColorClass = "bg-emerald-500";
+        let occColorClass = "text-emerald-500",
+          barColorClass = "bg-emerald-500";
         if (t.occupancy > 85) {
           occColorClass = "text-red-500";
           barColorClass = "bg-red-500";
         } else if (t.occupancy > 50) {
           occColorClass = "text-yellow-500";
           barColorClass = "bg-yellow-500";
-        } else {
-          occColorClass = "text-emerald-500";
-          barColorClass = "bg-emerald-500";
         }
+
         let carsHtml = "";
         const count = t.carriages || 4;
         const filledCount = t.occupancy
@@ -1470,8 +1736,8 @@
             const textColor = isPassed
               ? "text-zinc-600"
               : isNext
-                ? "text-[var(--text-primary)] font-bold"
-                : "text-[var(--text-secondary)]";
+                ? "text-zinc-100 font-bold"
+                : "text-zinc-500";
             const timeColor = isPassed
               ? "text-zinc-700"
               : isNext
@@ -1505,10 +1771,8 @@
           const dbTrain = currentDB.trips.find((trip) => trip.id == t.id);
           if (dbTrain) {
             const stations = FERTAGUS_STATIONS.filter((st) => dbTrain[st.key]);
-            let stationsToRender = stations;
-            if (activeTab === "margem") {
-              stationsToRender = [...stations].reverse();
-            }
+            let stationsToRender =
+              activeTab === "margem" ? [...stations].reverse() : stations;
             stationsToRender.forEach((st) => {
               const time = dbTrain[st.key];
               if (time) {
@@ -1527,9 +1791,9 @@
           }
         }
         const fullContent = `
-                <div class="flex flex-col h-full bg-[var(--modal-bg)]">
+                <div class="flex flex-col h-full bg-[#09090b]">
                     <!-- Header Sticky -->
-                    <div class="relative z-20 backdrop-blur-md border-b border-white/5 pt-6 pb-6 px-6 shadow-xl" style="background-color: var(--glass-bg)">
+                    <div class="relative z-20 backdrop-blur-md border-b border-white/5 pt-6 pb-6 px-6 shadow-xl bg-zinc-50 dark:bg-zinc-900/65">
                         <button onclick="closeDetails()" class="absolute top-5 right-5 p-2 bg-white/5 hover:bg-white/10 rounded-full text-zinc-400 hover:text-white transition-all">
                             <i data-lucide="x" class="w-5 h-5"></i>
                         </button>
@@ -1538,60 +1802,47 @@
                             <div>
                                 <div class="flex items-center gap-2 mb-2">
                                     <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase tracking-wider">Fertagus</span>
-                                    <span class="font-mono text-xs text-zinc-600">#${t.num}</span>
+                                    <span class="font-mono text-xs text-zinc-600 dark:text-zinc-400">#${t.num}</span>
                                 </div>
                                 <div class="flex justify-between items-end">
-                                    <h2 class="text-2xl font-bold tracking-tight leading-none" style="color: var(--text-primary)">${t.dest}</h2>
+                                    <h2 class="text-2xl font-bold tracking-tight leading-none text-zinc-900 dark:text-zinc-100">${t.dest}</h2>
                                     <div class="text-right">
-                                        <span class="text-3xl font-mono font-bold tracking-tighter leading-none" style="color: var(--text-primary)">${t.time}</span>
-                                        ${t.secTime ? `<span class="block text-xs text-zinc-600 line-through text-right mt-0.5 font-mono">${t.secTime}</span>` : ""}
+                                        <span class="text-3xl font-mono font-bold tracking-tighter leading-none text-zinc-900 dark:text-zinc-100">${t.time}</span>
+                                        ${t.secTime ? `<span class="block text-xs text-zinc-600 dark:text-zinc-400 line-through text-right mt-0.5 font-mono">${t.secTime}</span>` : ""}
                                     </div>
                                 </div>
                                 <div class="flex items-center justify-between mt-3">
-                                    <span class="text-xs text-zinc-500">De <span class="font-medium" style="color: var(--text-secondary)">${t.op === "FERTAGUS" ? (activeTab === "lisboa" ? "Setúbal/Coina" : "Roma-Areeiro") : t.op}</span></span>
-                                    <div class="flex items-center gap-2 px-2 py-1 rounded-full bg-white/5 border border-white/5">
+                                    <span class="text-xs text-zinc-500 dark:text-zinc-400">De <span class="font-medium text-zinc-400 dark:text-zinc-300">${t.op === "FERTAGUS" ? (activeTab === "lisboa" ? "Setúbal/Coina" : "Roma-Areeiro") : t.op}</span></span>
+                                    <div class="flex items-center gap-2 px-2 py-1 rounded-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5">
                                         <div class="w-1.5 h-1.5 rounded-full ${t.dotStatus === "green" ? "bg-emerald-500" : t.dotStatus === "yellow" ? "bg-yellow-500" : "bg-red-500"} animate-pulse"></div>
-                                        <span class="text-[10px] font-bold uppercase text-zinc-300 leading-none">${t.status}</span>
+                                        <span class="text-[10px] font-bold uppercase text-zinc-500 dark:text-zinc-300 leading-none">${t.status}</span>
                                     </div>
                                 </div>
                             </div>
                             <!-- Stats Grid -->
                             <div class="grid grid-cols-2 gap-3">
-                                <div class="rounded-xl p-3 border border-white/5 flex flex-col justify-between min-h-[70px]" style="background-color: var(--card-bg)">
+                                <div class="rounded-xl p-3 border border-black/5 dark:border-white/5 flex flex-col justify-between min-h-[70px] bg-white/50 dark:bg-zinc-800/40">
                                     <span class="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Carruagens</span>
                                     <div class="flex items-end gap-1 mt-1">
-                                        <span class="text-2xl font-mono font-bold leading-none" style="color: var(--text-primary)">${t.carriages}</span>
+                                        <span class="text-2xl font-mono font-bold leading-none text-zinc-900 dark:text-zinc-100">${t.carriages}</span>
                                         <span class="text-[10px] text-zinc-500 mb-0.5">unid.</span>
                                     </div>
                                 </div>
-                                <div class="rounded-xl p-3 border border-white/5 flex flex-col justify-between min-h-[70px]" style="background-color: var(--card-bg)">
+                                <div class="rounded-xl p-3 border border-black/5 dark:border-white/5 flex flex-col justify-between min-h-[70px] bg-white/50 dark:bg-zinc-800/40">
                                     <span class="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Ocupação</span>
                                     <div class="flex items-end gap-1 mt-1">
-                                        ${
-                                          t.occupancy !== null
-                                            ? `<span class="text-2xl font-mono font-bold ${occColorClass} leading-none">${t.occupancy}%</span>`
-                                            : `<span class="text-sm text-zinc-600 italic">--</span>`
-                                        }
+                                        ${t.occupancy !== null ? `<span class="text-2xl font-mono font-bold ${occColorClass} leading-none">${t.occupancy}%</span>` : `<span class="text-sm text-zinc-600 italic">--</span>`}
                                     </div>
                                 </div>
                             </div>
-                            <!-- Occupancy Visual -->
-                            ${
-                              t.occupancy !== null
-                                ? `
-                            <div class="flex gap-1.5 w-full mt-1">
-                                ${carsHtml}
-                            </div>`
-                                : ""
-                            }
+                            ${t.occupancy !== null ? `<div class="flex gap-1.5 w-full mt-1">${carsHtml}</div>` : ""}
                         </div>
                     </div>
                     <!-- Scrollable Timeline -->
-                    <div class="flex-grow overflow-y-auto px-6 py-8 relative" style="background-color: var(--modal-bg)">
-                        <!-- Vertical Line -->
-                        <div class="absolute left-[85px] top-0 bottom-0 w-[1px] bg-zinc-800"></div>
+                    <div class="flex-grow overflow-y-auto px-6 py-8 relative bg-zinc-50 dark:bg-[#09090b]">
+                        <div class="absolute left-[85px] top-0 bottom-0 w-[1px] bg-zinc-300 dark:bg-zinc-800"></div>
                         ${timelineHtml}
-                        <div class="h-12"></div> <!-- Padding bottom -->
+                        <div class="h-12"></div>
                     </div>
                 </div>
             `;
@@ -1616,8 +1867,6 @@
         const container = document.getElementById("train-list");
         const loadMoreBtn = document.getElementById("load-more-btn");
         currentTrainList = list;
-
-        // Clean container for full re-render
         container.innerHTML = "";
 
         if (!list || !list.length) {
@@ -1629,14 +1878,11 @@
           return;
         }
 
-        // Pagination
         const visibleList = list.slice(0, displayLimit);
         if (list.length > displayLimit) loadMoreBtn.classList.remove("hidden");
         else loadMoreBtn.classList.add("hidden");
 
-        const colorText = "text-blue-400";
-
-        // Identify Next Train
+        const colorText = "text-blue-500 dark:text-blue-400";
         let nextTrainIndex = list.findIndex(
           (t) => t.isEffectiveFuture && !t.isSuppressed,
         );
@@ -1648,27 +1894,27 @@
         updateNextCountdown();
 
         const dividerHTML = `
-                <div class="next-divider" id="next-divider">
-                    <div class="next-line"></div>
-                    <span class="next-text">Próximo Comboio</span>
-                    <div class="next-line"></div>
+                <div class="flex items-center gap-4 py-4 opacity-80 scroll-mt-[180px]" id="next-divider">
+                    <div class="flex-1 h-px bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50"></div>
+                    <span class="text-[0.65rem] font-extrabold uppercase tracking-[0.2em] text-blue-500 whitespace-nowrap">Próximo Comboio</span>
+                    <div class="flex-1 h-px bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50"></div>
                 </div>
-                <p class="warning-text">Atenção: Os horários e estado de circulação podem sofrer alterações sem aviso prévio. Esteja na estação à hora programada.</p>
             `;
 
-        // Loop and render ALL visible items (past and future)
         visibleList.forEach((t, i) => {
           const cardId = `train-${t.id}`;
           const isNext = i === nextTrainIndex;
           const isPassed = i < nextTrainIndex;
 
-          // If this is the next train, inject separator BEFORE it
           if (isNext) {
             container.insertAdjacentHTML("beforeend", dividerHTML);
+            const alertsHTML = AlertsManager.generateHTML(activeAlerts);
+            if (alertsHTML)
+              container.insertAdjacentHTML("beforeend", alertsHTML);
           }
 
-          let dotClass = "bg-zinc-600";
-          let glowColor = "rgba(59, 130, 246, 0.5)";
+          let dotClass = "bg-zinc-400 dark:bg-zinc-600",
+            glowColor = "rgba(59, 130, 246, 0.5)";
           if (t.dotStatus === "green") {
             dotClass = "bg-emerald-500";
             glowColor = "rgba(16, 185, 129, 0.5)";
@@ -1681,12 +1927,11 @@
           }
 
           dotClass += ` shadow-[0_0_8px_${glowColor}]`;
-
-          let pulseStyle = "";
-          if (t.dotStatus !== "gray") {
-            dotClass += " dot-ping";
-            pulseStyle = `style="--dot-color-glow: ${glowColor}"`;
-          }
+          let pulseStyle =
+            t.dotStatus !== "gray"
+              ? `style="--dot-color-glow: ${glowColor}"`
+              : "";
+          if (t.dotStatus !== "gray") dotClass += " dot-ping";
 
           const opacityClass = isPassed
             ? "opacity-60 grayscale-[0.5]"
@@ -1696,29 +1941,31 @@
             : "";
           const arrClass = t.isSuppressed ? "opacity-0" : "";
           const statusTextClass = t.isSuppressed
-            ? "text-red-400 font-bold"
+            ? "text-red-500 font-bold"
             : t.status.includes("Atraso")
-              ? "text-yellow-400"
-              : "text-zinc-400";
+              ? "text-yellow-600 dark:text-yellow-400"
+              : "text-zinc-500 dark:text-zinc-400";
 
           let carsHtml = "";
           if (t.carriages) {
             const occ = t.occupancy !== null ? t.occupancy : 0;
-            let fillColor = "bg-emerald-500";
-            if (occ === 0) fillColor = "bg-blue-500";
-            else if (occ > 85) fillColor = "bg-red-500";
-            else if (occ > 50) fillColor = "bg-yellow-500";
-            else fillColor = "bg-emerald-500";
-
+            let fillColor =
+              occ === 0
+                ? "bg-blue-500"
+                : occ > 85
+                  ? "bg-red-500"
+                  : occ > 50
+                    ? "bg-yellow-500"
+                    : "bg-emerald-500";
             const wrapperWidth = t.carriages === 8 ? "w-full" : "w-1/2";
             const filledCount = t.occupancy
               ? Math.round((t.occupancy / 100) * t.carriages)
               : t.carriages;
-
             let blocks = "";
             for (let c = 0; c < t.carriages; c++) {
-              const colorClass = c < filledCount ? fillColor : "bg-zinc-700";
-              blocks += `<div class="carriage-block flex-1 ${colorClass} opacity-90"></div>`;
+              const colorClass =
+                c < filledCount ? fillColor : "bg-zinc-300 dark:bg-zinc-700";
+              blocks += `<div class="h-[6px] rounded-[2px] transition-all duration-300 ease-out flex-1 ${colorClass} opacity-90"></div>`;
             }
             carsHtml = `<div class="flex justify-center w-full mt-3"><div class="flex gap-1 h-1.5 ${wrapperWidth}">${blocks}</div></div>`;
           }
@@ -1726,11 +1973,11 @@
           let contextHtml = "";
           if (t.context) {
             contextHtml = `
-                    <div class="mt-3 context-grid text-[9px] text-zinc-500">
+                    <div class="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-2 w-full text-[9px] text-zinc-500">
                         <div class="flex items-center justify-end gap-1 opacity-60">
                             ${t.context.prev ? `<span class="truncate max-w-[70px]">${t.context.prev.name}</span><span>-</span>` : ""}
                         </div>
-                        <div class="flex flex-col items-center text-zinc-300 font-bold scale-110 justify-self-center min-w-[80px]">
+                        <div class="flex flex-col items-center text-zinc-700 dark:text-zinc-300 font-bold scale-110 justify-self-center min-w-[80px]">
                             <span>${t.context.curr.name}</span>
                         </div>
                         <div class="flex items-center justify-start gap-1 opacity-60">
@@ -1743,20 +1990,20 @@
                     <div class="flex justify-between items-start mb-2">
                         <div class="flex flex-col">
                             <div class="flex items-center gap-2 mb-1">
-                                <span class="text-[9px] font-bold px-2 py-0.5 rounded-full border border-white/5 bg-white/5 text-zinc-400 tracking-wider uppercase">${t.op}</span>
-                                <span class="text-[9px] font-mono text-zinc-500">#${t.num}</span>
+                                <span class="text-[9px] font-bold px-2 py-0.5 rounded-full border border-black/5 dark:border-white/5 bg-black/5 dark:bg-white/5 text-zinc-500 dark:text-zinc-400 tracking-wider uppercase">${t.op}</span>
+                                <span class="text-[9px] font-mono text-zinc-400 dark:text-zinc-500">#${t.num}</span>
                             </div>
                             <div class="flex items-baseline gap-2">
-                                <span class="font-mono text-4xl font-medium tracking-tighter leading-none ${timeClass}" style="color: var(--text-primary)">${t.time}</span>
-                                ${t.secTime ? `<span class="time-struck font-mono text-sm">${t.secTime}</span>` : ""}
+                                <span class="font-mono text-4xl font-medium tracking-tighter leading-none ${timeClass} text-zinc-900 dark:text-zinc-100">${t.time}</span>
+                                ${t.secTime ? `<span class="text-[0.55em] line-through opacity-60 font-medium ml-2 text-zinc-500 align-baseline font-mono text-sm">${t.secTime}</span>` : ""}
                             </div>
                         </div>
                         
                         <div class="flex flex-col items-end">
-                            <h3 class="text-xs font-semibold text-zinc-400 uppercase tracking-wide text-right truncate max-w-[100px]">${t.dest}</h3>
+                            <h3 class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide text-right truncate max-w-[100px]">${t.dest}</h3>
                             <div class="flex items-baseline mt-1 ${arrClass}">
-                                <span class="text-[10px] text-zinc-600 mr-1">Chegada</span>
-                                <span class="font-mono text-lg font-medium ${colorText}">${t.arr}</span>
+                                <span class="text-[10px] text-zinc-600 dark:text-zinc-500 mr-1">Chegada</span>
+                                <span style="font-size:1.125rem;line-height:1.75rem" class="font-mono text-lg font-medium ${colorText}">${t.arr}</span>
                             </div>
                         </div>
                     </div>
@@ -1766,9 +2013,8 @@
                             <div class="w-1.5 h-1.5 rounded-full ${dotClass}" ${pulseStyle}></div>
                             <span class="text-[10px] uppercase tracking-wide font-medium ${statusTextClass}">${t.status}</span>
                         </div>
-                        <button onclick="openDetails('${t.id}')" class="text-[10px] font-medium text-zinc-500 hover:text-zinc-300 underline decoration-zinc-700 underline-offset-2 transition-colors">Ver Detalhes</button>
+                        <button onclick="openDetails('${t.id}')" class="text-[10px] font-medium text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 underline decoration-zinc-300 dark:decoration-zinc-700 underline-offset-2 transition-colors">Ver Detalhes</button>
                     </div>
-
                     ${carsHtml}
                     ${contextHtml}
                 `;
@@ -1776,7 +2022,7 @@
           const card = document.createElement("div");
           card.id = cardId;
           card.setAttribute("data-id", cardId);
-          card.className = `glass-card rounded-2xl p-5 relative overflow-hidden group ${opacityClass}`;
+          card.className = `bg-white/90 dark:bg-zinc-800/40 backdrop-blur-sm border border-black/5 dark:border-white/5 shadow-sm rounded-2xl p-5 relative overflow-hidden group ${opacityClass}`;
           card.innerHTML = innerHTML;
           container.appendChild(card);
         });
@@ -1784,9 +2030,27 @@
         if (!window.hasScrolledNext && nextTrainIndex !== -1) {
           setTimeout(() => {
             const el = document.getElementById("next-divider");
-            if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+            if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
             window.hasScrolledNext = true;
-          }, 500);
+          }, 600);
+        }
+
+        if (activeAlerts.length > 1) {
+          const dots = document.querySelectorAll("#alerts-pagination div");
+          const slider = document.getElementById("alerts-slider");
+          if (slider && dots) {
+            slider.onscroll = () => {
+              const scrollLeft = slider.scrollLeft;
+              const width = slider.offsetWidth;
+              const index = Math.round(scrollLeft / width);
+              dots.forEach((d, i) => {
+                d.className =
+                  i === index
+                    ? "bg-blue-500 w-3 h-1.5 rounded-full transition-all duration-300"
+                    : "bg-zinc-300 dark:bg-zinc-700 w-1.5 h-1.5 rounded-full transition-all duration-300";
+              });
+            };
+          }
         }
       };
 
@@ -1797,25 +2061,27 @@
 
       window.setStatus = function (s, msg) {
         const ping = document.getElementById("status-ping"),
-          txt = document.getElementById("status-text");
-        const icon = document.getElementById("refresh-icon");
+          icon = document.getElementById("refresh-icon-menu");
+        const lastUpd = document.getElementById("last-updated");
 
         if (s === "loading") {
-          icon.classList.add("animate-spin");
+          if (icon) icon.classList.add("animate-spin");
         } else if (s === "error" || s === "offline") {
-          ping.className =
-            "relative inline-flex h-1.5 w-1.5 rounded-full " +
-            (s === "offline" ? "bg-zinc-500" : "bg-red-500");
-          txt.innerText = msg || "Offline";
-          icon.classList.remove("animate-spin");
+          if (ping)
+            ping.className =
+              "relative inline-flex h-1.5 w-1.5 rounded-full " +
+              (s === "offline" ? "bg-zinc-500" : "bg-red-500");
+          if (lastUpd) lastUpd.innerText = "Offline";
+          if (icon) icon.classList.remove("animate-spin");
         } else {
-          ping.className =
-            "relative inline-flex h-1.5 w-1.5 rounded-full bg-blue-500 dot-ping";
-          txt.innerText = msg || "Online";
-          document.getElementById("last-updated").innerText = new Date()
-            .toLocaleTimeString("pt-PT")
-            .substring(0, 5);
-          icon.classList.remove("animate-spin");
+          if (ping)
+            ping.className =
+              "relative inline-flex h-1.5 w-1.5 rounded-full bg-blue-500 dot-ping";
+          if (lastUpd)
+            lastUpd.innerText = new Date()
+              .toLocaleTimeString("pt-PT")
+              .substring(0, 5);
+          if (icon) icon.classList.remove("animate-spin");
         }
       };
 
@@ -1823,12 +2089,11 @@
         if (isLoading) return;
         isLoading = true;
         if (!silent) setStatus("loading", "A atualizar...");
-        else
-          document.getElementById("refresh-icon").classList.add("animate-spin");
 
         try {
           if (!silent) await new Promise((r) => setTimeout(r, 300));
           const data = await getTrains();
+          await updateAlertsSystem(data);
           renderList(data);
           if (data.length > 0) setStatus("success");
           else if (activeTab === "lisboa") setStatus("offline", "Sem Dados");
@@ -1839,6 +2104,8 @@
         } finally {
           isLoading = false;
           if (window.lucide) lucide.createIcons();
+
+          focusOnContent();
         }
       };
       window.manualRefresh = function () {
@@ -1846,7 +2113,6 @@
       };
 
       window.switchTab = function (t) {
-        // Swap Logic when switching tabs
         if (t !== activeTab) {
           const oldOrg = fertagusOrigin;
           fertagusOrigin = fertagusDest;
@@ -1854,43 +2120,20 @@
         }
 
         activeTab = t;
-        const isLisboa = t === "lisboa";
 
-        const r = document.documentElement;
-        // Always blue now
-        r.style.setProperty("--accent", "#3b82f6");
-        r.style.setProperty("--accent-dim", "rgba(59, 130, 246, 0.15)");
-        document.getElementById("dest-display").className =
-          "text-xl font-medium tracking-tight leading-none text-blue-500 station-name";
+        // Update ambient light color if needed, simplified to blue
         document.getElementById("ambient-light").className =
           `fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full blur-[120px] pointer-events-none transition-colors duration-1000 bg-blue-500/10`;
 
-        const glider = document.getElementById("tab-glider");
-        const btnLisboa = document.getElementById("tab-lisboa");
-        const btnMargem = document.getElementById("tab-margem");
-
-        if (isLisboa) {
-          glider.style.transform = "translateX(0%)";
-          btnLisboa.classList.add("active");
-          btnMargem.classList.remove("active");
-        } else {
-          glider.style.transform = "translateX(100%)";
-          btnLisboa.classList.remove("active");
-          btnMargem.classList.add("active");
-        }
-
         populateOriginSelect();
-        updateDestinationOptions();
+        populateDestSelect(fertagusOrigin); // Ensure destination is correctly populated for new origin context
         validateRoute();
-        updateStationLabels();
+        // updateStationLabels(); // Removed as per previous instructions to use Selects
         saveState();
 
         document.getElementById("train-list").innerHTML = "";
         window.hasScrolledNext = false;
-
-        document.getElementById("config-btn").classList.remove("hidden");
-        document.getElementById("config-panel").classList.add("hidden");
-        document.getElementById("next-train-header").classList.add("hidden"); // Reset header visibility
+        document.getElementById("next-train-header").classList.add("hidden");
 
         loadData(false);
       };
@@ -1901,14 +2144,21 @@
         localStorage.setItem("ft_tab", activeTab);
       };
 
-      // --- GLOBAL START ---
       window.onload = function () {
         init();
       };
 
       async function init() {
+        // Prevent browser scroll restoration on reload
+        if ("scrollRestoration" in history) {
+          history.scrollRestoration = "manual";
+        }
+
         setupPWA();
         loadSettings();
+
+        // Espera pelo menu.js carregar o DOM (pequeno timeout de segurança)
+        setTimeout(injectCustomMenuElements, 100);
 
         try {
           const [resLisboa, resMargem] = await Promise.all([
@@ -1924,10 +2174,8 @@
           DB_MARGEM = { trips: [] };
         }
 
-        // Determine Initial Tab based on Time & Settings if smart schedule enabled
         const nowH = new Date().getHours();
-
-        let targetTab = "lisboa"; // Default
+        let targetTab = "lisboa";
         if (enableSmartSchedule) {
           const morningPref = localStorage.getItem("pref_morning") || "lisboa";
           const afternoonPref =
@@ -1940,35 +2188,19 @@
         }
 
         activeTab = targetTab;
-
         loadStationPrefs(activeTab);
 
-        // Removed validateRoute call here as per request to remove strict validation
-        // Just rely on what's loaded or defaults
-
-        // Events
-        document
-          .getElementById("sel-origin")
-          .addEventListener("change", (e) => {
-            fertagusOrigin = e.target.value;
-            updateDestinationOptions();
-            saveStationPrefs();
-            updateStations();
-          });
-
-        document.getElementById("sel-dest").addEventListener("change", (e) => {
-          fertagusDest = e.target.value;
-          saveStationPrefs();
-          updateStations();
-        });
-
+        // Initial Population
         populateOriginSelect();
-        updateDestinationOptions();
-        updateStationLabels();
+        populateDestSelect(fertagusOrigin);
 
-        // Switch tab handles UI updates and data loading
-        window.switchTab(activeTab);
-        populateSettingsUI();
+        // Ensure values match state
+        const orgSel = document.getElementById("sel-origin");
+        const dstSel = document.getElementById("sel-dest");
+        if (orgSel) orgSel.value = fertagusOrigin;
+        if (dstSel) dstSel.value = fertagusDest;
+
+        updateAppState(); // Replaces updateStations() for cleaner initial load
 
         if (refreshInterval) clearInterval(refreshInterval);
         refreshInterval = setInterval(() => {
@@ -1980,9 +2212,9 @@
 
         if (window.lucide) lucide.createIcons();
       }
-      // --- Lógica do Cartão Spotify (Dados Mistos: Manual + Auto) ---
-      const SPOTIFY_API_URL = "https://api.npoint.io/0f0a3c1ca3b044f666e8";
 
+      // --- Lógica do Cartão Spotify ---
+      const SPOTIFY_API_URL = "https://api.npoint.io/0f0a3c1ca3b044f666e8";
       async function loadSpotifyCard() {
         const container = document.getElementById("spotify-card-container");
         const coverImg = document.getElementById("sp-cover");
@@ -1992,58 +2224,42 @@
         const badge = document.getElementById("quinzena-badge");
 
         try {
-          // 1. Ler o JSON do npoint
           const response = await fetch(SPOTIFY_API_URL, { cache: "no-store" });
           if (!response.ok) return;
           const data = await response.json();
 
           if (data.album_id) {
-            // --- A. DADOS MANUAIS (Vêm do teu JSON) ---
-
-            // Artista (Garantido pelo teu JSON)
-            if (data.artist_name) {
-              artistText.innerText = data.artist_name;
-            } else {
-              artistText.innerText = "Spotify"; // Fallback se te esqueceres
-            }
-
-            // Link do Botão
+            artistText.innerText = data.artist_name || "Spotify";
             const spotifyUrl = `https://open.spotify.com/album/${data.album_id}`;
             btnLink.href = spotifyUrl;
 
-            // Badge da Quinzena
-            const agora = new Date();
-            const mes = agora
-              .toLocaleString("pt-PT", { month: "short" })
-              .replace(".", "");
-            const mesCap = mes.charAt(0).toUpperCase() + mes.slice(1);
-            const parte = agora.getDate() <= 15 ? "1.ª" : "2.ª";
-            if (badge) badge.innerText = `${parte} Quiz. ${mesCap}`;
+            if (data.nota && data.nota.trim() !== "") {
+              if (badge) badge.innerText = data.nota;
+            } else {
+              const agora = new Date();
+              const mes = agora
+                .toLocaleString("pt-PT", { month: "short" })
+                .replace(".", "");
+              const mesCap = mes.charAt(0).toUpperCase() + mes.slice(1);
+              const parte = agora.getDate() <= 15 ? "1.ª" : "2.ª";
+              if (badge) badge.innerText = `${parte} Quiz. ${mesCap}`;
+            }
 
-            // --- B. DADO AUTOMÁTICO (Apenas o Título) ---
-            // Vamos tentar buscar o título. Se falhar, pomos um genérico.
             try {
               const oEmbedUrl = `https://open.spotify.com/oembed?url=${encodeURIComponent(spotifyUrl)}`;
               const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(oEmbedUrl)}`;
-
               const metaRes = await fetch(proxyUrl);
-
               if (metaRes.ok) {
                 const meta = await metaRes.json();
-                // O Spotify manda "Título", mas às vezes é "Artista - Título"
-                // Como tu já puseste o Artista manualmente, usamos o título direto
                 titleText.innerText = meta.title || "Sugestão da Quinzena";
                 coverImg.src = meta.thumbnail_url;
               } else {
                 throw new Error("Falha no título automático");
               }
             } catch (titleError) {
-              // Se o proxy falhar, usamos um título genérico seguro
               console.warn("Não foi possível obter o título automático.");
-              titleText.innerText = "Álbum da Quinzena";
+              titleText.innerText = data.album_name || "Álbum da Quinzena";
             }
-
-            // Mostrar o cartão
             container.classList.remove("hidden");
             if (window.lucide) lucide.createIcons();
           }
@@ -2051,7 +2267,6 @@
           console.error("Erro no widget:", e);
         }
       }
-
       document.addEventListener("DOMContentLoaded", loadSpotifyCard);
     </script>
   </body>

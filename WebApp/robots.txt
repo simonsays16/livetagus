@@ -3,6 +3,7 @@ Disallow: /license
 Disallow: /code_of_conduct
 Disallow: /roadmap
 Disallow: /appv2
+Disallow: /sudoku
 Disallow: /404
 Allow: /
 

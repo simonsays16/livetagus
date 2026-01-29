@@ -1,0 +1,1158 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="theme-color" content="#09090b" />
+    <meta name="description" content="Sudoku - LiveTagus Games" />
+    <title>Sudoku | LiveTagus</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Fonts (Inter & JetBrains Mono) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Lucide Icons Script -->
+    <script>
+      window.lucide = {
+        createIcons: () => {
+          const icons = {
+            "arrow-left": '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+            pause:
+              '<rect width="4" height="16" x="6" y="4" /><rect width="4" height="16" x="14" y="4" />',
+            play: '<polygon points="5 3 19 12 5 21 5 3" />',
+            eraser:
+              '<path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/>',
+            settings:
+              '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+            "refresh-cw":
+              '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+            sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
+            moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+            x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+            trophy:
+              '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
+          };
+
+          document.querySelectorAll("[data-lucide]").forEach((element) => {
+            const key = element.getAttribute("data-lucide");
+            if (!icons[key]) return;
+            const svg = document.createElementNS(
+              "http://www.w3.org/2000/svg",
+              "svg",
+            );
+            svg.setAttribute("width", "24");
+            svg.setAttribute("height", "24");
+            svg.setAttribute("viewBox", "0 0 24 24");
+            svg.setAttribute("fill", "none");
+            svg.setAttribute("stroke", "currentColor");
+            svg.setAttribute("stroke-width", "2");
+            svg.setAttribute("stroke-linecap", "round");
+            svg.setAttribute("stroke-linejoin", "round");
+            const currentClasses = element.getAttribute("class") || "";
+            svg.setAttribute(
+              "class",
+              `lucide lucide-${key} ${currentClasses}`.trim(),
+            );
+            if (element.id) svg.setAttribute("id", element.id);
+            svg.innerHTML = icons[key];
+            element.parentNode.replaceChild(svg, element);
+          });
+        },
+      };
+    </script>
+
+    <style>
+      /* --- VARIÁVEIS DE TEMA --- */
+      :root {
+        --bg-color: #f0f4f8;
+        --card-bg: #ffffff;
+        --glass-bg: rgba(255, 255, 255, 0.7);
+        --glass-border: rgba(0, 0, 0, 0.05);
+        --text-primary: #09090b;
+        --text-secondary: #71717a;
+        --accent: #3b82f6;
+        --accent-dim: rgba(59, 130, 246, 0.15);
+        --grid-line: #e4e4e7;
+        --grid-line-bold: #52525b;
+        --cell-hover: #f4f4f5;
+        --cell-selected: #dbeafe;
+        --cell-related: #eff6ff;
+        --cell-error: #fee2e2;
+        --cell-error-text: #ef4444;
+        --input-bg: #f4f4f5;
+        --numpad-bg: #e4e4e7;
+      }
+
+      [data-theme="dark"] {
+        --bg-color: #09090b;
+        --card-bg: #18181b;
+        --glass-bg: rgba(24, 24, 27, 0.7);
+        --glass-border: rgba(255, 255, 255, 0.08);
+        --text-primary: #fafafa;
+        --text-secondary: #a1a1aa;
+        --accent: #3b82f6;
+        --accent-dim: rgba(59, 130, 246, 0.2);
+        --grid-line: #434347;
+        --grid-line-bold: #fafafa;
+        --cell-hover: #27272a;
+        --cell-selected: rgba(71, 107, 163, 0.3);
+        --cell-related: rgb(53, 63, 78);
+        --cell-error: rgba(239, 68, 68, 0.2);
+        --cell-error-text: #f87171;
+        --input-bg: #27272a;
+        --numpad-bg: #27272a;
+      }
+
+      body {
+        background-color: var(--bg-color);
+        color: var(--text-primary);
+        font-family: "Inter", sans-serif;
+        /* Prevent bounce on iOS */
+        overscroll-behavior: none;
+      }
+
+      /* Utilitários Glassmorphism */
+      .glass-panel {
+        background: var(--glass-bg);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--glass-border);
+      }
+
+      .glass-card {
+        background: var(--card-bg);
+        border: 1px solid var(--glass-border);
+      }
+
+      /* Animações */
+      @keyframes popIn {
+        0% {
+          transform: scale(0.9);
+          opacity: 0;
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+      .animate-pop {
+        animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      /* SUDOKU GRID MOBILE OPTIMIZED */
+      .sudoku-container {
+        width: 100%;
+        max-width: 450px; /* Limite para não ficar gigante em tablets */
+        aspect-ratio: 1; /* Força o quadrado */
+        margin: 0 auto;
+        position: relative;
+      }
+
+      .sudoku-grid {
+        display: grid;
+        grid-template-columns: repeat(9, 1fr);
+        grid-template-rows: repeat(9, 1fr);
+        background-color: var(--grid-line-bold);
+        gap: 1px;
+        border: 2px solid var(--grid-line-bold);
+        width: 100%;
+        height: 100%;
+        user-select: none;
+      }
+
+      .sudoku-cell {
+        background-color: var(--card-bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "JetBrains Mono", monospace;
+        /* Responsive font size based on container */
+        font-size: clamp(1rem, 5vw, 1.5rem);
+        font-weight: 500;
+        cursor: pointer;
+        position: relative;
+        /* Elimina highlight azul em mobile ao tocar */
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      /* Bordas Grossas para os blocos 3x3 */
+      .cell-border-right {
+        border-right: 2px solid var(--grid-line-bold) !important;
+      }
+      .cell-border-bottom {
+        border-bottom: 2px solid var(--grid-line-bold) !important;
+      }
+
+      /* Estados das Células */
+      .cell-selected {
+        background-color: var(--cell-selected) !important;
+      }
+      .cell-related {
+        background-color: var(--cell-related) !important;
+      }
+      .cell-fixed {
+        color: var(--text-primary);
+        font-weight: 700;
+      }
+      .cell-user {
+        color: var(--accent);
+      }
+      .cell-error {
+        background-color: var(--cell-error) !important;
+        color: var(--cell-error-text) !important;
+      }
+      .cell-same-val {
+        background-color: var(--grid-line) !important;
+        font-weight: 700;
+      }
+
+      /* Numpad Otimizado */
+      .numpad-btn {
+        touch-action: manipulation;
+        transition: transform 0.05s;
+        /* Cores mais sólidas para mobile */
+        background-color: var(--numpad-bg);
+        color: var(--text-primary);
+      }
+      .numpad-btn:active {
+        transform: scale(0.92);
+      }
+
+      /* Modal Overlay */
+      .modal-backdrop {
+        background-color: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+      }
+    </style>
+  </head>
+  <!-- h-[100dvh] garante que a altura é correta em mobile com barras de navegação -->
+  <body
+    class="h-[100dvh] flex flex-col overflow-hidden w-full max-w-lg mx-auto bg-[var(--bg-color)]"
+  >
+    <!-- Header Compacto -->
+    <header
+      class="flex-none pt-4 pb-2 px-4 flex justify-between items-center z-10"
+    >
+      <div class="flex items-center gap-3">
+        <button
+          onclick="alert('Voltar')"
+          class="p-2 -ml-2 rounded-full active:bg-white/10 text-zinc-500"
+        >
+          <i data-lucide="arrow-left" class="w-6 h-6"></i>
+        </button>
+        <div class="flex flex-col">
+          <h1
+            class="text-lg font-bold leading-tight"
+            style="color: var(--text-primary)"
+          >
+            Sudoku
+          </h1>
+          <div
+            class="flex items-center gap-2 text-[10px] font-mono uppercase tracking-wider font-bold"
+            style="color: var(--text-secondary)"
+          >
+            <span id="difficulty-display">Médio</span>
+            <span class="text-[var(--accent)]">•</span>
+            <span id="timer-display" class="text-[var(--accent)]">00:00</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex gap-2">
+        <button
+          onclick="game.togglePause()"
+          class="p-2.5 glass-panel rounded-xl active:scale-90 transition-transform"
+          style="color: var(--text-secondary)"
+        >
+          <i id="pause-icon" data-lucide="pause" class="w-5 h-5"></i>
+        </button>
+        <button
+          onclick="game.openSettings()"
+          class="p-2.5 glass-panel rounded-xl active:scale-90 transition-transform"
+          style="color: var(--text-secondary)"
+        >
+          <i data-lucide="settings" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Área Principal Flexível -->
+    <main
+      class="flex-grow flex flex-col items-center justify-start px-2 py-1 w-full relative z-0"
+    >
+      <!-- Stats / Top Info -->
+      <div class="w-full flex justify-between items-center mb-2 px-1">
+        <div
+          class="flex items-center gap-1.5 text-xs font-medium"
+          style="color: var(--text-secondary)"
+        >
+          <span>Erros:</span>
+          <!-- Removido o limite /3 -->
+          <span
+            id="errors-display"
+            class="font-mono text-[var(--text-primary)]"
+          >
+            0
+          </span>
+        </div>
+        <div
+          class="flex items-center gap-1.5 text-xs font-medium"
+          style="color: var(--text-secondary)"
+        >
+          <span>Melhor:</span>
+          <span
+            id="best-time-display"
+            class="font-mono text-[var(--text-primary)]"
+          >
+            --:--
+          </span>
+        </div>
+      </div>
+
+      <!-- The Grid Container -->
+      <div
+        class="sudoku-container rounded-lg overflow-hidden shadow-lg animate-pop"
+      >
+        <div id="sudoku-board" class="sudoku-grid">
+          <!-- Cells Generated by JS -->
+        </div>
+      </div>
+
+      <!-- Action Tools (Abaixo do Tabuleiro) -->
+      <div class="w-full flex justify-between mt-4 px-2">
+        <!-- Undo (Visual apenas por agora) -->
+        <button
+          onclick="game.undo()"
+          class="flex flex-col items-center gap-1 opacity-70 active:opacity-100 transition-opacity w-14"
+        >
+          <div
+            class="w-10 h-10 flex items-center justify-center rounded-full bg-[var(--input-bg)] shadow-sm active:scale-95 transition-transform"
+            style="color: var(--text-secondary)"
+          >
+            <i data-lucide="arrow-left" class="w-5 h-5 rotate-180"></i>
+          </div>
+          <span
+            class="text-[9px] font-bold uppercase tracking-wider"
+            style="color: var(--text-secondary)"
+          >
+            Voltar
+          </span>
+        </button>
+
+        <button
+          onclick="game.erase()"
+          class="flex flex-col items-center gap-1 opacity-70 active:opacity-100 transition-opacity w-14"
+        >
+          <div
+            class="w-10 h-10 flex items-center justify-center rounded-full bg-[var(--input-bg)] shadow-sm active:scale-95 transition-transform"
+            style="color: var(--text-secondary)"
+          >
+            <i data-lucide="eraser" class="w-5 h-5"></i>
+          </div>
+          <span
+            class="text-[9px] font-bold uppercase tracking-wider"
+            style="color: var(--text-secondary)"
+          >
+            Apagar
+          </span>
+        </button>
+
+        <button
+          onclick="game.toggleNotes()"
+          id="btn-notes"
+          class="flex flex-col items-center gap-1 opacity-70 active:opacity-100 transition-opacity w-14"
+        >
+          <div
+            class="w-10 h-10 flex items-center justify-center rounded-full bg-[var(--input-bg)] shadow-sm active:scale-95 transition-transform relative"
+            style="color: var(--text-secondary)"
+          >
+            <div
+              id="note-indicator"
+              class="hidden absolute top-0 right-0 w-2.5 h-2.5 bg-[var(--accent)] rounded-full border-2 border-[var(--card-bg)]"
+            ></div>
+            <span class="text-lg font-mono font-bold">✎</span>
+          </div>
+          <span
+            class="text-[9px] font-bold uppercase tracking-wider"
+            style="color: var(--text-secondary)"
+          >
+            Notas
+          </span>
+        </button>
+
+        <button
+          onclick="game.initGame()"
+          class="flex flex-col items-center gap-1 opacity-70 active:opacity-100 transition-opacity w-14"
+        >
+          <div
+            class="w-10 h-10 flex items-center justify-center rounded-full bg-[var(--input-bg)] shadow-sm active:scale-95 transition-transform"
+            style="color: var(--text-secondary)"
+          >
+            <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+          </div>
+          <span
+            class="text-[9px] font-bold uppercase tracking-wider"
+            style="color: var(--text-secondary)"
+          >
+            Novo
+          </span>
+        </button>
+      </div>
+    </main>
+
+    <!-- Numpad Fixo no fundo -->
+    <footer class="flex-none pb-safe pt-2 px-2 w-full mb-4">
+      <div class="w-full grid grid-cols-9 gap-1 h-14 sm:h-16">
+        <button
+          class="numpad-btn rounded-lg text-xl sm:text-2xl font-bold flex items-center justify-center shadow-sm"
+          onclick="game.inputNumber(1)"
+        >
+          1
+        </button>
+        <button
+          class="numpad-btn rounded-lg text-xl sm:text-2xl font-bold flex items-center justify-center shadow-sm"
+          onclick="game.inputNumber(2)"
+        >
+          2
+        </button>
+        <button
+          class="numpad-btn rounded-lg text-xl sm:text-2xl font-bold flex items-center justify-center shadow-sm"
+          onclick="game.inputNumber(3)"
+        >
+          3
+        </button>
+        <button
+          class="numpad-btn rounded-lg text-xl sm:text-2xl font-bold flex items-center justify-center shadow-sm"
+          onclick="game.inputNumber(4)"
+        >
+          4
+        </button>
+        <button
+          class="numpad-btn rounded-lg text-xl sm:text-2xl font-bold flex items-center justify-center shadow-sm"
+          onclick="game.inputNumber(5)"
+        >
+          5
+        </button>
+        <button
+          class="numpad-btn rounded-lg text-xl sm:text-2xl font-bold flex items-center justify-center shadow-sm"
+          onclick="game.inputNumber(6)"
+        >
+          6
+        </button>
+        <button
+          class="numpad-btn rounded-lg text-xl sm:text-2xl font-bold flex items-center justify-center shadow-sm"
+          onclick="game.inputNumber(7)"
+        >
+          7
+        </button>
+        <button
+          class="numpad-btn rounded-lg text-xl sm:text-2xl font-bold flex items-center justify-center shadow-sm"
+          onclick="game.inputNumber(8)"
+        >
+          8
+        </button>
+        <button
+          class="numpad-btn rounded-lg text-xl sm:text-2xl font-bold flex items-center justify-center shadow-sm"
+          onclick="game.inputNumber(9)"
+        >
+          9
+        </button>
+      </div>
+    </footer>
+
+    <!-- MODALS -->
+
+    <!-- Pause Overlay -->
+    <div
+      id="pause-overlay"
+      class="fixed inset-0 z-50 modal-backdrop hidden flex-col items-center justify-center"
+    >
+      <div
+        class="glass-panel p-8 rounded-2xl flex flex-col items-center max-w-xs w-[80%] animate-pop"
+      >
+        <div
+          class="w-16 h-16 rounded-full bg-blue-500/10 flex items-center justify-center mb-4 text-blue-500"
+        >
+          <i data-lucide="pause" class="w-8 h-8 fill-current"></i>
+        </div>
+        <h2 class="text-2xl font-bold mb-1" style="color: var(--text-primary)">
+          Pausa
+        </h2>
+        <button
+          onclick="game.togglePause()"
+          class="w-full mt-6 py-3.5 bg-[var(--accent)] text-white rounded-xl font-bold uppercase tracking-widest text-sm shadow-lg active:scale-95 transition-transform"
+        >
+          Continuar
+        </button>
+      </div>
+    </div>
+
+    <!-- Settings Modal (Bottom Sheet style on Mobile) -->
+    <div
+      id="settings-modal"
+      class="fixed inset-0 z-50 modal-backdrop hidden flex-col justify-end sm:justify-center sm:items-center"
+    >
+      <!-- Close overlay trigger -->
+      <div class="absolute inset-0" onclick="game.closeSettings()"></div>
+
+      <div
+        class="glass-panel w-full sm:w-[400px] sm:rounded-2xl rounded-t-3xl p-6 animate-pop shadow-2xl relative z-10"
+        style="background-color: var(--card-bg)"
+      >
+        <!-- Drag Handle -->
+        <div
+          class="w-12 h-1.5 bg-[var(--grid-line-bold)] rounded-full mx-auto mb-6 opacity-30"
+        ></div>
+
+        <div class="space-y-6">
+          <!-- Theme -->
+          <div>
+            <span
+              class="text-xs font-bold uppercase tracking-wider block mb-3"
+              style="color: var(--text-secondary)"
+            >
+              Tema
+            </span>
+            <div class="grid grid-cols-2 gap-3">
+              <button
+                onclick="themeManager.set('light')"
+                class="py-3 rounded-xl border border-[var(--grid-line)] text-sm font-bold uppercase transition-all flex items-center justify-center gap-2 theme-btn bg-[var(--input-bg)]"
+                id="theme-btn-light"
+                style="color: var(--text-primary)"
+              >
+                <i data-lucide="sun" class="w-4 h-4"></i>
+                Claro
+              </button>
+              <button
+                onclick="themeManager.set('dark')"
+                class="py-3 rounded-xl border border-[var(--grid-line)] text-sm font-bold uppercase transition-all flex items-center justify-center gap-2 theme-btn bg-[var(--input-bg)]"
+                id="theme-btn-dark"
+                style="color: var(--text-primary)"
+              >
+                <i data-lucide="moon" class="w-4 h-4"></i>
+                Escuro
+              </button>
+            </div>
+          </div>
+
+          <!-- Difficulty -->
+          <div>
+            <span
+              class="text-xs font-bold uppercase tracking-wider block mb-3"
+              style="color: var(--text-secondary)"
+            >
+              Dificuldade
+            </span>
+            <div class="grid grid-cols-3 gap-2">
+              <button
+                onclick="game.setDifficulty('easy')"
+                class="diff-btn py-3 rounded-xl border border-[var(--grid-line)] text-xs font-bold uppercase active:scale-95 transition-transform"
+                data-diff="easy"
+                style="color: var(--text-primary)"
+              >
+                Fácil
+              </button>
+              <button
+                onclick="game.setDifficulty('medium')"
+                class="diff-btn py-3 rounded-xl border border-[var(--grid-line)] text-xs font-bold uppercase active:scale-95 transition-transform"
+                data-diff="medium"
+                style="color: var(--text-primary)"
+              >
+                Médio
+              </button>
+              <button
+                onclick="game.setDifficulty('hard')"
+                class="diff-btn py-3 rounded-xl border border-[var(--grid-line)] text-xs font-bold uppercase active:scale-95 transition-transform"
+                data-diff="hard"
+                style="color: var(--text-primary)"
+              >
+                Difícil
+              </button>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="pt-4 pb-4 text-center">
+            <button
+              onclick="
+                game.restartGame();
+                game.closeSettings();
+              "
+              class="text-red-500 font-bold text-xs uppercase tracking-widest py-3 px-6 rounded-full bg-red-500/10 active:bg-red-500/20"
+            >
+              Reiniciar Jogo
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Win Modal -->
+    <div
+      id="win-modal"
+      class="fixed inset-0 z-[60] modal-backdrop hidden flex-col items-center justify-center px-4"
+    >
+      <div
+        class="glass-panel p-8 rounded-3xl flex flex-col items-center w-full max-w-sm text-center animate-pop relative overflow-hidden"
+      >
+        <div class="absolute inset-0 bg-blue-500/10 blur-xl"></div>
+        <div class="relative z-10 w-full">
+          <div
+            class="w-24 h-24 rounded-full bg-gradient-to-tr from-yellow-400 to-orange-500 flex items-center justify-center mb-6 mx-auto shadow-xl text-white"
+          >
+            <i data-lucide="trophy" class="w-12 h-12 fill-white/20"></i>
+          </div>
+          <h2
+            class="text-3xl font-bold mb-1"
+            style="color: var(--text-primary)"
+          >
+            Parabéns!
+          </h2>
+          <p
+            class="text-xs font-medium uppercase tracking-wider mb-8"
+            style="color: var(--text-secondary)"
+          >
+            Sudoku Completado
+          </p>
+
+          <div
+            class="bg-[var(--input-bg)] rounded-2xl p-6 mb-8 border border-[var(--glass-border)]"
+          >
+            <span
+              class="block text-[10px] uppercase font-bold text-[var(--text-secondary)] mb-1"
+            >
+              Tempo Final
+            </span>
+            <span
+              id="win-time"
+              class="text-4xl font-mono font-bold text-[var(--accent)]"
+            >
+              00:00
+            </span>
+          </div>
+
+          <button
+            onclick="game.initGame()"
+            class="w-full py-4 bg-[var(--accent)] text-white rounded-xl font-bold uppercase tracking-widest text-sm shadow-lg active:scale-95 transition-transform"
+          >
+            Novo Jogo
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const themeManager = {
+        init() {
+          const saved = localStorage.getItem("theme") || "system";
+          this.set(saved);
+        },
+        set(mode) {
+          let isDark = mode === "dark";
+          if (mode === "system") {
+            isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+          }
+
+          document.documentElement.setAttribute(
+            "data-theme",
+            isDark ? "dark" : "light",
+          );
+          localStorage.setItem("theme", mode);
+
+          const btnLight = document.getElementById("theme-btn-light");
+          const btnDark = document.getElementById("theme-btn-dark");
+
+          // Reset styles
+          [btnLight, btnDark].forEach((btn) => {
+            btn.classList.remove(
+              "bg-[var(--accent)]",
+              "text-white",
+              "border-transparent",
+            );
+            btn.classList.add(
+              "bg-[var(--input-bg)]",
+              "border-[var(--grid-line)]",
+            );
+            btn.style.color = "var(--text-primary)";
+          });
+
+          // Set Active
+          const activeBtn = isDark ? btnDark : btnLight;
+          activeBtn.classList.remove(
+            "bg-[var(--input-bg)]",
+            "border-[var(--grid-line)]",
+          );
+          activeBtn.classList.add(
+            "bg-[var(--accent)]",
+            "text-white",
+            "border-transparent",
+          );
+          activeBtn.style.color = "white";
+        },
+      };
+
+      const sudokuEngine = {
+        BLANK: 0,
+
+        isValid(board, row, col, num) {
+          for (let i = 0; i < 9; i++) {
+            if (board[row][i] === num && i !== col) return false;
+            if (board[i][col] === num && i !== row) return false;
+          }
+          const startRow = Math.floor(row / 3) * 3;
+          const startCol = Math.floor(col / 3) * 3;
+          for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 3; j++) {
+              if (board[startRow + i][startCol + j] === num) return false;
+            }
+          }
+          return true;
+        },
+
+        solve(board) {
+          for (let r = 0; r < 9; r++) {
+            for (let c = 0; c < 9; c++) {
+              if (board[r][c] === this.BLANK) {
+                const nums = [1, 2, 3, 4, 5, 6, 7, 8, 9].sort(
+                  () => Math.random() - 0.5,
+                );
+                for (let num of nums) {
+                  if (this.isValid(board, r, c, num)) {
+                    board[r][c] = num;
+                    if (this.solve(board)) return true;
+                    board[r][c] = this.BLANK;
+                  }
+                }
+                return false;
+              }
+            }
+          }
+          return true;
+        },
+
+        generate(removedCount) {
+          const board = Array.from({ length: 9 }, () => Array(9).fill(0));
+          this.solve(board);
+          const solution = JSON.parse(JSON.stringify(board));
+          const puzzle = JSON.parse(JSON.stringify(board));
+          let attempts = removedCount;
+          while (attempts > 0) {
+            let r = Math.floor(Math.random() * 9);
+            let c = Math.floor(Math.random() * 9);
+            if (puzzle[r][c] !== 0) {
+              puzzle[r][c] = 0;
+              attempts--;
+            }
+          }
+          return { puzzle, solution };
+        },
+      };
+
+      const game = {
+        state: {
+          puzzle: [],
+          solution: [],
+          userGrid: [],
+          selected: null,
+          timer: 0,
+          isPaused: false,
+          difficulty: "medium",
+          errors: 0,
+          notesMode: false,
+          notes: {},
+          history: [],
+        },
+        timerInterval: null,
+
+        init() {
+          themeManager.init();
+          this.initGame();
+
+          // Keyboard support (Desktop fallback)
+          document.addEventListener("keydown", (e) => {
+            if (this.state.isPaused) return;
+            if (e.key >= "1" && e.key <= "9") this.inputNumber(parseInt(e.key));
+            if (e.key === "Backspace" || e.key === "Delete") this.erase();
+            if (e.key === "ArrowUp") this.moveSelection(-1, 0);
+            if (e.key === "ArrowDown") this.moveSelection(1, 0);
+            if (e.key === "ArrowLeft") this.moveSelection(0, -1);
+            if (e.key === "ArrowRight") this.moveSelection(0, 1);
+          });
+        },
+
+        initGame() {
+          document.getElementById("win-modal").classList.add("hidden");
+          document.getElementById("settings-modal").classList.add("hidden");
+          document.getElementById("pause-overlay").classList.add("hidden");
+
+          const diffMap = { easy: 30, medium: 40, hard: 50 };
+          const removeCount = diffMap[this.state.difficulty] || 40;
+
+          const data = sudokuEngine.generate(removeCount);
+          this.state.puzzle = data.puzzle;
+          this.state.solution = data.solution;
+          this.state.userGrid = JSON.parse(JSON.stringify(data.puzzle));
+          this.state.notes = {};
+          this.state.errors = 0;
+          this.state.timer = 0;
+          this.state.isPaused = false;
+          this.state.selected = null;
+          this.state.history = [];
+
+          this.renderBoard();
+          this.updateUI();
+          this.startTimer();
+          this.loadBestTime();
+        },
+
+        renderBoard() {
+          const boardEl = document.getElementById("sudoku-board");
+          boardEl.innerHTML = "";
+
+          for (let r = 0; r < 9; r++) {
+            for (let c = 0; c < 9; c++) {
+              const cell = document.createElement("div");
+              const val = this.state.userGrid[r][c];
+              const isFixed = this.state.puzzle[r][c] !== 0;
+
+              cell.className = "sudoku-cell";
+              cell.dataset.row = r;
+              cell.dataset.col = c;
+
+              if (c === 2 || c === 5) cell.classList.add("cell-border-right");
+              if (r === 2 || r === 5) cell.classList.add("cell-border-bottom");
+
+              if (val !== 0) {
+                cell.textContent = val;
+                cell.classList.add(isFixed ? "cell-fixed" : "cell-user");
+              } else {
+                const noteKey = `${r}-${c}`;
+                if (
+                  this.state.notes[noteKey] &&
+                  this.state.notes[noteKey].length > 0
+                ) {
+                  cell.innerHTML = `<div class="grid grid-cols-3 text-[var(--text-secondary)] pointer-events-none w-full h-full p-[1px]" style="font-size: 0.5em; line-height: 1;">
+                                    ${[1, 2, 3, 4, 5, 6, 7, 8, 9]
+                                      .map(
+                                        (n) =>
+                                          `<div class="flex items-center justify-center">${this.state.notes[noteKey].includes(n) ? n : ""}</div>`,
+                                      )
+                                      .join("")}
+                                </div>`;
+                }
+              }
+
+              cell.onclick = () => this.selectCell(r, c);
+              boardEl.appendChild(cell);
+            }
+          }
+        },
+
+        selectCell(r, c) {
+          if (this.state.isPaused) return;
+          this.state.selected = { r, c };
+
+          const cells = document.querySelectorAll(".sudoku-cell");
+          const selectedVal = this.state.userGrid[r][c];
+
+          cells.forEach((cell) => {
+            const cellR = parseInt(cell.dataset.row);
+            const cellC = parseInt(cell.dataset.col);
+            const cellVal = this.state.userGrid[cellR][cellC];
+
+            cell.classList.remove(
+              "cell-selected",
+              "cell-related",
+              "cell-same-val",
+            );
+
+            if (cellR === r && cellC === c) {
+              cell.classList.add("cell-selected");
+            } else if (
+              cellR === r ||
+              cellC === c ||
+              (Math.floor(cellR / 3) === Math.floor(r / 3) &&
+                Math.floor(cellC / 3) === Math.floor(c / 3))
+            ) {
+              cell.classList.add("cell-related");
+            }
+
+            if (selectedVal !== 0 && cellVal === selectedVal) {
+              cell.classList.add("cell-same-val");
+            }
+          });
+        },
+
+        moveSelection(dr, dc) {
+          if (!this.state.selected) {
+            this.selectCell(0, 0);
+            return;
+          }
+          let nr = this.state.selected.r + dr;
+          let nc = this.state.selected.c + dc;
+          if (nr < 0) nr = 8;
+          if (nr > 8) nr = 0;
+          if (nc < 0) nc = 8;
+          if (nc > 8) nc = 0;
+          this.selectCell(nr, nc);
+        },
+
+        inputNumber(num) {
+          if (!this.state.selected || this.state.isPaused) return;
+          const { r, c } = this.state.selected;
+
+          if (this.state.puzzle[r][c] !== 0) return;
+
+          if (this.state.notesMode) {
+            const key = `${r}-${c}`;
+            if (!this.state.notes[key]) this.state.notes[key] = [];
+
+            const idx = this.state.notes[key].indexOf(num);
+            if (idx > -1) this.state.notes[key].splice(idx, 1);
+            else this.state.notes[key].push(num);
+
+            this.renderBoard();
+            this.selectCell(r, c);
+            return;
+          }
+
+          const currentVal = this.state.userGrid[r][c];
+          if (currentVal === num) return;
+
+          const correctVal = this.state.solution[r][c];
+
+          if (num !== correctVal) {
+            // ERROR (Sem limite agora)
+            this.state.errors++;
+            this.updateUI();
+
+            const cell = document.querySelector(
+              `.sudoku-cell[data-row="${r}"][data-col="${c}"]`,
+            );
+            cell.classList.add("cell-error");
+            cell.innerText = num;
+
+            // Shake effect visual
+            cell.style.animation = "shake 0.3s";
+
+            setTimeout(() => {
+              cell.classList.remove("cell-error");
+              cell.style.animation = "";
+              cell.innerText = "";
+            }, 500);
+          } else {
+            // CORRECT
+            this.state.userGrid[r][c] = num;
+            delete this.state.notes[`${r}-${c}`];
+            this.renderBoard();
+            this.selectCell(r, c);
+            this.checkWin();
+          }
+        },
+
+        erase() {
+          if (!this.state.selected || this.state.isPaused) return;
+          const { r, c } = this.state.selected;
+          if (this.state.puzzle[r][c] !== 0) return;
+
+          this.state.userGrid[r][c] = 0;
+          delete this.state.notes[`${r}-${c}`];
+          this.renderBoard();
+          this.selectCell(r, c);
+        },
+
+        toggleNotes() {
+          this.state.notesMode = !this.state.notesMode;
+          const btn = document.getElementById("btn-notes");
+          const indicator = document.getElementById("note-indicator");
+
+          if (this.state.notesMode) {
+            btn.classList.remove("opacity-70");
+            btn.style.color = "var(--accent)";
+            indicator.classList.remove("hidden");
+          } else {
+            btn.classList.add("opacity-70");
+            btn.style.color = "var(--text-secondary)";
+            indicator.classList.add("hidden");
+          }
+        },
+
+        undo() {
+          alert("Em breve!");
+        },
+
+        updateUI() {
+          const errEl = document.getElementById("errors-display");
+          // Removemos o limite /3
+          errEl.innerText = `${this.state.errors}`;
+          errEl.style.color =
+            this.state.errors > 0
+              ? "var(--cell-error-text)"
+              : "var(--text-primary)";
+
+          const diffDisplay = {
+            easy: "Fácil",
+            medium: "Médio",
+            hard: "Difícil",
+          };
+          document.getElementById("difficulty-display").innerText =
+            diffDisplay[this.state.difficulty];
+        },
+
+        startTimer() {
+          if (this.timerInterval) clearInterval(this.timerInterval);
+          this.timerInterval = setInterval(() => {
+            if (!this.state.isPaused) {
+              this.state.timer++;
+              const min = Math.floor(this.state.timer / 60)
+                .toString()
+                .padStart(2, "0");
+              const sec = (this.state.timer % 60).toString().padStart(2, "0");
+              document.getElementById("timer-display").innerText =
+                `${min}:${sec}`;
+            }
+          }, 1000);
+        },
+
+        togglePause() {
+          this.state.isPaused = !this.state.isPaused;
+          const overlay = document.getElementById("pause-overlay");
+
+          if (this.state.isPaused) {
+            overlay.classList.remove("hidden");
+            overlay.classList.add("flex");
+          } else {
+            overlay.classList.add("hidden");
+            overlay.classList.remove("flex");
+          }
+        },
+
+        openSettings() {
+          this.state.isPaused = true;
+          document.getElementById("settings-modal").classList.remove("hidden");
+          document.getElementById("settings-modal").classList.add("flex");
+
+          document.querySelectorAll(".diff-btn").forEach((btn) => {
+            if (btn.dataset.diff === this.state.difficulty) {
+              btn.classList.add(
+                "bg-[var(--accent)]",
+                "text-white",
+                "border-transparent",
+              );
+              btn.classList.remove(
+                "hover:bg-[var(--input-bg)]",
+                "border-[var(--grid-line)]",
+              );
+            } else {
+              btn.classList.remove(
+                "bg-[var(--accent)]",
+                "text-white",
+                "border-transparent",
+              );
+              btn.classList.add(
+                "bg-[var(--input-bg)]",
+                "border-[var(--grid-line)]",
+              );
+            }
+          });
+        },
+
+        closeSettings() {
+          this.state.isPaused = false;
+          document.getElementById("settings-modal").classList.add("hidden");
+          document.getElementById("settings-modal").classList.remove("flex");
+        },
+
+        setDifficulty(diff) {
+          this.state.difficulty = diff;
+          this.openSettings();
+        },
+
+        restartGame() {
+          this.initGame();
+        },
+
+        checkWin() {
+          for (let r = 0; r < 9; r++) {
+            for (let c = 0; c < 9; c++) {
+              if (this.state.userGrid[r][c] !== this.state.solution[r][c])
+                return;
+            }
+          }
+
+          clearInterval(this.timerInterval);
+          const min = Math.floor(this.state.timer / 60)
+            .toString()
+            .padStart(2, "0");
+          const sec = (this.state.timer % 60).toString().padStart(2, "0");
+          const timeStr = `${min}:${sec}`;
+
+          document.getElementById("win-time").innerText = timeStr;
+          document.getElementById("win-modal").classList.remove("hidden");
+          document.getElementById("win-modal").classList.add("flex");
+
+          this.saveBestTime(this.state.timer);
+        },
+
+        loadBestTime() {
+          const best = localStorage.getItem(
+            `sudoku-best-${this.state.difficulty}`,
+          );
+          if (best) {
+            const min = Math.floor(best / 60)
+              .toString()
+              .padStart(2, "0");
+            const sec = (best % 60).toString().padStart(2, "0");
+            document.getElementById("best-time-display").innerText =
+              `${min}:${sec}`;
+          } else {
+            document.getElementById("best-time-display").innerText = "--:--";
+          }
+        },
+
+        saveBestTime(time) {
+          const key = `sudoku-best-${this.state.difficulty}`;
+          const current = localStorage.getItem(key);
+          if (!current || time < parseInt(current)) {
+            localStorage.setItem(key, time);
+          }
+        },
+      };
+
+      window.onload = () => {
+        if (window.lucide) lucide.createIcons();
+        game.init();
+      };
+    </script>
+    <style>
+      @keyframes shake {
+        0% {
+          transform: translateX(0);
+        }
+        25% {
+          transform: translateX(5px);
+        }
+        50% {
+          transform: translateX(-5px);
+        }
+        75% {
+          transform: translateX(5px);
+        }
+        100% {
+          transform: translateX(0);
+        }
+      }
+    </style>
+  </body>
+</html>
