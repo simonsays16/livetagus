@@ -59,7 +59,7 @@ function injectNavigation() {
                     </div>
 
                     <div class="flex flex-col items-start gap-3">
-                        <p class="text-[10px] text-zinc-600 font-mono mb-0 leading-none">LiveTagus • v.b29.01.2026 • BETA</p>
+                        <p class="text-[10px] text-zinc-600 font-mono mb-0 leading-none">LiveTagus • v.b02.02.2026 • BETA</p>
                         
                         <div id="api-status-display" class="flex items-center gap-2 mb-1">
                             <span id="status-dot" class="w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-700"></span>
@@ -71,7 +71,7 @@ function injectNavigation() {
                                 ${githubIcon}
                             </a>
                             <a href="https://www.netlify.com" target="_blank" aria-label="Alojado na Netlify">
-                                <img id="netlify-badge-menu" src="https://www.netlify.com/img/global/badges/netlify-color-accent.svg" alt="Deploys by Netlify" class="h-6 w-auto" width="114" height="51" />
+                                <img id="netlify-badge-menu" src="https://www.netlify.com/assets/badges/netlify-badge-color-accent.svg" alt="Deploys by Netlify" class="h-6 w-auto" width="114" height="51" />
                             </a>
                         </div>
                     </div>
@@ -100,7 +100,7 @@ function injectFooter() {
                     </a>
                     
                     <p class="text-xs text-zinc-500 max-w-xs leading-relaxed">
-                        LiveTagus • v.b29.01.2026 • BETA<br><br>
+                        LiveTagus • v.b02.02.2026 • BETA<br><br>
                         Projeto independente e não oficial. Sem afiliação à Fertagus ou IP. Todos os direitos sobre os dados de circulação pertencem aos respetivos proprietários<br><br>
                         Em caso de dúvida, erro ou sugestão contacte-nos:
                     </p>                    
@@ -142,7 +142,7 @@ function injectFooter() {
                             ${githubIcon}
                         </a>
                         <a href="https://www.netlify.com" target="_blank" rel="noopener noreferrer" class="flex items-center opacity-85 hover:opacity-100">
-                            <img id="netlify-badge-footer" src="https://www.netlify.com/img/global/badges/netlify-color-accent.svg" alt="Deploys by Netlify" width="114" height="51" />
+                            <img id="netlify-badge-footer" src="https://www.netlify.com/assets/badges/netlify-badge-color-accent.svg" alt="Deploys by Netlify" width="114" height="51" />
                         </a>
                     </div>
                 </div>
@@ -208,9 +208,9 @@ function setTheme(mode) {
   const netlifyBadgeMenu = document.getElementById("netlify-badge-menu");
   const netlifyBadgeFooter = document.getElementById("netlify-badge-footer");
   const badgeDark =
-    "https://www.netlify.com/img/global/badges/netlify-dark.svg";
+    "https://www.netlify.com/assets/badges/netlify-badge-dark.svg";
   const badgeLight =
-    "https://www.netlify.com/img/global/badges/netlify-light.svg";
+    "https://www.netlify.com/assets/badges/netlify-badge-light.svg";
 
   if (isDark) {
     html.classList.add("dark");
