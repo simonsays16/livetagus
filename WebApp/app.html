@@ -714,17 +714,15 @@
 
       function focusOnContent() {
         // Delay slightly to ensure rendering is complete
-        setTimeout(() => {
-          // Prioritize alerts container, fallback to divider
-          const alerts = document.getElementById("alerts-dynamic-container");
-          const divider = document.getElementById("next-divider");
+        // Prioritize alerts container, fallback to divider
+        const alerts = document.getElementById("alerts-dynamic-container");
+        const divider = document.getElementById("next-divider");
 
-          if (alerts) {
-            alerts.scrollIntoView({ behavior: "smooth", block: "start" });
-          } else if (divider) {
-            divider.scrollIntoView({ behavior: "smooth", block: "start" });
-          }
-        }, 750);
+        if (alerts) {
+          alerts.scrollIntoView({ behavior: "smooth", block: "start" });
+        } else if (divider) {
+          divider.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
       }
 
       window.handleOriginChange = function () {
@@ -2032,7 +2030,7 @@
 
         if (!window.hasScrolledNext && nextTrainIndex !== -1) {
           setTimeout(() => {
-            const el = document.getElementById("next-divider");
+            const el = document.getElementById("alerts-dynamic-container");
             if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
             window.hasScrolledNext = true;
           }, 600);
@@ -2108,10 +2106,11 @@
           isLoading = false;
           if (window.lucide) lucide.createIcons();
 
-          focusOnContent();
+          // focusOnContent();
         }
       };
       window.manualRefresh = function () {
+        focusOnContent();
         loadData(false);
       };
 
