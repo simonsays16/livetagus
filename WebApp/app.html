@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
     <meta name="theme-color" content="#09090b" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -53,7 +53,7 @@
       type="image/x-icon"
     />
     <title>App LiveTagus | Fertagus em Tempo Real</title>
-    <link rel="stylesheet" href="./style.css" />
+    <link rel="stylesheet" href="./output.css" />
     <script src="./menu.js" defer></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -104,8 +104,8 @@
       }
 
       .mask-gradient {
-        mask-image: linear-gradient(180deg, #000 90%, transparent);
         -webkit-mask-image: linear-gradient(180deg, #000 90%, transparent);
+        mask-image: linear-gradient(180deg, #000 90%, transparent);
       }
 
       /* Custom Select Styles */
@@ -189,7 +189,7 @@
     </script>
   </head>
   <body
-    class="h-[100dvh] flex flex-col overflow-hidden bg-zinc-50 dark:bg-[#09090b] text-zinc-900 dark:text-zinc-200 font-sans transition-colors duration-300 selection:bg-blue-500/30"
+    class="h-[100dvh] flex flex-col bg-zinc-50 dark:bg-[#09090b] text-zinc-900 dark:text-zinc-200 font-sans transition-colors duration-300 selection:bg-blue-500/30"
   >
     <div id="global-nav"></div>
 
@@ -201,7 +201,7 @@
 
     <!-- Main Container -->
     <main
-      class="relative z-10 w-full max-w-md mx-auto flex flex-col h-full pt-24"
+      class="relative z-10 w-full max-w-md mx-auto flex flex-col flex-1 pt-24 overflow-hidden"
       role="main"
     >
       <!-- Compact Header Area (One Line) -->
@@ -797,11 +797,23 @@
         const orgSel = document.getElementById("sel-origin");
         if (!orgSel) return;
 
-        // Origin can be ANY station
-        orgSel.innerHTML = FERTAGUS_STATIONS.map(
-          (s) => `<option value="${s.key}">${s.name}</option>`,
-        ).join("");
+        // Mostra SEMPRE todas as estações na origem, independentemente do sentido
+        // Usamos uma cópia para não inverter o array original
+        const allStations = [FERTAGUS_STATIONS];
+
+        // Se quiseres que a ordem faça sentido visual com o separador:
+
+        orgSel.innerHTML = allStations
+          .map(
+            (allStations) =>
+              `<option value="${allStations.key}">${allStations.name}</option>`,
+          )
+          .join("");
+
         orgSel.value = fertagusOrigin;
+
+        // O destino sim, deve ser filtrado com base na origem escolhida
+        updateDestinationOptions();
       };
 
       window.populateDestSelect = function (currentOrigin) {
@@ -964,15 +976,19 @@
         generateHTML: (alerts) => {
           if (!alerts || alerts.length === 0) return "";
 
+          // 1. Container e Slider Track
           let html =
             '<div id="alerts-dynamic-container" class="mt-4 mb-1 relative group w-full animate-fade-in">';
 
-          // CORREÇÃO AQUI: Adicionado 'flex-nowrap' ao pai para garantir linha única
+          // flex-nowrap: Garante linha única
+          // overflow-x-auto: Permite scroll
           html +=
             '<div id="alerts-slider" class="w-full flex flex-nowrap gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide py-1">';
 
           alerts.forEach((alert, index) => {
             const isWarning = alert.tipo === "aviso";
+
+            // Definição de estilos condicionais (rápida)
             const bgColor = isWarning
               ? "bg-amber-500/10 dark:bg-amber-500/5"
               : "bg-white/90 dark:bg-zinc-800/40";
@@ -980,14 +996,13 @@
               ? "border-amber-500/30"
               : "border-black/5 dark:border-white/5";
             const iconColor = isWarning ? "text-amber-500" : "text-blue-500";
-            const textColor = "text-zinc-500 dark:text-zinc-400";
-            const titleColor = "text-zinc-800 dark:text-zinc-200";
             const lucideIcon = alert.icon
               ? alert.icon
               : isWarning
                 ? "alert-triangle"
                 : "info";
 
+            // Lógica do botão de ação
             let actionHtml = "";
             if (alert.isPWA) {
               actionHtml = `<button onclick="installPWA()" class="ml-auto shrink-0 text-[9px] font-bold uppercase tracking-wider text-white bg-blue-600 px-3 py-1.5 rounded transition-colors shadow-sm active:scale-95">Instalar</button>`;
@@ -998,27 +1013,29 @@
               actionHtml = `<span class="ml-auto shrink-0 text-[9px] font-bold uppercase text-zinc-400 px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 rounded cursor-not-allowed">Brevemente</span>`;
             }
 
-            // CORREÇÃO AQUI: Substituído 'min-w-full shrink-0' por 'w-full flex-none'
+            // O Card (w-full flex-none snap-center é o segredo do layout)
             html += `
-                    <div id="alert-${index}" class="w-full flex-none snap-center h-16 ${bgColor} backdrop-blur-sm border ${borderColor} rounded-xl px-4 flex items-center gap-3 shadow-sm relative pr-10">
-                        <div class="shrink-0">
-                            <i data-lucide="${lucideIcon}" class="w-5 h-5 ${iconColor}"></i>
-                        </div>
-                        <div class="flex-1 min-w-0 flex flex-col justify-center pr-2">
-                            <h3 class="text-xs font-bold ${titleColor} leading-none truncate mb-1">${alert.nome}</h3>
-                            <p class="text-[10px] ${textColor} leading-tight line-clamp-2">${alert.mensagem}</p>
-                        </div>
-                        <div class="flex items-center self-center">
-                            ${actionHtml}
-                        </div>
-                        <button onclick="AlertsManager.dismiss(${index}, '${alert.id}')" class="absolute top-2 right-2 p-1.5 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors z-10" aria-label="Fechar aviso">
-                            <i data-lucide="x" class="w-3 h-3"></i>
-                        </button>
+                <div id="alert-${index}" class="w-full flex-none snap-center h-16 ${bgColor} backdrop-blur-sm border ${borderColor} rounded-xl px-4 flex items-center gap-3 shadow-sm relative pr-10">
+                    <div class="shrink-0">
+                        <i data-lucide="${lucideIcon}" class="w-5 h-5 ${iconColor}"></i>
                     </div>
-                `;
+                    <div class="flex-1 min-w-0 flex flex-col justify-center pr-2">
+                        <h3 class="text-xs font-bold text-zinc-800 dark:text-zinc-200 leading-none truncate mb-1">${alert.nome}</h3>
+                        <p class="text-[10px] text-zinc-500 dark:text-zinc-400 leading-tight line-clamp-2">${alert.mensagem}</p>
+                    </div>
+                    <div class="flex items-center self-center">
+                        ${actionHtml}
+                    </div>
+                    <button onclick="AlertsManager.dismiss(${index}, '${alert.id}')" class="absolute top-2 right-2 p-1.5 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors z-10" aria-label="Fechar aviso">
+                        <i data-lucide="x" class="w-3 h-3"></i>
+                    </button>
+                </div>
+            `;
           });
-          html += "</div>"; // End slider
 
+          html += "</div>"; // Fecha Slider Track
+
+          // Paginação (Dots)
           if (alerts.length > 1) {
             html +=
               '<div id="alerts-pagination" class="flex justify-center gap-1 mt-1.5">';
@@ -1032,10 +1049,9 @@
             html += "</div>";
           }
 
-          html += "</div>";
+          html += "</div>"; // Fecha Container Principal
           return html;
         },
-
         dismiss: (index, id) => {
           const el = document.getElementById(`alert-${index}`);
           if (el) el.remove();
@@ -1368,7 +1384,7 @@
         if (activeTab === "lisboa") {
           options = FERTAGUS_STATIONS.slice(0, FERTAGUS_STATIONS.length);
         } else {
-          options = FERTAGUS_STATIONS.slice(1).reverse();
+          options = FERTAGUS_STATIONS.slice().reverse();
         }
 
         const createOpts = (list) =>

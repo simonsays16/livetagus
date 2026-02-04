@@ -9,6 +9,7 @@ yarn-error.log*
 # Ficheiros de Sistema (Lixo do Mac/Windows)
 .DS_Store
 Thumbs.db
+../.hintrc
 
 # Output do Tailwind (Opcional)
 # Se quiseres que o Netlify construa o CSS, descomenta a linha abaixo.

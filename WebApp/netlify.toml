@@ -2,6 +2,20 @@
 [build]
   publish = "."
 
+# 1. Redirecionar /status.html para o novo domínio
+[[redirects]]
+  from = "/status.html"
+  to = "https://status.livetagus.pt"
+  status = 301
+  force = true
+
+# 2. Redirecionar /status (sem .html) também, por precaução
+[[redirects]]
+  from = "/status"
+  to = "https://status.livetagus.pt"
+  status = 301
+  force = true
+
 # Regra 404: A Netlify faz isto automático, mas ser explícito é boa prática
 [[redirects]]
   from = "/*"

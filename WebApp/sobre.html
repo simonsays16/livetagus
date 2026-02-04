@@ -2,10 +2,7 @@
 <html lang="pt-PT" class="scroll-smooth">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=5.0"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <link rel="icon" type="image/svg+xml" href="imagens/favicon-96x96.png" />
     <link rel="alternate icon" href="imagens/favicon.png" />
@@ -23,30 +20,7 @@
     <meta name="theme-color" content="#09090b" />
 
     <title>Sobre & Ajuda | LiveTagus</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        darkMode: "class",
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ["Inter", "sans-serif"],
-              mono: ["JetBrains Mono", "monospace"],
-            },
-            animation: {
-              "fade-in": "fadeIn 0.4s ease-out forwards",
-            },
-            keyframes: {
-              fadeIn: {
-                "0%": { opacity: "0", transform: "translateY(5px)" },
-                "100%": { opacity: "1", transform: "translateY(0)" },
-              },
-            },
-          },
-        },
-      };
-    </script>
-    <link href="./style.css" rel="stylesheet" />
+    <link href="./output.css" rel="stylesheet" />
     <script src="./menu.js" defer></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -153,16 +127,6 @@
             >
               Bastidores
             </button>
-            <button
-              onclick="switchTab('legal')"
-              id="tab-btn-legal"
-              class="px-5 py-2.5 text-sm font-medium rounded-full border transition-all whitespace-nowrap tab-inactive"
-              role="tab"
-              aria-selected="false"
-              aria-controls="content-legal"
-            >
-              Legal & Privacidade
-            </button>
           </nav>
         </div>
 
@@ -267,9 +231,6 @@
                   </button>
                 </div>
               </div>
-              <p class="text-center text-[10px] text-zinc-400 tracking-widest">
-                Desenvolvido por Simão Dias
-              </p>
             </div>
 
             <!--<div
@@ -363,12 +324,24 @@
                   <p
                     class="text-[10px] text-zinc-400 uppercase tracking-widest"
                   >
+                    Website and App Credits
+                  </p>
+                  <p
+                    class="text-center text-[10px] text-zinc-500 tracking-widest"
+                  >
+                    Aplicação desenvolvida e desenhada por Simão Dias
+                  </p>
+                  <p></p>
+                  <p
+                    class="text-[10px] text-zinc-400 uppercase tracking-widest"
+                  >
                     Design Credits (Train in Logo)
                   </p>
                   <div class="text-[10px] text-zinc-500 max-w-md">
                     Double decker train icons by
                     <strong>
                       <a
+                        rel="noopener"
                         href="https://thenounproject.com/creator/schneck/"
                         target="_blank"
                         class="hover:text-zinc-900 dark:hover:text-zinc-300"
@@ -378,6 +351,7 @@
                     </strong>
                     from
                     <a
+                      rel="noopener"
                       href="https://thenounproject.com/browse/icons/term/double-decker-train/"
                       target="_blank"
                       class="underline hover:text-zinc-900 dark:hover:text-zinc-300"
@@ -792,6 +766,7 @@
 
               <div class="mt-8 text-center">
                 <a
+                  rel="noopener"
                   href="https://github.com/simonsays16/livetagus"
                   target="_blank"
                   class="inline-flex items-center gap-2 text-sm text-zinc-900 dark:text-white border-b border-zinc-300 dark:border-zinc-700 hover:border-black dark:hover:border-white transition-colors pb-0.5"
@@ -819,425 +794,6 @@
                 </a>
               </div>
             </section>
-          </div>
-
-          <div
-            id="content-legal"
-            class="tab-content hidden animate-fade-in"
-            role="tabpanel"
-          >
-            <div
-              class="prose dark:prose-invert prose-sm max-w-none text-zinc-600 dark:text-zinc-400"
-            >
-              <h2
-                class="text-xl font-bold text-zinc-900 dark:text-white uppercase tracking-wider mb-6 pb-2 border-b border-zinc-200 dark:border-zinc-800"
-              >
-                Termos e Condições de Utilização
-              </h2>
-              <p class="text-xs mb-4">Última atualização: 22-01-2026</p>
-
-              <h3 class="text-zinc-900 dark:text-white font-bold">
-                1. Introdução e Aceitação
-              </h3>
-              <p>
-                Bem-vindo ao LiveTagus (acessível via livetagus.pt). Ao aceder
-                ou utilizar este website e a respetiva Aplicação Web Progressiva
-                (PWA), o utilizador concorda em cumprir e ficar vinculado aos
-                presentes Termos e Condições. Se não concordar com alguma parte
-                destes termos, não deverá utilizar o serviço.
-              </p>
-
-              <h3 class="text-zinc-900 dark:text-white font-bold mt-6">
-                2. Natureza do Serviço e Isenção de Afiliação
-              </h3>
-              <p>
-                O LiveTagus é uma ferramenta independente, não oficial e sem
-                fins lucrativos.
-              </p>
-              <ol class="list-decimal pl-5 space-y-1">
-                <li>
-                  <strong>Sem Vínculo Oficial:</strong>
-                  Este projeto não tem qualquer afiliação, parceria, contrato ou
-                  vínculo oficial com a Fertagus - Travessia do Tejo,
-                  Transportes, S.A., nem com as Infraestruturas de Portugal
-                  (IP).
-                </li>
-                <li>
-                  <strong>Fonte dos Dados:</strong>
-                  Os dados de horários e estados da circulação apresentados são
-                  obtidos através de fontes de informação públicas. O LiveTagus
-                  atua apenas como uma interface de visualização simplificada
-                  para o utilizador final.
-                </li>
-              </ol>
-
-              <h3 class="text-zinc-900 dark:text-white font-bold mt-6">
-                3. Limitação de Responsabilidade
-              </h3>
-              <p>
-                O serviço é fornecido "tal como está" (as is) e "conforme
-                disponível", sem garantias de qualquer tipo.
-              </p>
-              <ol class="list-decimal pl-5 space-y-1">
-                <li>
-                  <strong>Precisão dos Dados:</strong>
-                  Embora nos esforcemos para apresentar informações em tempo
-                  real, não garantimos que os horários, supressões ou
-                  estimativas de atraso estejam 100% corretos ou isentos de
-                  erros. Falhas na API de origem ou na rede podem resultar em
-                  informações desatualizadas.
-                </li>
-                <li>
-                  <strong>Danos e Prejuízos:</strong>
-                  O LiveTagus e o seu criador não se responsabilizam por
-                  quaisquer danos diretos, indiretos ou consequentes, incluindo,
-                  mas não se limitando a: perda de comboios, atrasos, perda de
-                  ligações, prejuízos financeiros ou inconvenientes causados
-                  pela utilização ou impossibilidade de utilização da aplicação.
-                </li>
-                <li>
-                  <strong>Verificação Oficial:</strong>
-                  O utilizador deve sempre validar as informações críticas
-                  através dos canais oficiais da operadora ou da sinalética
-                  presente nas estações.
-                </li>
-              </ol>
-
-              <h3 class="text-zinc-900 dark:text-white font-bold mt-6">
-                4. Propriedade Intelectual e Licença Open Source
-              </h3>
-              <ol class="list-decimal pl-5 space-y-1">
-                <li>
-                  <strong>Código Fonte:</strong>
-                  O código-fonte do LiveTagus é disponibilizado publicamente sob
-                  a Licença MIT. O utilizador é livre de inspecionar, modificar
-                  e distribuir o código, desde que mantenha os créditos
-                  originais do autor.
-                </li>
-                <li>
-                  <strong>Marcas de Terceiros:</strong>
-                  Quaisquer nomes de estações, logótipos de operadoras ou marcas
-                  registadas (como "Fertagus") mencionados na aplicação
-                  pertencem aos respetivos proprietários e são utilizados apenas
-                  para fins de identificação informativa (Nominative Fair Use).
-                </li>
-              </ol>
-
-              <h3 class="text-zinc-900 dark:text-white font-bold mt-6">
-                5. Doações e Apoio ao Projeto
-              </h3>
-              <p>
-                O LiveTagus aceita contribuições voluntárias (donativos) através
-                de plataformas externas (como Ko-fi ou Stripe) para cobrir
-                custos de manutenção.
-              </p>
-              <ol class="list-decimal pl-5 space-y-1">
-                <li>
-                  <strong>Natureza da Doação:</strong>
-                  Qualquer valor entregue pelo utilizador é considerado uma
-                  liberalidade pura, efetuada de forma voluntária e espontânea,
-                  sem expectativa de contrapartida de bens ou serviços.
-                </li>
-                <li>
-                  <strong>Não Comercial:</strong>
-                  O apoio financeiro não constitui uma compra, subscrição ou
-                  contrato comercial.
-                </li>
-                <li>
-                  <strong>Reembolsos:</strong>
-                  Dada a natureza de donativo, os valores não são reembolsáveis.
-                </li>
-                <li>
-                  <strong>Impostos:</strong>
-                  O utilizador compreende que, para efeitos fiscais, não será
-                  emitida fatura comercial, servindo o comprovativo da
-                  plataforma de pagamento como registo da transação.
-                </li>
-              </ol>
-
-              <h3 class="text-zinc-900 dark:text-white font-bold mt-6">
-                6. Links Externos e Infraestrutura
-              </h3>
-              <p>
-                A aplicação pode conter links para sites de terceiros ou
-                depender de infraestruturas externas (ver Política de
-                Privacidade). Não temos controlo sobre o conteúdo, políticas de
-                privacidade ou práticas de sites ou serviços de terceiros e não
-                assumimos qualquer responsabilidade pelos mesmos.
-              </p>
-
-              <h3 class="text-zinc-900 dark:text-white font-bold mt-6">
-                7. Alterações aos Termos
-              </h3>
-              <p>
-                Reservamo-nos o direito de alterar estes termos a qualquer
-                momento para refletir mudanças na lei ou nas funcionalidades da
-                aplicação. O uso continuado da aplicação após tais alterações
-                constitui a aceitação dos novos termos.
-              </p>
-
-              <h3 class="text-zinc-900 dark:text-white font-bold mt-6">
-                8. Contacto
-              </h3>
-              <p>
-                Para questões relacionadas com estes termos ou funcionamento da
-                app, o utilizador pode contactar-nos através do email de suporte
-                disponibilizado na aplicação.
-              </p>
-
-              <h2
-                class="text-xl font-bold text-zinc-900 dark:text-white uppercase tracking-wider mt-12 mb-6 pb-2 border-b border-zinc-200 dark:border-zinc-800"
-              >
-                Política de Privacidade
-              </h2>
-              <p class="text-xs mb-4">Última atualização: 22-01-2026</p>
-
-              <h3 class="text-zinc-900 dark:text-white font-bold">
-                1. Princípio "Privacy by Design"
-              </h3>
-              <p>
-                A tua privacidade é o pilar central do LiveTagus. A aplicação
-                foi desenhada para funcionar sem saber quem és. Não recolhemos,
-                não vendemos e não processamos dados pessoais identificáveis
-                (PII) nos nossos servidores. Não sabemos o teu nome, a tua
-                localização GPS ou os teus hábitos de viagem.
-              </p>
-
-              <h3 class="text-zinc-900 dark:text-white font-bold mt-6">
-                2. Recolha de Dados e Infraestrutura
-              </h3>
-              <p>
-                O LiveTagus utiliza serviços de terceiros para alojamento e
-                funcionamento técnico, mas limita ao máximo a exposição de
-                dados.
-              </p>
-              <h4 class="text-zinc-800 dark:text-zinc-200 font-semibold mt-2">
-                2.1. Alojamento e Backend
-              </h4>
-              <ul class="list-disc pl-5 space-y-1">
-                <li>
-                  <strong>Frontend:</strong>
-                  O site é alojado na Netlify.
-                </li>
-                <li>
-                  <strong>API/Backend:</strong>
-                  O servidor que processa os dados está alojado em fornecedores
-                  de infraestrutura cloud (Azure).
-                </li>
-                <li>
-                  <strong>Logs Técnicos:</strong>
-                  Estes fornecedores podem recolher logs técnicos padrão (como
-                  endereço IP, User-Agent e data de acesso) estritamente para
-                  fins de segurança (prevenção de DDoS), manutenção da rede e
-                  diagnóstico de erros. O criador do LiveTagus não utiliza estes
-                  logs para rastreamento individual nem os cruza com outras
-                  informações.
-                </li>
-              </ul>
-              <h4 class="text-zinc-800 dark:text-zinc-200 font-semibold mt-2">
-                2.2. Email e Suporte
-              </h4>
-              <p>
-                Se entrares em contacto connosco via email (ex: para reportar
-                bugs):
-              </p>
-              <ul class="list-disc pl-5 space-y-1">
-                <li>
-                  O teu endereço de email e o conteúdo da mensagem serão
-                  armazenados apenas pelo tempo estritamente necessário para
-                  responder à tua questão e resolver o problema.
-                </li>
-                <li>
-                  Após a resolução, os dados são arquivados ou eliminados.
-                </li>
-                <li>
-                  Nunca utilizaremos o teu email para listas de marketing,
-                  newsletters ou partilha com terceiros.
-                </li>
-              </ul>
-
-              <h3 class="text-zinc-900 dark:text-white font-bold mt-6">
-                3. Cookies e Armazenamento Local (LocalStorage)
-              </h3>
-              <p>
-                O LiveTagus não utiliza cookies de rastreio, publicidade
-                comportamental ou analítica invasiva (como Google Analytics).
-                Utilizamos exclusivamente a tecnologia Web LocalStorage do teu
-                navegador. Isto funciona como uma "memória interna" do teu
-                telemóvel, onde guardamos pequenas configurações para que não
-                tenhas de as repetir sempre que abres a app.
-              </p>
-              <p class="mt-2">
-                Lista detalhada dos dados guardados no teu dispositivo:
-              </p>
-
-              <div
-                class="mt-4 overflow-x-auto border border-zinc-200 dark:border-white/10 rounded-lg"
-              >
-                <table class="min-w-full text-xs text-left">
-                  <thead
-                    class="bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white uppercase tracking-wider font-bold"
-                  >
-                    <tr>
-                      <th
-                        class="px-4 py-3 border-b border-zinc-200 dark:border-zinc-700"
-                      >
-                        Chave (Key)
-                      </th>
-                      <th
-                        class="px-4 py-3 border-b border-zinc-200 dark:border-zinc-700"
-                      >
-                        Finalidade
-                      </th>
-                      <th
-                        class="px-4 py-3 border-b border-zinc-200 dark:border-zinc-700"
-                      >
-                        Tipo
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody
-                    class="divide-y divide-zinc-200 dark:divide-zinc-700 bg-zinc-50 dark:bg-zinc-900/50"
-                  >
-                    <tr>
-                      <td class="px-4 py-2 font-mono">theme / system</td>
-                      <td class="px-4 py-2">
-                        Guarda a tua preferência visual (Modo Claro, Escuro ou
-                        Sistema).
-                      </td>
-                      <td class="px-4 py-2">Preferência</td>
-                    </tr>
-                    <tr>
-                      <td class="px-4 py-2 font-mono">
-                        pref_margem_org / pref_margem_dest
-                      </td>
-                      <td class="px-4 py-2">
-                        Memoriza as estações de origem/destino escolhidas no
-                        sentido Margem Sul.
-                      </td>
-                      <td class="px-4 py-2">Funcionalidade</td>
-                    </tr>
-                    <tr>
-                      <td class="px-4 py-2 font-mono">
-                        pref_lisboa_org / pref_lisboa_dest
-                      </td>
-                      <td class="px-4 py-2">
-                        Memoriza as estações de origem/destino escolhidas no
-                        sentido Lisboa.
-                      </td>
-                      <td class="px-4 py-2">Funcionalidade</td>
-                    </tr>
-                    <tr>
-                      <td class="px-4 py-2 font-mono">pref_sync_stations</td>
-                      <td class="px-4 py-2">
-                        Define se queres sincronizar as estações entre abas
-                        (inverter origem/destino automaticamente).
-                      </td>
-                      <td class="px-4 py-2">Funcionalidade</td>
-                    </tr>
-                    <tr>
-                      <td class="px-4 py-2 font-mono">ft_tab</td>
-                      <td class="px-4 py-2">
-                        Memoriza qual a última aba que tinhas aberta (Lisboa ou
-                        Margem Sul).
-                      </td>
-                      <td class="px-4 py-2">Navegação</td>
-                    </tr>
-                    <tr>
-                      <td class="px-4 py-2 font-mono">ft_org / ft_dst</td>
-                      <td class="px-4 py-2">
-                        Cache temporária para funcionamento da interface.
-                      </td>
-                      <td class="px-4 py-2">Técnico</td>
-                    </tr>
-                    <tr>
-                      <td class="px-4 py-2 font-mono">enable_smart</td>
-                      <td class="px-4 py-2">
-                        Guarda a tua preferência sobre a funcionalidade "Smart
-                        Schedule" (Horário Inteligente).
-                      </td>
-                      <td class="px-4 py-2">Configuração</td>
-                    </tr>
-                    <tr>
-                      <td class="px-4 py-2 font-mono">enable_regular</td>
-                      <td class="px-4 py-2">
-                        Guarda a tua preferência sobre a visualização de
-                        horários regulares vs. tempo real.
-                      </td>
-                      <td class="px-4 py-2">Configuração</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <p class="mt-2 text-[10px] text-zinc-500">
-                Nota Legal: Estes dados são considerados "Estritamente
-                Necessários" para o fornecimento do serviço solicitado pelo
-                utilizador (nos termos da Diretiva ePrivacy e RGPD), dispensando
-                consentimento prévio via banner de cookies. Estes dados residem
-                apenas no teu dispositivo e nunca são enviados para uma base de
-                dados nossa.
-              </p>
-
-              <h3 class="text-zinc-900 dark:text-white font-bold mt-6">
-                4. Doações e Dados Financeiros
-              </h3>
-              <p>
-                Ao realizares um donativo através de plataformas externas (ex:
-                Ko-fi, Stripe ou PayPal):
-              </p>
-              <ul class="list-disc pl-5 space-y-1">
-                <li>
-                  O LiveTagus não tem acesso aos teus dados bancários ou de
-                  cartão de crédito. Todo o processamento é gerido pela
-                  plataforma de pagamento.
-                </li>
-                <li>
-                  Podemos ter acesso ao nome associado à doação e ao email
-                  (dependendo da plataforma) apenas para fins de confirmação de
-                  transação e agradecimento. Estes dados não são inseridos em
-                  nenhuma base de dados comercial.
-                </li>
-              </ul>
-
-              <h3 class="text-zinc-900 dark:text-white font-bold mt-6">
-                5. Os teus Direitos
-              </h3>
-              <p>
-                Embora o LiveTagus não mantenha uma base de dados de
-                utilizadores, nos termos do RGPD, tens o direito de:
-              </p>
-              <ol class="list-decimal pl-5 space-y-1">
-                <li>
-                  <strong>Limpar os teus dados:</strong>
-                  Podes a qualquer momento apagar todos os dados do LiveTagus
-                  limpando a "Cache e Dados de Sites" do teu navegador ou
-                  clicando na opção de "Reset" nas definições da app (se
-                  disponível).
-                </li>
-                <li>
-                  <strong>Acesso e Retificação:</strong>
-                  No caso de contacto via email, podes solicitar o acesso,
-                  retificação ou eliminação das tuas mensagens enviadas.
-                </li>
-              </ol>
-
-              <h3 class="text-zinc-900 dark:text-white font-bold mt-6">
-                6. Alterações à Política de Privacidade
-              </h3>
-              <p>
-                Esta política pode ser atualizada ocasionalmente. Recomendamos
-                que a consultes periodicamente. A utilização continuada do
-                serviço pressupõe a aceitação das práticas descritas.
-              </p>
-
-              <h3 class="text-zinc-900 dark:text-white font-bold mt-6">
-                7. Contacto
-              </h3>
-              <p>
-                Para questões de privacidade, contacta-nos através do email de
-                suporte do projeto.
-              </p>
-            </div>
           </div>
         </div>
       </div>

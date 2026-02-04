@@ -10,31 +10,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex, nofollow" />
     <title>404 | Comboio Perdido - LiveTagus</title>
-
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        darkMode: "class",
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ["Inter", "sans-serif"],
-              mono: ["JetBrains Mono", "monospace"],
-            },
-            animation: {
-              float: "float 6s ease-in-out infinite",
-            },
-            keyframes: {
-              float: {
-                "0%, 100%": { transform: "translateY(0)" },
-                "50%": { transform: "translateY(-20px)" },
-              },
-            },
-          },
-        },
-      };
-    </script>
-    <link href="./style.css" rel="stylesheet" />
+    <link href="./output.css" rel="stylesheet" />
     <script src="./menu.js" defer></script>
     <link rel="preconnect" href="https://cdn.tailwindcss.com" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -73,7 +49,8 @@
         <p
           class="text-zinc-500 dark:text-zinc-400 font-light mb-10 text-lg leading-relaxed"
         >
-          A página que procuras não existe. <br />
+          A página que procuras não existe.
+          <br />
           Volta à página principal
         </p>
 
@@ -81,19 +58,19 @@
           href="./app.html"
           class="inline-flex items-center w-72 justify-center px-8 py-4 mb-2 border border-zinc-200 dark:border-white/20 text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-white/5 font-medium text-sm uppercase tracking-widest transition-all rounded-sm group"
         >
-          <span class="mr-2 group-hover:-translate-x-1 transition-transform"
-            >←</span
-          >
+          <span class="mr-2 group-hover:-translate-x-1 transition-transform">
+            ←
+          </span>
           Voltar ao Tempo Real
         </a>
         <br />
         <a
           href="./index.html"
-          class="inline-flex items-center w-72 justify-center px-8 py-4 mb-2 border border-zinc-200 dark:border-white/20 text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-white/5 font-medium text-sm uppercase tracking-widest transition-all rounded-sm group"
+          class="inline-flex items-center w-72 justify-center px-8 py-4 mb-8 border border-zinc-200 dark:border-white/20 text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-white/5 font-medium text-sm uppercase tracking-widest transition-all rounded-sm group"
         >
-          <span class="mr-2 group-hover:-translate-x-1 transition-transform"
-            >←</span
-          >
+          <span class="mr-2 group-hover:-translate-x-1 transition-transform">
+            ←
+          </span>
           Voltar ao Início
         </a>
       </div>
