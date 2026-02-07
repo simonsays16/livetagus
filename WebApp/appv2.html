@@ -600,10 +600,9 @@
 
       let DB_LISBOA = null;
       let DB_MARGEM = null;
-      let DB_FERIADOS = null;
+      let FERIADOS_DB = null;
       let deferredPrompt;
 
-      // --- STATE ---
       // --- STATE ---
       let activeTab = "lisboa";
       let isLoading = false;
@@ -616,8 +615,10 @@
       let displayLimit = 10;
       let nextTrainDate = null;
       let syncStations = true;
+
       let enableRegularStations = false;
       let enableSmartSchedule = false;
+
       let activeAlerts = [];
 
       // --- CRITICAL FUNCTIONS DEFINED GLOBALLY ---
@@ -1472,7 +1473,40 @@
         requestAnimationFrame(() => header.classList.remove("opacity-0"));
       };
 
-      // --- RECONSTRUÇÃO DA FUNÇÃO DE FETCH (COM FILTRO DE HORARIO) ---
+      // --- NEW HELPER FUNCTIONS FOR SCHEDULE LOGIC ---
+
+      function getOperationalDate() {
+        // Adjust for Portugal time (approximated by system time as per instructions to use "dia que é")
+        // But respecting the 05:00 AM rule: 00:00 to 05:00 belongs to previous day.
+        const d = new Date();
+        if (d.getHours() < 5) {
+          d.setDate(d.getDate() - 1);
+        }
+        return d;
+      }
+
+      function isWeekendOrHoliday(date) {
+        const day = date.getDay(); // 0 = Sunday, 6 = Saturday
+        const isWeekend = day === 0 || day === 6;
+        if (isWeekend) return true;
+
+        if (FERIADOS_DB) {
+          // Format YYYY-MM-DD
+          const y = date.getFullYear();
+          const m = String(date.getMonth() + 1).padStart(2, "0");
+          const d = String(date.getDate()).padStart(2, "0");
+          const key = `${y}-${m}-${d}`;
+          if (FERIADOS_DB[key]) return true;
+        }
+        return false;
+      }
+
+      function checkDayType() {
+        const date = getOperationalDate();
+        if (isWeekendOrHoliday(date)) return 2; // Weekend/Holiday
+        return 0; // Business Day
+      }
+
       async function fetchFertagusNewAPI() {
         const currentDB = activeTab === "lisboa" ? DB_LISBOA : DB_MARGEM;
         if (!currentDB) return [];
@@ -1480,7 +1514,6 @@
           const res = await fetch(API_FERTAGUS_NEW);
           if (!res.ok) throw new Error("API Middleware Error");
           const data = await res.json();
-
           const futureTrains = data.futureTrains || {};
           const apiTrains = Object.values(data).filter(
             (v) => v && v["id-comboio"],
@@ -1489,20 +1522,23 @@
             (s) => s.key === fertagusOrigin,
           );
           const dstInfo = FERTAGUS_STATIONS.find((s) => s.key === fertagusDest);
-          const now = new Date(
-            new Date().toLocaleString("en-US", { timeZone: "Europe/Lisbon" }),
-          );
+          const now = new Date();
+          const currentDayType = checkDayType();
+          const allDbTrips = currentDB.trips.filter((trip) => {
+            if (!trip[fertagusOrigin] || !trip[fertagusDest]) return false;
 
-          // APLICAR FILTRO DE DIA (Feriado vs Útil)
-          const allDbTrips = filterTripsByDay(currentDB.trips).filter(
-            (trip) => {
-              if (!trip[fertagusOrigin] || !trip[fertagusDest]) return false;
-              return (
-                parseTimeStr(trip[fertagusOrigin]) <
-                parseTimeStr(trip[fertagusDest])
-              );
-            },
-          );
+            // Horario Filtering
+            // 0 = Business Days only (Type 0)
+            // 1 = All days
+            // 2 = Weekends/Holidays only (Type 2)
+            if (trip.horario === 0 && currentDayType !== 0) return false;
+            if (trip.horario === 2 && currentDayType !== 2) return false;
+
+            return (
+              parseTimeStr(trip[fertagusOrigin]) <
+              parseTimeStr(trip[fertagusDest])
+            );
+          });
 
           const processed = allDbTrips
             .map((dbTrain) => {
@@ -1512,9 +1548,8 @@
               const apiTrain = apiTrains.find(
                 (t) => t["id-comboio"] == dbTrain.id,
               );
-
-              let originNode = null,
-                destNode = null;
+              let originNode = null;
+              let destNode = null;
               if (apiTrain) {
                 originNode = apiTrain.NodesPassagemComboio.find(
                   (n) => n.EstacaoID == orgInfo.id,
@@ -1524,107 +1559,164 @@
                     n.NomeEstacao.toUpperCase() === dstInfo.name.toUpperCase(),
                 );
               }
-
-              let mainTime = scheduledTimeStr,
-                secondaryTime = null,
-                status = "Programado",
-                dotStatus = "green",
-                pulse = true,
-                context = null,
-                isLive = false,
-                isSuppressed = false,
-                hasPassedOrigin = false;
-              let originLabel = dbTrain.setubal
-                ? "SETÚBAL"
-                : dbTrain.coina
-                  ? "COINA"
-                  : "FERTAGUS";
+              let mainTime = scheduledTimeStr;
+              let secondaryTime = null;
+              let status = "Programado";
+              let dotStatus = "gray";
+              let pulse = false;
+              let context = null;
+              let isLive = false;
+              let isSuppressed = false;
+              let hasPassedOrigin = false;
+              let originLabel = "FERTAGUS";
+              if (dbTrain.setubal) originLabel = "SETÚBAL";
+              else if (dbTrain.coina) originLabel = "COINA";
               let arrTime = scheduledDestStr;
 
               if (apiTrain && originNode) {
                 isLive = apiTrain.Live;
                 isSuppressed = apiTrain.SituacaoComboio === "SUPRIMIDO";
                 hasPassedOrigin = originNode.ComboioPassou;
-                if (destNode && destNode.HoraPrevista)
+                if (destNode && destNode.HoraPrevista) {
                   arrTime = destNode.HoraPrevista.substring(0, 5);
-
+                }
                 if (isSuppressed) {
                   status = "SUPRIMIDO";
                   dotStatus = "red";
-                } else {
-                  const progStr = originNode.HoraProgramada,
-                    prevStr = originNode.HoraPrevista,
-                    obsStr = originNode.Observacoes;
+                  pulse = true;
+                } else if (apiTrain) {
+                  const progStr = originNode.HoraProgramada;
+                  const prevStr = originNode.HoraPrevista;
+                  const obsStr = originNode.Observacoes;
                   let diffMin = 0;
-
+                  let explicitDelayFound = false;
                   if (
                     apiTrain.SituacaoComboio &&
                     /atraso/i.test(apiTrain.SituacaoComboio)
                   ) {
                     const match = apiTrain.SituacaoComboio.match(/(\d+)/);
-                    if (match) diffMin = parseInt(match[1]);
+                    if (match) {
+                      diffMin = parseInt(match[1]);
+                      explicitDelayFound = true;
+                    }
                   }
-
                   const obsMatch = obsStr
                     ? obsStr.match(/Hora Prevista:(\d{2}:\d{2})/)
                     : null;
                   if (obsMatch) {
                     mainTime = obsMatch[1];
-                    const dProg = parseTimeStr(progStr),
-                      dObs = parseTimeStr(mainTime);
-                    diffMin = Math.round((dObs - dProg) / 60000);
+                    if (!explicitDelayFound) {
+                      const dProg = parseTimeStr(progStr);
+                      const dObs = parseTimeStr(mainTime);
+                      diffMin = Math.round((dObs - dProg) / 60000);
+                    }
+                  } else if (explicitDelayFound) {
+                    mainTime = addMinutes(progStr, diffMin);
                   } else if (prevStr && prevStr !== progStr) {
                     mainTime = prevStr.substring(0, 5);
-                    const dProg = parseTimeStr(progStr),
-                      dPrev = parseTimeStr(mainTime);
+                    const dProg = parseTimeStr(progStr);
+                    const dPrev = parseTimeStr(mainTime);
                     diffMin = Math.round((dPrev - dProg) / 60000);
+                  } else {
+                    mainTime = progStr.substring(0, 5);
                   }
-
                   if (diffMin > 0) {
                     status = `Atraso ${diffMin} min`;
                     dotStatus = "yellow";
+                    pulse = true;
                     secondaryTime = progStr.substring(0, 5);
-                  } else if (isLive) {
-                    status = "A Horas";
-                    dotStatus = "green";
+                    isLive = true;
+                  } else {
+                    if (isLive || explicitDelayFound || obsMatch) {
+                      status = "A Horas";
+                      dotStatus = "green";
+                      pulse = true;
+                      isLive = true;
+                    } else {
+                      status = "Programado";
+                      dotStatus = "green";
+                      pulse = true;
+                    }
                   }
-
                   const currentIdx = apiTrain.NodesPassagemComboio.findIndex(
                     (n) => !n.ComboioPassou,
                   );
                   if (currentIdx >= 0) {
                     const currNode = apiTrain.NodesPassagemComboio[currentIdx];
+                    const currName = currNode.NomeEstacao;
                     if (hasPassedOrigin && !isSuppressed)
-                      status = `Em ${currNode.NomeEstacao}`;
+                      status = `Em ${currName}`;
+                    const prevNode =
+                      currentIdx > 0
+                        ? apiTrain.NodesPassagemComboio[currentIdx - 1]
+                        : null;
+                    const nextNode = apiTrain.NodesPassagemComboio[
+                      currentIdx + 1
+                    ]
+                      ? apiTrain.NodesPassagemComboio[currentIdx + 1]
+                      : null;
                     context = {
-                      prev:
-                        currentIdx > 0
-                          ? {
-                              name: apiTrain.NodesPassagemComboio[
-                                currentIdx - 1
-                              ].NomeEstacao,
-                            }
-                          : null,
-                      curr: { name: currNode.NomeEstacao },
-                      next: apiTrain.NodesPassagemComboio[currentIdx + 1]
+                      prev: prevNode
                         ? {
-                            name: apiTrain.NodesPassagemComboio[currentIdx + 1]
-                              .NomeEstacao,
+                            name: prevNode.NomeEstacao,
+                            time: prevNode.HoraReal
+                              ? prevNode.HoraReal.substring(0, 5)
+                              : "--:--",
+                          }
+                        : null,
+                      curr: {
+                        name: currName,
+                        time: currNode.HoraPrevista
+                          ? currNode.HoraPrevista.substring(0, 5)
+                          : currNode.HoraProgramada.substring(0, 5),
+                      },
+                      next: nextNode
+                        ? {
+                            name: nextNode.NomeEstacao,
+                            time: nextNode.HoraPrevista
+                              ? nextNode.HoraPrevista.substring(0, 5)
+                              : nextNode.HoraProgramada.substring(0, 5),
                           }
                         : null,
                     };
                   }
                 }
+              } else {
+                const fStatus = futureTrains[dbTrain.id];
+                if (fStatus) {
+                  if (fStatus.toUpperCase().includes("SUPRIMIDO")) {
+                    status = "SUPRIMIDO";
+                    dotStatus = "red";
+                    pulse = true;
+                    isSuppressed = true;
+                  } else if (/atraso/i.test(fStatus)) {
+                    const match = fStatus.match(/(\d+)/);
+                    if (match) {
+                      const delay = parseInt(match[1]);
+                      status = `Atraso ${delay} min`;
+                      dotStatus = "yellow";
+                      pulse = true;
+                      mainTime = addMinutes(scheduledTimeStr, delay);
+                      secondaryTime = scheduledTimeStr;
+                      isLive = true;
+                    }
+                  } else if (
+                    /programado/i.test(fStatus) ||
+                    /hora/i.test(fStatus)
+                  ) {
+                    status = "Programado";
+                    dotStatus = "green";
+                    pulse = true;
+                  }
+                }
               }
-
               if (isSuppressed && scheduledDate < now) return null;
-              if (
-                isLive
-                  ? destNode && destNode.ComboioPassou
-                  : scheduledDate < now
-              )
-                return null;
-
+              if (isLive) {
+                if (destNode && destNode.ComboioPassou) return null;
+              } else {
+                if (scheduledDate < now) return null;
+              }
+              const effectiveDate = parseTimeStr(mainTime);
               return {
                 id: dbTrain.id,
                 num: dbTrain.id,
@@ -1639,23 +1731,24 @@
                 isLive: isLive,
                 isSuppressed: isSuppressed,
                 carriages: dbTrain.carruagens,
-                occupancy: dbTrain.occupacao,
+                occupancy: dbTrain.ocupacao,
                 context: context,
                 isPassed: hasPassedOrigin,
                 isEffectiveFuture: !hasPassedOrigin && !isSuppressed,
-                effectiveDate: parseTimeStr(mainTime),
+                rawTime: scheduledDate,
+                effectiveDate: effectiveDate,
                 fullSchedule: apiTrain ? apiTrain.NodesPassagemComboio : null,
               };
             })
             .filter((t) => t !== null)
             .sort((a, b) => a.effectiveDate - b.effectiveDate);
-
           return processed;
         } catch (e) {
           console.error("Erro Fertagus API:", e);
           return [];
         }
       }
+
       async function getTrains() {
         const apiData = await fetchFertagusNewAPI();
         return apiData;
@@ -1835,8 +1928,8 @@
         const container = document.getElementById("train-list");
         const loadMoreBtn = document.getElementById("load-more-btn");
         currentTrainList = list;
-        container.innerHTML = "";
 
+        // Reset scroll flag if list drastically changed or empty
         if (!list || !list.length) {
           container.innerHTML = `<div class="h-60 flex flex-col items-center justify-center text-zinc-500 gap-3"><i data-lucide="train-track" class="w-10 h-10 opacity-20"></i><p class="text-xs tracking-wider uppercase font-medium">Sem comboios próximos</p></div>`;
           if (window.lucide) lucide.createIcons();
@@ -1860,6 +1953,134 @@
 
         nextTrainDate = list[nextTrainIndex]?.effectiveDate;
         updateNextCountdown();
+
+        // --- SMART PATCHING LOGIC ---
+        // Try to update existing elements to avoid flicker/refresh
+        let canPatch = container.children.length > 0;
+        if (canPatch) {
+          // Check if all visible trains have a corresponding DOM element
+          const allExist = visibleList.every((t) =>
+            document.getElementById(`train-${t.id}`),
+          );
+          if (!allExist) canPatch = false;
+
+          // Note: If the schedule shifts (e.g. top train departs), canPatch will be false, triggering full render.
+          // This is acceptable behavior.
+        }
+
+        if (canPatch) {
+          visibleList.forEach((t, i) => {
+            const card = document.getElementById(`train-${t.id}`);
+            if (!card) return; // Should not happen given check above
+
+            const isPassed = i < nextTrainIndex;
+
+            // Update Opacity
+            const currentOpacity = isPassed
+              ? "opacity-60 grayscale-[0.5]"
+              : "opacity-100";
+            // Regex to remove old opacity classes
+            card.className =
+              card.className
+                .replace(/opacity-\d+/, "")
+                .replace("grayscale-[0.5]", "")
+                .trim() +
+              " " +
+              currentOpacity;
+
+            // Update Time
+            const timeEl = card.querySelector(".font-mono.text-4xl");
+            if (timeEl) {
+              timeEl.innerText = t.time;
+              if (t.isSuppressed)
+                timeEl.classList.add(
+                  "line-through",
+                  "text-zinc-500",
+                  "opacity-70",
+                );
+              else
+                timeEl.classList.remove(
+                  "line-through",
+                  "text-zinc-500",
+                  "opacity-70",
+                );
+            }
+
+            // Secondary Time (if needed, simpler to ignore if structure didn't change much)
+
+            // Update Status
+            const statusText = card.querySelector(
+              ".text-\\[10px\\].uppercase.tracking-wide.font-medium",
+            );
+            if (statusText) {
+              statusText.innerText = t.status;
+              statusText.className = `text-[10px] uppercase tracking-wide font-medium ${t.isSuppressed ? "text-red-500 font-bold" : t.status.includes("Atraso") ? "text-yellow-600 dark:text-yellow-400" : "text-zinc-500 dark:text-zinc-400"}`;
+            }
+
+            // Update Dot
+            const dot = card.querySelector(".w-1\\.5.h-1\\.5.rounded-full");
+            if (dot) {
+              let dotClass = "bg-zinc-400 dark:bg-zinc-600",
+                glowColor = "rgba(59, 130, 246, 0.5)";
+              if (t.dotStatus === "green") {
+                dotClass = "bg-emerald-500";
+                glowColor = "rgba(16, 185, 129, 0.5)";
+              } else if (t.dotStatus === "yellow") {
+                dotClass = "bg-amber-500";
+                glowColor = "rgba(245, 158, 11, 0.5)";
+              } else if (t.dotStatus === "red") {
+                dotClass = "bg-red-500";
+                glowColor = "rgba(239, 68, 68, 0.5)";
+              } else if (t.dotStatus === "offline") {
+                dotClass = "bg-zinc-500";
+                glowColor = "rgba(100, 100, 100, 0.5)";
+              }
+
+              dotClass += ` shadow-[0_0_8px_${glowColor}]`;
+
+              // Handle Pulse
+              if (t.dotStatus !== "gray" && t.dotStatus !== "offline") {
+                dotClass += " dot-ping";
+                dot.setAttribute("style", `--dot-color-glow: ${glowColor}`);
+              } else {
+                dot.removeAttribute("style");
+              }
+              dot.className = `w-1.5 h-1.5 rounded-full ${dotClass}`;
+            }
+
+            // Update Context
+            const contextContainer = card.querySelector(
+              ".grid.grid-cols-\\[1fr_auto_1fr\\]",
+            );
+            if (t.context) {
+              const ctxHtml = `
+                        <div class="flex items-center justify-end gap-1 opacity-60">
+                            ${t.context.prev ? `<span class="truncate max-w-[70px]">${t.context.prev.name}</span><span>-</span>` : ""}
+                        </div>
+                        <div class="flex flex-col items-center text-zinc-700 dark:text-zinc-300 font-bold scale-110 justify-self-center min-w-[80px]">
+                            <span>${t.context.curr.name}</span>
+                        </div>
+                        <div class="flex items-center justify-start gap-1 opacity-60">
+                            ${t.context.next ? `<span>-</span><span class="truncate max-w-[70px]">${t.context.next.name}</span>` : ""}
+                        </div>`;
+              if (contextContainer) {
+                contextContainer.innerHTML = ctxHtml;
+              } else {
+                // Was missing, append it
+                const wrapper = `<div class="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-2 w-full text-[9px] text-zinc-500">${ctxHtml}</div>`;
+                card.insertAdjacentHTML("beforeend", wrapper);
+              }
+            }
+          });
+
+          // If we successfully patched, we still need to check if Alerts need update/injection,
+          // but `updateAlertsSystem` handles data fetching.
+          // We're good.
+          return;
+        }
+
+        // --- FULL RENDER FALLBACK ---
+        container.innerHTML = "";
 
         const dividerHTML = `
                 <div class="flex items-center gap-4 py-4 opacity-80 scroll-mt-[180px]" id="next-divider">
@@ -1892,14 +2113,18 @@
           } else if (t.dotStatus === "red") {
             dotClass = "bg-red-500";
             glowColor = "rgba(239, 68, 68, 0.5)";
+          } else if (t.dotStatus === "offline") {
+            dotClass = "bg-zinc-500";
+            glowColor = "rgba(100, 100, 100, 0.5)";
           }
 
           dotClass += ` shadow-[0_0_8px_${glowColor}]`;
           let pulseStyle =
-            t.dotStatus !== "gray"
+            t.dotStatus !== "gray" && t.dotStatus !== "offline"
               ? `style="--dot-color-glow: ${glowColor}"`
               : "";
-          if (t.dotStatus !== "gray") dotClass += " dot-ping";
+          if (t.dotStatus !== "gray" && t.dotStatus !== "offline")
+            dotClass += " dot-ping";
 
           const opacityClass = isPassed
             ? "opacity-60 grayscale-[0.5]"
@@ -2000,7 +2225,7 @@
             const el = document.getElementById("alerts-dynamic-container");
             if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
             window.hasScrolledNext = true;
-          }, 600);
+          }, 800);
         }
 
         if (activeAlerts.length > 1) {
@@ -2027,146 +2252,19 @@
         renderList(currentTrainList);
       };
 
-      // Função para gerar a lista baseada apenas nos ficheiros JSON locais
-      function getStaticData() {
-        const currentDB = activeTab === "lisboa" ? DB_LISBOA : DB_MARGEM;
-        if (!currentDB) return [];
-
-        const dstInfo = FERTAGUS_STATIONS.find((s) => s.key === fertagusDest);
-        const now = new Date(
-          new Date().toLocaleString("en-US", { timeZone: "Europe/Lisbon" }),
-        );
-
-        const filteredTrips = filterTripsByDay(currentDB.trips);
-
-        return filteredTrips
-          .filter((trip) => {
-            if (!trip[fertagusOrigin] || !trip[fertagusDest]) return false;
-            const trainTime = parseTimeStr(trip[fertagusOrigin]);
-            return trainTime > now; // Apenas comboios futuros
-          })
-          .map((dbTrain) => ({
-            id: dbTrain.id,
-            num: dbTrain.id,
-            op: dbTrain.setubal
-              ? "SETÚBAL"
-              : dbTrain.coina
-                ? "COINA"
-                : "FERTAGUS",
-            time: dbTrain[fertagusOrigin],
-            secTime: null,
-            dest: dstInfo.name,
-            status: "Programado",
-            arr: dbTrain[fertagusDest],
-            dotStatus: "gray", // Cinzento enquanto não temos dados da API
-            pulse: false,
-            isLive: false,
-            isSuppressed: false,
-            carriages: dbTrain.carruagens,
-            occupancy: dbTrain.ocupacao,
-            context: null,
-            isPassed: false,
-            isEffectiveFuture: true,
-            effectiveDate: parseTimeStr(dbTrain[fertagusOrigin]),
-          }))
-          .sort((a, b) => a.effectiveDate - b.effectiveDate);
-      }
-
-      // --- LOGICA DE DATA E HORARIO (PORTUGAL) ---
-
-      // Obtém a data operacional: se for entre 00h e 05h, conta como o dia anterior
-      function getOperationalDate() {
-        const now = new Date(
-          new Date().toLocaleString("en-US", { timeZone: "Europe/Lisbon" }),
-        );
-        const hours = now.getHours();
-        if (hours >= 0 && hours < 5) {
-          now.setDate(now.getDate() - 1);
-        }
-        return now;
-      }
-
-      // Verifica se o dia atual operacional é FDS ou Feriado
-      function isHolidayOrWeekend() {
-        if (!DB_FERIADOS) return false;
-        const opDate = getOperationalDate();
-        const dateStr = opDate.toISOString().split("T")[0];
-        return DB_FERIADOS.hasOwnProperty(dateStr);
-      }
-
-      // Filtra os comboios do JSON com base no tipo de dia (horario 0, 1 ou 2)
-      function filterTripsByDay(trips) {
-        const isSpecial = isHolidayOrWeekend();
-        return trips.filter((trip) => {
-          if (isSpecial) {
-            // Se é feriado/FDS: mostramos os de "Todos os dias" (1) e "FDS/Feriados" (2)
-            return trip.horario === 1 || trip.horario === 2;
-          } else {
-            // Se é dia útil: mostramos os de "Todos os dias" (1) e "Dias Úteis" (0)
-            return trip.horario === 1 || trip.horario === 0;
-          }
-        });
-      }
-
-      // --- LOGICA DE CARREGAMENTO HIBRIDO ---
-
-      async function loadData(silent = false) {
-        if (isLoading) return;
-        isLoading = true;
-
-        // 1. CARREGAMENTO OFFLINE IMEDIATO (Static First)
-        // Mostra os comboios baseados no JSON local antes de ir à API
-        const staticData = getStaticData();
-        if (staticData.length > 0 && !silent) {
-          renderList(staticData);
-          setStatus("loading"); // Fica a carregar os dados reais "por cima"
-        }
-
-        try {
-          // 2. CARREGAMENTO ONLINE (Real-time update)
-          const liveData = await fetchFertagusNewAPI();
-          await updateAlertsSystem(liveData);
-
-          // Se a API falhou ou não trouxe nada, mantemos o estático mas avisamos
-          if (!liveData || liveData.length === 0) {
-            throw new Error("API Offline");
-          }
-
-          renderList(liveData);
-          setStatus("success");
-        } catch (e) {
-          console.warn("Modo Offline Ativo:", e);
-          setStatus("offline");
-          // Em erro, garantimos que pelo menos o estático está lá
-          if (staticData.length > 0) renderList(staticData);
-        } finally {
-          isLoading = false;
-          if (window.lucide) lucide.createIcons();
-        }
-      }
-
-      // --- ATUALIZAÇÃO DO STATUS ---
       window.setStatus = function (s, msg) {
-        const ping = document.getElementById("status-ping");
-        const icon = document.getElementById("refresh-icon-menu");
+        const ping = document.getElementById("status-ping"),
+          icon = document.getElementById("refresh-icon-menu");
         const lastUpd = document.getElementById("last-updated");
 
         if (s === "loading") {
           if (icon) icon.classList.add("animate-spin");
+        } else if (s === "error" || s === "offline") {
           if (ping)
             ping.className =
-              "relative inline-flex h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse";
-        } else if (s === "offline") {
-          if (ping)
-            ping.className =
-              "relative inline-flex h-1.5 w-1.5 rounded-full bg-zinc-500"; // Bola cinzenta
+              "relative inline-flex h-1.5 w-1.5 rounded-full " +
+              (s === "offline" ? "bg-zinc-500" : "bg-red-500");
           if (lastUpd) lastUpd.innerText = "Offline";
-          if (icon) icon.classList.remove("animate-spin");
-        } else if (s === "error") {
-          if (ping)
-            ping.className =
-              "relative inline-flex h-1.5 w-1.5 rounded-full bg-red-500";
-          if (lastUpd) lastUpd.innerText = "Erro API";
           if (icon) icon.classList.remove("animate-spin");
         } else {
           if (ping)
@@ -2244,16 +2342,19 @@
         init();
       };
 
-      // --- INICIALIZAÇÃO ATUALIZADA ---
       async function init() {
-        if ("scrollRestoration" in history)
+        // Prevent browser scroll restoration on reload
+        if ("scrollRestoration" in history) {
           history.scrollRestoration = "manual";
+        }
+
         setupPWA();
         loadSettings();
+
+        // Espera pelo menu.js carregar o DOM (pequeno timeout de segurança)
         setTimeout(injectCustomMenuElements, 100);
 
         try {
-          // Carrega Feriados e Base de Dados
           const [resLisboa, resMargem, resFeriados] = await Promise.all([
             fetch("./json/fertagus_sentido_lisboa.json"),
             fetch("./json/fertagus_sentido_margem.json"),
@@ -2262,34 +2363,131 @@
 
           if (resLisboa.ok) DB_LISBOA = await resLisboa.json();
           if (resMargem.ok) DB_MARGEM = await resMargem.json();
-          if (resFeriados.ok) DB_FERIADOS = await resFeriados.json();
+          if (resFeriados.ok) FERIADOS_DB = await resFeriados.json();
         } catch (e) {
-          console.error("Erro Crítico no carregamento de JSONs:", e);
+          console.error("DB Load Error:", e);
+          DB_LISBOA = { trips: [] };
+          DB_MARGEM = { trips: [] };
+          FERIADOS_DB = {};
         }
 
-        // Lógica de tab inteligente (Manhã/Tarde)
         const nowH = new Date().getHours();
-        let targetTab = localStorage.getItem("ft_tab") || "lisboa";
+        let targetTab = "lisboa";
         if (enableSmartSchedule) {
           const morningPref = localStorage.getItem("pref_morning") || "lisboa";
           const afternoonPref =
             localStorage.getItem("pref_afternoon") || "margem";
-          targetTab = nowH >= 5 && nowH < 13 ? morningPref : afternoonPref;
+          if (nowH >= 5 && nowH < 13) targetTab = morningPref;
+          else if (nowH >= 13 || nowH < 2) targetTab = afternoonPref;
+        } else {
+          const savedTab = localStorage.getItem("ft_tab");
+          if (savedTab) targetTab = savedTab;
         }
 
         activeTab = targetTab;
         loadStationPrefs(activeTab);
+
+        // Initial Population
         populateOriginSelect();
         populateDestSelect(fertagusOrigin);
 
-        // Renderiza logo o que temos offline e depois atualiza
+        // Ensure values match state
+        const orgSel = document.getElementById("sel-origin");
+        const dstSel = document.getElementById("sel-dest");
+        if (orgSel) orgSel.value = fertagusOrigin;
+        if (dstSel) dstSel.value = fertagusDest;
+
+        // updateAppState calls loadData, which triggers API.
+        // We want to render STATIC data first (Optimistic UI) before that.
+        // We will manually construct the initial view.
+
+        // Calculate direction and set activeTab if needed (logic from updateAppState)
+        const newDirection = calculateDirection(fertagusOrigin, fertagusDest);
+        if (newDirection !== activeTab) activeTab = newDirection;
+        saveState();
+
+        // --- OPTIMISTIC RENDER (OFFLINE MODE) ---
+        // Manually build the list from DB without API data
+        try {
+          const currentDB = activeTab === "lisboa" ? DB_LISBOA : DB_MARGEM;
+          if (currentDB) {
+            const currentDayType = checkDayType();
+            const orgInfo = FERTAGUS_STATIONS.find(
+              (s) => s.key === fertagusOrigin,
+            );
+            const dstInfo = FERTAGUS_STATIONS.find(
+              (s) => s.key === fertagusDest,
+            );
+
+            const staticTrips = currentDB.trips
+              .filter((trip) => {
+                if (!trip[fertagusOrigin] || !trip[fertagusDest]) return false;
+                if (trip.horario === 0 && currentDayType !== 0) return false;
+                if (trip.horario === 2 && currentDayType !== 2) return false;
+                return (
+                  parseTimeStr(trip[fertagusOrigin]) <
+                  parseTimeStr(trip[fertagusDest])
+                );
+              })
+              .map((dbTrain) => {
+                // Build a basic train object similar to what fetchFertagusNewAPI returns
+                let originLabel = "FERTAGUS";
+                if (dbTrain.setubal) originLabel = "SETÚBAL";
+                else if (dbTrain.coina) originLabel = "COINA";
+
+                const mainTime = dbTrain[fertagusOrigin];
+                const effectiveDate = parseTimeStr(mainTime);
+
+                // Determine if it should be shown based on time?
+                // Just show everything for now, renderList handles sorting/focus
+
+                return {
+                  id: dbTrain.id,
+                  num: dbTrain.id,
+                  op: originLabel,
+                  time: mainTime,
+                  secTime: null,
+                  dest: dstInfo.name,
+                  status: "Offline", // Status indicates offline
+                  arr: dbTrain[fertagusDest],
+                  dotStatus: "offline", // Gray dot
+                  pulse: false,
+                  isLive: false,
+                  isSuppressed: false,
+                  carriages: dbTrain.carruagens,
+                  occupancy: null,
+                  context: null,
+                  isPassed: effectiveDate < new Date(), // Simple check
+                  isEffectiveFuture: effectiveDate >= new Date(),
+                  effectiveDate: effectiveDate,
+                };
+              })
+              .sort((a, b) => a.effectiveDate - b.effectiveDate);
+
+            renderList(staticTrips);
+            setStatus("offline", "A carregar...");
+          }
+        } catch (e) {
+          console.error("Optimistic Render Failed", e);
+        }
+
+        // Now call the real update which will fetch API and patch
+        // We use a small delay to let the UI paint the static list first if needed?
+        // No, fetch is async, so it will yield anyway.
         loadData(false);
+        focusOnContent();
 
         if (refreshInterval) clearInterval(refreshInterval);
-        refreshInterval = setInterval(() => loadData(true), 60000);
+        refreshInterval = setInterval(() => {
+          if (!isLoading) loadData(true);
+        }, 60000);
+
         if (nextTrainInterval) clearInterval(nextTrainInterval);
         nextTrainInterval = setInterval(updateNextCountdown, 1000);
+
+        if (window.lucide) lucide.createIcons();
       }
+
       // --- Lógica do Cartão Spotify (Leitura Direta do JSON) ---
       const SPOTIFY_API_URL = "https://api.npoint.io/0f0a3c1ca3b044f666e8";
 

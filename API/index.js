@@ -183,7 +183,7 @@ const getOperationalInfo = (now = new Date()) => {
   const hour = d.getHours();
 
   // Dia operacional Fertagus (05h - 02h30)
-  if (hour < 5) {
+  if (hour < 3) {
     d.setDate(d.getDate() - 1);
   }
 
