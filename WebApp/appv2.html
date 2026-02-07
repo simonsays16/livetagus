@@ -1479,7 +1479,7 @@
         // Adjust for Portugal time (approximated by system time as per instructions to use "dia que é")
         // But respecting the 05:00 AM rule: 00:00 to 05:00 belongs to previous day.
         const d = new Date();
-        if (d.getHours() < 5) {
+        if (d.getHours() < 3) {
           d.setDate(d.getDate() - 1);
         }
         return d;
