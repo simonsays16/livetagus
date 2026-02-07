@@ -19,7 +19,10 @@ const protectRoute = (req, res, next) => {
   if (!userKey || userKey !== API_KEY) {
     return res.status(403).json({
       error: "Acesso negado",
-      message: "API Key inválida ou ausente no header 'x-api-key'.",
+      message:
+        "Esta API é de uso privado. O acesso não autorizado é restrito e monitorizado.",
+      documentation_url:
+        "https://github.com/simonsays16/livetagus?tab=readme-ov-file#important-note-about-the-api",
     });
   }
   next();
@@ -139,33 +142,21 @@ const loadDataFiles = () => {
     }
 
     const arrLisboa = loadFile(
-      [
-        "fertagus_sentido_lisboa_chegada.json",
-        "horarios_comboio_passou_fertagus_sentido_lisboa.json",
-      ],
+      ["fertagus_sentido_lisboa_chegada.json"],
       "lisboa",
     );
     const arrMargem = loadFile(
-      [
-        "fertagus_sentido_margem_chegadas.json",
-        "horarios_comboio_passou_fertagus_sentido_margem.json",
-      ],
+      ["fertagus_sentido_margem_chegadas.json"],
       "margem",
     );
     RICH_SCHEDULE = [...arrLisboa, ...arrMargem];
 
     const depLisboa = loadFile(
-      [
-        "fertagus_sentido_lisboa_partida.json",
-        "fertagus_semana_sentido_lisboa.json",
-      ],
+      ["fertagus_sentido_lisboa_partida.json"],
       "lisboa",
     );
     const depMargem = loadFile(
-      [
-        "fertagus_sentido_margem_partida.json",
-        "fertagus_semana_sentido_margem.json",
-      ],
+      ["fertagus_sentido_margem_partida.json"],
       "margem",
     );
     DEPARTURE_SCHEDULE = [...depLisboa, ...depMargem];
