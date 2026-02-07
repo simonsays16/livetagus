@@ -124,33 +124,21 @@ const loadDataFiles = () => {
     }
 
     const arrLisboa = loadFile(
-      [
-        "fertagus_sentido_lisboa_chegada.json",
-        "horarios_comboio_passou_fertagus_sentido_lisboa.json",
-      ],
+      ["fertagus_sentido_lisboa_chegada.json"],
       "lisboa",
     );
     const arrMargem = loadFile(
-      [
-        "fertagus_sentido_margem_chegadas.json",
-        "horarios_comboio_passou_fertagus_sentido_margem.json",
-      ],
+      ["fertagus_sentido_margem_chegadas.json"],
       "margem",
     );
     RICH_SCHEDULE = [...arrLisboa, ...arrMargem];
 
     const depLisboa = loadFile(
-      [
-        "fertagus_sentido_lisboa_partida.json",
-        "fertagus_semana_sentido_lisboa.json",
-      ],
+      ["fertagus_sentido_lisboa_partida.json"],
       "lisboa",
     );
     const depMargem = loadFile(
-      [
-        "fertagus_sentido_margem_partida.json",
-        "fertagus_semana_sentido_margem.json",
-      ],
+      ["fertagus_sentido_margem_partida.json"],
       "margem",
     );
     DEPARTURE_SCHEDULE = [...depLisboa, ...depMargem];
@@ -647,7 +635,8 @@ app.get("/fertagus", (req, res) => res.json(OUTPUT_CACHE));
 app.get("/", (req, res) =>
   res.json({
     status: "online",
-    version: "4.3.2",
+    version: "4.3.4",
+    aviso: "pedimos que não use o nosso endpoint, verifica o código no github",
     operational: getOperationalInfo(),
   }),
 );

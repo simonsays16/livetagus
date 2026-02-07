@@ -1510,6 +1510,7 @@
       async function fetchFertagusNewAPI() {
         const currentDB = activeTab === "lisboa" ? DB_LISBOA : DB_MARGEM;
         if (!currentDB) return [];
+        const isSpecialDay = checkDayType() === 2;
         try {
           const res = await fetch(API_FERTAGUS_NEW);
           if (!res.ok) throw new Error("API Middleware Error");
@@ -1730,8 +1731,8 @@
                 pulse: pulse,
                 isLive: isLive,
                 isSuppressed: isSuppressed,
-                carriages: dbTrain.carruagens,
-                occupancy: dbTrain.ocupacao,
+                carriages: isSpecialDay ? 4 : dbTrain.carruagens,
+                occupancy: isSpecialDay ? null : dbTrain.ocupacao,
                 context: context,
                 isPassed: hasPassedOrigin,
                 isEffectiveFuture: !hasPassedOrigin && !isSuppressed,
@@ -2408,6 +2409,7 @@
 
         // --- OPTIMISTIC RENDER (OFFLINE MODE) ---
         // Manually build the list from DB without API data
+        const isSpecialDay = checkDayType() === 2;
         try {
           const currentDB = activeTab === "lisboa" ? DB_LISBOA : DB_MARGEM;
           if (currentDB) {
@@ -2454,8 +2456,8 @@
                   pulse: false,
                   isLive: false,
                   isSuppressed: false,
-                  carriages: dbTrain.carruagens,
-                  occupancy: null,
+                  carriages: isSpecialDay ? 4 : dbTrain.carruagens,
+                  occupancy: isSpecialDay ? null : dbTrain.ocupacao,
                   context: null,
                   isPassed: effectiveDate < new Date(), // Simple check
                   isEffectiveFuture: effectiveDate >= new Date(),
