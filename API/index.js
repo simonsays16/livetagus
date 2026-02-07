@@ -20,7 +20,7 @@ const protectRoute = (req, res, next) => {
     return res.status(403).json({
       error: "Acesso negado",
       message:
-        "Esta API é de uso privado. O acesso não autorizado é restrito e monitorizado.",
+        "API de uso exclusivo da livetagus.pt. o acesso não autorizado é restrito e monitorizado.",
       documentation_url:
         "https://github.com/simonsays16/livetagus?tab=readme-ov-file#important-note-about-the-api",
     });

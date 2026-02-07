@@ -1458,7 +1458,7 @@
         },
         {
             "id": 14292,
-            "horario": 1,
+            "horario": 0,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -1521,7 +1521,7 @@
         },
         {
             "id": 14298,
-            "horario": 1,
+            "horario": 0,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -1584,7 +1584,7 @@
         },
         {
             "id": 14304,
-            "horario": 1,
+            "horario": 0,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -1626,7 +1626,7 @@
         },
         {
             "id": 14308,
-            "horario": 1,
+            "horario": 0,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,

@@ -1458,7 +1458,7 @@
         },
         {
             "id": 14292,
-            "horario": 1,
+            "horario": 0,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -1521,7 +1521,7 @@
         },
         {
             "id": 14298,
-            "horario": 1,
+            "horario": 0,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -1584,7 +1584,7 @@
         },
         {
             "id": 14304,
-            "horario": 1,
+            "horario": 0,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -1625,27 +1625,6 @@
             "roma_areeiro": "00:06:00"
         },
         {
-            "id": 14308,
-            "horario": 1,
-            "carruagens": 4,
-            "service": 1,
-            "ocupacao": null,
-            "setubal": "23:43:00",
-            "palmela": "23:47:00",
-            "venda_do_alcaide": "23:51:30",
-            "pinhal_novo": "23:55:30",
-            "penalva": "00:03:00",
-            "coina": "00:13:00",
-            "fogueteiro": "00:17:00",
-            "foros_de_amora": "00:20:30",
-            "corroios": "00:23:30",
-            "pragal": "00:28:30",
-            "campolide": "00:37:00",
-            "sete_rios": "00:39:30",
-            "entrecampos": "00:43:30",
-            "roma_areeiro": "00:46:00"
-        },
-        {
             "id": 14048,
             "horario": 2,
             "carruagens": 4,
@@ -1665,6 +1644,27 @@
             "sete_rios": "00:19:30",
             "entrecampos": "00:23:30",
             "roma_areeiro": "00:26:00"
+        },
+        {
+            "id": 14308,
+            "horario": 0,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
+            "setubal": "23:43:00",
+            "palmela": "23:47:00",
+            "venda_do_alcaide": "23:51:30",
+            "pinhal_novo": "23:55:30",
+            "penalva": "00:03:00",
+            "coina": "00:13:00",
+            "fogueteiro": "00:17:00",
+            "foros_de_amora": "00:20:30",
+            "corroios": "00:23:30",
+            "pragal": "00:28:30",
+            "campolide": "00:37:00",
+            "sete_rios": "00:39:30",
+            "entrecampos": "00:43:30",
+            "roma_areeiro": "00:46:00"
         },
         {
             "id": 14200,
