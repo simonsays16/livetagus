@@ -265,7 +265,7 @@ async function checkApiStatus() {
     dot.className = "w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-700";
     if (dot_footer)
       dot_footer.className = "w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-700"; 
-    text.textContent = "Modo Poupança 🌙";
+    text.textContent = "Modo Poupança (noite);
     return;
   }
   */
@@ -275,7 +275,7 @@ async function checkApiStatus() {
     // Timeout curto (5s) para o status check
     const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-    // ✅ USAR O ENDPOINT RAIZ (Mais leve e rápido para health-check)
+    // Endpoint raiz, sem API_KEY
     const res = await fetch("https://api.livetagus.pt/", {
       method: "GET",
       signal: controller.signal,
@@ -284,7 +284,7 @@ async function checkApiStatus() {
     clearTimeout(timeoutId);
 
     if (res.ok) {
-      // ONLINE 🟢
+      // ONLINE
       const successClass =
         "w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse";
 
@@ -303,7 +303,7 @@ async function checkApiStatus() {
       throw new Error("Servidor respondeu com erro");
     }
   } catch (err) {
-    // OFFLINE 🟠
+    // OFFLINE
     const errorClass = "w-2 h-2 rounded-full bg-amber-500/50";
 
     dot.className = errorClass;
@@ -311,7 +311,7 @@ async function checkApiStatus() {
 
     text.textContent = "A ligar ao servidor...";
 
-    // Tenta novamente daqui a 30 segundos
+    // Tentativas 30 em 30 segundos
     setTimeout(checkApiStatus, 30000);
   }
 }

@@ -1,3 +1,4 @@
+require("dotenv").config(); // Carrega as variáveis do ficheiro .env
 const express = require("express");
 const cors = require("cors");
 const fetch = require("node-fetch");
@@ -9,6 +10,20 @@ app.use(cors());
 
 // --- CONFIGURAÇÃO ---
 const PORT = process.env.PORT || 3000;
+const API_KEY = process.env.API_KEY;
+
+// Middleware para verificar a API Key
+const protectRoute = (req, res, next) => {
+  const userKey = req.headers["x-api-key"];
+
+  if (!userKey || userKey !== API_KEY) {
+    return res.status(403).json({
+      error: "Acesso negado",
+      message: "API Key inválida ou ausente no header 'x-api-key'.",
+    });
+  }
+  next();
+};
 
 // Mapeamento de nomes
 const STATION_MAP_JSON_TO_IP = {
@@ -124,21 +139,33 @@ const loadDataFiles = () => {
     }
 
     const arrLisboa = loadFile(
-      ["fertagus_sentido_lisboa_chegada.json"],
+      [
+        "fertagus_sentido_lisboa_chegada.json",
+        "horarios_comboio_passou_fertagus_sentido_lisboa.json",
+      ],
       "lisboa",
     );
     const arrMargem = loadFile(
-      ["fertagus_sentido_margem_chegadas.json"],
+      [
+        "fertagus_sentido_margem_chegadas.json",
+        "horarios_comboio_passou_fertagus_sentido_margem.json",
+      ],
       "margem",
     );
     RICH_SCHEDULE = [...arrLisboa, ...arrMargem];
 
     const depLisboa = loadFile(
-      ["fertagus_sentido_lisboa_partida.json"],
+      [
+        "fertagus_sentido_lisboa_partida.json",
+        "fertagus_semana_sentido_lisboa.json",
+      ],
       "lisboa",
     );
     const depMargem = loadFile(
-      ["fertagus_sentido_margem_partida.json"],
+      [
+        "fertagus_sentido_margem_partida.json",
+        "fertagus_semana_sentido_margem.json",
+      ],
       "margem",
     );
     DEPARTURE_SCHEDULE = [...depLisboa, ...depMargem];
@@ -171,7 +198,7 @@ const getOperationalInfo = (now = new Date()) => {
   const hour = d.getHours();
 
   // Dia operacional Fertagus (05h - 02h30)
-  if (hour < 3) {
+  if (hour < 5) {
     d.setDate(d.getDate() - 1);
   }
 
@@ -508,13 +535,23 @@ const processTrain = async (richInfo, originDateStr) => {
     }
 
     const stationKey = STATION_MAP_IP_TO_JSON[node.NomeEstacao.toUpperCase()];
+
+    // Hora de Chegada Programada (usada para calcular o atraso real vindo da IP)
     let horaChegadaProgStr =
       stationKey && richInfo[stationKey]
         ? richInfo[stationKey]
         : node.HoraProgramada;
     if (horaChegadaProgStr?.length === 5) horaChegadaProgStr += ":00";
-
     const dateChegadaProg = parseSmartTime(horaChegadaProgStr, nowObj);
+
+    // Hora de Partida Programada (para a previsão final apresentada ao utilizador)
+    let horaPartidaProgStr =
+      stationKey && departureTrip && departureTrip[stationKey]
+        ? departureTrip[stationKey]
+        : horaChegadaProgStr;
+    if (horaPartidaProgStr?.length === 5) horaPartidaProgStr += ":00";
+    const datePartidaProg = parseSmartTime(horaPartidaProgStr, nowObj);
+
     let horaRealStr = "HH:MM:SS";
     let atrasoNode = 0;
 
@@ -533,19 +570,20 @@ const processTrain = async (richInfo, originDateStr) => {
       node.NomeEstacao,
       direction,
     );
-    let horaPrevistaFinal = horaChegadaProgStr;
+    let horaPrevistaFinal = horaPartidaProgStr; // Inicia com a partida teórica
 
-    if (dateChegadaProg && !passed) {
+    if (datePartidaProg && !passed) {
+      // Previsão = Hora de Partida Planeada + Atraso Acumulado + Ajuste Ponte
       horaPrevistaFinal = formatTimeHHMMSS(
         new Date(
-          dateChegadaProg.getTime() + (currentDelay + bridgeAdjustment) * 1000,
+          datePartidaProg.getTime() + (currentDelay + bridgeAdjustment) * 1000,
         ),
       );
     }
 
     trainOutput.NodesPassagemComboio.push({
       ComboioPassou: passed,
-      HoraProgramada: horaChegadaProgStr,
+      HoraProgramada: horaPartidaProgStr, // Passamos a mostrar a partida programada
       HoraReal: passed ? horaRealStr : "HH:MM:SS",
       AtrasoReal: passed ? atrasoNode : 0,
       HoraPrevista: passed ? horaRealStr : horaPrevistaFinal,
@@ -631,18 +669,23 @@ const scheduleNextTick = () => {
 };
 
 // --- ROUTES ---
-app.get("/fertagus", (req, res) => res.json(OUTPUT_CACHE));
+
+// Rota protegida com middleware
+app.get("/fertagus", protectRoute, (req, res) => res.json(OUTPUT_CACHE));
+
 app.get("/", (req, res) =>
   res.json({
     status: "online",
-    version: "4.3.4",
-    aviso: "pedimos que não use o nosso endpoint, verifica o código no github",
+    version: "4.3.5",
+    aviso:
+      "Pedimos que não uses o nosso endpoint diretamente! Verifica toda as informações e código no github.",
     operational: getOperationalInfo(),
   }),
 );
 
 app.listen(PORT, () => {
-  console.log(`LiveTagus API v4.3.2 ativa na porta ${PORT}`);
+  console.log(`LiveTagus API v4.3.5 ativa na porta ${PORT}`);
+  console.log(`Endpoint /fertagus protegido com API_KEY.`);
   checkOfflineTrains();
   updateCycle();
   scheduleNextTick();

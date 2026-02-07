@@ -1507,12 +1507,21 @@
         return 0; // Business Day
       }
 
+      const CLIENT_API_KEY =
+        "KoKi30rVWuwkF9lqKL6j4mb0VMg3dIXWs6QDHZ3de0G8lC5qvu";
+
       async function fetchFertagusNewAPI() {
         const currentDB = activeTab === "lisboa" ? DB_LISBOA : DB_MARGEM;
         if (!currentDB) return [];
         const isSpecialDay = checkDayType() === 2;
         try {
-          const res = await fetch(API_FERTAGUS_NEW);
+          const res = await fetch(API_FERTAGUS_NEW, {
+            method: "GET",
+            headers: {
+              "x-api-key": CLIENT_API_KEY,
+              Accept: "application/json",
+            },
+          });
           if (!res.ok) throw new Error("API Middleware Error");
           const data = await res.json();
           const futureTrains = data.futureTrains || {};
