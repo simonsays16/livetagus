@@ -87,6 +87,7 @@ const FETCH_HEADERS = {
 // --- BASE DE DADOS OFFLINE ---
 let RICH_SCHEDULE = [];
 let DEPARTURE_SCHEDULE = [];
+let HOLIDAYS = {};
 
 const loadFile = (filenames, direction) => {
   for (const filename of filenames) {
@@ -107,8 +108,6 @@ const loadFile = (filenames, direction) => {
       } catch (e) {
         console.error(`[LOAD ERROR] Erro ao ler ${filename}:`, e.message);
       }
-    } else {
-      console.warn(`[LOAD WARN] Ficheiro não encontrado: ${filename}`);
     }
   }
   return [];
@@ -119,30 +118,45 @@ const loadDataFiles = () => {
     console.log("------------------------------------------------");
     console.log("[INIT] A iniciar carregamento de dados...");
 
-    // Carregar Chegadas (Rich)
+    const hPath = path.join(__dirname, "feriados.json");
+    if (fs.existsSync(hPath)) {
+      HOLIDAYS = JSON.parse(fs.readFileSync(hPath, "utf8"));
+    }
+
     const arrLisboa = loadFile(
-      ["horarios_comboio_passou_fertagus_sentido_lisboa.json"],
+      [
+        "fertagus_sentido_lisboa_chegada.json",
+        "horarios_comboio_passou_fertagus_sentido_lisboa.json",
+      ],
       "lisboa",
     );
     const arrMargem = loadFile(
-      ["horarios_comboio_passou_fertagus_sentido_margem.json"],
+      [
+        "fertagus_sentido_margem_chegadas.json",
+        "horarios_comboio_passou_fertagus_sentido_margem.json",
+      ],
       "margem",
     );
     RICH_SCHEDULE = [...arrLisboa, ...arrMargem];
 
-    // Carregar Partidas (Display)
     const depLisboa = loadFile(
-      ["fertagus_semana_sentido_lisboa.json"],
+      [
+        "fertagus_sentido_lisboa_partida.json",
+        "fertagus_semana_sentido_lisboa.json",
+      ],
       "lisboa",
     );
     const depMargem = loadFile(
-      ["fertagus_semana_sentido_margem.json"],
+      [
+        "fertagus_sentido_margem_partida.json",
+        "fertagus_semana_sentido_margem.json",
+      ],
       "margem",
     );
     DEPARTURE_SCHEDULE = [...depLisboa, ...depMargem];
 
     console.log(
-      `[INIT] Total em memória: ${RICH_SCHEDULE.length} (Chegadas) | ${DEPARTURE_SCHEDULE.length} (Partidas)`,
+      `[INIT] Memória: ${RICH_SCHEDULE.length} Chegadas | ${DEPARTURE_SCHEDULE.length} Partidas`,
     );
     console.log("------------------------------------------------");
   } catch (e) {
@@ -154,14 +168,34 @@ loadDataFiles();
 
 // --- MEMÓRIA ---
 let OUTPUT_CACHE = {};
-let TRAIN_MEMORY = {};
-let FUTURE_TRAINS_CACHE = {}; // Cache para estados de comboios futuros (offline)
+let TRAIN_MEMORY = {}; // { [id]: { history: {}, lastDelay: 0, nextWakeUp: 0 } }
+let FUTURE_TRAINS_CACHE = {};
 
-// --- DATE HELPERS (SMART) ---
+// --- DATE & SCHEDULE HELPERS ---
 
 const formatDateStr = (d) => {
   const pad = (n) => n.toString().padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+
+const getOperationalInfo = (now = new Date()) => {
+  const d = new Date(now.getTime());
+  const hour = d.getHours();
+
+  // Dia operacional Fertagus (05h - 02h30)
+  if (hour < 5) {
+    d.setDate(d.getDate() - 1);
+  }
+
+  const dateStr = formatDateStr(d);
+  const dayOfWeek = d.getDay();
+  const isHoliday = !!HOLIDAYS[dateStr];
+  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+  return {
+    operationalDateStr: dateStr,
+    isWeekendOrHoliday: isHoliday || isWeekend,
+  };
 };
 
 const parseSmartTime = (timeStr, now = new Date()) => {
@@ -176,7 +210,6 @@ const parseSmartTime = (timeStr, now = new Date()) => {
 
   const nowH = now.getHours();
 
-  // Lógica de Rollover
   if (nowH < 5 && h >= 18) {
     d.setDate(d.getDate() - 1);
   } else if (nowH >= 20 && h < 5) {
@@ -191,22 +224,27 @@ const formatTimeHHMMSS = (d) => {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 };
 
-const addSeconds = (dObj, seconds) => {
-  if (!(dObj instanceof Date) || isNaN(dObj)) {
-    console.error("[ERRO DATE] addSeconds recebeu objeto inválido:", dObj);
-    return "00:00:00";
-  }
-  const newD = new Date(dObj.getTime() + seconds * 1000);
-  return formatTimeHHMMSS(newD);
-};
-
 const subtractMinutes = (timeStr, minutes) => {
   const [h, m] = timeStr.split(":").map(Number);
   let date = new Date();
   date.setHours(h, m, 0, 0);
-  date.setMinutes(date.getMinutes() - minutes);
+
+  const totalSeconds = Math.round(minutes * 60);
+  date.setSeconds(date.getSeconds() - totalSeconds);
+
   const pad = (n) => n.toString().padStart(2, "0");
   return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
+
+const getTemporaryDelayAdjustment = (stationName, direction) => {
+  const targetStations = ["PRAGAL", "CORROIOS"];
+  if (
+    direction === "margem" &&
+    targetStations.includes(stationName.toUpperCase())
+  ) {
+    return 90; // 90 segundos = 1min 30s
+  }
+  return 0;
 };
 
 // --- FETCHING ---
@@ -214,31 +252,42 @@ const fetchDetails = async (tid, dateStr) => {
   const url = `${API_BASE}/horarios-ncombio/${tid}/${dateStr}`;
   try {
     const r = await fetch(url, { headers: FETCH_HEADERS, timeout: 8000 });
-    if (!r.ok) {
-      // console.log(`[API ERROR] ${tid}: HTTP ${r.status}`);
-      return null;
-    }
+    if (!r.ok) return null;
     const j = await r.json();
     return j.response;
   } catch (e) {
-    // console.log(`[FETCH FAIL] ${tid}: ${e.message}`);
     return null;
   }
 };
 
 // --- TURNAROUND PREDICTION ---
+
+const isRushHourFrequency = (scheduledTime, direction) => {
+  const [h, m] = scheduledTime.split(":").map(Number);
+  const currentTotalMinutes = h * 60 + m;
+
+  const neighbors = DEPARTURE_SCHEDULE.filter(
+    (t) => t.direction === direction && t.roma_areeiro,
+  );
+
+  return neighbors.some((t) => {
+    const [nh, nm] = t.roma_areeiro.split(":").map(Number);
+    const neighborTotalMinutes = nh * 60 + nm;
+    const diff = Math.abs(currentTotalMinutes - neighborTotalMinutes);
+    return diff > 0 && diff <= 10;
+  });
+};
+
 const checkTurnaroundDelay = (
   currentTrainId,
   scheduledDepartureStr,
   nowObj,
 ) => {
-  const [h, m] = scheduledDepartureStr.split(":").map(Number);
-  const timeVal = h * 100 + m;
+  // 1. Restrição: Só funciona durante frequências de 10 minutos (Hora de Ponta)
+  if (!isRushHourFrequency(scheduledDepartureStr, "margem")) return null;
 
-  if (timeVal < 600 || timeVal > 2230) return null;
-
-  // Turnaround atualizado para 4 minutos
-  const incomingArrivalStr = subtractMinutes(scheduledDepartureStr, 4);
+  // O comboio chega planeadamente 7 minutos antes da partida.
+  const incomingArrivalStr = subtractMinutes(scheduledDepartureStr, 7);
 
   const incomingTrainStatic = RICH_SCHEDULE.find(
     (t) =>
@@ -258,7 +307,6 @@ const checkTurnaroundDelay = (
 
     if (arrivalNode) {
       const predictedArrivalStr = arrivalNode.HoraPrevista;
-
       const predictedArrivalDate = parseSmartTime(predictedArrivalStr, nowObj);
       const scheduledDepartureDate = parseSmartTime(
         scheduledDepartureStr,
@@ -266,19 +314,19 @@ const checkTurnaroundDelay = (
       );
 
       if (predictedArrivalDate && scheduledDepartureDate) {
-        // Adicionar 4 minutos à chegada prevista
-        const minTurnaroundMs = 4 * 60 * 1000;
+        // Tempo mínimo de paragem técnica Fertagus: 4 minutos e 30 segundos.
+        const minTurnaroundMs = 4.5 * 60 * 1000;
         const minDepartureDate = new Date(
           predictedArrivalDate.getTime() + minTurnaroundMs,
         );
 
+        // Se a chegada real + paragem técnica > partida planeada, prevemos atraso
         if (minDepartureDate > scheduledDepartureDate) {
           const delaySeconds = Math.floor(
             (minDepartureDate.getTime() - scheduledDepartureDate.getTime()) /
               1000,
           );
-
-          if (delaySeconds > 60) {
+          if (delaySeconds > 30) {
             return {
               delaySeconds: delaySeconds,
               predictedDeparture: formatTimeHHMMSS(minDepartureDate),
@@ -294,93 +342,62 @@ const checkTurnaroundDelay = (
 // --- FUTURE TRAIN CHECK ---
 const checkOfflineTrains = async () => {
   console.log(
-    `[FUTURE CHECK] ${new Date().toLocaleTimeString()} - A verificar estado de comboios futuros...`,
+    `[FUTURE CHECK] ${new Date().toLocaleTimeString()} - A atualizar estados futuros (15m interval)...`,
   );
   const now = new Date();
-
-  // Obter IDs que JÁ estão a ser seguidos no ciclo principal para ignorar
+  const { isWeekendOrHoliday } = getOperationalInfo(now);
   const activeIds = Object.keys(OUTPUT_CACHE);
-
-  // Filtrar todos os comboios do dia que NÃO estão ativos
-  // Consideramos apenas comboios cujo início é hoje (ou ontem se for rollover de madrugada)
-  // Para simplificar e garantir cobertura, verificamos TODOS no RICH_SCHEDULE que não estejam no activeIds
-  // e cuja data de operação seja relevante.
 
   const candidates = RICH_SCHEDULE.filter((t) => {
     if (activeIds.includes(String(t.id))) return false;
-    // Otimização: Verificar apenas comboios nas próximas 4-6 horas ou passados recentes?
-    // O user pediu "todos os comboios do dia". Vamos verificar todos para garantir o estado "Suprimido".
-    return true;
+    const hType = parseInt(t.horario);
+    if (hType === 1) return true;
+    if (isWeekendOrHoliday && hType === 2) return true;
+    if (!isWeekendOrHoliday && hType === 0) return true;
+    return false;
   });
 
-  console.log(
-    `[FUTURE CHECK] ${candidates.length} comboios candidatos a verificação.`,
-  );
-
   const results = {};
-  const CONCURRENCY = 5; // Limitar pedidos simultâneos
+  const CONCURRENCY = 5;
 
-  // Helper para processar em chunks
   for (let i = 0; i < candidates.length; i += CONCURRENCY) {
     const chunk = candidates.slice(i, i + CONCURRENCY);
-
     await Promise.all(
       chunk.map(async (t) => {
-        // Determinar data correta
         let startStr =
           t.direction === "lisboa" ? t.setubal || t.coina : t.roma_areeiro;
         if (!startStr) return;
-
         const startDate = parseSmartTime(startStr, now);
         if (!startDate) return;
-
         const dateStr = formatDateStr(startDate);
-        const trainId = String(t.id);
-
-        // Fetch Status Only
-        const details = await fetchDetails(trainId, dateStr);
-
+        const details = await fetchDetails(String(t.id), dateStr);
         if (details && details.SituacaoComboio) {
-          // Guardar apenas se for relevante (Programado, Suprimido, Atrasado...)
-          // Normalizamos a string
-          let status = details.SituacaoComboio.trim();
-          if (status) {
-            results[trainId] = status;
-          } else {
-            results[trainId] = "Sem Informação";
-          }
-        } else {
-          // Se não devolver nada, assumimos "Sem dados" ou implicitamente "Programado" se a API da IP falhar?
-          // Vamos não incluir no mapa se falhar o fetch, para o frontend assumir default (offline/programado)
+          results[String(t.id)] =
+            details.SituacaoComboio.trim() || "Sem Informação";
         }
       }),
     );
-
-    // Pequena pausa para não matar a API
-    await new Promise((r) => setTimeout(r, 100));
+    await new Promise((r) => setTimeout(r, 50));
   }
-
   FUTURE_TRAINS_CACHE = results;
-  console.log(
-    `[FUTURE CHECK] Concluído. ${Object.keys(results).length} estados obtidos.`,
-  );
 };
 
 // --- PROCESSAMENTO ---
 const processTrain = async (richInfo, originDateStr) => {
   const trainId = String(richInfo.id);
-  const now = Date.now();
+  const nowTime = Date.now();
   const nowObj = new Date();
   const direction = richInfo.direction;
 
-  if (!TRAIN_MEMORY[trainId])
+  if (!TRAIN_MEMORY[trainId]) {
     TRAIN_MEMORY[trainId] = { history: {}, lastDelay: 0, nextWakeUp: 0 };
+  }
   const mem = TRAIN_MEMORY[trainId];
 
-  if (now < mem.nextWakeUp && OUTPUT_CACHE[trainId])
+  if (nowTime < mem.nextWakeUp && OUTPUT_CACHE[trainId]) {
     return OUTPUT_CACHE[trainId];
+  }
 
-  // Encontrar Partida (Display)
   const richKey = richInfo.roma_areeiro
     ? richInfo.roma_areeiro.substring(0, 5)
     : null;
@@ -394,45 +411,31 @@ const processTrain = async (richInfo, originDateStr) => {
     );
   }
 
-  // Fetch IP
   const details = await fetchDetails(trainId, originDateStr);
 
   let isLive = false;
-  let situacao = "Sem dados IP";
-  let nodes = [];
-  let duracao = "--:--";
-  let operador = "FERTAGUS";
-  let origemIp = "FERTAGUS";
-  let destinoIp = "FERTAGUS";
+  let situacao = details?.SituacaoComboio || "Sem dados IP";
+  let nodes = details?.NodesPassagemComboio || [];
+  let duracao = details?.DuracaoViagem || "--:--";
+  let operador = details?.Operador || "FERTAGUS";
+  let origemIp =
+    details?.Origem ||
+    (direction === "lisboa"
+      ? richInfo.service === 0
+        ? "COINA"
+        : "SETÚBAL"
+      : "ROMA-AREEIRO");
+  let destinoIp =
+    details?.Destino ||
+    (direction === "lisboa"
+      ? "ROMA-AREEIRO"
+      : richInfo.service === 0
+        ? "COINA"
+        : "SETÚBAL");
 
-  if (direction === "lisboa") {
-    origemIp = richInfo.service === 0 ? "COINA" : "SETÚBAL";
-    destinoIp = "ROMA-AREEIRO";
+  if (nodes.length > 0) {
+    isLive = nodes.some((n) => n.ComboioPassou === true);
   } else {
-    origemIp = "ROMA-AREEIRO";
-    destinoIp = richInfo.service === 0 ? "COINA" : "SETÚBAL";
-  }
-
-  if (details) {
-    situacao = details.SituacaoComboio || "";
-    duracao = details.DuracaoViagem || "--:--";
-    operador = details.Operador || operador;
-    if (details.Origem) origemIp = details.Origem;
-    if (details.Destino) destinoIp = details.Destino;
-
-    if (
-      details.NodesPassagemComboio &&
-      details.NodesPassagemComboio.length > 0
-    ) {
-      nodes = details.NodesPassagemComboio;
-      isLive = nodes.some((n) => n.ComboioPassou === true);
-    }
-  }
-
-  // --- TURNAROUND LOGIC (PREVISÃO DE ARRASTAMENTO) ---
-  let turnaroundDelay = 0;
-
-  if (nodes.length === 0) {
     const orderToUse =
       direction === "lisboa" ? STATION_ORDER_LISBOA : STATION_ORDER_MARGEM;
     orderToUse.forEach((key) => {
@@ -444,55 +447,42 @@ const processTrain = async (richInfo, originDateStr) => {
           HoraProgramada: time,
           NodeID: STATION_IDS_FIXED[ipName] || 0,
           NomeEstacao: ipName,
-          Observacoes: "",
         });
       }
     });
   }
 
+  let turnaroundDelay = 0;
   if (direction === "margem") {
     const scheduledRoma = departureTrip
       ? departureTrip.roma_areeiro
-      : richInfo.roma_areeiro
-        ? richInfo.roma_areeiro.substring(0, 5)
-        : null;
-
+      : richInfo.roma_areeiro?.substring(0, 5);
     if (scheduledRoma) {
       const prediction = checkTurnaroundDelay(trainId, scheduledRoma, nowObj);
-
       if (prediction) {
         turnaroundDelay = prediction.delaySeconds;
-        if (!isLive) {
-          situacao = "Atraso Previsto (Turnaround)";
-        }
+        if (!isLive) situacao = "Atraso Previsto (Turnaround)";
       }
     }
   }
 
   if (isLive) {
     const lastNode = nodes[nodes.length - 1];
-    let isFinished = false;
     if (lastNode && lastNode.ComboioPassou) {
-      if (
-        direction === "lisboa" &&
-        lastNode.NomeEstacao.toUpperCase().includes("ROMA")
-      )
-        isFinished = true;
-      if (
-        direction === "margem" &&
-        (lastNode.NomeEstacao.toUpperCase().includes("COINA") ||
-          lastNode.NomeEstacao.toUpperCase().includes("SETÚBAL"))
-      )
-        isFinished = true;
-    }
-    if (isFinished) {
-      delete TRAIN_MEMORY[trainId];
-      return null;
+      const isEnd =
+        (direction === "lisboa" &&
+          lastNode.NomeEstacao.toUpperCase().includes("ROMA")) ||
+        (direction === "margem" &&
+          (lastNode.NomeEstacao.toUpperCase().includes("COINA") ||
+            lastNode.NomeEstacao.toUpperCase().includes("SETÚBAL")));
+      if (isEnd) {
+        delete TRAIN_MEMORY[trainId];
+        return null;
+      }
     }
   }
 
   const displayDate = originDateStr.split("-").reverse().join("/");
-
   const refTrip = departureTrip || richInfo;
   let headerOrigem =
     direction === "lisboa"
@@ -503,15 +493,10 @@ const processTrain = async (richInfo, originDateStr) => {
       ? refTrip.roma_areeiro
       : refTrip.setubal || refTrip.coina;
 
-  if (headerOrigem && headerOrigem.length > 5)
-    headerOrigem = headerOrigem.substring(0, 5);
-  if (headerDestino && headerDestino.length > 5)
-    headerDestino = headerDestino.substring(0, 5);
-
   const trainOutput = {
     "id-comboio": trainId,
-    DataHoraDestino: `${displayDate} ${headerDestino}`,
-    DataHoraOrigem: `${displayDate} ${headerOrigem}`,
+    DataHoraDestino: `${displayDate} ${headerDestino?.substring(0, 5)}`,
+    DataHoraOrigem: `${displayDate} ${headerOrigem?.substring(0, 5)}`,
     Destino: destinoIp,
     DuracaoViagem: duracao,
     Operador: operador,
@@ -524,202 +509,154 @@ const processTrain = async (richInfo, originDateStr) => {
     SituacaoComboio: situacao,
   };
 
-  let currentDelay = mem.lastDelay;
+  let currentDelay = Math.max(mem.lastDelay, turnaroundDelay);
+  let newStationPassed = false;
 
-  if (turnaroundDelay > currentDelay) {
-    currentDelay = turnaroundDelay;
-    trainOutput.AtrasoCalculado = turnaroundDelay;
-    if (turnaroundDelay > 60) isLive = true;
-    trainOutput.Live = isLive;
-  }
-
-  let nextStationIndex = -1;
-
-  nodes.forEach((node, idx) => {
+  nodes.forEach((node) => {
     const passed = node.ComboioPassou;
+
+    if (passed && !mem.history[node.NodeID]) {
+      newStationPassed = true;
+    }
+
     const stationKey = STATION_MAP_IP_TO_JSON[node.NomeEstacao.toUpperCase()];
-
-    let horaChegadaProgStr = "00:00:00";
-    if (stationKey && richInfo[stationKey]) {
-      horaChegadaProgStr = richInfo[stationKey];
-      if (horaChegadaProgStr.length === 5) horaChegadaProgStr += ":00";
-    } else {
-      horaChegadaProgStr =
-        node.HoraProgramada.length === 5
-          ? `${node.HoraProgramada}:30`
-          : node.HoraProgramada;
-    }
-
-    let horaPartidaProgStr = null;
-    if (stationKey && departureTrip && departureTrip[stationKey]) {
-      horaPartidaProgStr = departureTrip[stationKey];
-      if (horaPartidaProgStr.length === 5) horaPartidaProgStr += ":00";
-    }
-    if (!horaPartidaProgStr) horaPartidaProgStr = horaChegadaProgStr;
+    let horaChegadaProgStr =
+      stationKey && richInfo[stationKey]
+        ? richInfo[stationKey]
+        : node.HoraProgramada;
+    if (horaChegadaProgStr?.length === 5) horaChegadaProgStr += ":00";
 
     const dateChegadaProg = parseSmartTime(horaChegadaProgStr, nowObj);
-    const datePartidaProg = parseSmartTime(horaPartidaProgStr, nowObj);
-
     let horaRealStr = "HH:MM:SS";
     let atrasoNode = 0;
 
     if (passed) {
-      let timestamp = mem.history[node.NodeID];
-      if (!timestamp) {
-        timestamp = Date.now();
-        mem.history[node.NodeID] = timestamp;
-      }
-      const dr = new Date(timestamp);
-      horaRealStr = formatTimeHHMMSS(dr);
-
+      let timestamp = mem.history[node.NodeID] || Date.now();
+      mem.history[node.NodeID] = timestamp;
+      horaRealStr = formatTimeHHMMSS(new Date(timestamp));
       if (dateChegadaProg) {
-        let diff = Math.floor((timestamp - dateChegadaProg.getTime()) / 1000);
-        diff -= 15;
-        atrasoNode = diff;
-        currentDelay = diff;
+        atrasoNode =
+          Math.floor((timestamp - dateChegadaProg.getTime()) / 1000) - 15;
+        currentDelay = atrasoNode;
       }
-    } else {
-      if (nextStationIndex === -1) nextStationIndex = idx;
     }
 
-    let horaPrevistaFinal = horaPartidaProgStr;
+    let bridgeAdjustment = getTemporaryDelayAdjustment(
+      node.NomeEstacao,
+      direction,
+    );
+    let horaPrevistaFinal = horaChegadaProgStr;
 
-    if (dateChegadaProg && datePartidaProg) {
-      const estimativaChegadaMs =
-        dateChegadaProg.getTime() + currentDelay * 1000;
-      const partidaPublicaMs = datePartidaProg.getTime();
-
-      if (estimativaChegadaMs > partidaPublicaMs) {
-        const estimatedArrivalDate = new Date(estimativaChegadaMs);
-        horaPrevistaFinal = formatTimeHHMMSS(estimatedArrivalDate);
-      }
+    if (dateChegadaProg && !passed) {
+      horaPrevistaFinal = formatTimeHHMMSS(
+        new Date(
+          dateChegadaProg.getTime() + (currentDelay + bridgeAdjustment) * 1000,
+        ),
+      );
     }
 
     trainOutput.NodesPassagemComboio.push({
       ComboioPassou: passed,
-      HoraProgramada: horaPartidaProgStr,
-      HoraChegadaProgramada: horaChegadaProgStr,
+      HoraProgramada: horaChegadaProgStr,
       HoraReal: passed ? horaRealStr : "HH:MM:SS",
       AtrasoReal: passed ? atrasoNode : 0,
       HoraPrevista: passed ? horaRealStr : horaPrevistaFinal,
       EstacaoID: node.NodeID,
       NomeEstacao: node.NomeEstacao,
-      Observacoes: node.Observacoes || "",
     });
   });
 
-  trainOutput.AtrasoCalculado = currentDelay;
-  mem.lastDelay = currentDelay;
-
-  if (isLive && nextStationIndex !== -1) {
-    const nextNode = trainOutput.NodesPassagemComboio[nextStationIndex];
-    const nextDate = parseSmartTime(nextNode.HoraPrevista, nowObj);
-    if (nextDate) {
-      const wakeUp = nextDate.getTime() - 60000;
-      if (wakeUp > now + 30000) mem.nextWakeUp = wakeUp;
-      else mem.nextWakeUp = 0;
-    }
+  if (newStationPassed) {
+    mem.nextWakeUp = Date.now() + 120000;
   }
 
+  trainOutput.AtrasoCalculado = currentDelay;
+  mem.lastDelay = currentDelay;
   return trainOutput;
 };
 
 // --- LOOP PRINCIPAL ---
 const updateCycle = async () => {
   const now = new Date();
-  // console.log(`[LOOP START] ${now.toLocaleTimeString()} - Filtro de Comboios...`);
-
-  // Verificar se é hora de checkar comboios futuros (30 em 30 minutos. XX:00 ou XX:30)
-  const minutes = now.getMinutes();
-  const seconds = now.getSeconds();
-
-  if ((minutes === 0 || minutes === 30) && seconds < 35) {
-    // Chamada sem await para não bloquear o ciclo principal
-    checkOfflineTrains().catch((err) =>
-      console.error("[FUTURE CHECK ERR]", err),
-    );
-  }
+  const { isWeekendOrHoliday } = getOperationalInfo(now);
 
   const activeRichTrains = RICH_SCHEDULE.map((t) => {
-    let startStr, endStr;
-    if (t.direction === "lisboa") {
-      startStr = t.setubal || t.coina;
-      endStr = t.roma_areeiro;
-    } else {
-      startStr = t.roma_areeiro;
-      endStr = t.setubal || t.coina;
-    }
+    let startStr =
+      t.direction === "lisboa" ? t.setubal || t.coina : t.roma_areeiro;
+    let endStr =
+      t.direction === "lisboa" ? t.roma_areeiro : t.setubal || t.coina;
 
     if (!startStr || !endStr) return null;
 
     const start = parseSmartTime(startStr, now);
     const end = parseSmartTime(endStr, now);
-
     if (!start || !end) return null;
 
-    const originDateStr = formatDateStr(start);
-    return { ...t, startObj: start, endObj: end, originDateStr };
+    return {
+      ...t,
+      startObj: start,
+      endObj: end,
+      originDateStr: formatDateStr(start),
+    };
   }).filter((t) => {
     if (!t) return false;
-    const windowStart = t.startObj.getTime() - 45 * 60000;
-    const windowEnd = t.endObj.getTime() + 90 * 60000;
-    return now.getTime() >= windowStart && now.getTime() <= windowEnd;
+
+    const isBeingTracked = !!TRAIN_MEMORY[String(t.id)];
+
+    const hType = parseInt(t.horario);
+    let matchesDay =
+      hType === 1 ||
+      (isWeekendOrHoliday && hType === 2) ||
+      (!isWeekendOrHoliday && hType === 0);
+    if (!matchesDay) return false;
+
+    const nowTime = now.getTime();
+    const isInsideWindow =
+      nowTime >= t.startObj.getTime() - 45 * 60000 &&
+      nowTime <= t.endObj.getTime() + 120 * 60000;
+
+    return isInsideWindow || isBeingTracked;
   });
 
   const newOutput = {};
-  let count = 0;
-
   for (const t of activeRichTrains) {
     const result = await processTrain(t, t.originDateStr);
-    if (result) {
-      newOutput[result["id-comboio"]] = result;
-      count++;
-    }
-    await new Promise((r) => setTimeout(r, 100));
+    if (result) newOutput[result["id-comboio"]] = result;
+    await new Promise((r) => setTimeout(r, 50));
   }
 
-  OUTPUT_CACHE = {
-    ...newOutput,
-    futureTrains: FUTURE_TRAINS_CACHE, // Anexar cache de futuros ao output principal
-  };
-
-  console.log(`[LOOP END] ${count} comboios atualizados.`);
+  OUTPUT_CACHE = { ...newOutput, futureTrains: FUTURE_TRAINS_CACHE };
 };
 
-// --- TICKER ---
+// --- TICKER (10 SEGUNDOS) ---
 const scheduleNextTick = () => {
   const now = new Date();
-  const s = now.getSeconds();
+  const seconds = now.getSeconds();
   const ms = now.getMilliseconds();
-  let targetS = s < 30 ? 30 : 60;
-  let delay = targetS * 1000 - (s * 1000 + ms) + 1000;
+  const nextTarget = (Math.floor(seconds / 10) + 1) * 10;
+  const delay = (nextTarget - seconds) * 1000 - ms;
+
   setTimeout(() => {
     updateCycle();
     scheduleNextTick();
-  }, delay);
+  }, delay || 10000);
 };
 
+// --- ROUTES ---
 app.get("/fertagus", (req, res) => res.json(OUTPUT_CACHE));
-app.get("/", (req, res) => {
+app.get("/", (req, res) =>
   res.json({
     status: "online",
-    message: "API LiveTagus a Funcionar Corretamente na Azure",
-    version: "3.0.2",
-    timestamp: new Date().toISOString(),
-  });
-});
-app.use((req, res) => {
-  res.status(404).json({
-    status: "error",
-    code: 404,
-    message: "Ups! Perdeste te? Vai para o nosso site https://livetagus.pt",
-  });
-});
+    version: "4.3.2",
+    operational: getOperationalInfo(),
+  }),
+);
 
 app.listen(PORT, () => {
-  console.log(`Server running on ${PORT}`);
-  // Run initial future check on boot
+  console.log(`LiveTagus API v4.3.2 ativa na porta ${PORT}`);
   checkOfflineTrains();
   updateCycle();
   scheduleNextTick();
+
+  setInterval(checkOfflineTrains, 15 * 60 * 1000);
 });

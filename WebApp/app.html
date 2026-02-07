@@ -201,7 +201,7 @@
 
     <!-- Main Container -->
     <main
-      class="relative z-10 w-full max-w-md mx-auto flex flex-col flex-1 pt-24 overflow-hidden"
+      class="relative z-10 w-full max-w-md mx-auto flex flex-col flex-1 pt-[calc(6rem+env(safe-area-inset-top))] overflow-hidden"
       role="main"
     >
       <!-- Compact Header Area (One Line) -->
@@ -2180,8 +2180,8 @@
 
         try {
           const [resLisboa, resMargem] = await Promise.all([
-            fetch("./json/fertagus_lisboa_semana.json"),
-            fetch("./json/fertagus_margem_semana.json"),
+            fetch("./json/fertagus_sentido_lisboa.json"),
+            fetch("./json/fertagus_sentido_margem.json"),
           ]);
 
           if (resLisboa.ok) DB_LISBOA = await resLisboa.json();

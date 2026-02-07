@@ -59,7 +59,7 @@ function injectNavigation() {
                     </div>
 
                     <div class="flex flex-col items-start gap-3">
-                        <p class="text-[10px] text-zinc-600 font-mono mb-0 leading-none">LiveTagus • v.b04.02.2026 • BETA</p>
+                        <p class="text-[10px] text-zinc-600 font-mono mb-0 leading-none">LiveTagus • v.b05.02.2026 • BETA</p>
                         
                         <div id="api-status-display" class="flex items-center gap-2 mb-1">
                             <span id="status-dot" class="w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-700"></span>
@@ -100,7 +100,7 @@ function injectFooter() {
                     </a>
                     
                     <p class="text-xs text-zinc-500 max-w-xs leading-relaxed">
-                        LiveTagus • v.b04.02.2026 • BETA<br><br>
+                        LiveTagus • v.b05.02.2026 • BETA<br><br>
                         Projeto independente e não oficial. Sem afiliação à Fertagus ou IP. Todos os direitos sobre os dados de circulação pertencem aos respetivos proprietários<br><br>
                         Em caso de dúvida, erro ou sugestão contacte-nos:
                     </p>                    
@@ -184,29 +184,37 @@ function initMenuInteractions() {
 function initTheme() {
   const savedTheme = localStorage.getItem("theme") || "system";
   setTheme(savedTheme);
+
+  // Monitoriza alterações do sistema em tempo real
+  window
+    .matchMedia("(prefers-color-scheme: dark)")
+    .addEventListener("change", (e) => {
+      // Só aplica a mudança automaticamente se o utilizador estiver em modo 'system'
+      if (localStorage.getItem("theme") === "system") {
+        setTheme("system");
+      }
+    });
 }
 
 function setTheme(mode) {
   localStorage.setItem("theme", mode);
-  let isDark = mode === "dark";
 
+  // Determina se deve ser escuro com base no modo ou no sistema
+  let isDark;
   if (mode === "system") {
     isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  } else {
+    isDark = mode === "dark";
   }
 
   const html = document.documentElement;
-
-  // === GESTÃO DOS LOGOS (NAV E FOOTER) ===
   const navLogo = document.getElementById("nav-logo");
   const footerLogo = document.getElementById("footer-logo");
-
-  // Caminhos dos teus logos
-  const logoLight = "./imagens/logotransparente.svg";
-  const logoDark = "./imagens/icon.svg";
-
-  // === GESTÃO DOS BADGES NETLIFY ===
   const netlifyBadgeMenu = document.getElementById("netlify-badge-menu");
   const netlifyBadgeFooter = document.getElementById("netlify-badge-footer");
+
+  const logoLight = "./imagens/logotransparente.svg";
+  const logoDark = "./imagens/icon.svg";
   const badgeDark =
     "https://www.netlify.com/assets/badges/netlify-badge-dark.svg";
   const badgeLight =
@@ -214,29 +222,22 @@ function setTheme(mode) {
 
   if (isDark) {
     html.classList.add("dark");
-
-    // Mudar logos para versão Escura
     if (navLogo) navLogo.src = logoDark;
     if (footerLogo) footerLogo.src = logoDark;
-
-    // Badge Netlify Escuro
     if (netlifyBadgeMenu) netlifyBadgeMenu.src = badgeDark;
     if (netlifyBadgeFooter) netlifyBadgeFooter.src = badgeDark;
   } else {
     html.classList.remove("dark");
-
-    // Mudar logos para versão Clara
     if (navLogo) navLogo.src = logoLight;
     if (footerLogo) footerLogo.src = logoLight;
-
-    // Badge Netlify Claro
     if (netlifyBadgeMenu) netlifyBadgeMenu.src = badgeLight;
     if (netlifyBadgeFooter) netlifyBadgeFooter.src = badgeLight;
   }
 
-  // Atualiza estado visual dos botões de tema
+  // Atualiza estado visual dos botões
   document.querySelectorAll(".theme-btn").forEach((btn) => {
     btn.classList.remove("font-bold", "text-black", "dark:text-white");
+    // O botão deve ficar destacado se o modo for exatamente o guardado
     if (btn.dataset.mode === mode) {
       btn.classList.add("font-bold", "text-black", "dark:text-white");
     }

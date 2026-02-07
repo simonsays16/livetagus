@@ -3,11 +3,16 @@
         {
             "operator": "Fertagus",
             "route": "Sul -> Norte (Setúbal/Coina -> Lisboa)",
-            "days": "Dias Úteis"
+            "days": "Todos os Dias (Unificado)"
         }
     ],
     "trips": [
         {
+            "id": 14000,
+            "horario": 1,
+            "carruagens": 8,
+            "service": 0,
+            "ocupacao": null,
             "setubal": null,
             "palmela": null,
             "venda_do_alcaide": null,
@@ -24,6 +29,11 @@
             "roma_areeiro": "06:06"
         },
         {
+            "id": 14002,
+            "horario": 1,
+            "carruagens": 8,
+            "service": 0,
+            "ocupacao": 43.75,
             "setubal": null,
             "palmela": null,
             "venda_do_alcaide": null,
@@ -40,22 +50,32 @@
             "roma_areeiro": "06:36"
         },
         {
+            "id": 14202,
+            "horario": 0,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": 75,
             "setubal": "05:43",
-            "palmela": "05:47",
-            "venda_do_alcaide": "05:51",
-            "pinhal_novo": "05:55",
-            "penalva": "06:03",
+            "palmela": "05:48",
+            "venda_do_alcaide": "05:52",
+            "pinhal_novo": "05:56",
+            "penalva": "06:04",
             "coina": "06:13",
-            "fogueteiro": "06:17",
-            "foros_de_amora": "06:20",
-            "corroios": "06:23",
-            "pragal": "06:28",
-            "campolide": "06:37",
-            "sete_rios": "06:39",
-            "entrecampos": "06:43",
+            "fogueteiro": "06:18",
+            "foros_de_amora": "06:21",
+            "corroios": "06:24",
+            "pragal": "06:29",
+            "campolide": "06:38",
+            "sete_rios": "06:40",
+            "entrecampos": "06:44",
             "roma_areeiro": "06:46"
         },
         {
+            "id": 14004,
+            "horario": 0,
+            "carruagens": 8,
+            "service": 0,
+            "ocupacao": 43.75,
             "setubal": null,
             "palmela": null,
             "venda_do_alcaide": null,
@@ -72,6 +92,11 @@
             "roma_areeiro": "06:56"
         },
         {
+            "id": 14204,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": 93.75,
             "setubal": "06:03",
             "palmela": "06:08",
             "venda_do_alcaide": "06:12",
@@ -88,6 +113,11 @@
             "roma_areeiro": "07:06"
         },
         {
+            "id": 14006,
+            "horario": 0,
+            "carruagens": 8,
+            "service": 0,
+            "ocupacao": 62.5,
             "setubal": null,
             "palmela": null,
             "venda_do_alcaide": null,
@@ -104,6 +134,11 @@
             "roma_areeiro": "07:16"
         },
         {
+            "id": 14206,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": 100,
             "setubal": "06:23",
             "palmela": "06:28",
             "venda_do_alcaide": "06:32",
@@ -120,6 +155,11 @@
             "roma_areeiro": "07:26"
         },
         {
+            "id": 14008,
+            "horario": 0,
+            "carruagens": 8,
+            "service": 0,
+            "ocupacao": 62.5,
             "setubal": null,
             "palmela": null,
             "venda_do_alcaide": null,
@@ -136,6 +176,11 @@
             "roma_areeiro": "07:36"
         },
         {
+            "id": 14208,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": 100,
             "setubal": "06:43",
             "palmela": "06:48",
             "venda_do_alcaide": "06:52",
@@ -152,6 +197,11 @@
             "roma_areeiro": "07:46"
         },
         {
+            "id": 14010,
+            "horario": 0,
+            "carruagens": 8,
+            "service": 0,
+            "ocupacao": 68.75,
             "setubal": null,
             "palmela": null,
             "venda_do_alcaide": null,
@@ -168,6 +218,11 @@
             "roma_areeiro": "07:56"
         },
         {
+            "id": 14210,
+            "horario": 1,
+            "carruagens": 8,
+            "service": 1,
+            "ocupacao": 75,
             "setubal": "07:03",
             "palmela": "07:08",
             "venda_do_alcaide": "07:12",
@@ -184,6 +239,11 @@
             "roma_areeiro": "08:06"
         },
         {
+            "id": 14012,
+            "horario": 0,
+            "carruagens": 8,
+            "service": 0,
+            "ocupacao": 62.5,
             "setubal": null,
             "palmela": null,
             "venda_do_alcaide": null,
@@ -200,6 +260,11 @@
             "roma_areeiro": "08:16"
         },
         {
+            "id": 14212,
+            "horario": 1,
+            "carruagens": 8,
+            "service": 1,
+            "ocupacao": 87.5,
             "setubal": "07:23",
             "palmela": "07:28",
             "venda_do_alcaide": "07:32",
@@ -216,6 +281,11 @@
             "roma_areeiro": "08:26"
         },
         {
+            "id": 14014,
+            "horario": 0,
+            "carruagens": 8,
+            "service": 0,
+            "ocupacao": 87.5,
             "setubal": null,
             "palmela": null,
             "venda_do_alcaide": null,
@@ -232,6 +302,11 @@
             "roma_areeiro": "08:36"
         },
         {
+            "id": 14214,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": 100,
             "setubal": "07:43",
             "palmela": "07:48",
             "venda_do_alcaide": "07:52",
@@ -248,6 +323,11 @@
             "roma_areeiro": "08:46"
         },
         {
+            "id": 14016,
+            "horario": 0,
+            "carruagens": 8,
+            "service": 0,
+            "ocupacao": 67,
             "setubal": null,
             "palmela": null,
             "venda_do_alcaide": null,
@@ -264,6 +344,11 @@
             "roma_areeiro": "08:56"
         },
         {
+            "id": 14216,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": 100,
             "setubal": "08:03",
             "palmela": "08:08",
             "venda_do_alcaide": "08:12",
@@ -280,6 +365,11 @@
             "roma_areeiro": "09:06"
         },
         {
+            "id": 14018,
+            "horario": 0,
+            "carruagens": 8,
+            "service": 0,
+            "ocupacao": 56.25,
             "setubal": null,
             "palmela": null,
             "venda_do_alcaide": null,
@@ -296,6 +386,11 @@
             "roma_areeiro": "09:16"
         },
         {
+            "id": 14218,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": 100,
             "setubal": "08:23",
             "palmela": "08:28",
             "venda_do_alcaide": "08:32",
@@ -312,6 +407,11 @@
             "roma_areeiro": "09:26"
         },
         {
+            "id": 14020,
+            "horario": 0,
+            "carruagens": 8,
+            "service": 0,
+            "ocupacao": 43.75,
             "setubal": null,
             "palmela": null,
             "venda_do_alcaide": null,
@@ -328,6 +428,11 @@
             "roma_areeiro": "09:36"
         },
         {
+            "id": 14220,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": 100,
             "setubal": "08:43",
             "palmela": "08:48",
             "venda_do_alcaide": "08:52",
@@ -344,6 +449,11 @@
             "roma_areeiro": "09:46"
         },
         {
+            "id": 14022,
+            "horario": 0,
+            "carruagens": 8,
+            "service": 0,
+            "ocupacao": 25,
             "setubal": null,
             "palmela": null,
             "venda_do_alcaide": null,
@@ -360,6 +470,11 @@
             "roma_areeiro": "09:56"
         },
         {
+            "id": 14222,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "09:03",
             "palmela": "09:08",
             "venda_do_alcaide": "09:12",
@@ -376,6 +491,11 @@
             "roma_areeiro": "10:06"
         },
         {
+            "id": 14224,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": 80,
             "setubal": "09:23",
             "palmela": "09:28",
             "venda_do_alcaide": "09:32",
@@ -392,6 +512,11 @@
             "roma_areeiro": "10:26"
         },
         {
+            "id": 14226,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "09:43",
             "palmela": "09:48",
             "venda_do_alcaide": "09:52",
@@ -408,6 +533,11 @@
             "roma_areeiro": "10:46"
         },
         {
+            "id": 14228,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "10:03",
             "palmela": "10:08",
             "venda_do_alcaide": "10:12",
@@ -424,6 +554,11 @@
             "roma_areeiro": "11:06"
         },
         {
+            "id": 14230,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "10:23",
             "palmela": "10:28",
             "venda_do_alcaide": "10:32",
@@ -440,6 +575,11 @@
             "roma_areeiro": "11:26"
         },
         {
+            "id": 14232,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "10:43",
             "palmela": "10:48",
             "venda_do_alcaide": "10:52",
@@ -456,6 +596,11 @@
             "roma_areeiro": "11:46"
         },
         {
+            "id": 14234,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "11:03",
             "palmela": "11:08",
             "venda_do_alcaide": "11:12",
@@ -472,6 +617,11 @@
             "roma_areeiro": "12:06"
         },
         {
+            "id": 14236,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "11:23",
             "palmela": "11:28",
             "venda_do_alcaide": "11:32",
@@ -488,6 +638,11 @@
             "roma_areeiro": "12:26"
         },
         {
+            "id": 14238,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "11:43",
             "palmela": "11:48",
             "venda_do_alcaide": "11:52",
@@ -504,6 +659,11 @@
             "roma_areeiro": "12:46"
         },
         {
+            "id": 14240,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "12:03",
             "palmela": "12:08",
             "venda_do_alcaide": "12:12",
@@ -520,6 +680,11 @@
             "roma_areeiro": "13:06"
         },
         {
+            "id": 14242,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "12:23",
             "palmela": "12:28",
             "venda_do_alcaide": "12:32",
@@ -536,6 +701,11 @@
             "roma_areeiro": "13:26"
         },
         {
+            "id": 14244,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "12:43",
             "palmela": "12:48",
             "venda_do_alcaide": "12:52",
@@ -552,6 +722,11 @@
             "roma_areeiro": "13:46"
         },
         {
+            "id": 14246,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "13:03",
             "palmela": "13:08",
             "venda_do_alcaide": "13:12",
@@ -568,6 +743,11 @@
             "roma_areeiro": "14:06"
         },
         {
+            "id": 14248,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "13:23",
             "palmela": "13:28",
             "venda_do_alcaide": "13:32",
@@ -584,6 +764,11 @@
             "roma_areeiro": "14:26"
         },
         {
+            "id": 14250,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "13:43",
             "palmela": "13:48",
             "venda_do_alcaide": "13:52",
@@ -600,6 +785,11 @@
             "roma_areeiro": "14:46"
         },
         {
+            "id": 14252,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "14:03",
             "palmela": "14:08",
             "venda_do_alcaide": "14:12",
@@ -616,6 +806,11 @@
             "roma_areeiro": "15:06"
         },
         {
+            "id": 14254,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "14:23",
             "palmela": "14:28",
             "venda_do_alcaide": "14:32",
@@ -632,6 +827,11 @@
             "roma_areeiro": "15:26"
         },
         {
+            "id": 14256,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "14:43",
             "palmela": "14:48",
             "venda_do_alcaide": "14:52",
@@ -648,6 +848,11 @@
             "roma_areeiro": "15:46"
         },
         {
+            "id": 14258,
+            "horario": 1,
+            "carruagens": 8,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "15:03",
             "palmela": "15:08",
             "venda_do_alcaide": "15:12",
@@ -664,6 +869,11 @@
             "roma_areeiro": "16:06"
         },
         {
+            "id": 14024,
+            "horario": 0,
+            "carruagens": 8,
+            "service": 0,
+            "ocupacao": null,
             "setubal": null,
             "palmela": null,
             "venda_do_alcaide": null,
@@ -680,6 +890,11 @@
             "roma_areeiro": "16:16"
         },
         {
+            "id": 14260,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "15:23",
             "palmela": "15:28",
             "venda_do_alcaide": "15:32",
@@ -696,6 +911,11 @@
             "roma_areeiro": "16:26"
         },
         {
+            "id": 14026,
+            "horario": 0,
+            "carruagens": 8,
+            "service": 0,
+            "ocupacao": null,
             "setubal": null,
             "palmela": null,
             "venda_do_alcaide": null,
@@ -712,6 +932,11 @@
             "roma_areeiro": "16:36"
         },
         {
+            "id": 14262,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "15:43",
             "palmela": "15:48",
             "venda_do_alcaide": "15:52",
@@ -728,6 +953,11 @@
             "roma_areeiro": "16:46"
         },
         {
+            "id": 14028,
+            "horario": 0,
+            "carruagens": 8,
+            "service": 0,
+            "ocupacao": null,
             "setubal": null,
             "palmela": null,
             "venda_do_alcaide": null,
@@ -744,6 +974,11 @@
             "roma_areeiro": "16:56"
         },
         {
+            "id": 14264,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "16:03",
             "palmela": "16:08",
             "venda_do_alcaide": "16:12",
@@ -760,6 +995,11 @@
             "roma_areeiro": "17:06"
         },
         {
+            "id": 14030,
+            "horario": 0,
+            "carruagens": 4,
+            "service": 0,
+            "ocupacao": null,
             "setubal": null,
             "palmela": null,
             "venda_do_alcaide": null,
@@ -776,6 +1016,11 @@
             "roma_areeiro": "17:16"
         },
         {
+            "id": 14266,
+            "horario": 1,
+            "carruagens": 8,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "16:23",
             "palmela": "16:28",
             "venda_do_alcaide": "16:32",
@@ -792,6 +1037,11 @@
             "roma_areeiro": "17:26"
         },
         {
+            "id": 14032,
+            "horario": 0,
+            "carruagens": 8,
+            "service": 0,
+            "ocupacao": null,
             "setubal": null,
             "palmela": null,
             "venda_do_alcaide": null,
@@ -808,6 +1058,11 @@
             "roma_areeiro": "17:36"
         },
         {
+            "id": 14268,
+            "horario": 1,
+            "carruagens": 8,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "16:43",
             "palmela": "16:48",
             "venda_do_alcaide": "16:52",
@@ -824,6 +1079,11 @@
             "roma_areeiro": "17:46"
         },
         {
+            "id": 14034,
+            "horario": 0,
+            "carruagens": 8,
+            "service": 0,
+            "ocupacao": null,
             "setubal": null,
             "palmela": null,
             "venda_do_alcaide": null,
@@ -840,6 +1100,11 @@
             "roma_areeiro": "17:56"
         },
         {
+            "id": 14270,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "17:03",
             "palmela": "17:08",
             "venda_do_alcaide": "17:12",
@@ -856,6 +1121,11 @@
             "roma_areeiro": "18:06"
         },
         {
+            "id": 14036,
+            "horario": 0,
+            "carruagens": 8,
+            "service": 0,
+            "ocupacao": null,
             "setubal": null,
             "palmela": null,
             "venda_do_alcaide": null,
@@ -872,6 +1142,11 @@
             "roma_areeiro": "18:16"
         },
         {
+            "id": 14272,
+            "horario": 1,
+            "carruagens": 8,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "17:23",
             "palmela": "17:28",
             "venda_do_alcaide": "17:32",
@@ -888,6 +1163,11 @@
             "roma_areeiro": "18:26"
         },
         {
+            "id": 14038,
+            "horario": 0,
+            "carruagens": 4,
+            "service": 0,
+            "ocupacao": null,
             "setubal": null,
             "palmela": null,
             "venda_do_alcaide": null,
@@ -904,6 +1184,11 @@
             "roma_areeiro": "18:36"
         },
         {
+            "id": 14274,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "17:43",
             "palmela": "17:48",
             "venda_do_alcaide": "17:52",
@@ -920,6 +1205,11 @@
             "roma_areeiro": "18:46"
         },
         {
+            "id": 14040,
+            "horario": 0,
+            "carruagens": 8,
+            "service": 0,
+            "ocupacao": null,
             "setubal": null,
             "palmela": null,
             "venda_do_alcaide": null,
@@ -936,6 +1226,11 @@
             "roma_areeiro": "18:56"
         },
         {
+            "id": 14276,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "18:03",
             "palmela": "18:08",
             "venda_do_alcaide": "18:12",
@@ -952,6 +1247,11 @@
             "roma_areeiro": "19:06"
         },
         {
+            "id": 14042,
+            "horario": 0,
+            "carruagens": 8,
+            "service": 0,
+            "ocupacao": null,
             "setubal": null,
             "palmela": null,
             "venda_do_alcaide": null,
@@ -968,6 +1268,11 @@
             "roma_areeiro": "19:16"
         },
         {
+            "id": 14278,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "18:23",
             "palmela": "18:28",
             "venda_do_alcaide": "18:32",
@@ -984,6 +1289,11 @@
             "roma_areeiro": "19:26"
         },
         {
+            "id": 14044,
+            "horario": 0,
+            "carruagens": 8,
+            "service": 0,
+            "ocupacao": null,
             "setubal": null,
             "palmela": null,
             "venda_do_alcaide": null,
@@ -1000,6 +1310,11 @@
             "roma_areeiro": "19:36"
         },
         {
+            "id": 14280,
+            "horario": 1,
+            "carruagens": 8,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "18:43",
             "palmela": "18:48",
             "venda_do_alcaide": "18:52",
@@ -1016,6 +1331,11 @@
             "roma_areeiro": "19:46"
         },
         {
+            "id": 14046,
+            "horario": 0,
+            "carruagens": 4,
+            "service": 0,
+            "ocupacao": null,
             "setubal": null,
             "palmela": null,
             "venda_do_alcaide": null,
@@ -1032,6 +1352,11 @@
             "roma_areeiro": "19:56"
         },
         {
+            "id": 14282,
+            "horario": 1,
+            "carruagens": 8,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "19:03",
             "palmela": "19:08",
             "venda_do_alcaide": "19:12",
@@ -1048,6 +1373,11 @@
             "roma_areeiro": "20:06"
         },
         {
+            "id": 14284,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "19:23",
             "palmela": "19:28",
             "venda_do_alcaide": "19:32",
@@ -1064,6 +1394,11 @@
             "roma_areeiro": "20:26"
         },
         {
+            "id": 14286,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "19:43",
             "palmela": "19:48",
             "venda_do_alcaide": "19:52",
@@ -1080,6 +1415,11 @@
             "roma_areeiro": "20:46"
         },
         {
+            "id": 14288,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "20:03",
             "palmela": "20:08",
             "venda_do_alcaide": "20:12",
@@ -1096,6 +1436,11 @@
             "roma_areeiro": "21:06"
         },
         {
+            "id": 14290,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "20:23",
             "palmela": "20:28",
             "venda_do_alcaide": "20:32",
@@ -1112,6 +1457,11 @@
             "roma_areeiro": "21:26"
         },
         {
+            "id": 14292,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "20:43",
             "palmela": "20:48",
             "venda_do_alcaide": "20:52",
@@ -1128,6 +1478,11 @@
             "roma_areeiro": "21:46"
         },
         {
+            "id": 14294,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "21:03",
             "palmela": "21:08",
             "venda_do_alcaide": "21:12",
@@ -1144,6 +1499,32 @@
             "roma_areeiro": "22:06"
         },
         {
+            "id": 14296,
+            "horario": 2,
+            "carruagens": 4,
+            "service": 0,
+            "ocupacao": null,
+            "setubal": "21:23",
+            "palmela": "21:28",
+            "venda_do_alcaide": "21:32",
+            "pinhal_novo": "21:36",
+            "penalva": "21:44",
+            "coina": "21:53",
+            "fogueteiro": "21:58",
+            "foros_de_amora": "22:01",
+            "corroios": "22:04",
+            "pragal": "22:09",
+            "campolide": "22:18",
+            "sete_rios": "22:20",
+            "entrecampos": "22:24",
+            "roma_areeiro": "22:26"
+        },
+        {
+            "id": 14298,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "21:43",
             "palmela": "21:48",
             "venda_do_alcaide": "21:52",
@@ -1160,6 +1541,11 @@
             "roma_areeiro": "22:46"
         },
         {
+            "id": 14300,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "22:03",
             "palmela": "22:08",
             "venda_do_alcaide": "22:12",
@@ -1176,6 +1562,32 @@
             "roma_areeiro": "23:06"
         },
         {
+            "id": 14302,
+            "horario": 2,
+            "carruagens": 4,
+            "service": 0,
+            "ocupacao": null,
+            "setubal": "22:23",
+            "palmela": "22:28",
+            "venda_do_alcaide": "22:32",
+            "pinhal_novo": "22:36",
+            "penalva": "22:44",
+            "coina": "22:53",
+            "fogueteiro": "22:58",
+            "foros_de_amora": "23:01",
+            "corroios": "23:04",
+            "pragal": "23:09",
+            "campolide": "23:18",
+            "sete_rios": "23:20",
+            "entrecampos": "23:24",
+            "roma_areeiro": "23:26"
+        },
+        {
+            "id": 14304,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "22:43",
             "palmela": "22:48",
             "venda_do_alcaide": "22:52",
@@ -1192,6 +1604,11 @@
             "roma_areeiro": "23:46"
         },
         {
+            "id": 14306,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "23:03",
             "palmela": "23:08",
             "venda_do_alcaide": "23:12",
@@ -1208,6 +1625,11 @@
             "roma_areeiro": "00:06"
         },
         {
+            "id": 14308,
+            "horario": 1,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "23:43",
             "palmela": "23:48",
             "venda_do_alcaide": "23:52",
@@ -1224,6 +1646,32 @@
             "roma_areeiro": "00:46"
         },
         {
+            "id": 14048,
+            "horario": 2,
+            "carruagens": 4,
+            "service": 0,
+            "ocupacao": null,
+            "setubal": null,
+            "palmela": null,
+            "venda_do_alcaide": null,
+            "pinhal_novo": null,
+            "penalva": null,
+            "coina": "23:53",
+            "fogueteiro": "23:58",
+            "foros_de_amora": "00:01",
+            "corroios": "00:04",
+            "pragal": "00:09",
+            "campolide": "00:18",
+            "sete_rios": "00:20",
+            "entrecampos": "00:24",
+            "roma_areeiro": "00:26"
+        },
+        {
+            "id": 14200,
+            "horario": 0,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
             "setubal": "00:03",
             "palmela": "00:08",
             "venda_do_alcaide": "00:12",

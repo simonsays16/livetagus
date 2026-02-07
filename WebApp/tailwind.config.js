@@ -23,6 +23,10 @@ module.exports = {
     "text-zinc-500",
     "text-zinc-600",
     "shadow-[0_0_8px_rgba(59,130,246,0.5)]",
+    "bg-blue-500",
+    "bg-emerald-500",
+    "bg-amber-500",
+    "bg-red-500",
 
     // Cores Específicas da Timeline/Detalhes
     "bg-blue-500",

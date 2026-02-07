@@ -4,14 +4,14 @@
       <loc>https://livetagus.pt/</loc>
       <lastmod>2026-02-04</lastmod>
       <changefreq>daily</changefreq>
-      <priority>1.0</priority>
+      <priority>1</priority>
    </url>
 
    <url>
       <loc>https://livetagus.pt/app</loc>
       <lastmod>2026-02-04</lastmod>
-      <changefreq>weekly</changefreq>
-      <priority>0.9</priority>
+      <changefreq>daily</changefreq>
+      <priority>1</priority>
    </url>
 
    <url>

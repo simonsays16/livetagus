@@ -3,12 +3,13 @@
         {
             "operator": "Fertagus",
             "route": "Norte -> Sul (Lisboa -> Setúbal/Coina)",
-            "days": "Dias Úteis"
+            "days": "Todos os Dias"
         }
     ],
     "trips": [
         {
             "id": 14203,
+            "horario": 0,
             "carruagens": 8,
             "service": 1,
             "ocupacao": null,
@@ -29,6 +30,7 @@
         },
         {
             "id": 14205,
+            "horario": 1,
             "carruagens": 8,
             "service": 1,
             "ocupacao": null,
@@ -49,6 +51,7 @@
         },
         {
             "id": 14207,
+            "horario": 0,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -69,6 +72,7 @@
         },
         {
             "id": 14009,
+            "horario": 0,
             "carruagens": 8,
             "service": 0,
             "ocupacao": null,
@@ -89,6 +93,7 @@
         },
         {
             "id": 14209,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -109,6 +114,7 @@
         },
         {
             "id": 14011,
+            "horario": 0,
             "carruagens": 8,
             "service": 0,
             "ocupacao": null,
@@ -129,6 +135,7 @@
         },
         {
             "id": 14211,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -149,6 +156,7 @@
         },
         {
             "id": 14013,
+            "horario": 0,
             "carruagens": 8,
             "service": 0,
             "ocupacao": null,
@@ -169,6 +177,7 @@
         },
         {
             "id": 14213,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -189,6 +198,7 @@
         },
         {
             "id": 14015,
+            "horario": 0,
             "carruagens": 8,
             "service": 0,
             "ocupacao": null,
@@ -209,6 +219,7 @@
         },
         {
             "id": 14215,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -229,6 +240,7 @@
         },
         {
             "id": 14017,
+            "horario": 0,
             "carruagens": 8,
             "service": 0,
             "ocupacao": null,
@@ -249,6 +261,7 @@
         },
         {
             "id": 14217,
+            "horario": 1,
             "carruagens": 8,
             "service": 1,
             "ocupacao": null,
@@ -269,6 +282,7 @@
         },
         {
             "id": 14019,
+            "horario": 0,
             "carruagens": 8,
             "service": 0,
             "ocupacao": null,
@@ -289,6 +303,7 @@
         },
         {
             "id": 14219,
+            "horario": 1,
             "carruagens": 8,
             "service": 1,
             "ocupacao": null,
@@ -309,6 +324,7 @@
         },
         {
             "id": 14021,
+            "horario": 0,
             "carruagens": 8,
             "service": 0,
             "ocupacao": null,
@@ -329,6 +345,7 @@
         },
         {
             "id": 14221,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -349,6 +366,7 @@
         },
         {
             "id": 14023,
+            "horario": 0,
             "carruagens": 8,
             "service": 0,
             "ocupacao": null,
@@ -369,6 +387,7 @@
         },
         {
             "id": 14223,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -389,6 +408,7 @@
         },
         {
             "id": 14025,
+            "horario": 0,
             "carruagens": 8,
             "service": 0,
             "ocupacao": null,
@@ -409,6 +429,7 @@
         },
         {
             "id": 14225,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -429,6 +450,7 @@
         },
         {
             "id": 14027,
+            "horario": 0,
             "carruagens": 8,
             "service": 0,
             "ocupacao": null,
@@ -449,6 +471,7 @@
         },
         {
             "id": 14227,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -469,6 +492,7 @@
         },
         {
             "id": 14029,
+            "horario": 0,
             "carruagens": 8,
             "service": 0,
             "ocupacao": null,
@@ -489,6 +513,7 @@
         },
         {
             "id": 14229,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -509,6 +534,7 @@
         },
         {
             "id": 14231,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -529,6 +555,7 @@
         },
         {
             "id": 14233,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -549,6 +576,7 @@
         },
         {
             "id": 14235,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -569,6 +597,7 @@
         },
         {
             "id": 14237,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -589,6 +618,7 @@
         },
         {
             "id": 14239,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -609,6 +639,7 @@
         },
         {
             "id": 14241,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -629,6 +660,7 @@
         },
         {
             "id": 14243,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -649,6 +681,7 @@
         },
         {
             "id": 14245,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -669,6 +702,7 @@
         },
         {
             "id": 14247,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -689,6 +723,7 @@
         },
         {
             "id": 14249,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -709,6 +744,7 @@
         },
         {
             "id": 14251,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -729,6 +765,7 @@
         },
         {
             "id": 14253,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -749,6 +786,7 @@
         },
         {
             "id": 14255,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -769,6 +807,7 @@
         },
         {
             "id": 14257,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -789,6 +828,7 @@
         },
         {
             "id": 14259,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -809,6 +849,7 @@
         },
         {
             "id": 14261,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -829,6 +870,7 @@
         },
         {
             "id": 14263,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -849,6 +891,7 @@
         },
         {
             "id": 14265,
+            "horario": 1,
             "carruagens": 8,
             "service": 1,
             "ocupacao": null,
@@ -869,6 +912,7 @@
         },
         {
             "id": 14031,
+            "horario": 0,
             "carruagens": 8,
             "service": 0,
             "ocupacao": null,
@@ -889,6 +933,7 @@
         },
         {
             "id": 14267,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -909,6 +954,7 @@
         },
         {
             "id": 14033,
+            "horario": 0,
             "carruagens": 8,
             "service": 0,
             "ocupacao": 37.5,
@@ -929,6 +975,7 @@
         },
         {
             "id": 14269,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": 100,
@@ -949,6 +996,7 @@
         },
         {
             "id": 14035,
+            "horario": 0,
             "carruagens": 8,
             "service": 0,
             "ocupacao": 43.75,
@@ -969,6 +1017,7 @@
         },
         {
             "id": 14271,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": 100,
@@ -989,6 +1038,7 @@
         },
         {
             "id": 14037,
+            "horario": 0,
             "carruagens": 4,
             "service": 0,
             "ocupacao": 100,
@@ -1009,6 +1059,7 @@
         },
         {
             "id": 14273,
+            "horario": 1,
             "carruagens": 8,
             "service": 1,
             "ocupacao": 81.25,
@@ -1029,6 +1080,7 @@
         },
         {
             "id": 14039,
+            "horario": 0,
             "carruagens": 8,
             "service": 0,
             "ocupacao": 62.5,
@@ -1049,6 +1101,7 @@
         },
         {
             "id": 14275,
+            "horario": 1,
             "carruagens": 8,
             "service": 1,
             "ocupacao": 81.25,
@@ -1069,6 +1122,7 @@
         },
         {
             "id": 14041,
+            "horario": 0,
             "carruagens": 8,
             "service": 0,
             "ocupacao": 43.75,
@@ -1089,6 +1143,7 @@
         },
         {
             "id": 14277,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": 100,
@@ -1109,6 +1164,7 @@
         },
         {
             "id": 14043,
+            "horario": 0,
             "carruagens": 8,
             "service": 0,
             "ocupacao": 75,
@@ -1129,6 +1185,7 @@
         },
         {
             "id": 14279,
+            "horario": 1,
             "carruagens": 8,
             "service": 1,
             "ocupacao": 81.25,
@@ -1149,6 +1206,7 @@
         },
         {
             "id": 14045,
+            "horario": 0,
             "carruagens": 4,
             "service": 0,
             "ocupacao": 75,
@@ -1169,6 +1227,7 @@
         },
         {
             "id": 14281,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": 100,
@@ -1189,6 +1248,7 @@
         },
         {
             "id": 14047,
+            "horario": 0,
             "carruagens": 8,
             "service": 0,
             "ocupacao": 50,
@@ -1209,6 +1269,7 @@
         },
         {
             "id": 14283,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": 100,
@@ -1229,6 +1290,7 @@
         },
         {
             "id": 14049,
+            "horario": 0,
             "carruagens": 8,
             "service": 0,
             "ocupacao": 43.75,
@@ -1249,6 +1311,7 @@
         },
         {
             "id": 14285,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": 75,
@@ -1269,6 +1332,7 @@
         },
         {
             "id": 14051,
+            "horario": 0,
             "carruagens": 8,
             "service": 0,
             "ocupacao": 25,
@@ -1289,6 +1353,7 @@
         },
         {
             "id": 14287,
+            "horario": 1,
             "carruagens": 8,
             "service": 1,
             "ocupacao": 31.25,
@@ -1309,6 +1374,7 @@
         },
         {
             "id": 14053,
+            "horario": 0,
             "carruagens": 4,
             "service": 0,
             "ocupacao": null,
@@ -1329,6 +1395,7 @@
         },
         {
             "id": 14289,
+            "horario": 1,
             "carruagens": 8,
             "service": 1,
             "ocupacao": null,
@@ -1349,6 +1416,7 @@
         },
         {
             "id": 14291,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -1369,6 +1437,7 @@
         },
         {
             "id": 14293,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -1389,6 +1458,7 @@
         },
         {
             "id": 14295,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -1409,6 +1479,7 @@
         },
         {
             "id": 14297,
+            "horario": 1,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -1429,6 +1500,7 @@
         },
         {
             "id": 14299,
+            "horario": 0,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -1448,7 +1520,29 @@
             "setubal": "22:51:00"
         },
         {
+            "id": 14301,
+            "horario": 2,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
+            "roma_areeiro": "22:13:00",
+            "entrecampos": "22:14:30",
+            "sete_rios": "22:18:00",
+            "campolide": "22:21:00",
+            "pragal": "22:29:30",
+            "corroios": "22:34:30",
+            "foros_de_amora": "22:37:30",
+            "fogueteiro": "22:41:00",
+            "coina": "22:46:00",
+            "penalva": "22:50:00",
+            "pinhal_novo": "22:57:30",
+            "venda_do_alcaide": "23:01:30",
+            "palmela": "23:05:00",
+            "setubal": "23:11:00"
+        },
+        {
             "id": 14055,
+            "horario": 0,
             "carruagens": 4,
             "service": 0,
             "ocupacao": null,
@@ -1468,7 +1562,29 @@
             "setubal": null
         },
         {
+            "id": 14303,
+            "horario": 2,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
+            "roma_areeiro": "22:33:00",
+            "entrecampos": "22:34:30",
+            "sete_rios": "22:38:00",
+            "campolide": "22:41:00",
+            "pragal": "22:49:30",
+            "corroios": "22:54:30",
+            "foros_de_amora": "22:57:30",
+            "fogueteiro": "23:01:00",
+            "coina": "23:06:00",
+            "penalva": "23:10:00",
+            "pinhal_novo": "23:17:30",
+            "venda_do_alcaide": "23:21:30",
+            "palmela": "23:25:00",
+            "setubal": "23:31:00"
+        },
+        {
             "id": 14305,
+            "horario": 0,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -1488,7 +1604,29 @@
             "setubal": "23:51:00"
         },
         {
+            "id": 14057,
+            "horario": 2,
+            "carruagens": 4,
+            "service": 0,
+            "ocupacao": null,
+            "roma_areeiro": "23:13:00",
+            "entrecampos": "23:14:30",
+            "sete_rios": "23:18:00",
+            "campolide": "23:21:00",
+            "pragal": "23:29:30",
+            "corroios": "23:34:30",
+            "foros_de_amora": "23:37:30",
+            "fogueteiro": "23:41:30",
+            "coina": "23:46:00",
+            "penalva": null,
+            "pinhal_novo": null,
+            "venda_do_alcaide": null,
+            "palmela": null,
+            "setubal": null
+        },
+        {
             "id": 14059,
+            "horario": 0,
             "carruagens": 4,
             "service": 0,
             "ocupacao": null,
@@ -1508,7 +1646,29 @@
             "setubal": null
         },
         {
+            "id": 14307,
+            "horario": 2,
+            "carruagens": 4,
+            "service": 1,
+            "ocupacao": null,
+            "roma_areeiro": "23:33:00",
+            "entrecampos": "23:34:30",
+            "sete_rios": "23:38:00",
+            "campolide": "23:41:00",
+            "pragal": "23:49:30",
+            "corroios": "23:54:30",
+            "foros_de_amora": "23:57:30",
+            "fogueteiro": "00:01:00",
+            "coina": "00:06:00",
+            "penalva": "00:10:00",
+            "pinhal_novo": "00:17:30",
+            "venda_do_alcaide": "00:21:30",
+            "palmela": "00:25:00",
+            "setubal": "00:31:00"
+        },
+        {
             "id": 14309,
+            "horario": 0,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -1528,7 +1688,29 @@
             "setubal": "00:51:00"
         },
         {
+            "id": 14001,
+            "horario": 2,
+            "carruagens": 4,
+            "service": 0,
+            "ocupacao": null,
+            "roma_areeiro": "00:13:00",
+            "entrecampos": "00:14:30",
+            "sete_rios": "00:17:00",
+            "campolide": "00:21:00",
+            "pragal": "00:29:30",
+            "corroios": "00:34:30",
+            "foros_de_amora": "00:37:30",
+            "fogueteiro": "00:41:00",
+            "coina": "00:46:00",
+            "penalva": null,
+            "pinhal_novo": null,
+            "venda_do_alcaide": null,
+            "palmela": null,
+            "setubal": null
+        },
+        {
             "id": 14003,
+            "horario": 0,
             "carruagens": 4,
             "service": 0,
             "ocupacao": null,
@@ -1548,7 +1730,29 @@
             "setubal": null
         },
         {
+            "id": 14005,
+            "horario": 2,
+            "carruagens": 4,
+            "service": 0,
+            "ocupacao": null,
+            "roma_areeiro": "00:43:00",
+            "entrecampos": "00:44:30",
+            "sete_rios": "00:48:00",
+            "campolide": "00:51:00",
+            "pragal": "00:59:30",
+            "corroios": "01:04:30",
+            "foros_de_amora": "01:07:30",
+            "fogueteiro": "01:11:00",
+            "coina": "01:16:00",
+            "penalva": null,
+            "pinhal_novo": null,
+            "venda_do_alcaide": null,
+            "palmela": null,
+            "setubal": null
+        },
+        {
             "id": 14201,
+            "horario": 0,
             "carruagens": 4,
             "service": 1,
             "ocupacao": null,
@@ -1569,6 +1773,7 @@
         },
         {
             "id": 14007,
+            "horario": 0,
             "carruagens": 4,
             "service": 0,
             "ocupacao": null,
