@@ -189,6 +189,11 @@
     </script>
   </head>
   <body
+    onload="
+      document
+        .getElementById('ambient-light')
+        .scrollIntoView({ behavior: 'smooth', block: 'start' })
+    "
     class="h-[100dvh] flex flex-col bg-zinc-50 dark:bg-[#09090b] text-zinc-900 dark:text-zinc-200 font-sans transition-colors duration-300 selection:bg-blue-500/30"
   >
     <div id="global-nav"></div>
@@ -717,12 +722,11 @@
         // Delay slightly to ensure rendering is complete
         // Prioritize alerts container, fallback to divider
         const alerts = document.getElementById("alerts-dynamic-container");
-        const divider = document.getElementById("next-divider");
 
         if (alerts) {
           alerts.scrollIntoView({ behavior: "smooth", block: "start" });
-        } else if (divider) {
-          divider.scrollIntoView({ behavior: "smooth", block: "start" });
+        } else {
+          alerts.scrollIntoView({ behavior: "smooth", block: "start" });
         }
       }
 
@@ -2235,7 +2239,7 @@
             const el = document.getElementById("alerts-dynamic-container");
             if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
             window.hasScrolledNext = true;
-          }, 800);
+          }, 700);
         }
 
         if (activeAlerts.length > 1) {
