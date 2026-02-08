@@ -59,7 +59,7 @@ function injectNavigation() {
                     </div>
 
                     <div class="flex flex-col items-start gap-3">
-                        <p class="text-[10px] text-zinc-600 font-mono mb-0 leading-none">LiveTagus • v.b07.02.2026 • BETA</p>
+                        <p class="text-[10px] text-zinc-600 font-mono mb-0 leading-none">LiveTagus • v.b08.02.2026</p>
                         
                         <div id="api-status-display" class="flex items-center gap-2 mb-1">
                             <span id="status-dot" class="w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-700"></span>
@@ -100,7 +100,7 @@ function injectFooter() {
                     </a>
                     
                     <p class="text-xs text-zinc-500 max-w-xs leading-relaxed">
-                        LiveTagus • v.b07.02.2026 • BETA<br><br>
+                        LiveTagus • v.b08.02.2026<br><br>
                         Projeto independente e não oficial. Sem afiliação à Fertagus ou IP. Todos os direitos sobre os dados de circulação pertencem aos respetivos proprietários<br><br>
                         Em caso de dúvida, erro ou sugestão contacte-nos:
                     </p>                    
@@ -315,3 +315,20 @@ async function checkApiStatus() {
     setTimeout(checkApiStatus, 30000);
   }
 }
+
+// INJEÇÃO DO SISTEMA OFFLINE
+(function initOfflineSystem() {
+  // 1. Registar Service Worker
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker
+      .register("./sw.js")
+      .then(() => console.log("[SW] Registado com sucesso"))
+      .catch((err) => console.log("[SW] Falha ao registar:", err));
+  }
+
+  // 2. Injetar Script Offline
+  const script = document.createElement("script");
+  script.src = "./offline.js";
+  script.defer = true;
+  document.head.appendChild(script);
+})();

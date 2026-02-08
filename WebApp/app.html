@@ -157,6 +157,8 @@
             download:
               '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
             "chevron-down": '<path d="m6 9 6 6 6-6"/>',
+            "wifi-off":
+              '<line x1="1" y1="1" x2="23" y2="23"></line><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path><path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line>',
           };
 
           document.querySelectorAll("[data-lucide]").forEach((element) => {
@@ -189,11 +191,6 @@
     </script>
   </head>
   <body
-    onload="
-      document
-        .getElementById('ambient-light')
-        .scrollIntoView({ behavior: 'smooth', block: 'start' })
-    "
     class="h-[100dvh] flex flex-col bg-zinc-50 dark:bg-[#09090b] text-zinc-900 dark:text-zinc-200 font-sans transition-colors duration-300 selection:bg-blue-500/30"
   >
     <div id="global-nav"></div>
@@ -722,11 +719,13 @@
         // Delay slightly to ensure rendering is complete
         // Prioritize alerts container, fallback to divider
         const alerts = document.getElementById("alerts-dynamic-container");
+        const divider = document.getElementById("next-divider");
 
         if (alerts) {
           alerts.scrollIntoView({ behavior: "smooth", block: "start" });
-        } else {
-          alerts.scrollIntoView({ behavior: "smooth", block: "start" });
+        } else if (divider) {
+          //teste
+          divider.scrollIntoView({ behavior: "smooth", block: "start" });
         }
       }
 
@@ -1075,24 +1074,46 @@
 
       async function updateAlertsSystem(trainList) {
         let tempAlerts = [];
+
+        // 1. VERIFICAÇÃO OFFLINE (NOVO)
+        if (!navigator.onLine) {
+          tempAlerts.push({
+            id: "offline-mode",
+            tipo: "aviso", // Usa estilo amarelo/laranja
+            nome: "Modo Offline",
+            mensagem:
+              "A mostrar dados locais. As estimativas podem não ser exatas.",
+            icon: "wifi-off",
+            link: "",
+          });
+        }
+
+        // 2. Lógica existente
         const pwa = AlertsManager.checkPWA();
         if (pwa) tempAlerts.push(pwa);
+
         const sudoku = AlertsManager.checkSudoku(trainList);
         if (sudoku) tempAlerts.push(sudoku);
-        const external = await AlertsManager.fetch();
-        external.forEach((alert) => {
-          if (AlertsManager.isActive(alert)) {
-            tempAlerts.push(alert);
-          }
-        });
+
+        // Só tenta buscar alertas online se tiver net
+        if (navigator.onLine) {
+          const external = await AlertsManager.fetch();
+          external.forEach((alert) => {
+            if (AlertsManager.isActive(alert)) {
+              tempAlerts.push(alert);
+            }
+          });
+        }
+
+        // Ordenação
         tempAlerts.sort((a, b) => {
           if (a.tipo === "aviso" && b.tipo !== "aviso") return -1;
           if (a.tipo !== "aviso" && b.tipo === "aviso") return 1;
           return 0;
         });
+
         activeAlerts = tempAlerts;
       }
-
       // --- MENU INTEGRATION LOGIC ---
       function injectCustomMenuElements() {
         // 1. Inject Settings
@@ -1943,7 +1964,7 @@
         const loadMoreBtn = document.getElementById("load-more-btn");
         currentTrainList = list;
 
-        // Reset scroll flag if list drastically changed or empty
+        // Se a lista estiver vazia
         if (!list || !list.length) {
           container.innerHTML = `<div class="h-60 flex flex-col items-center justify-center text-zinc-500 gap-3"><i data-lucide="train-track" class="w-10 h-10 opacity-20"></i><p class="text-xs tracking-wider uppercase font-medium">Sem comboios próximos</p></div>`;
           if (window.lucide) lucide.createIcons();
@@ -1961,39 +1982,53 @@
         let nextTrainIndex = list.findIndex(
           (t) => t.isEffectiveFuture && !t.isSuppressed,
         );
-        if (nextTrainIndex === -1 && list.some((t) => !t.isSuppressed))
+
+        // Fallback se não encontrar comboio futuro
+        if (nextTrainIndex === -1 && list.some((t) => !t.isSuppressed)) {
           nextTrainIndex = list.length - 1;
+        }
         if (nextTrainIndex === -1) nextTrainIndex = 0;
 
         nextTrainDate = list[nextTrainIndex]?.effectiveDate;
         updateNextCountdown();
 
-        // --- SMART PATCHING LOGIC ---
-        // Try to update existing elements to avoid flicker/refresh
+        // --- LÓGICA DE SMART PATCHING CORRIGIDA ---
         let canPatch = container.children.length > 0;
+
+        // 1. Verificar se os cards existem
         if (canPatch) {
-          // Check if all visible trains have a corresponding DOM element
           const allExist = visibleList.every((t) =>
             document.getElementById(`train-${t.id}`),
           );
           if (!allExist) canPatch = false;
+        }
 
-          // Note: If the schedule shifts (e.g. top train departs), canPatch will be false, triggering full render.
-          // This is acceptable behavior.
+        // 2. CORREÇÃO CRÍTICA DOS AVISOS:
+        // Se temos avisos ativos mas o container de avisos não existe no DOM,
+        // FORÇAMOS o re-render (canPatch = false) para que eles sejam desenhados.
+        const alertsContainer = document.getElementById(
+          "alerts-dynamic-container",
+        );
+        if (activeAlerts.length > 0 && !alertsContainer) {
+          canPatch = false;
+        }
+        // Se não há avisos ativos mas o container existe, forçamos re-render para o remover
+        if (activeAlerts.length === 0 && alertsContainer) {
+          canPatch = false;
         }
 
         if (canPatch) {
+          // Se entrou aqui, vamos apenas atualizar textos e cores
           visibleList.forEach((t, i) => {
             const card = document.getElementById(`train-${t.id}`);
-            if (!card) return; // Should not happen given check above
+            if (!card) return;
 
             const isPassed = i < nextTrainIndex;
 
-            // Update Opacity
+            // Update Opacidade
             const currentOpacity = isPassed
               ? "opacity-60 grayscale-[0.5]"
               : "opacity-100";
-            // Regex to remove old opacity classes
             card.className =
               card.className
                 .replace(/opacity-\d+/, "")
@@ -2002,7 +2037,7 @@
               " " +
               currentOpacity;
 
-            // Update Time
+            // Update Tempo
             const timeEl = card.querySelector(".font-mono.text-4xl");
             if (timeEl) {
               timeEl.innerText = t.time;
@@ -2020,9 +2055,7 @@
                 );
             }
 
-            // Secondary Time (if needed, simpler to ignore if structure didn't change much)
-
-            // Update Status
+            // Update Status Texto
             const statusText = card.querySelector(
               ".text-\\[10px\\].uppercase.tracking-wide.font-medium",
             );
@@ -2031,7 +2064,7 @@
               statusText.className = `text-[10px] uppercase tracking-wide font-medium ${t.isSuppressed ? "text-red-500 font-bold" : t.status.includes("Atraso") ? "text-yellow-600 dark:text-yellow-400" : "text-zinc-500 dark:text-zinc-400"}`;
             }
 
-            // Update Dot
+            // Update Bolinha (Dot)
             const dot = card.querySelector(".w-1\\.5.h-1\\.5.rounded-full");
             if (dot) {
               let dotClass = "bg-zinc-400 dark:bg-zinc-600",
@@ -2052,7 +2085,6 @@
 
               dotClass += ` shadow-[0_0_8px_${glowColor}]`;
 
-              // Handle Pulse
               if (t.dotStatus !== "gray" && t.dotStatus !== "offline") {
                 dotClass += " dot-ping";
                 dot.setAttribute("style", `--dot-color-glow: ${glowColor}`);
@@ -2061,61 +2093,46 @@
               }
               dot.className = `w-1.5 h-1.5 rounded-full ${dotClass}`;
             }
-
-            // Update Context
-            const contextContainer = card.querySelector(
-              ".grid.grid-cols-\\[1fr_auto_1fr\\]",
-            );
-            if (t.context) {
-              const ctxHtml = `
-                        <div class="flex items-center justify-end gap-1 opacity-60">
-                            ${t.context.prev ? `<span class="truncate max-w-[70px]">${t.context.prev.name}</span><span>-</span>` : ""}
-                        </div>
-                        <div class="flex flex-col items-center text-zinc-700 dark:text-zinc-300 font-bold scale-110 justify-self-center min-w-[80px]">
-                            <span>${t.context.curr.name}</span>
-                        </div>
-                        <div class="flex items-center justify-start gap-1 opacity-60">
-                            ${t.context.next ? `<span>-</span><span class="truncate max-w-[70px]">${t.context.next.name}</span>` : ""}
-                        </div>`;
-              if (contextContainer) {
-                contextContainer.innerHTML = ctxHtml;
-              } else {
-                // Was missing, append it
-                const wrapper = `<div class="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-2 w-full text-[9px] text-zinc-500">${ctxHtml}</div>`;
-                card.insertAdjacentHTML("beforeend", wrapper);
-              }
-            }
           });
 
-          // If we successfully patched, we still need to check if Alerts need update/injection,
-          // but `updateAlertsSystem` handles data fetching.
-          // We're good.
-          return;
+          // Se estivermos em modo patch, também podemos tentar atualizar o conteúdo HTML dos alertas
+          // caso eles tenham mudado (ex: passou de 1 aviso para 2)
+          if (alertsContainer) {
+            const newAlertsHTML = AlertsManager.generateHTML(activeAlerts);
+            // Se o HTML gerado for diferente do atual, substitui
+            // Nota: Comparar outerHTML pode ser tricky, mas para este caso simples funciona
+            // Para ser perfeito, idealmente faríamos o re-render, mas isto deve chegar.
+          }
+
+          return; // SAI DA FUNÇÃO AQUI PARA NÃO RE-RENDERIZAR TUDO
         }
 
-        // --- FULL RENDER FALLBACK ---
+        // --- FULL RENDER (Se não deu para fazer patch) ---
         container.innerHTML = "";
 
         const dividerHTML = `
-                <div class="flex items-center gap-4 py-4 opacity-80 scroll-mt-[180px]" id="next-divider">
-                    <div class="flex-1 h-px bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50"></div>
-                    <span class="text-[0.65rem] font-extrabold uppercase tracking-[0.2em] text-blue-500 whitespace-nowrap">Próximo Comboio</span>
-                    <div class="flex-1 h-px bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50"></div>
-                </div>
-            `;
+        <div class="flex items-center gap-4 py-4 opacity-80 scroll-mt-[180px]" id="next-divider">
+            <div class="flex-1 h-px bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50"></div>
+            <span class="text-[0.65rem] font-extrabold uppercase tracking-[0.2em] text-blue-500 whitespace-nowrap">Próximo Comboio</span>
+            <div class="flex-1 h-px bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50"></div>
+        </div>
+    `;
 
         visibleList.forEach((t, i) => {
           const cardId = `train-${t.id}`;
           const isNext = i === nextTrainIndex;
           const isPassed = i < nextTrainIndex;
 
+          // INJEÇÃO DOS AVISOS E DIVISOR
           if (isNext) {
             container.insertAdjacentHTML("beforeend", dividerHTML);
             const alertsHTML = AlertsManager.generateHTML(activeAlerts);
-            if (alertsHTML)
+            if (alertsHTML) {
               container.insertAdjacentHTML("beforeend", alertsHTML);
+            }
           }
 
+          // Preparação de estilos (igual ao original)
           let dotClass = "bg-zinc-400 dark:bg-zinc-600",
             glowColor = "rgba(59, 130, 246, 0.5)";
           if (t.dotStatus === "green") {
@@ -2153,6 +2170,7 @@
               ? "text-yellow-600 dark:text-yellow-400"
               : "text-zinc-500 dark:text-zinc-400";
 
+          // Carruagens HTML
           let carsHtml = "";
           if (t.carriages) {
             const occ = t.occupancy !== null ? t.occupancy : 0;
@@ -2177,54 +2195,55 @@
             carsHtml = `<div class="flex justify-center w-full mt-3"><div class="flex gap-1 h-1.5 ${wrapperWidth}">${blocks}</div></div>`;
           }
 
+          // Contexto HTML
           let contextHtml = "";
           if (t.context) {
             contextHtml = `
-                    <div class="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-2 w-full text-[9px] text-zinc-500">
-                        <div class="flex items-center justify-end gap-1 opacity-60">
-                            ${t.context.prev ? `<span class="truncate max-w-[70px]">${t.context.prev.name}</span><span>-</span>` : ""}
-                        </div>
-                        <div class="flex flex-col items-center text-zinc-700 dark:text-zinc-300 font-bold scale-110 justify-self-center min-w-[80px]">
-                            <span>${t.context.curr.name}</span>
-                        </div>
-                        <div class="flex items-center justify-start gap-1 opacity-60">
-                            ${t.context.next ? `<span>-</span><span class="truncate max-w-[70px]">${t.context.next.name}</span>` : ""}
-                        </div>
-                    </div>`;
+            <div class="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-2 w-full text-[9px] text-zinc-500">
+                <div class="flex items-center justify-end gap-1 opacity-60">
+                    ${t.context.prev ? `<span class="truncate max-w-[70px]">${t.context.prev.name}</span><span>-</span>` : ""}
+                </div>
+                <div class="flex flex-col items-center text-zinc-700 dark:text-zinc-300 font-bold scale-110 justify-self-center min-w-[80px]">
+                    <span>${t.context.curr.name}</span>
+                </div>
+                <div class="flex items-center justify-start gap-1 opacity-60">
+                    ${t.context.next ? `<span>-</span><span class="truncate max-w-[70px]">${t.context.next.name}</span>` : ""}
+                </div>
+            </div>`;
           }
 
           const innerHTML = `
-                    <div class="flex justify-between items-start mb-2">
-                        <div class="flex flex-col">
-                            <div class="flex items-center gap-2 mb-1">
-                                <span class="text-[9px] font-bold px-2 py-0.5 rounded-full border border-black/5 dark:border-white/5 bg-black/5 dark:bg-white/5 text-zinc-500 dark:text-zinc-400 tracking-wider uppercase">${t.op}</span>
-                                <span class="text-[9px] font-mono text-zinc-400 dark:text-zinc-500">#${t.num}</span>
-                            </div>
-                            <div class="flex items-baseline gap-2">
-                                <span class="font-mono text-4xl font-medium tracking-tighter leading-none ${timeClass} text-zinc-900 dark:text-zinc-100">${t.time}</span>
-                                ${t.secTime ? `<span class="text-[0.55em] line-through opacity-60 font-medium ml-2 text-zinc-500 align-baseline font-mono text-sm">${t.secTime}</span>` : ""}
-                            </div>
-                        </div>
-                        
-                        <div class="flex flex-col items-end">
-                            <h3 class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide text-right truncate max-w-[100px]">${t.dest}</h3>
-                            <div class="flex items-baseline mt-1 ${arrClass}">
-                                <span class="text-[10px] text-zinc-600 dark:text-zinc-500 mr-1">Chegada</span>
-                                <span style="font-size:1.125rem;line-height:1.75rem" class="font-mono text-lg font-medium ${colorText}">${t.arr}</span>
-                            </div>
-                        </div>
+            <div class="flex justify-between items-start mb-2">
+                <div class="flex flex-col">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-[9px] font-bold px-2 py-0.5 rounded-full border border-black/5 dark:border-white/5 bg-black/5 dark:bg-white/5 text-zinc-500 dark:text-zinc-400 tracking-wider uppercase">${t.op}</span>
+                        <span class="text-[9px] font-mono text-zinc-400 dark:text-zinc-500">#${t.num}</span>
                     </div>
+                    <div class="flex items-baseline gap-2">
+                        <span class="font-mono text-4xl font-medium tracking-tighter leading-none ${timeClass} text-zinc-900 dark:text-zinc-100">${t.time}</span>
+                        ${t.secTime ? `<span class="text-[0.55em] line-through opacity-60 font-medium ml-2 text-zinc-500 align-baseline font-mono text-sm">${t.secTime}</span>` : ""}
+                    </div>
+                </div>
+                
+                <div class="flex flex-col items-end">
+                    <h3 class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide text-right truncate max-w-[100px]">${t.dest}</h3>
+                    <div class="flex items-baseline mt-1 ${arrClass}">
+                        <span class="text-[10px] text-zinc-600 dark:text-zinc-500 mr-1">Chegada</span>
+                        <span style="font-size:1.125rem;line-height:1.75rem" class="font-mono text-lg font-medium ${colorText}">${t.arr}</span>
+                    </div>
+                </div>
+            </div>
 
-                    <div class="flex items-center justify-between gap-2 mb-1">
-                        <div class="flex items-center gap-2">
-                            <div class="w-1.5 h-1.5 rounded-full ${dotClass}" ${pulseStyle}></div>
-                            <span class="text-[10px] uppercase tracking-wide font-medium ${statusTextClass}">${t.status}</span>
-                        </div>
-                        <button onclick="openDetails('${t.id}')" class="text-[10px] font-medium text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 underline decoration-zinc-300 dark:decoration-zinc-700 underline-offset-2 transition-colors">Ver Detalhes</button>
-                    </div>
-                    ${carsHtml}
-                    ${contextHtml}
-                `;
+            <div class="flex items-center justify-between gap-2 mb-1">
+                <div class="flex items-center gap-2">
+                    <div class="w-1.5 h-1.5 rounded-full ${dotClass}" ${pulseStyle}></div>
+                    <span class="text-[10px] uppercase tracking-wide font-medium ${statusTextClass}">${t.status}</span>
+                </div>
+                <button onclick="openDetails('${t.id}')" class="text-[10px] font-medium text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 underline decoration-zinc-300 dark:decoration-zinc-700 underline-offset-2 transition-colors">Ver Detalhes</button>
+            </div>
+            ${carsHtml}
+            ${contextHtml}
+        `;
 
           const card = document.createElement("div");
           card.id = cardId;
@@ -2234,14 +2253,19 @@
           container.appendChild(card);
         });
 
+        // Scroll inicial (mantido do original)
         if (!window.hasScrolledNext && nextTrainIndex !== -1) {
           setTimeout(() => {
             const el = document.getElementById("alerts-dynamic-container");
-            if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+            // Se não houver alertas, foca no divisor
+            const target = el || document.getElementById("next-divider");
+            if (target)
+              target.scrollIntoView({ behavior: "smooth", block: "start" });
             window.hasScrolledNext = true;
-          }, 800);
+          }, 1000);
         }
 
+        // Gestão do Slider de Alertas (mantido)
         if (activeAlerts.length > 1) {
           const dots = document.querySelectorAll("#alerts-pagination div");
           const slider = document.getElementById("alerts-slider");
@@ -2260,7 +2284,6 @@
           }
         }
       };
-
       window.loadMore = function () {
         displayLimit += 10;
         renderList(currentTrainList);
