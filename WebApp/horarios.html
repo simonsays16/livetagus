@@ -5,7 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Horários completos da Fertagus em tempo real. Consulte partidas, chegadas e tipologia dos comboios."
+      content="LiveTagus - Horários da Fertagus. Usa a app para verificar em tempo real!"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://livetagus.pt/" />
+    <meta property="og:title" content="LiveTagus | Fertagus em Tempo Real" />
+    <meta
+      property="og:description"
+      content="LiveTagus - Horários da Fertagus. Usa a app para verificar em tempo real!"
+    />
+    <meta
+      property="og:image"
+      content="https://livetagus.pt/imagens/logo_og.webp"
+    />
+
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://livetagus.pt/" />
+    <meta
+      property="twitter:title"
+      content="LiveTagus | Fertagus em Tempo Real"
+    />
+    <meta
+      property="twitter:description"
+      content="LiveTagus - Horários da Fertagus. Usa a app para verificar em tempo real!"
+    />
+    <meta
+      property="twitter:image"
+      content="https://livetagus.pt/imagens/logo_og.webp"
     />
     <meta name="theme-color" content="#09090b" />
 
@@ -17,26 +43,21 @@
 
     <title>Horários | LiveTagus</title>
 
-    <link href="./style.css" rel="stylesheet" />
+    <link href="./output.css" rel="stylesheet" />
 
     <style>
-      /* --- CORREÇÃO DO LAYOUT --- */
-
       body {
         overflow-y: auto;
         height: auto;
       }
 
-      /* --- A JANELA DA TABELA --- */
       #table-wrapper {
         position: relative;
         width: 100%;
         height: 70vh;
         max-height: 800px;
-
         -webkit-overflow-scrolling: touch;
-        overflow: auto; /* Scroll X e Y automático */
-
+        overflow: auto;
         border: 1px solid #e4e4e7;
         border-radius: 0.5rem;
         background-color: #ffffff;
@@ -50,9 +71,9 @@
       .schedule-table {
         border-collapse: separate;
         border-spacing: 0;
+        width: 100%;
       }
 
-      /* --- CÉLULAS --- */
       .schedule-table th,
       .schedule-table td {
         padding: 0.5rem 0.25rem;
@@ -68,17 +89,13 @@
         border-bottom-color: #27272a;
       }
 
-      /* --- STICKY HEADER (TOPO APENAS) --- */
       .schedule-table thead th {
         position: sticky;
         top: 0;
         z-index: 20;
-
         background-color: #f4f4f5;
         color: #52525b;
-
         border-bottom: 2px solid #d4d4d8;
-
         height: 50px;
         white-space: normal;
       }
@@ -89,7 +106,6 @@
         border-bottom: 2px solid #3f3f46;
       }
 
-      /* --- LARGURAS FIXAS UNIFORMES --- */
       .station-col {
         width: 130px;
         min-width: 130px;
@@ -98,8 +114,6 @@
         line-height: 1.1;
       }
 
-      /* --- ALTERAÇÃO AQUI: REMOVIDO O STICKY DA COLUNA DESTINO --- */
-      /* Agora é uma coluna normal, apenas com formatação de texto */
       .details-col {
         width: 110px;
         min-width: 110px;
@@ -107,15 +121,8 @@
         text-align: left !important;
         padding-left: 0.75rem !important;
         font-weight: 700;
-
-        /* REMOVIDO: position: sticky, left: 0, z-index: 30 */
       }
 
-      /* REMOVIDO: O bloco .schedule-table thead th:first-child que forçava
-         o canto superior esquerdo a ficar sticky left. 
-         Agora ele usa a regra geral do thead th (apenas sticky top). */
-
-      /* Estilo do Sublinhado (Comboios Duplos) */
       .train-underline {
         text-decoration: underline;
         text-decoration-thickness: 2px;
@@ -125,8 +132,7 @@
     </style>
 
     <script src="./menu.js" defer></script>
-
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="./lucide.js"></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -174,9 +180,7 @@
                 Preto/Branco
               </span>
             </div>
-
             <div class="w-px h-4 bg-zinc-300 dark:bg-zinc-700 mx-1"></div>
-
             <div class="flex items-center gap-1.5">
               <span
                 class="inline-flex items-center justify-center w-4 h-4 rounded text-[9px] font-bold border border-zinc-400 text-zinc-500"
@@ -225,16 +229,16 @@
             <button
               onclick="changeDay('semana')"
               id="btn-semana"
-              class="flex-1 sm:flex-none px-4 py-2 text-sm font-bold uppercase tracking-wide rounded transition-all shadow-sm bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+              class="flex-1 sm:flex-none px-4 py-2 text-sm font-bold uppercase tracking-wide rounded transition-all"
             >
               Dias Úteis
             </button>
             <button
               onclick="changeDay('fimdesemana')"
               id="btn-fimdesemana"
-              class="flex-1 sm:flex-none px-4 py-2 text-sm font-bold uppercase tracking-wide rounded transition-all text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+              class="flex-1 sm:flex-none px-4 py-2 text-sm font-bold uppercase tracking-wide rounded transition-all"
             >
-              Fim de Semana
+              Fim de Semana / Feriados
             </button>
           </div>
         </div>
@@ -251,30 +255,33 @@
 
           <div id="table-wrapper"></div>
 
+          <!-- Mensagem para quando não há comboios -->
           <div
-            id="weekend-warning"
-            class="hidden absolute inset-0 h-64 flex flex-col items-center justify-center bg-white dark:bg-[#09090b] z-10 rounded-lg border border-zinc-200 dark:border-white/10"
+            id="no-trains"
+            class="hidden p-12 text-center border border-zinc-200 dark:border-white/10 rounded-lg"
           >
-            <i data-lucide="cone" class="w-12 h-12 text-amber-500 mb-4"></i>
-            <h3 class="text-xl font-bold text-zinc-900 dark:text-white">
-              Em Construção
-            </h3>
-            <p class="text-zinc-500 mt-2">
-              Horários de fim de semana em breve.
+            <p class="text-zinc-500 italic">
+              Nenhum comboio disponível para este período.
             </p>
           </div>
         </div>
-
-        <p class="text-[10px] text-center text-zinc-400 mt-4">
-          Horários oficiais Fertagus. Sujeitos a alterações.
-        </p>
+        <div class="text-center">
+          <a
+            href="./app"
+            class="text-center mt-6 px-8 py-4 bg-zinc-900 dark:bg-white text-white dark:text-black text-xs font-bold uppercase tracking-widest hover:opacity-80 transition-opacity"
+          >
+            Ver em Tempo Real →
+          </a>
+          <p class="text-[10px] text-center text-zinc-400 mt-6">
+            Horários oficiais Fertagus. Sujeitos a alterações.
+          </p>
+        </div>
       </div>
     </main>
 
     <div id="global-footer"></div>
 
     <script>
-      // --- CONFIGURAÇÃO ---
       const stationsMap = {
         setubal: "Setúbal",
         palmela: "Palmela",
@@ -317,27 +324,59 @@
 
       const tableWrapper = document.getElementById("table-wrapper");
       const loader = document.getElementById("loader");
-      const weekendWarning = document.getElementById("weekend-warning");
+      const noTrains = document.getElementById("no-trains");
 
-      document.addEventListener("DOMContentLoaded", () => {
-        loadSchedules();
+      document.addEventListener("DOMContentLoaded", async () => {
+        await loadSchedules();
+        detectInitialDay();
         if (window.lucide) lucide.createIcons();
       });
 
-      // --- FUNÇÕES UI ---
+      function detectInitialDay() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, "0");
+        const day = String(now.getDate()).padStart(2, "0");
+        const todayStr = `${year}-${month}-${day}`;
+
+        if (cachedData.feriados && cachedData.feriados[todayStr]) {
+          changeDay("fimdesemana");
+        } else {
+          changeDay("semana");
+        }
+      }
+
+      async function loadSchedules() {
+        loader.classList.remove("hidden");
+        try {
+          const [lisboaRes, margemRes, feriadosRes] = await Promise.all([
+            fetch("./json/fertagus_sentido_lisboa.json"),
+            fetch("./json/fertagus_sentido_margem.json"),
+            fetch("./json/feriados.json"),
+          ]);
+          cachedData.lisboa = await lisboaRes.json();
+          cachedData.margem = await margemRes.json();
+          cachedData.feriados = await feriadosRes.json();
+          render();
+        } catch (error) {
+          console.error("Erro:", error);
+          tableWrapper.innerHTML = `<div class="p-8 text-center text-red-500">Erro de carregamento.</div>`;
+        } finally {
+          loader.classList.add("hidden");
+        }
+      }
+
       function changeDirection(dir) {
         if (currentDirection === dir) return;
         currentDirection = dir;
         updateButtonState("btn-lisboa", dir === "lisboa");
         updateButtonState("btn-margem", dir === "margem");
         render();
-        // Reset do scroll da tabela
         tableWrapper.scrollTop = 0;
         tableWrapper.scrollLeft = 0;
       }
 
       function changeDay(day) {
-        if (currentDay === day) return;
         currentDay = day;
         updateButtonState("btn-semana", day === "semana");
         updateButtonState("btn-fimdesemana", day === "fimdesemana");
@@ -375,103 +414,86 @@
         }
       }
 
-      // --- RENDER ---
-      async function loadSchedules() {
-        loader.classList.remove("hidden");
-        try {
-          const [lisboaRes, margemRes] = await Promise.all([
-            fetch("./json/fertagus_lisboa_semana.json"),
-            fetch("./json/fertagus_margem_semana.json"),
-          ]);
-          cachedData.lisboa = await lisboaRes.json();
-          cachedData.margem = await margemRes.json();
-          render();
-        } catch (error) {
-          console.error("Erro:", error);
-          tableWrapper.innerHTML = `<div class="p-8 text-center text-red-500">Erro de carregamento.</div>`;
-        } finally {
-          loader.classList.add("hidden");
-        }
-      }
-
       function render() {
-        if (currentDay === "fimdesemana") {
-          tableWrapper.classList.add("hidden");
-          weekendWarning.classList.remove("hidden");
-          return;
-        }
-
-        tableWrapper.classList.remove("hidden");
-        weekendWarning.classList.add("hidden");
+        if (!cachedData.lisboa || !cachedData.margem) return;
 
         const data =
           currentDirection === "lisboa" ? cachedData.lisboa : cachedData.margem;
         const stationsOrder =
           currentDirection === "lisboa" ? orderNorth : orderSouth;
 
-        let html = `
-                <table class="schedule-table">
-                    <thead>
-                        <tr>
-                            <th class="details-col font-bold uppercase tracking-wider text-xs">Destino</th>
-                            ${stationsOrder.map((key) => `<th class="station-col font-bold uppercase tracking-wider text-xs">${stationsMap[key]}</th>`).join("")}
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
+        const filteredTrips = data.trips.filter((trip) => {
+          if (currentDay === "semana") {
+            return trip.horario === 0 || trip.horario === 1;
+          } else {
+            return trip.horario === 1 || trip.horario === 2;
+          }
+        });
 
-        data.trips.forEach((trip, index) => {
-          // Zebra Striping (Linha sim, Linha não)
+        if (filteredTrips.length === 0) {
+          tableWrapper.classList.add("hidden");
+          noTrains.classList.remove("hidden");
+          return;
+        }
+
+        tableWrapper.classList.remove("hidden");
+        noTrains.classList.add("hidden");
+
+        let html = `
+            <table class="schedule-table">
+                <thead>
+                    <tr>
+                        <th class="details-col font-bold uppercase tracking-wider text-xs">Destino</th>
+                        ${stationsOrder.map((key) => `<th class="station-col font-bold uppercase tracking-wider text-xs">${stationsMap[key]}</th>`).join("")}
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        filteredTrips.forEach((trip, index) => {
           const isEven = index % 2 === 0;
-          // Cores de fundo
           const rowBgClass = isEven
             ? "bg-zinc-50 dark:bg-[#18181b]"
             : "bg-white dark:bg-[#09090b]";
-
-          // --- LÓGICA DE CORES ---
           const isSetubal = trip.service === 1;
-
-          // COINA = AZUL
-          // SETÚBAL = PRETO/BRANCO
           const textClass = !isSetubal
             ? "text-blue-700 dark:text-blue-400 font-bold"
             : "text-zinc-900 dark:text-white font-medium";
 
-          // 8 Carruagens = Sublinhado
-          const isDouble = trip.carruagens === 8;
-          const underlineClass = isDouble ? "train-underline" : "";
+          // LÓGICA DE CARRUAGENS: Forçar 4 em Fim de Semana / Feriados
+          let carruagensNum = trip.carruagens;
+          if (currentDay === "fimdesemana") {
+            carruagensNum = 4;
+          }
 
-          // Badges (4 ou 8)
+          const isDouble = carruagensNum === 8;
+          const underlineClass = isDouble ? "train-underline" : "";
           const badgeClass = isDouble
             ? "bg-zinc-900 text-white dark:bg-white dark:text-black border-transparent"
             : "bg-transparent text-zinc-400 border-zinc-300 dark:border-zinc-700 border";
 
-          const carruagensNum = trip.carruagens;
-
           const trainBadge = `<span class="inline-flex items-center justify-center w-5 h-5 rounded text-[10px] font-bold ml-2 ${badgeClass}" title="${carruagensNum} Carruagens">${carruagensNum}</span>`;
-
           const destText = isSetubal ? "Setúbal" : "Coina";
 
-          // REMOVIDO: style="background-color: inherit;" na primeira coluna já não é preciso porque não é sticky
           html += `
-                    <tr class="${rowBgClass} hover:bg-zinc-200 dark:hover:bg-white/10 transition-colors" data-train-id="${trip.id}">
-                        <td class="details-col">
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs uppercase tracking-tight ${textClass}">${destText}</span>
-                                ${trainBadge}
-                            </div>
-                        </td>
-                        ${stationsOrder
-                          .map((station) => {
-                            const time = trip[station];
-                            return `
-                                <td class="station-col ${textClass} ${underlineClass}">
-                                    ${time || '<span class="opacity-20 font-light">—</span>'}
-                                </td>`;
-                          })
-                          .join("")}
-                    </tr>
-                `;
+                <tr class="${rowBgClass} hover:bg-zinc-200 dark:hover:bg-white/10 transition-colors" data-train-id="${trip.id}">
+                    <td class="details-col">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs uppercase tracking-tight ${textClass}">${destText}</span>
+                            ${trainBadge}
+                        </div>
+                    </td>
+                    ${stationsOrder
+                      .map((station) => {
+                        const time = trip[station];
+                        return `
+                          <td class="station-col ${textClass} ${underlineClass}">
+                              ${time || '<span class="opacity-20 font-light">—</span>'}
+                          </td>`;
+                      })
+                      .join("")}
+                </tr>
+            `;
         });
 
         html += `</tbody></table>`;

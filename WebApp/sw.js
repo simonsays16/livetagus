@@ -1,5 +1,5 @@
 /* Filename: sw.js */
-const CACHE_NAME = "livetagus-v.b14.08022026"; // Incrementa isto quando fizeres grandes updates
+const CACHE_NAME = "livetagus-v.b28.10022026"; // Incrementa isto quando fizeres grandes updates
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
