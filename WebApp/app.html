@@ -201,11 +201,11 @@
 
     <!-- Main Container -->
     <main
-      class="relative z-10 w-full max-w-md mx-auto flex flex-col flex-1 pt-[calc(6rem+env(safe-area-inset-top))] overflow-hidden"
+      class="relative top-0 z-10 w-full max-w-md mx-auto flex flex-col flex-1 pt-[calc(4.5rem+env(safe-area-inset-top))] overflow-hidden"
       role="main"
     >
       <!-- Compact Header Area (One Line) -->
-      <div class="px-6 pt-0 pb-1 z-20 flex flex-col flex-none">
+      <div class="sticky top-1 px-6 pt-2 pb-3 z-30 flex flex-col flex-none">
         <div class="flex items-center justify-between w-full gap-2 relative">
           <!-- Origin Select -->
           <div class="flex-1 min-w-0 relative group">
@@ -1935,7 +1935,7 @@
         container.innerHTML = "";
 
         if (!list || !list.length) {
-          container.innerHTML = `<div class="h-60 flex flex-col items-center justify-center text-zinc-500 gap-3"><i data-lucide="train-track" class="w-10 h-10 opacity-20"></i><p class="text-xs tracking-wider uppercase font-medium">Sem comboios próximos</p></div>`;
+          container.innerHTML = `<div class="h-60 flex flex-col items-center justify-center text-zinc-500 gap-3"><i data-lucide="train-track" class="w-10 h-10 opacity-20"></i><p class="text-xs tracking-wider uppercase font-medium">Sem comboios próximos<br><a href="./horarios">Vê Horários Offline</a></p></div>`;
           if (window.lucide) lucide.createIcons();
           loadMoreBtn.classList.add("hidden");
           nextTrainDate = null;
