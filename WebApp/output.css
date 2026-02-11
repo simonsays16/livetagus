@@ -822,12 +822,32 @@ body {
   top: 60px;
 }
 
-.top-8 {
-  top: 2rem;
+.top-\[calc\(4rem\+env\(safe-area-inset-top\)\)\] {
+  top: calc(4rem + env(safe-area-inset-top));
 }
 
-.top-10 {
-  top: 2.5rem;
+.top-\[calc\(5rem\+env\(safe-area-inset-top\)\)\] {
+  top: calc(5rem + env(safe-area-inset-top));
+}
+
+.top-\[calc\(4\.5rem\+env\(safe-area-inset-top\)\)\] {
+  top: calc(4.5rem + env(safe-area-inset-top));
+}
+
+.top-\[calc\(4\.2rem\+env\(safe-area-inset-top\)\)\] {
+  top: calc(4.2rem + env(safe-area-inset-top));
+}
+
+.top-\[calc\(4\.3rem\+env\(safe-area-inset-top\)\)\] {
+  top: calc(4.3rem + env(safe-area-inset-top));
+}
+
+.top-\[calc\(4\.4rem\+env\(safe-area-inset-top\)\)\] {
+  top: calc(4.4rem + env(safe-area-inset-top));
+}
+
+.top-\[calc\(4\.38rem\+env\(safe-area-inset-top\)\)\] {
+  top: calc(4.38rem + env(safe-area-inset-top));
 }
 
 .z-0 {
@@ -999,6 +1019,10 @@ body {
 
 .mt-auto {
   margin-top: auto;
+}
+
+.mt-32 {
+  margin-top: 8rem;
 }
 
 .line-clamp-1 {
@@ -2228,6 +2252,10 @@ body {
   background-color: rgb(24 24 27 / var(--tw-bg-opacity, 1));
 }
 
+.bg-zinc-50\/80 {
+  background-color: rgb(250 250 250 / 0.8);
+}
+
 .bg-gradient-to-b {
   background-image: linear-gradient(to bottom, var(--tw-gradient-stops));
 }
@@ -2573,6 +2601,10 @@ body {
 
 .pt-\[calc\(6rem\+env\(safe-area-inset-top\)\)\] {
   padding-top: calc(6rem + env(safe-area-inset-top));
+}
+
+.pt-32 {
+  padding-top: 8rem;
 }
 
 .text-left {

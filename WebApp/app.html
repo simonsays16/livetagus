@@ -63,6 +63,14 @@
     />
 
     <style>
+      body {
+        overscroll-behavior-y: none;
+        overflow: hidden;
+      }
+      #train-container {
+        overscroll-behavior-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
       .scrollbar-hide::-webkit-scrollbar {
         display: none;
       }
@@ -189,7 +197,7 @@
     </script>
   </head>
   <body
-    class="h-[100dvh] flex flex-col bg-zinc-50 dark:bg-[#09090b] text-zinc-900 dark:text-zinc-200 font-sans transition-colors duration-300 selection:bg-blue-500/30"
+    class="h-[100dvh] flex flex-col bg-zinc-50 dark:bg-[#09090b] text-zinc-900 dark:text-zinc-200 font-sans transition-colors duration-300 selection:bg-blue-500/30 overflow-hidden"
   >
     <div id="global-nav"></div>
 
