@@ -1,5 +1,3 @@
-/* Filename: offline.js */
-
 document.addEventListener("DOMContentLoaded", () => {
   updateOfflineUI();
 
@@ -14,9 +12,13 @@ function updateOfflineUI() {
   // Páginas permitidas offline
   const allowedPages = [
     "index.html",
+    "index",
     "app.html",
+    "app",
     "horarios.html",
+    "horarios",
     "privacidade.html",
+    "privacidade",
     "/",
   ];
 

@@ -54,6 +54,7 @@
     />
     <title>App LiveTagus | Fertagus em Tempo Real</title>
     <link rel="stylesheet" href="./output.css" />
+    <script src="./offline.js"></script>
     <script src="./menu.js" defer></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -225,7 +226,7 @@
             </label>
             <select
               id="sel-origin"
-              onchange="handleOriginChange()"
+              onchange="(handleOriginChange(), manualRefresh)"
               class="select-header text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors cursor-pointer py-0 pr-4"
               aria-label="Selecione a estação de partida"
             ></select>
@@ -237,7 +238,7 @@
 
           <!-- Swap Button -->
           <button
-            onclick="swapStations()"
+            onclick="(swapStations(), manualRefresh)"
             class="shrink-0 p-2 rounded-full bg-zinc-100 dark:bg-white/5 text-zinc-500 dark:text-zinc-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors active:scale-90 relative top-1"
             aria-label="Trocar estações de partida e destino"
           >
@@ -254,9 +255,8 @@
             </label>
             <select
               id="sel-dest"
-              onchange="handleDestChange()"
-              style="font-size: 1.125rem; line-height: 1.75rem"
-              class="select-header text-lg font-medium tracking-tight text-blue-500 hover:text-blue-400 transition-colors cursor-pointer py-0 pl-4 text-right"
+              onchange="(handleDestChange(), manualRefresh)"
+              class="select-header text-xl font-bold tracking-tight text-blue-500 hover:text-blue-400 transition-colors cursor-pointer py-0 pl-4 text-right"
               dir="rtl"
               aria-label="Selecione a estação de destino"
             ></select>
@@ -1943,7 +1943,7 @@
         container.innerHTML = "";
 
         if (!list || !list.length) {
-          container.innerHTML = `<div class="h-60 flex flex-col items-center justify-center text-zinc-500 gap-3"><i data-lucide="train-track" class="w-10 h-10 opacity-20"></i><p class="text-xs tracking-wider uppercase font-medium">Sem comboios próximos<br><a href="./horarios">Vê Horários Offline</a></p></div>`;
+          container.innerHTML = `<div class="h-60 flex flex-col items-center justify-center text-zinc-500 gap-3"><i data-lucide="train-track" class="w-10 h-10 opacity-20"></i><p class="text-xs tracking-wider uppercase font-medium">Sem comboios próximos<br><a class="text-center underline underline-offset-2" href="./horarios">Vê Horários Offline</a></p></div>`;
           if (window.lucide) lucide.createIcons();
           loadMoreBtn.classList.add("hidden");
           nextTrainDate = null;
@@ -2182,6 +2182,7 @@
         }
       };
       window.manualRefresh = function () {
+        console.log("manual refresh");
         focusOnContent();
         loadData(false);
       };

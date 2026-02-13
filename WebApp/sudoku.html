@@ -1,13 +1,15 @@
 <!doctype html>
-<html lang="pt">
+<html lang="pt-PT">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#09090b" />
     <meta name="description" content="Sudoku - LiveTagus Games" />
+    <link
+      rel="shortcut icon"
+      href="./imagens/favicon-96x96.png"
+      type="image/x-icon"
+    />
     <title>Sudoku | LiveTagus</title>
 
     <!-- Tailwind CSS -->
@@ -124,8 +126,8 @@
       /* Utilitários Glassmorphism */
       .glass-panel {
         background: var(--glass-bg);
-        backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(12px);
         border: 1px solid var(--glass-border);
       }
 
@@ -167,6 +169,7 @@
         border: 2px solid var(--grid-line-bold);
         width: 100%;
         height: 100%;
+        -webkit-user-select: none;
         user-select: none;
       }
 
@@ -231,8 +234,8 @@
       /* Modal Overlay */
       .modal-backdrop {
         background-color: rgba(0, 0, 0, 0.6);
-        backdrop-filter: blur(4px);
         -webkit-backdrop-filter: blur(4px);
+        backdrop-filter: blur(4px);
       }
     </style>
   </head>
@@ -245,12 +248,14 @@
       class="flex-none pt-4 pb-2 px-4 flex justify-between items-center z-10"
     >
       <div class="flex items-center gap-3">
-        <button
-          onclick="alert('Voltar')"
+        <a
+          href="./app"
+          title="Voltar para App"
+          aria-label="Voltar para App"
           class="p-2 -ml-2 rounded-full active:bg-white/10 text-zinc-500"
         >
           <i data-lucide="arrow-left" class="w-6 h-6"></i>
-        </button>
+        </a>
         <div class="flex flex-col">
           <h1
             class="text-lg font-bold leading-tight"
@@ -272,6 +277,7 @@
       <div class="flex gap-2">
         <button
           onclick="game.togglePause()"
+          aria-label="Ativar Pausa"
           class="p-2.5 glass-panel rounded-xl active:scale-90 transition-transform"
           style="color: var(--text-secondary)"
         >
@@ -279,6 +285,7 @@
         </button>
         <button
           onclick="game.openSettings()"
+          aria-label="Abrir definições"
           class="p-2.5 glass-panel rounded-xl active:scale-90 transition-transform"
           style="color: var(--text-secondary)"
         >
@@ -706,10 +713,12 @@
         BLANK: 0,
 
         isValid(board, row, col, num) {
+          // Check row and column
           for (let i = 0; i < 9; i++) {
             if (board[row][i] === num && i !== col) return false;
             if (board[i][col] === num && i !== row) return false;
           }
+          // Check 3x3 box
           const startRow = Math.floor(row / 3) * 3;
           const startCol = Math.floor(col / 3) * 3;
           for (let i = 0; i < 3; i++) {
@@ -720,6 +729,7 @@
           return true;
         },
 
+        // Randomized solver to generate a full board
         solve(board) {
           for (let r = 0; r < 9; r++) {
             for (let c = 0; c < 9; c++) {
@@ -741,20 +751,86 @@
           return true;
         },
 
+        // Count number of solutions to ensure uniqueness (stops at 2)
+        countSolutions(board) {
+          let count = 0;
+
+          const solveInternal = (currentBoard) => {
+            if (count > 1) return; // Stop if we already found more than 1
+
+            let r = -1;
+            let c = -1;
+            let isEmpty = false;
+
+            for (let i = 0; i < 9; i++) {
+              for (let j = 0; j < 9; j++) {
+                if (currentBoard[i][j] === this.BLANK) {
+                  r = i;
+                  c = j;
+                  isEmpty = true;
+                  break;
+                }
+              }
+              if (isEmpty) break;
+            }
+
+            if (!isEmpty) {
+              count++;
+              return;
+            }
+
+            for (let num = 1; num <= 9; num++) {
+              if (this.isValid(currentBoard, r, c, num)) {
+                currentBoard[r][c] = num;
+                solveInternal(currentBoard);
+                currentBoard[r][c] = this.BLANK;
+              }
+            }
+          };
+
+          solveInternal(JSON.parse(JSON.stringify(board)));
+          return count;
+        },
+
         generate(removedCount) {
+          // 1. Generate a full valid board
           const board = Array.from({ length: 9 }, () => Array(9).fill(0));
           this.solve(board);
+
           const solution = JSON.parse(JSON.stringify(board));
           const puzzle = JSON.parse(JSON.stringify(board));
+
+          // 2. Create list of all positions and shuffle them
+          let positions = [];
+          for (let r = 0; r < 9; r++) {
+            for (let c = 0; c < 9; c++) {
+              positions.push({ r, c });
+            }
+          }
+          positions.sort(() => Math.random() - 0.5);
+
+          // 3. Try to remove cells while maintaining a unique solution
           let attempts = removedCount;
-          while (attempts > 0) {
-            let r = Math.floor(Math.random() * 9);
-            let c = Math.floor(Math.random() * 9);
-            if (puzzle[r][c] !== 0) {
-              puzzle[r][c] = 0;
+          // We iterate through shuffled positions to remove them
+          for (let i = 0; i < positions.length && attempts > 0; i++) {
+            const { r, c } = positions[i];
+            const originalVal = puzzle[r][c];
+
+            // Remove number
+            puzzle[r][c] = this.BLANK;
+
+            // Check if still has exactly 1 solution
+            const solutionsCount = this.countSolutions(puzzle);
+
+            if (solutionsCount !== 1) {
+              // If not unique (or 0, impossible here), put it back
+              puzzle[r][c] = originalVal;
+            } else {
+              // Success, one less to remove
               attempts--;
             }
           }
+
           return { puzzle, solution };
         },
       };
@@ -796,6 +872,8 @@
           document.getElementById("settings-modal").classList.add("hidden");
           document.getElementById("pause-overlay").classList.add("hidden");
 
+          // Difficulty Mapping (Number of holes to attempt to create)
+          // Note: Actual holes might be slightly less if uniqueness forces it
           const diffMap = { easy: 30, medium: 40, hard: 50 };
           const removeCount = diffMap[this.state.difficulty] || 40;
 
@@ -933,7 +1011,7 @@
           const correctVal = this.state.solution[r][c];
 
           if (num !== correctVal) {
-            // ERROR (Sem limite agora)
+            // ERROR Logic
             this.state.errors++;
             this.updateUI();
 
@@ -951,6 +1029,9 @@
               cell.style.animation = "";
               cell.innerText = "";
             }, 500);
+
+            // NOTE: We do NOT trigger Game Over here, per request.
+            // Infinite errors allowed.
           } else {
             // CORRECT
             this.state.userGrid[r][c] = num;
@@ -994,7 +1075,6 @@
 
         updateUI() {
           const errEl = document.getElementById("errors-display");
-          // Removemos o limite /3
           errEl.innerText = `${this.state.errors}`;
           errEl.style.color =
             this.state.errors > 0

@@ -1,7 +1,7 @@
 {
   "name": "LiveTagus",
   "short_name": "LiveTagus",
-  "start_url": "/app.html",
+  "start_url": "/app.html?utm_source=pwa",
   "scope": "/",
   "display": "standalone",
   "background_color": "#0f172a",
