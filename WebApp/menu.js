@@ -327,8 +327,11 @@ async function checkApiStatus() {
   }
 
   // 2. Injetar Script Offline
-  const script = document.createElement("script");
-  script.src = "./offline.js";
-  script.defer = true;
-  document.head.appendChild(script);
+  // 2. Injetar Script Offline (Apenas se não existir)
+  if (!document.querySelector('script[src="./offline.js"]')) {
+    const script = document.createElement("script");
+    script.src = "./offline.js";
+    script.defer = true;
+    document.head.appendChild(script);
+  }
 })();
