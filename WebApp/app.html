@@ -200,7 +200,6 @@
   </head>
   <body
     class="h-[100dvh] flex flex-col bg-zinc-50 dark:bg-[#09090b] text-zinc-900 dark:text-zinc-200 font-sans transition-colors duration-300 selection:bg-blue-500/30 overflow-hidden"
-    style="position: fixed; top: 70px"
   >
     <div id="global-nav"></div>
 
@@ -212,7 +211,8 @@
 
     <!-- Main Container -->
     <main
-      class="relative top-0 z-10 w-full max-w-md mx-auto flex flex-col flex-1 overflow-hidden"
+      class="fixed inset-x-0 bottom-0 z-10 w-full max-w-md mx-auto flex flex-col overflow-hidden"
+      style="top: 70px"
       role="main"
     >
       <!-- Compact Header Area (One Line) -->
