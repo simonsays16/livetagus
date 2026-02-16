@@ -1,4 +1,4 @@
-const CACHE_NAME = "livetagus-v.b13.16022026"; // Incrementa isto quando fizeres grandes updates
+const CACHE_NAME = "livetagus-v.b15.16022026"; // Incrementa isto quando fizeres grandes updates
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
