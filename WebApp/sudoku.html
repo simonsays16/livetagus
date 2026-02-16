@@ -11,9 +11,9 @@
       type="image/x-icon"
     />
     <title>Sudoku | LiveTagus</title>
-
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./output.css" />
+    <script src="./menu.js" defer></script>
+    <script src="./sudoku-train.js" defer></script>
 
     <!-- Fonts (Inter & JetBrains Mono) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -29,6 +29,7 @@
         createIcons: () => {
           const icons = {
             "arrow-left": '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+            "arrow-right": '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
             pause:
               '<rect width="4" height="16" x="6" y="4" /><rect width="4" height="16" x="14" y="4" />',
             play: '<polygon points="5 3 19 12 5 21 5 3" />',
@@ -95,7 +96,7 @@
         --numpad-bg: #e4e4e7;
       }
 
-      [data-theme="dark"] {
+      .dark {
         --bg-color: #09090b;
         --card-bg: #18181b;
         --glass-bg: rgba(24, 24, 27, 0.7);
@@ -241,8 +242,76 @@
   </head>
   <!-- h-[100dvh] garante que a altura é correta em mobile com barras de navegação -->
   <body
-    class="h-[100dvh] flex flex-col overflow-hidden w-full max-w-lg mx-auto bg-[var(--bg-color)]"
+    class="h-[100dvh] flex flex-col w-full max-w-lg mx-auto bg-[var(--bg-color)]"
+    style="padding-top: 70px"
   >
+    <div id="global-nav"></div>
+    <div
+      id="train-info-banner"
+      class="w-full px-4 mb-2 z-10 animate-fade-in-up"
+    >
+      <div
+        class="glass-panel rounded-xl p-3 flex justify-between items-center relative overflow-hidden shadow-sm"
+      >
+        <div class="flex flex-col z-10 w-2/3">
+          <div class="flex items-center gap-1.5 mb-1.5">
+            <span
+              id="banner-org"
+              class="text-xs font-bold truncate max-w-[80px]"
+              style="color: var(--text-primary)"
+            >
+              Origem
+            </span>
+            <i
+              data-lucide="arrow-right"
+              class="w-3 h-3 shrink-0"
+              style="color: var(--text-secondary)"
+            ></i>
+            <span
+              id="banner-dst"
+              class="text-xs font-bold truncate max-w-[100px]"
+              style="color: var(--text-primary)"
+            >
+              Destino
+            </span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span
+              id="banner-dot"
+              class="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse shrink-0"
+            ></span>
+            <span
+              id="banner-status"
+              class="text-[9px] uppercase font-bold tracking-wider truncate"
+              style="color: var(--text-secondary)"
+            >
+              A atualizar...
+            </span>
+          </div>
+        </div>
+
+        <div class="flex flex-col items-end z-10 shrink-0">
+          <span
+            class="text-[8px] uppercase font-bold tracking-widest mb-0.5"
+            style="color: var(--text-secondary)"
+          >
+            Próximo
+          </span>
+          <span
+            id="banner-countdown"
+            class="font-mono font-bold text-base leading-none"
+            style="color: var(--accent)"
+          >
+            --:--
+          </span>
+        </div>
+
+        <div
+          class="absolute -right-4 -top-4 w-16 h-16 opacity-10 blur-xl rounded-full pointer-events-none"
+          style="background-color: var(--accent)"
+        ></div>
+      </div>
+    </div>
     <!-- Header Compacto -->
     <header
       class="flex-none pt-4 pb-2 px-4 flex justify-between items-center z-10"
@@ -347,7 +416,7 @@
             class="w-10 h-10 flex items-center justify-center rounded-full bg-[var(--input-bg)] shadow-sm active:scale-95 transition-transform"
             style="color: var(--text-secondary)"
           >
-            <i data-lucide="arrow-left" class="w-5 h-5 rotate-180"></i>
+            <i data-lucide="arrow-right" class="w-5 h-5 rotate-180"></i>
           </div>
           <span
             class="text-[9px] font-bold uppercase tracking-wider"
@@ -419,64 +488,75 @@
     </main>
 
     <!-- Numpad Fixo no fundo -->
-    <footer class="flex-none pb-safe pt-2 px-2 w-full mb-4">
+    <div class="flex-none pb-safe pt-2 px-2 w-full mb-4">
       <div class="w-full grid grid-cols-9 gap-1 h-14 sm:h-16">
         <button
+          id="numpad-1"
           class="numpad-btn rounded-lg text-xl sm:text-2xl font-bold flex items-center justify-center shadow-sm"
           onclick="game.inputNumber(1)"
         >
           1
         </button>
         <button
+          id="numpad-2"
           class="numpad-btn rounded-lg text-xl sm:text-2xl font-bold flex items-center justify-center shadow-sm"
           onclick="game.inputNumber(2)"
         >
           2
         </button>
         <button
+          id="numpad-3"
           class="numpad-btn rounded-lg text-xl sm:text-2xl font-bold flex items-center justify-center shadow-sm"
           onclick="game.inputNumber(3)"
         >
           3
         </button>
         <button
+          id="numpad-4"
           class="numpad-btn rounded-lg text-xl sm:text-2xl font-bold flex items-center justify-center shadow-sm"
           onclick="game.inputNumber(4)"
         >
           4
         </button>
         <button
+          id="numpad-5"
           class="numpad-btn rounded-lg text-xl sm:text-2xl font-bold flex items-center justify-center shadow-sm"
           onclick="game.inputNumber(5)"
         >
           5
         </button>
         <button
+          id="numpad-6"
           class="numpad-btn rounded-lg text-xl sm:text-2xl font-bold flex items-center justify-center shadow-sm"
           onclick="game.inputNumber(6)"
         >
           6
         </button>
         <button
+          id="numpad-7"
           class="numpad-btn rounded-lg text-xl sm:text-2xl font-bold flex items-center justify-center shadow-sm"
           onclick="game.inputNumber(7)"
         >
           7
         </button>
         <button
+          id="numpad-8"
           class="numpad-btn rounded-lg text-xl sm:text-2xl font-bold flex items-center justify-center shadow-sm"
           onclick="game.inputNumber(8)"
         >
           8
         </button>
         <button
+          id="numpad-9"
           class="numpad-btn rounded-lg text-xl sm:text-2xl font-bold flex items-center justify-center shadow-sm"
           onclick="game.inputNumber(9)"
         >
           9
         </button>
       </div>
-    </footer>
+    </div>
+
+    <div id="global-footer"></div>
 
     <!-- MODALS -->
 
@@ -523,7 +603,7 @@
         ></div>
 
         <div class="space-y-6">
-          <!-- Theme -->
+          <!-- Theme 
           <div>
             <span
               class="text-xs font-bold uppercase tracking-wider block mb-3"
@@ -551,7 +631,7 @@
                 Escuro
               </button>
             </div>
-          </div>
+          </div>-->
 
           <!-- Difficulty -->
           <div>
@@ -660,55 +740,6 @@
     </div>
 
     <script>
-      const themeManager = {
-        init() {
-          const saved = localStorage.getItem("theme") || "system";
-          this.set(saved);
-        },
-        set(mode) {
-          let isDark = mode === "dark";
-          if (mode === "system") {
-            isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-          }
-
-          document.documentElement.setAttribute(
-            "data-theme",
-            isDark ? "dark" : "light",
-          );
-          localStorage.setItem("theme", mode);
-
-          const btnLight = document.getElementById("theme-btn-light");
-          const btnDark = document.getElementById("theme-btn-dark");
-
-          // Reset styles
-          [btnLight, btnDark].forEach((btn) => {
-            btn.classList.remove(
-              "bg-[var(--accent)]",
-              "text-white",
-              "border-transparent",
-            );
-            btn.classList.add(
-              "bg-[var(--input-bg)]",
-              "border-[var(--grid-line)]",
-            );
-            btn.style.color = "var(--text-primary)";
-          });
-
-          // Set Active
-          const activeBtn = isDark ? btnDark : btnLight;
-          activeBtn.classList.remove(
-            "bg-[var(--input-bg)]",
-            "border-[var(--grid-line)]",
-          );
-          activeBtn.classList.add(
-            "bg-[var(--accent)]",
-            "text-white",
-            "border-transparent",
-          );
-          activeBtn.style.color = "white";
-        },
-      };
-
       const sudokuEngine = {
         BLANK: 0,
 
@@ -852,7 +883,6 @@
         timerInterval: null,
 
         init() {
-          themeManager.init();
           this.initGame();
 
           // Keyboard support (Desktop fallback)
@@ -891,6 +921,7 @@
           this.renderBoard();
           this.updateUI();
           this.startTimer();
+          this.updateNumpad();
           this.loadBestTime();
         },
 
@@ -1039,6 +1070,7 @@
             this.renderBoard();
             this.selectCell(r, c);
             this.checkWin();
+            this.updateNumpad();
           }
         },
 
@@ -1051,6 +1083,7 @@
           delete this.state.notes[`${r}-${c}`];
           this.renderBoard();
           this.selectCell(r, c);
+          this.updateNumpad();
         },
 
         toggleNotes() {
@@ -1070,7 +1103,9 @@
         },
 
         undo() {
-          alert("Em breve!");
+          alert(
+            "Em breve poderás voltar para trás! Até lá é um botão inútil :)",
+          );
         },
 
         updateUI() {
@@ -1118,11 +1153,49 @@
           }
         },
 
+        // --- NOVA FUNÇÃO ---
+        updateNumpad() {
+          const counts = {
+            1: 0,
+            2: 0,
+            3: 0,
+            4: 0,
+            5: 0,
+            6: 0,
+            7: 0,
+            8: 0,
+            9: 0,
+          };
+          // Conta quantas vezes cada número certo está no tabuleiro
+          for (let r = 0; r < 9; r++) {
+            for (let c = 0; c < 9; c++) {
+              const val = this.state.userGrid[r][c];
+              if (val !== 0 && val === this.state.solution[r][c]) {
+                counts[val]++;
+              }
+            }
+          }
+          // Atualiza a opacidade dos botões
+          for (let i = 1; i <= 9; i++) {
+            const btn = document.getElementById(`numpad-${i}`);
+            if (btn) {
+              if (counts[i] >= 9) {
+                // Escurece o botão e bloqueia cliques
+                btn.classList.add("opacity-20", "pointer-events-none");
+              } else {
+                btn.classList.remove("opacity-20", "pointer-events-none");
+              }
+            }
+          }
+        },
+
+        // --- CORREÇÕES NO SETTINGS E DIFICULDADE ---
         openSettings() {
           this.state.isPaused = true;
           document.getElementById("settings-modal").classList.remove("hidden");
           document.getElementById("settings-modal").classList.add("flex");
 
+          // Corrige a lógica visual dos botões de dificuldade
           document.querySelectorAll(".diff-btn").forEach((btn) => {
             if (btn.dataset.diff === this.state.difficulty) {
               btn.classList.add(
@@ -1131,9 +1204,11 @@
                 "border-transparent",
               );
               btn.classList.remove(
-                "hover:bg-[var(--input-bg)]",
+                "bg-[var(--input-bg)]",
                 "border-[var(--grid-line)]",
+                "text-[var(--text-primary)]",
               );
+              btn.style.color = "white";
             } else {
               btn.classList.remove(
                 "bg-[var(--accent)]",
@@ -1144,19 +1219,21 @@
                 "bg-[var(--input-bg)]",
                 "border-[var(--grid-line)]",
               );
+              btn.style.color = "var(--text-primary)";
             }
           });
+        },
+
+        setDifficulty(diff) {
+          this.state.difficulty = diff;
+          this.initGame(); // Reinicia o jogo automaticamente
+          this.closeSettings(); // Fecha as definições
         },
 
         closeSettings() {
           this.state.isPaused = false;
           document.getElementById("settings-modal").classList.add("hidden");
           document.getElementById("settings-modal").classList.remove("flex");
-        },
-
-        setDifficulty(diff) {
-          this.state.difficulty = diff;
-          this.openSettings();
         },
 
         restartGame() {
@@ -1213,6 +1290,7 @@
       window.onload = () => {
         if (window.lucide) lucide.createIcons();
         game.init();
+        initSudokuTrainBanner(); // Chama a nova função do sudoku-train.js
       };
     </script>
     <style>

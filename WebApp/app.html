@@ -56,6 +56,7 @@
     <link rel="stylesheet" href="./output.css" />
     <script src="./offline.js"></script>
     <script src="./menu.js" defer></script>
+    <script src="./spotifycard.js" defer></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -942,26 +943,34 @@
         },
 
         checkSudoku: (trains) => {
-          const hasSignificantDelay = trains.some((t) => {
-            if (t.status.includes("Atraso")) {
-              const match = t.status.match(/(\d+)/);
-              if (match && parseInt(match[1]) >= 5) return true;
-            }
-            return false;
-          });
+          // Se não houver comboios nenhuns (fim do dia, offline, etc), não mostra
+          if (!trains || trains.length === 0) return null;
 
-          if (hasSignificantDelay) {
+          // 1. Encontra o próximo comboio efetivo (o primeiro que ainda não passou)
+          let nextTrain = trains.find(
+            (t) => t.isEffectiveFuture && !t.isSuppressed,
+          );
+
+          // Fallbacks de segurança caso seja o fim do dia
+          if (!nextTrain) nextTrain = trains.find((t) => !t.isSuppressed);
+          if (!nextTrain) nextTrain = trains[0];
+
+          // 2. RETORNA SEMPRE O AVISO (VERSÃO DE TESTE)
+          if (nextTrain) {
             return {
               id: "sudoku-promo",
               tipo: "informacao",
               nome: "Tempo de Espera?",
               mensagem: "Aborrecido? Joga Sudoku!",
-              textolink: "Brevemente",
-              link: "#",
+              textolink: "Jogar",
               isSudoku: true,
               icon: "gamepad-2",
+              // Guarda a info extra do próximo comboio para o botão do Sudoku
+              trainId: nextTrain.id,
+              trainDest: nextTrain.dest,
             };
           }
+
           return null;
         },
 
@@ -1022,7 +1031,7 @@
               const txt = alert.textolink || "Ver";
               actionHtml = `<a href="${alert.link}" target="_blank" class="ml-auto shrink-0 text-[9px] font-bold uppercase tracking-wider text-blue-500 border border-blue-500/30 px-3 py-1.5 rounded transition-colors active:scale-95">${txt}</a>`;
             } else if (alert.isSudoku) {
-              actionHtml = `<span class="ml-auto shrink-0 text-[9px] font-bold uppercase text-zinc-400 px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 rounded cursor-not-allowed">Brevemente</span>`;
+              actionHtml = `<a href="./sudoku.html" class="ml-auto shrink-0 text-[9px] font-bold uppercase tracking-wider text-white bg-[var(--accent,#3b82f6)] px-3 py-1.5 rounded transition-transform active:scale-95 shadow-sm">Jogar</a>`;
             }
 
             // O Card (w-full flex-none snap-center é o segredo do layout)
@@ -2296,65 +2305,6 @@
 
         if (window.lucide) lucide.createIcons();
       }
-
-      // --- Lógica do Cartão Spotify (Leitura Direta do JSON) ---
-      const SPOTIFY_API_URL = "https://api.npoint.io/0f0a3c1ca3b044f666e8";
-
-      async function loadSpotifyCard() {
-        const container = document.getElementById("spotify-card-container");
-        const coverImg = document.getElementById("sp-cover");
-        const titleText = document.getElementById("sp-title");
-        const artistText = document.getElementById("sp-artist");
-        const btnLink = document.getElementById("sp-link");
-        const badge = document.getElementById("quinzena-badge");
-
-        try {
-          // Adiciona timestamp para evitar cache antiga do JSON
-          const response = await fetch(`${SPOTIFY_API_URL}?t=${Date.now()}`, {
-            cache: "no-store",
-          });
-          if (!response.ok) return;
-          const data = await response.json();
-
-          // Verifica se temos os dados mínimos
-          if (data.album_link || data.album_id) {
-            // 1. Preencher Textos
-            artistText.innerText = data.artist_name || "Artista";
-            titleText.innerText = data.album_name || "Sugestão Musical";
-
-            // 2. Preencher Link
-            btnLink.href =
-              data.album_link ||
-              `https://open.spotify.com/album/${data.album_id}`;
-
-            // 3. Preencher Imagem (Direta do JSON)
-            if (data.album_cover) {
-              coverImg.src = data.album_cover;
-            }
-
-            // 4. Lógica da Nota/Badge
-            if (data.nota && data.nota.trim() !== "") {
-              if (badge) badge.innerText = data.nota;
-            } else {
-              // Fallback automático se o campo "nota" estiver vazio
-              const agora = new Date();
-              const mes = agora
-                .toLocaleString("pt-PT", { month: "short" })
-                .replace(".", "");
-              const mesCap = mes.charAt(0).toUpperCase() + mes.slice(1);
-              const parte = agora.getDate() <= 15 ? "1.ª" : "2.ª";
-              if (badge) badge.innerText = `${parte} Quiz. ${mesCap}`;
-            }
-
-            // Mostrar o cartão
-            container.classList.remove("hidden");
-            if (window.lucide) lucide.createIcons();
-          }
-        } catch (e) {
-          console.error("Erro no widget Spotify:", e);
-        }
-      }
-      document.addEventListener("DOMContentLoaded", loadSpotifyCard);
     </script>
   </body>
 </html>

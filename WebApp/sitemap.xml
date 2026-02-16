@@ -18,21 +18,21 @@
       <loc>https://livetagus.pt/horarios</loc>
       <lastmod>2026-02-04</lastmod>
       <changefreq>monthly</changefreq>
-      <priority>0.8</priority>
+      <priority>1</priority>
    </url>
 
    <url>
       <loc>https://livetagus.pt/sobre</loc>
       <lastmod>2026-02-04</lastmod>
       <changefreq>monthly</changefreq>
-      <priority>0.7</priority>
+      <priority>1</priority>
    </url>
 
    <url>
       <loc>https://livetagus.pt/privacidade</loc>
       <lastmod>2026-02-04</lastmod>
       <changefreq>monthly</changefreq>
-      <priority>0.6</priority>
+      <priority>0.8</priority>
    </url>
 
    <url>
