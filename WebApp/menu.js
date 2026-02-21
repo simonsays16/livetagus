@@ -42,8 +42,8 @@ function injectNavigation() {
                 <a href="./" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Início</a>
                 <a href="./app.html" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-black dark:text-white transition-colors uppercase italic">Tempo Real</a>
                 <a href="./horarios.html" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Horários</a>
-                <a href="https://status.livetagus.pt/pt-pt" target="_blank" rel="noopener noreferrer" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Estado</a>
-                <a href="./sobre.html" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Sobre</a>
+                <a id="btn-menu-estado" href="https://status.livetagus.pt/pt-pt" target="_blank" rel="noopener noreferrer" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Estado</a>
+                <a id="btn-menu-sobre" href="./sobre.html" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Sobre</a>
             </nav>
 
             <div class="relative z-10 border-t border-zinc-200 dark:border-white/10 pt-8 mt-8 md:pb-0">
@@ -322,12 +322,11 @@ async function checkApiStatus() {
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker
       .register("./sw.js")
-      .then(() => console.log("[SW] Registado com sucesso"))
+      // .then(() => console.log("[SW] Registado com sucesso"))
       .catch((err) => console.log("[SW] Falha ao registar:", err));
   }
 
   // 2. Injetar Script Offline
-  // 2. Injetar Script Offline (Apenas se não existir)
   if (!document.querySelector('script[src="./offline.js"]')) {
     const script = document.createElement("script");
     script.src = "./offline.js";

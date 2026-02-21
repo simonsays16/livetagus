@@ -1,4 +1,4 @@
-const CACHE_NAME = "livetagus-v.b12.20022026";
+const CACHE_NAME = "livetagus-v.b1.21022026";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
@@ -21,7 +21,7 @@ const ASSETS_TO_CACHE = [
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log("[Service Worker] Caching app shell");
+      // console.log("[Service Worker] Caching app shell");
       return cache.addAll(ASSETS_TO_CACHE);
     }),
   );
@@ -44,7 +44,7 @@ self.addEventListener("activate", (event) => {
   return self.clients.claim();
 });
 
-// Fetch: Serve do cache primeiro, rede depois (Offline-First)
+// offline-first: procurar ficheiro em cache depois online
 self.addEventListener("fetch", (event) => {
   if (
     event.request.url.includes("api.") ||
@@ -54,22 +54,30 @@ self.addEventListener("fetch", (event) => {
   }
 
   event.respondWith(
-    caches.match(event.request).then((response) => {
+    caches.match(event.request).then(async (response) => {
+      // devolver ficheiro em cache
       if (response) return response;
 
-      // Lógica para Clean URLs: Se pedires /app, tenta buscar /app.html na cache
       const url = new URL(event.request.url);
+
+      // lgica para clean URLs: tenta buscar a versão .html na cache
       if (
         event.request.mode === "navigate" &&
         !url.pathname.endsWith(".html")
       ) {
-        return (
-          caches.match(url.pathname + ".html") ||
-          caches.match(url.pathname + "/index.html")
-        );
+        const htmlMatch = await caches.match(url.pathname + ".html");
+        if (htmlMatch) return htmlMatch;
+
+        const indexMatch = await caches.match(url.pathname + "/index.html");
+        if (indexMatch) return indexMatch;
       }
 
-      return fetch(event.request);
+      // correção: nada em cache -> web
+      return fetch(event.request).catch((err) => {
+        console.error("[SW] Falha na rede:", err);
+        // Opcional: No futuro, podes retornar uma página offline.html aqui
+        // return caches.match("./offline-page.html");
+      });
     }),
   );
 });

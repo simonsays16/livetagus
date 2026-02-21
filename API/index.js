@@ -552,7 +552,7 @@ const processTrain = async (richInfo, originDateStr) => {
       horaRealStr = formatTimeHHMMSS(new Date(timestamp));
       if (dateChegadaProg) {
         atrasoNode =
-          Math.floor((timestamp - dateChegadaProg.getTime()) / 1000) - 15;
+          Math.floor((timestamp - dateChegadaProg.getTime()) / 1000) - 10; // Retirados 10 segundos para delays na conexão
         currentDelay = atrasoNode;
       }
     }
