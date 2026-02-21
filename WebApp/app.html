@@ -215,7 +215,7 @@
       style="top: 70px"
       role="main"
     >
-      <!-- Compact Header Area (One Line) -->
+      <!-- Compact Header Area -->
       <div class="sticky top-1 px-6 pt-2 pb-3 z-30 flex flex-col flex-none">
         <div class="flex items-center justify-between w-full gap-2 relative">
           <!-- Origin Select -->
@@ -898,6 +898,8 @@
         const sec = Math.floor((diff % 60) / 10) * 10;
         document.getElementById("countdown-display").innerText =
           `${min} min ${sec.toString().padStart(2, "0")} s`;
+        if (min > 100)
+          document.getElementById("countdown-display").innerText = `AMANHÃ`;
         const header = document.getElementById("next-train-header");
         header.classList.remove("hidden");
         requestAnimationFrame(() => header.classList.remove("opacity-0"));
@@ -982,7 +984,8 @@
           const dismissed = sessionStorage.getItem("pwa_dismissed");
 
           if (!isStandalone && !dismissed) {
-            return {
+            return null; // Desativação para maior partilha momentanea do jogo de sudoku
+            /*return {
               id: "pwa-install",
               tipo: "informacao",
               nome: "Instalar App",
@@ -990,7 +993,7 @@
               textolink: "Instalar",
               isPWA: true,
               icon: "download",
-            };
+            };*/
           }
           return null;
         },
@@ -1489,6 +1492,8 @@
         const sec = Math.floor((diff % 60) / 10) * 10;
         document.getElementById("countdown-display").innerText =
           `${min} min ${sec.toString().padStart(2, "0")} s`;
+        if (min > 100)
+          document.getElementById("countdown-display").innerText = `AMANHÃ`;
         const header = document.getElementById("next-train-header");
         header.classList.remove("hidden");
         requestAnimationFrame(() => header.classList.remove("opacity-0"));

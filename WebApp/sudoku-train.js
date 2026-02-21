@@ -124,7 +124,7 @@ async function fetchNextTrainAndSetupBanner() {
       document.getElementById("banner-dot").className =
         `w-1.5 h-1.5 rounded-full animate-pulse shrink-0 ${dotColor}`;
     } else {
-      // Se não houver comboios, a origem e destino já estão preenchidos!
+      // Se não houver comboios live
       document.getElementById("banner-status").innerText = "Fim de serviço";
       document.getElementById("banner-countdown").innerText = "AMANHÃ";
       document.getElementById("banner-dot").className =

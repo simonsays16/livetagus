@@ -1,4 +1,4 @@
-const CACHE_NAME = "livetagus-v.b18.16022026"; // Incrementa isto quando fizeres grandes updates
+const CACHE_NAME = "livetagus-v.b12.20022026";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
@@ -46,7 +46,6 @@ self.addEventListener("activate", (event) => {
 
 // Fetch: Serve do cache primeiro, rede depois (Offline-First)
 self.addEventListener("fetch", (event) => {
-  // Ignora pedidos para outras APIs (ex: npoint, livetagus-api) para tentar sempre a rede primeiro nelas
   if (
     event.request.url.includes("api.") ||
     event.request.url.includes("npoint")
@@ -56,13 +55,21 @@ self.addEventListener("fetch", (event) => {
 
   event.respondWith(
     caches.match(event.request).then((response) => {
-      return (
-        response ||
-        fetch(event.request).catch(() => {
-          // Se falhar a rede e não estiver em cache (ex: imagem externa), não faz nada ou retorna fallback
-          return null;
-        })
-      );
+      if (response) return response;
+
+      // Lógica para Clean URLs: Se pedires /app, tenta buscar /app.html na cache
+      const url = new URL(event.request.url);
+      if (
+        event.request.mode === "navigate" &&
+        !url.pathname.endsWith(".html")
+      ) {
+        return (
+          caches.match(url.pathname + ".html") ||
+          caches.match(url.pathname + "/index.html")
+        );
+      }
+
+      return fetch(event.request);
     }),
   );
 });
