@@ -70,14 +70,14 @@ const processCompletedTrain = (nodes, frozenPredictions, history) => {
         stats.stations[nome].total++;
         stats.stations[nome].sumDiff += diff;
 
-        if (diff <= 30) {
+        if (diff <= 60) {
           stats.stations[nome].hitsUnder30s++;
         }
       }
     }
   });
 
-  // --- NOVO: Guarda no disco sempre que um comboio acaba a viagem ---
+  // guardar viagem quando terminar
   saveStatsToDisk();
 };
 
