@@ -176,6 +176,7 @@ loadDataFiles();
 let OUTPUT_CACHE = {};
 let TRAIN_MEMORY = {}; // { [id]: { history: {}, lastDelay: 0, nextWakeUp: 0 } }
 let FUTURE_TRAINS_CACHE = {};
+let IS_CYCLE_RUNNING = false; // #Fix 2
 
 // --- DATE & SCHEDULE HELPERS ---
 
@@ -408,13 +409,20 @@ const processTrain = async (richInfo, originDateStr) => {
   const nowObj = new Date();
   const direction = richInfo.direction;
 
+  // inicializaçao da memoria
   if (!TRAIN_MEMORY[trainId]) {
-    TRAIN_MEMORY[trainId] = { history: {}, lastDelay: 0, nextWakeUp: 0 };
+    TRAIN_MEMORY[trainId] = {
+      history: {},
+      lastDelay: 0,
+      nextWakeUp: 0,
+      lastResult: null, // FIx #2
+    };
   }
   const mem = TRAIN_MEMORY[trainId];
 
-  if (nowTime < mem.nextWakeUp && OUTPUT_CACHE[trainId]) {
-    return OUTPUT_CACHE[trainId];
+  // Fix #2 - usar mem.lastResult em vez de OUTPUT_CACHE[trainId]
+  if (nowTime < mem.nextWakeUp && mem.lastResult) {
+    return mem.lastResult;
   }
 
   const richKey = richInfo.roma_areeiro
@@ -602,6 +610,7 @@ const processTrain = async (richInfo, originDateStr) => {
 
   trainOutput.AtrasoCalculado = currentDelay;
   mem.lastDelay = currentDelay;
+  mem.lastResult = trainOutput; // FIX #2 - guarda o resultado correto no próprio comboio
   return trainOutput;
 };
 
@@ -670,8 +679,17 @@ const scheduleNextTick = () => {
   const nextTarget = (Math.floor(seconds / 10) + 1) * 10;
   const delay = (nextTarget - seconds) * 1000 - ms;
 
-  setTimeout(() => {
-    updateCycle();
+  setTimeout(async () => {
+    // passa a async
+    if (!IS_CYCLE_RUNNING) {
+      // #Fix #2 - só corre se não estiver já a correr
+      IS_CYCLE_RUNNING = true;
+      try {
+        await updateCycle(); // proteçao contra processos em simultaneo
+      } finally {
+        IS_CYCLE_RUNNING = false;
+      }
+    }
     scheduleNextTick();
   }, delay || 10000);
 };
