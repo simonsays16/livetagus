@@ -702,7 +702,7 @@ app.get("/fertagus", protectRoute, (req, res) => res.json(OUTPUT_CACHE));
 app.get("/", (req, res) =>
   res.json({
     status: "online",
-    version: "4.3.5",
+    version: "4.3.7",
     aviso:
       "Pedimos que não uses o nosso endpoint diretamente! Verifica toda as informações e código no github.",
     operational: getOperationalInfo(),
@@ -710,7 +710,7 @@ app.get("/", (req, res) =>
 );
 
 app.listen(PORT, () => {
-  console.log(`LiveTagus API v4.3.5 ativa na porta ${PORT}`);
+  console.log(`LiveTagus API v4.3.7 ativa na porta ${PORT}`);
   console.log(`Endpoint /fertagus protegido com API_KEY.`);
   checkOfflineTrains();
   updateCycle();
