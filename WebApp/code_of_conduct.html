@@ -18,6 +18,7 @@
     <title>Código de Conduta | LiveTagus</title>
     <link href="./output.css" rel="stylesheet" />
     <script src="./menu.js" defer></script>
+    <script src="./tabs.js" defer></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -53,14 +54,12 @@
             class="flex items-center gap-2 bg-zinc-100 dark:bg-white/5 p-1 rounded-sm"
           >
             <button
-              onclick="switchLang('pt')"
               id="btn-pt"
               class="px-4 py-1.5 text-xs font-bold uppercase tracking-widest rounded-sm transition-all bg-white dark:bg-zinc-800 shadow-sm text-zinc-900 dark:text-white"
             >
               PT
             </button>
             <button
-              onclick="switchLang('en')"
               id="btn-en"
               class="px-4 py-1.5 text-xs font-bold uppercase tracking-widest rounded-sm transition-all text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
             >
@@ -610,46 +609,5 @@
     </main>
 
     <div id="global-footer"></div>
-    <script>
-      function switchLang(lang) {
-        const ptContent = document.getElementById("content-pt");
-        const enContent = document.getElementById("content-en");
-        const btnPt = document.getElementById("btn-pt");
-        const btnEn = document.getElementById("btn-en");
-
-        const activeClass = [
-          "bg-white",
-          "dark:bg-zinc-800",
-          "shadow-sm",
-          "text-zinc-900",
-          "dark:text-white",
-        ];
-        const inactiveClass = [
-          "text-zinc-400",
-          "hover:text-zinc-600",
-          "dark:hover:text-zinc-200",
-          "bg-transparent",
-          "shadow-none",
-        ];
-
-        if (lang === "pt") {
-          ptContent.classList.remove("hidden");
-          enContent.classList.add("hidden");
-
-          btnPt.classList.add(...activeClass);
-          btnPt.classList.remove(...inactiveClass);
-          btnEn.classList.remove(...activeClass);
-          btnEn.classList.add(...inactiveClass);
-        } else {
-          ptContent.classList.add("hidden");
-          enContent.classList.remove("hidden");
-
-          btnEn.classList.add(...activeClass);
-          btnEn.classList.remove(...inactiveClass);
-          btnPt.classList.remove(...activeClass);
-          btnPt.classList.add(...inactiveClass);
-        }
-      }
-    </script>
   </body>
 </html>

@@ -1,7 +1,5 @@
 User-agent: *
-Disallow: /roadmap
 Disallow: /sudoku
-Disallow: /appv2
 Disallow: /dev
 Disallow: /404
 Allow: /

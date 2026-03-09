@@ -15,13 +15,14 @@
 
     <meta
       name="description"
-      content="Sobre o LiveTagus, Guia de Utilização, Termos de Serviço e Política de Privacidade."
+      content="Descobre como funciona a LiveTagus, um projeto open-source independente criado para melhorar as tuas viagens. Vê o nosso guia de utilização e apoia o projeto."
     />
     <meta name="theme-color" content="#09090b" />
 
-    <title>Sobre & Ajuda | LiveTagus</title>
+    <title>Sobre o Projeto & Ajuda | LiveTagus</title>
     <link href="./output.css" rel="stylesheet" />
     <script src="./menu.js" defer></script>
+    <script src="./sobre.js" defer></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -98,7 +99,6 @@
             aria-label="Secções de Informação"
           >
             <button
-              onclick="switchTab('geral')"
               id="tab-btn-geral"
               class="px-5 py-2.5 text-sm font-medium rounded-full border transition-all whitespace-nowrap tab-active"
               role="tab"
@@ -108,7 +108,6 @@
               O Projeto
             </button>
             <button
-              onclick="switchTab('ajuda')"
               id="tab-btn-ajuda"
               class="px-5 py-2.5 text-sm font-medium rounded-full border transition-all whitespace-nowrap tab-inactive"
               role="tab"
@@ -118,7 +117,6 @@
               Guia de Utilização
             </button>
             <button
-              onclick="switchTab('tech')"
               id="tab-btn-tech"
               class="px-5 py-2.5 text-sm font-medium rounded-full border transition-all whitespace-nowrap tab-inactive"
               role="tab"
@@ -484,26 +482,6 @@
                   </div>
                   <div>
                     <h4 class="text-sm font-bold text-zinc-900 dark:text-white">
-                      Escolha o Sentido
-                    </h4>
-                    <p class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">
-                      Utilize as abas na parte inferior do ecrã para alternar
-                      entre
-                      <strong>Sentido Lisboa</strong>
-                      (Sul → Norte) e
-                      <strong>Sentido Margem</strong>
-                      (Norte → Sul).
-                    </p>
-                  </div>
-                </div>
-                <div class="flex gap-4 items-start">
-                  <div
-                    class="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 text-xs font-bold"
-                  >
-                    2
-                  </div>
-                  <div>
-                    <h4 class="text-sm font-bold text-zinc-900 dark:text-white">
                       Selecione o Percurso
                     </h4>
                     <p class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">
@@ -520,17 +498,39 @@
                   <div
                     class="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 text-xs font-bold"
                   >
-                    3
+                    2
                   </div>
                   <div>
                     <h4 class="text-sm font-bold text-zinc-900 dark:text-white">
                       Horário Inteligente
                     </h4>
                     <p class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">
-                      Nas definições (ícone ⚙️), pode ativar o Horário
-                      Inteligente. Isto fará a app abrir automaticamente no
-                      sentido correto dependendo da hora do dia (Ex: Manhã →
-                      Lisboa / Tarde → Margem).
+                      Nas definições, no menu (Canto superior direito), pode
+                      ativar o Horário Inteligente. Isto fará a app abrir
+                      automaticamente no sentido correto dependendo da hora do
+                      dia (Ex: Manhã → Lisboa / Tarde → Margem).
+                      <br />
+                      Tem de estar na app para poder ativar esta função.
+                      <br />
+                      <br />
+                      Aviso: Nós não recolhemos dados sobre a sua escolha,
+                      ficando guardado apenas no seu telemóvel.
+                    </p>
+                  </div>
+                </div>
+                <div class="flex gap-4 items-start">
+                  <div
+                    class="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 text-xs font-bold"
+                  >
+                    3
+                  </div>
+                  <div>
+                    <h4 class="text-sm font-bold text-zinc-900 dark:text-white">
+                      Jogo Sudoku
+                    </h4>
+                    <p class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">
+                      Enquanto espera pelo comboio temos disponível um jogo de
+                      sudoku na app com informações sobre o próximo comboio
                     </p>
                   </div>
                 </div>
@@ -556,7 +556,7 @@
                     d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                   ></path>
                 </svg>
-                Estados de Circulação
+                Estados de Circulação (Apenas disponível na App)
               </h2>
               <p class="text-xs text-zinc-600 dark:text-zinc-400 mt-1 mb-4">
                 Comboios em circulação ou suprimidos
@@ -800,39 +800,5 @@
     </main>
 
     <div id="global-footer"></div>
-
-    <script>
-      function switchTab(tabId) {
-        // 1. Esconder todos os conteúdos
-        document.querySelectorAll(".tab-content").forEach((content) => {
-          content.classList.add("hidden");
-        });
-
-        // 2. Desativar todos os botões (remover estilo ativo)
-        document.querySelectorAll('button[role="tab"]').forEach((btn) => {
-          btn.classList.remove("tab-active");
-          btn.classList.add("tab-inactive");
-          btn.setAttribute("aria-selected", "false");
-        });
-
-        // 3. Mostrar o conteúdo selecionado
-        const selectedContent = document.getElementById("content-" + tabId);
-        if (selectedContent) {
-          selectedContent.classList.remove("hidden");
-          // Reiniciar a animação
-          selectedContent.style.animation = "none";
-          selectedContent.offsetHeight; /* trigger reflow */
-          selectedContent.style.animation = null;
-        }
-
-        // 4. Ativar o botão selecionado
-        const selectedBtn = document.getElementById("tab-btn-" + tabId);
-        if (selectedBtn) {
-          selectedBtn.classList.remove("tab-inactive");
-          selectedBtn.classList.add("tab-active");
-          selectedBtn.setAttribute("aria-selected", "true");
-        }
-      }
-    </script>
   </body>
 </html>

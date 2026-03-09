@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initTheme();
   initMenuInteractions();
   checkApiStatus(); // Inicia a verificação do status
+  updateAppVersion(); // bsuca a versão ao sw.js
 });
 
 // --- 1. BARRA DE NAVEGAÇÃO E MENU LATERAL ---
@@ -59,7 +60,7 @@ function injectNavigation() {
                     </div>
 
                     <div class="flex flex-col items-start gap-3">
-                        <p class="text-[10px] text-zinc-600 font-mono mb-0 leading-none">LiveTagus • v.b3.02032026</p>
+                        <p id="menu-version-display" class="text-[10px] text-zinc-600 font-mono mb-0 leading-none">LiveTagus • a verificar versão...</p>
                         
                         <div id="api-status-display" class="flex items-center gap-2 mb-1">
                             <span id="status-dot" class="w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-700"></span>
@@ -71,7 +72,7 @@ function injectNavigation() {
                                 ${githubIcon}
                             </a>
                             <a href="https://www.netlify.com" target="_blank" aria-label="Alojado na Netlify">
-                                <img id="netlify-badge-menu" src="https://www.netlify.com/assets/badges/netlify-badge-color-accent.svg" alt="Deploys by Netlify" class="h-6 w-auto" width="114" height="51" />
+                                <img id="netlify-badge-menu" src="./imagens/netlify-light.svg" alt="Deploys by Netlify" class="h-6 w-auto" width="114" height="51" />
                             </a>
                         </div>
                     </div>
@@ -95,12 +96,26 @@ function injectFooter() {
             <div class="max-w-4xl mx-auto flex flex-col md:flex-row justify-between gap-10">
                 
                 <div class="space-y-4 md:w-1/2">
-                    <a href="./" class="inline-block hover:opacity-70 transition-opacity" aria-label="Voltar ao início">
-                        <img id="footer-logo" src="${logoSrc}" class="w-10 h-10 opacity-100" alt="LiveTagus" width="40" height="40">
-                    </a>
+                    <div class="flex items-center gap-4">
+                        <a href="./" class="inline-block hover:opacity-70 transition-opacity" aria-label="Voltar ao início">
+                            <img id="footer-logo" src="${logoSrc}" class="w-10 h-10 opacity-100" alt="LiveTagus" width="40" height="40">
+                        </a>
+                        
+                        <div class="w-px h-8 bg-zinc-300 dark:bg-zinc-700"></div> <div class="flex items-center gap-3 text-black dark:text-white">
+                            <a href="https://instagram.com/livetagus" target="_blank" rel="noopener noreferrer" class="hover:opacity-70 transition-opacity" aria-label="Instagram">
+                                <svg fill="currentColor" width="20" height="20" viewBox="0 0 24 24"><path d="M12 2C9.2912 2 8.94131 2 7.86907 2.05643C7.03985 2.07241 6.21934 2.22888 5.44244 2.51919C4.78781 2.77878 4.23476 3.11738 3.67043 3.68172C3.11738 4.23476 2.76749 4.78781 2.51919 5.45372C2.27088 6.08578 2.10158 6.80813 2.05643 7.88036C2.01129 8.94131 2 9.27991 2 12C2 14.7088 2 15.0474 2.05643 16.1196C2.10158 17.1919 2.28217 17.9255 2.51919 18.5576C2.77878 19.2122 3.11738 19.7652 3.67043 20.3296C4.23476 20.8826 4.78781 21.2325 5.44244 21.4808C6.08578 21.7291 6.80813 21.8984 7.86907 21.9436C8.94131 21.9887 9.27991 22 12 22C14.7088 22 15.0474 22 16.1196 21.9436C17.1806 21.8984 17.9142 21.7178 18.5463 21.4808C19.2137 21.2306 19.8184 20.8377 20.3183 20.3296C20.8826 19.7652 21.2212 19.2009 21.4695 18.5576C21.7178 17.9142 21.8871 17.1919 21.9436 16.1196C21.9887 15.0587 22 14.7201 22 12C22 9.2912 21.9887 8.9526 21.9436 7.88036C21.9225 7.05065 21.7622 6.23037 21.4695 5.45372C21.2189 4.78649 20.8261 4.18182 20.3183 3.68172C19.754 3.11738 19.2122 2.77878 18.5463 2.51919C17.7686 2.23315 16.9482 2.08051 16.1196 2.06772C15.0474 2.01129 14.7088 2 12 2ZM11.0971 3.80587H12C14.6637 3.80587 14.9797 3.80587 16.0406 3.8623C16.6724 3.8686 17.2985 3.98313 17.8916 4.2009C18.3657 4.38149 18.693 4.59594 19.0429 4.94582C19.3928 5.29571 19.6072 5.63431 19.7991 6.09706C19.9345 6.45824 20.0925 6.97743 20.1377 7.95937C20.1828 9.00903 20.1941 9.32506 20.1941 12C20.1941 14.6637 20.1941 14.9797 20.1377 16.0406C20.1314 16.6724 20.0169 17.2985 19.7991 17.8916C19.6185 18.3657 19.3928 18.693 19.0429 19.0429C18.7043 19.3928 18.3657 19.6072 17.8916 19.7878C17.2992 20.0094 16.6731 20.1278 16.0406 20.1377C14.9797 20.1828 14.6637 20.1941 12 20.1941C9.32506 20.1941 9.00903 20.1941 7.95937 20.1377C7.3238 20.1322 6.69388 20.0177 6.09706 19.7991C5.63431 19.6072 5.307 19.3928 4.94582 19.0429C4.60722 18.7043 4.38149 18.3657 4.2009 17.8916C3.98313 17.2985 3.8686 16.6724 3.8623 16.0406C3.80587 14.9797 3.79458 14.6637 3.79458 12C3.79458 9.32506 3.80587 9.00903 3.85102 7.95937C3.85602 7.32375 3.97057 6.69376 4.18962 6.09706C4.38149 5.63431 4.59594 5.307 4.94582 4.94582C5.29571 4.60722 5.62302 4.38149 6.09706 4.2009C6.69376 3.98185 7.32375 3.86731 7.95937 3.8623C8.87359 3.81716 9.23476 3.80587 11.0971 3.79458V3.80587ZM17.3386 5.46501C17.1815 5.46501 17.0259 5.49596 16.8808 5.55608C16.7356 5.6162 16.6037 5.70433 16.4926 5.81542C16.3815 5.92652 16.2934 6.05841 16.2333 6.20356C16.1732 6.34871 16.1422 6.50429 16.1422 6.6614C16.1422 6.81851 16.1732 6.97408 16.2333 7.11924C16.2934 7.26439 16.3815 7.39628 16.4926 7.50737C16.6037 7.61847 16.7356 7.70659 16.8808 7.76672C17.0259 7.82684 17.1815 7.85779 17.3386 7.85779C17.6559 7.85779 17.9602 7.73174 18.1846 7.50737C18.4089 7.28301 18.535 6.9787 18.535 6.6614C18.535 6.3441 18.4089 6.03979 18.1846 5.81542C17.9602 5.59106 17.6559 5.46501 17.3386 5.46501ZM12 6.86456C11.3256 6.86456 10.6578 6.99739 10.0348 7.25547C9.41169 7.51355 8.84556 7.89182 8.36869 8.36869C7.89182 8.84556 7.51355 9.41169 7.25547 10.0348C6.99739 10.6578 6.86456 11.3256 6.86456 12C6.86456 12.6744 6.99739 13.3422 7.25547 13.9652C7.51355 14.5883 7.89182 15.1544 8.36869 15.6313C8.84556 16.1082 9.41169 16.4864 10.0348 16.7445C10.6578 17.0026 11.3256 17.1354 12 17.1354C13.362 17.1354 14.6682 16.5944 15.6313 15.6313C16.5944 14.6682 17.1354 13.362 17.1354 12C17.1354 10.638 16.5944 9.33178 15.6313 8.36869C14.6682 7.40561 13.362 6.86456 12 6.86456ZM12 8.67043C12.4372 8.67043 12.8702 8.75655 13.2742 8.92388C13.6781 9.0912 14.0452 9.33646 14.3544 9.64564C14.6635 9.95482 14.9088 10.3219 15.0761 10.7258C15.2434 11.1298 15.3296 11.5628 15.3296 12C15.3296 12.4372 15.2434 12.8702 15.0761 13.2742C14.9088 13.6781 14.6635 14.0452 14.3544 14.3544C14.0452 14.6635 13.6781 14.9088 13.2742 15.0761C12.8702 15.2434 12.4372 15.3296 12 15.3296C11.1169 15.3296 10.2701 14.9788 9.64564 14.3544C9.02122 13.7299 8.67043 12.8831 8.67043 12C8.67043 11.1169 9.02122 10.2701 9.64564 9.64564C10.2701 9.02122 11.1169 8.67043 12 8.67043Z"></path></svg>
+                            </a>
+                            <a href="https://www.facebook.com/people/LiveTagus/61583577115985/" target="_blank" rel="noopener noreferrer" class="hover:opacity-70 transition-opacity" aria-label="Facebook">
+                                <svg fill="currentColor" width="20" height="20" viewBox="0 0 24 24"><path d="M23 12C23 5.92487 18.0751 0.999996 12 0.999996C5.92488 0.999996 1 5.92487 1 12C1 17.1588 4.55146 21.4874 9.34266 22.6761V15.3614H7.07438V12H9.34266V10.5516C9.34266 6.80751 11.037 5.07215 14.7128 5.07215C15.4096 5.07215 16.6121 5.20877 17.104 5.34544V8.39261C16.8444 8.36529 16.3935 8.3516 15.8332 8.3516C14.0295 8.3516 13.3326 9.03484 13.3326 10.8112V12H16.9256L16.3084 15.3614H13.3326V22.9194C18.7792 22.2616 23 17.624 23 12Z"></path></svg>
+                            </a>
+                            <a href="https://bsky.app/profile/livetagus.pt" target="_blank" rel="noopener noreferrer" class="hover:opacity-70 transition-opacity" aria-label="Bluesky">
+                                <svg fill="currentColor" width="20" height="20" viewBox="0 0 24 24"><path d="M6.33526 4.37382C8.62822 6.09522 11.0945 9.58551 12.0001 11.4586C12.9056 9.58565 15.3718 6.09519 17.6649 4.37382C19.3193 3.13172 22 2.17066 22 5.22881C22 5.83957 21.6498 10.3595 21.4445 11.0933C20.7306 13.6444 18.1292 14.2951 15.8152 13.9013C19.86 14.5897 20.8889 16.87 18.6668 19.1502C14.4465 23.4809 12.601 18.0636 12.1278 16.6755C12.0412 16.4211 12.0006 16.302 12 16.4033C11.9994 16.302 11.9588 16.4211 11.8721 16.6755C11.3993 18.0636 9.55378 23.481 5.33322 19.1502C3.11103 16.87 4.13995 14.5896 8.18483 13.9013C5.87077 14.2951 3.26934 13.6444 2.55555 11.0933C2.35016 10.3594 2 5.8395 2 5.22881C2 2.17066 4.68074 3.13172 6.33515 4.37382H6.33526Z"></path></svg>
+                            </a>
+                        </div>
+                    </div>
                     
-                    <p class="text-xs text-zinc-500 max-w-xs leading-relaxed">
-                        LiveTagus • v.b3.02032026<br><br>
+                    <p class="text-xs text-zinc-500 max-w-xs leading-relaxed mt-2">
+                        LiveTagus • <span id="footer-version-display">a verificar versão...</span><br><br>
                         Projeto independente e não oficial. Sem afiliação à Fertagus ou IP. Todos os direitos sobre os dados de circulação pertencem aos respetivos proprietários<br><br>
                         Em caso de dúvida, erro ou sugestão contacte-nos:
                     </p>                    
@@ -142,7 +157,7 @@ function injectFooter() {
                             ${githubIcon}
                         </a>
                         <a href="https://www.netlify.com" target="_blank" rel="noopener noreferrer" class="flex items-center opacity-85 hover:opacity-100">
-                            <img id="netlify-badge-footer" src="https://www.netlify.com/assets/badges/netlify-badge-color-accent.svg" alt="Deploys by Netlify" width="114" height="51" />
+                            <img id="netlify-badge-footer" src="./imagens/netlify-light.svg" alt="Deploys by Netlify" width="114" height="51" />
                         </a>
                     </div>
                 </div>
@@ -215,10 +230,8 @@ function setTheme(mode) {
 
   const logoLight = "./imagens/logotransparente.svg";
   const logoDark = "./imagens/icon.svg";
-  const badgeDark =
-    "https://www.netlify.com/assets/badges/netlify-badge-dark.svg";
-  const badgeLight =
-    "https://www.netlify.com/assets/badges/netlify-badge-light.svg";
+  const badgeDark = "./imagens/netlify-dark.svg";
+  const badgeLight = "./imagens/netlify-light.svg";
 
   if (isDark) {
     html.classList.add("dark");
@@ -334,3 +347,34 @@ async function checkApiStatus() {
     document.head.appendChild(script);
   }
 })();
+
+// --- ATUALIZAÇÃO DINÂMICA DE VERSÃO ---
+async function updateAppVersion() {
+  const menuVersionEl = document.getElementById("menu-version-display");
+  const footerVersionEl = document.getElementById("footer-version-display");
+  const roadmapVersionEl = document.getElementById("roadmap-version-display"); //roadmap
+
+  // versao default
+  let version = "v.base";
+
+  try {
+    const res = await fetch("./sw.js");
+    if (res.ok) {
+      const text = await res.text();
+      const match = text.match(
+        /CACHE_NAME\s*=\s*["']livetagus-(v\.[^"']+)["']/,
+      );
+
+      if (match && match[1]) {
+        version = match[1]; // retirar apenas versão
+      }
+    }
+  } catch (err) {
+    console.warn("[App Version] Não foi possível ler a versão do sw.js", err);
+  }
+
+  // Atualiza os textos na interface
+  if (menuVersionEl) menuVersionEl.textContent = `LiveTagus • ${version}`;
+  if (footerVersionEl) footerVersionEl.textContent = version;
+  if (roadmapVersionEl) roadmapVersionEl.textContent = `Versão: ${version}`; // ROadmap
+}

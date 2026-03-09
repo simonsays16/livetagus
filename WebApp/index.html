@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="LiveTagus - Monitorização em tempo real dos comboios da Fertagus. Veja horários, atrasos e supressões. App gratuita e open-source."
+      content="LiveTagus - Monitorização em tempo real dos comboios da Fertagus. Consulta horários, atrasos em tempo real e a ocupação dos comboios em horas de ponta. Sem anúncios e gratuita."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://livetagus.pt/" />
     <meta property="og:title" content="LiveTagus | Fertagus em Tempo Real" />
     <meta
       property="og:description"
-      content="LiveTagus - Monitorização em tempo real dos comboios da Fertagus. Veja horários, atrasos e supressões. App gratuita e open-source."
+      content="LiveTagus - Monitorização em tempo real dos comboios da Fertagus. Consulta horários, atrasos em tempo real e a ocupação dos comboios em horas de ponta. Sem anúncios e gratuita."
     />
     <meta
       property="og:image"
@@ -27,7 +27,7 @@
     />
     <meta
       property="twitter:description"
-      content="LiveTagus - Monitorização em tempo real dos comboios da Fertagus. Veja horários, atrasos e supressões. App gratuita e open-source."
+      content="LiveTagus - Monitorização em tempo real dos comboios da Fertagus. Consulta horários, atrasos em tempo real e a ocupação dos comboios em horas de ponta. Sem anúncios e gratuita."
     />
     <meta
       property="twitter:image"
@@ -35,25 +35,22 @@
     />
     <meta name="theme-color" content="#09090b" />
     <title>LiveTagus | Fertagus em Tempo Real</title>
+
     <script src="./menu.js" defer></script>
+    <script src="./index.js" defer></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
     <link rel="icon" type="image/svg+xml" href="./imagens/favicon-96x96.png" />
-
     <link rel="alternate icon" href="./imagens/favicon-96x96.png" />
-
     <link
       rel="apple-touch-icon"
       sizes="180x180"
       href="./imagens/apple-touch-icon.png"
     />
-
     <link rel="manifest" href="./site.webmanifest" />
-
     <link href="./output.css" rel="stylesheet" />
-
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap"
       rel="stylesheet"
@@ -66,6 +63,7 @@
         "name": "LiveTagus",
         "url": "https://livetagus.pt",
         "description": "Monitorização em tempo real dos comboios da Fertagus.",
+        "keywords": "horários fertagus, comboios, margem sul, atrasos fertagus, tempo real, transportes lisboa",
         "applicationCategory": "TravelApplication",
         "operatingSystem": "Any",
         "offers": {
@@ -140,27 +138,6 @@
             mostra-te onde anda o comboio, estima atrasos ao segundo e avisa-te
             de supressões.
           </p>
-          <!--<div
-            class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-bold uppercase tracking-widest mt-6"
-          >
-            <span class="relative flex h-2 w-2">
-              <span
-                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"
-              ></span>
-              <span
-                class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"
-              ></span>
-            </span>
-            Versão Testes • Estável a 1 Fev
-          </div>
-          <p class="text-xs text-amber-500/80 font-mono mt-4 items-left">
-            <i data-lucide="cone" class="w-3 h-3"></i>
-            Versão de testes: funcionalidades completas previstas para
-            <b>6 de fevereiro.</b>
-            <br />
-            (A data foi ajustada para corrigir erros e estabilizar a integração
-            de calendário.)
-          </p>-->
         </div>
 
         <div
@@ -225,7 +202,7 @@
 
           <a
             id="browser-btn"
-            href="./app.html"
+            href="./app"
             class="w-60 px-8 py-4 border border-zinc-200 dark:border-white/20 text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-white/5 font-medium text-sm uppercase tracking-widest transition-all text-center flex items-center justify-center"
             aria-label="Abrir LiveTagus no Navegador"
           >
@@ -245,46 +222,47 @@
           style="animation-delay: 0.2s"
         >
           <div class="flex flex-col gap-2">
-            <h3
+            <h2
               class="text-xs font-bold text-zinc-500 uppercase tracking-widest"
             >
               Precisão
-            </h3>
+            </h2>
             <p class="text-sm text-zinc-600 dark:text-zinc-300 leading-snug">
               Dados oficiais das infraestruturas em direto.
             </p>
           </div>
           <div class="flex flex-col gap-2">
-            <h3
+            <h2
               class="text-xs font-bold text-zinc-500 uppercase tracking-widest"
             >
               Privacidade
-            </h3>
+            </h2>
             <p class="text-sm text-zinc-600 dark:text-zinc-300 leading-snug">
               Zero tracking. Sem anúncios. 100% Local.
             </p>
           </div>
           <div class="flex flex-col gap-2">
-            <h3
+            <h2
               class="text-xs font-bold text-zinc-500 uppercase tracking-widest"
             >
               Velocidade
-            </h3>
+            </h2>
             <p class="text-sm text-zinc-600 dark:text-zinc-300 leading-snug">
               Interface leve otimizada para rede móvel.
             </p>
           </div>
           <div class="flex flex-col gap-2">
-            <h3
+            <h2
               class="text-xs font-bold text-zinc-500 uppercase tracking-widest"
             >
               Gratuito
-            </h3>
+            </h2>
             <p class="text-sm text-zinc-600 dark:text-zinc-300 leading-snug">
               Serviço totalmente gratuito e sem anúncios.
             </p>
           </div>
         </div>
+
         <div
           class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12 animate-fade-in-up"
           style="animation-delay: 0.3s"
@@ -457,7 +435,6 @@
           </div>
 
           <style>
-            /* Estilos específicos para a animação do comboio */
             .car-v2 {
               width: 1.5rem;
               height: 1rem;
@@ -474,7 +451,7 @@
             .extra-v2.collapsed {
               width: 0 !important;
               opacity: 0 !important;
-              margin-left: -0.25rem !important; /* Anula o gap */
+              margin-left: -0.25rem !important;
               pointer-events: none;
             }
 
@@ -491,13 +468,10 @@
 
           <script>
             (() => {
-              // Elementos do Comboio
               const trainTitle = document.getElementById("demo-title");
               const trainBadge = document.getElementById("status-badge");
               const cars = [...document.querySelectorAll(".car-v2")];
               const extras = [...document.querySelectorAll(".extra-v2")];
-
-              // Elementos do Smart Schedule
               const clock = document.getElementById("demo-clock");
               const greeting = document.getElementById("demo-greeting");
               const direction = document.getElementById("demo-direction");
@@ -539,7 +513,6 @@
               function updateDemo() {
                 const s = scenarios[step];
 
-                // 1. Update Smart Schedule
                 clock.style.opacity = "0";
                 direction.style.opacity = "0";
 
@@ -552,7 +525,6 @@
                   direction.style.opacity = "1";
                 }, 300);
 
-                // 2. Update Comboio
                 trainTitle.textContent = s.text;
                 trainBadge.textContent = s.badge;
                 trainBadge.className = `px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider transition-all duration-500 ${s.cls}`;
@@ -590,136 +562,6 @@
       </div>
     </main>
 
-    <!--<footer class="hidden">
-      <p>
-        Horários Fertagus em tempo real para as estações: Roma-Areeiro,
-        Entrecampos, Sete Rios, Campolide, Pragal, Corroios, Foros de Amora,
-        Fogueteiro, Coina, Penalva, Pinhal Novo, Venda do Alcaide, Palmela e
-        Setúbal. Projeto independente e não oficial. Sem afiliação à Fertagus ou
-        IP. Todos os direitos sobre os dados de circulação pertencem aos
-        respetivos proprietários.
-        <br />
-        Atrasos Fertagus, Próximo comboio fertagus, problemas fertagus, fertagus
-        hoje, fertagus atrasos comboio hoje, fertagus horário, fertagus horario
-        <br />
-        Em caso de dúvida, erro ou sugestão contacte-nos:
-      </p>
-      <a aria-label="Email de Contacto" href="mailto:geral@livetagus.pt">
-        geral@livetagus.pt
-      </a>
-      <p>Desenvolvido por Simão Dias.</p>
-      <p>Consulte atrasos e supressões na linha da Ponte 25 de Abril.</p>
-    </footer>-->
     <div id="global-footer"></div>
-
-    <script>
-      // === GESTOR PWA v8.0 (Lógica Estrita: 30s Wait) ===
-
-      let deferredPrompt;
-      const mainBtn = document.getElementById("main-btn");
-      const mainBtnText = document.getElementById("main-btn-text");
-      const installingMsg = document.getElementById("installing-msg");
-      const installedMsg = document.getElementById("installed-msg");
-      const browserBtn = document.getElementById("browser-btn");
-      const webHint = document.getElementById("web-hint");
-
-      // 1. Deteção Inicial (Simples)
-      const isStandalone =
-        window.matchMedia("(display-mode: standalone)").matches ||
-        window.navigator.standalone ||
-        document.referrer.includes("android-app://");
-
-      if (isStandalone) {
-        // DENTRO DA APP: Botão "Ver Tempo Real"
-        setupUIForApp();
-      } else if (localStorage.getItem("pwa_installed") === "true") {
-        // NO BROWSER (Instalada): Nota simples
-        setupUIForInstalled();
-      }
-
-      // 2. Evento de Prompt de Instalação
-      window.addEventListener("beforeinstallprompt", (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-
-        // Se o browser diz que pode instalar, mostramos o botão
-        // (Ignorando se já tínhamos guardado antes, pois o user pode ter desinstalado)
-        if (!isStandalone) {
-          localStorage.removeItem("pwa_installed");
-          setupUIForInstall();
-        }
-      });
-
-      // --- SETUP DE UI ---
-
-      function setupUIForApp() {
-        mainBtn.classList.remove("hidden");
-        mainBtnText.innerHTML =
-          'Ver Tempo Real&nbsp&nbsp<span id="status-dot-footer" class="w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-700"></span>';
-        mainBtn.onclick = () => (window.location.href = "./app.html");
-
-        browserBtn.style.display = "none";
-        webHint.innerText = "Verifica se há atrasos";
-        installedMsg.classList.add("hidden");
-        installingMsg.classList.add("hidden");
-      }
-
-      function setupUIForInstall() {
-        mainBtn.classList.remove("hidden");
-        mainBtnText.textContent = "Instalar WebApp";
-        mainBtn.onclick = handleInstallClick;
-
-        installedMsg.classList.add("hidden");
-        installingMsg.classList.add("hidden");
-        browserBtn.style.display = "flex";
-        webHint.style.display = "block";
-      }
-
-      function setupUIForInstalled() {
-        mainBtn.classList.add("hidden"); // Esconde botão instalar
-        installingMsg.classList.add("hidden");
-        installedMsg.classList.remove("hidden"); // Mostra a nota
-
-        browserBtn.style.display = "flex";
-        webHint.style.display = "block";
-      }
-
-      // --- LOGICA DE CLIQUE (ESTRITA 30s) ---
-
-      async function handleInstallClick() {
-        if (!deferredPrompt) {
-          alert(
-            "Para instalar: \niOS: Partilhar -> Ecrã Principal\nAndroid: Menu -> Instalar App",
-          );
-          return;
-        }
-
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-
-        if (outcome === "accepted") {
-          // 1. Esconde botão
-          mainBtn.classList.add("hidden");
-
-          // 2. Mostra nota de "A preparar..."
-          installingMsg.classList.remove("hidden");
-
-          // 3. AGUARDA ESTRITAMENTE 30 SEGUNDOS
-          setTimeout(() => {
-            finishInstallation();
-          }, 30000);
-        }
-
-        deferredPrompt = null;
-      }
-
-      function finishInstallation() {
-        // 4. Conclui: guarda memória e mostra nota final
-        localStorage.setItem("pwa_installed", "true");
-
-        installingMsg.classList.add("hidden");
-        installedMsg.classList.remove("hidden");
-      }
-    </script>
   </body>
 </html>

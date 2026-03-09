@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Termos e Condições e Política de Privacidade do LiveTagus."
+      content="Consulta os Termos de Serviço e a Política de Privacidade da LiveTagus. Sabe como garantimos uma navegação segura e transparente na nossa plataforma web."
     />
     <link
       rel="shortcut icon"
@@ -16,6 +16,7 @@
     <title>Termos e Privacidade | LiveTagus</title>
     <link href="./output.css" rel="stylesheet" />
     <script src="./menu.js" defer></script>
+    <script src="./tabs.js" defer></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -51,7 +52,6 @@
             class="flex items-center gap-2 bg-zinc-100 dark:bg-white/5 p-1 rounded-sm overflow-x-auto max-w-full"
           >
             <button
-              onclick="switchTab('terms')"
               aria-label="Mostrar Termos e Condições"
               id="btn-terms"
               class="px-4 py-1.5 text-xs font-bold uppercase tracking-widest rounded-sm transition-all whitespace-nowrap bg-white dark:bg-zinc-800 shadow-sm text-zinc-900 dark:text-white"
@@ -59,7 +59,6 @@
               Termos
             </button>
             <button
-              onclick="switchTab('privacy')"
               aria-label="Mostrar Política de Privacidade"
               id="btn-privacy"
               class="px-4 py-1.5 text-xs font-bold uppercase tracking-widest rounded-sm transition-all whitespace-nowrap text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
@@ -567,51 +566,5 @@
     </main>
 
     <div id="global-footer"></div>
-    <script>
-      function switchTab(tab) {
-        const termsContent = document.getElementById("content-terms");
-        const privacyContent = document.getElementById("content-privacy");
-        const btnTerms = document.getElementById("btn-terms");
-        const btnPrivacy = document.getElementById("btn-privacy");
-
-        // Classes exatas do ficheiro de licença para manter consistência
-        const activeClass = [
-          "bg-white",
-          "dark:bg-zinc-800",
-          "shadow-sm",
-          "text-zinc-900",
-          "dark:text-white",
-        ];
-        const inactiveClass = [
-          "text-zinc-400",
-          "hover:text-zinc-600",
-          "dark:hover:text-zinc-200",
-          "bg-transparent",
-          "shadow-none",
-        ];
-
-        if (tab === "terms") {
-          // Mostrar Termos, Esconder Privacidade
-          termsContent.classList.remove("hidden");
-          privacyContent.classList.add("hidden");
-
-          // Estilizar Botões
-          btnTerms.classList.add(...activeClass);
-          btnTerms.classList.remove(...inactiveClass);
-          btnPrivacy.classList.remove(...activeClass);
-          btnPrivacy.classList.add(...inactiveClass);
-        } else {
-          // Esconder Termos, Mostrar Privacidade
-          termsContent.classList.add("hidden");
-          privacyContent.classList.remove("hidden");
-
-          // Estilizar Botões
-          btnPrivacy.classList.add(...activeClass);
-          btnPrivacy.classList.remove(...inactiveClass);
-          btnTerms.classList.remove(...activeClass);
-          btnTerms.classList.add(...inactiveClass);
-        }
-      }
-    </script>
   </body>
 </html>

@@ -1,8 +1,16 @@
-const CACHE_NAME = "livetagus-v.b3.02032026";
+const CACHE_NAME = "livetagus-v.b46.09032026";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
   "./app.html",
+  "./app-alerts.js",
+  "./app-config.js",
+  "./app-init.js",
+  "./app-setting.js",
+  "./app-trains.js",
+  "./app-ui.js",
+  "./lucide-icons.js",
+  "./spotifycard.js",
   "./horarios.html",
   "./privacidade.html",
   "./output.css",
@@ -12,6 +20,8 @@ const ASSETS_TO_CACHE = [
   "./imagens/logotransparente.svg",
   "./imagens/favicon-96x96.png",
   "./imagens/badge_coded_in_europe_portugal_margem_sul.svg",
+  "./imagens/netlify-dark.svg",
+  "./imagens/netlify-light.svg",
   "./json/fertagus_sentido_lisboa.json",
   "./json/fertagus_sentido_margem.json",
   "./json/feriados.json",
