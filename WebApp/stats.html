@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="pt" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="theme-color" content="#09090b" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta
+      name="description"
+      content="LiveTagus Stats — Precisão das previsões dos comboios Fertagus em tempo real. Percentagem de acertos e atrasos médios por estação."
+    />
+    <meta name="robots" content="index, follow" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://livetagus.pt/stats" />
+    <meta
+      property="og:title"
+      content="LiveTagus Stats | Precisão das Previsões"
+    />
+    <meta
+      property="og:description"
+      content="Transparência total: vê o quão preciso é o sistema de previsões LiveTagus, por estação e por sentido."
+    />
+    <meta
+      property="og:image"
+      content="https://livetagus.pt/imagens/logo_og.webp"
+    />
+
+    <link
+      rel="shortcut icon"
+      href="./imagens/favicon-96x96.png"
+      type="image/x-icon"
+    />
+    <title>LiveTagus Stats | Precisão das Previsões</title>
+    <link rel="stylesheet" href="./output.css" />
+    <script src="./menu.js" defer></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+      }
+      .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .animate-fade-in {
+        animation: fadeIn 0.5s ease-out forwards;
+      }
+
+      @keyframes shimmer {
+        0% {
+          background-position: -200% 0;
+        }
+        100% {
+          background-position: 200% 0;
+        }
+      }
+      .skeleton {
+        background: linear-gradient(
+          90deg,
+          rgba(255, 255, 255, 0.04) 25%,
+          rgba(255, 255, 255, 0.08) 50%,
+          rgba(255, 255, 255, 0.04) 75%
+        );
+        background-size: 200% 100%;
+        animation: shimmer 1.6s infinite;
+        border-radius: 0.5rem;
+      }
+
+      .bar-fill {
+        transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      /* Accuracy colour classes */
+      .acc-green {
+        color: #22c55e;
+      }
+      .acc-yellow {
+        color: #f59e0b;
+      }
+      .acc-red {
+        color: #ef4444;
+      }
+      .bar-green {
+        background-color: #22c55e;
+      }
+      .bar-yellow {
+        background-color: #f59e0b;
+      }
+      .bar-red {
+        background-color: #ef4444;
+      }
+      .ring-green {
+        border-color: #22c55e22;
+      }
+      .ring-yellow {
+        border-color: #f59e0b22;
+      }
+      .ring-red {
+        border-color: #ef444422;
+      }
+    </style>
+
+    <script src="./lucide-icons.js"></script>
+  </head>
+
+  <body
+    class="min-h-[100dvh] bg-zinc-50 dark:bg-[#09090b] text-zinc-900 dark:text-zinc-200 font-sans transition-colors duration-300 selection:bg-blue-500/30"
+  >
+    <!-- Navigation injected by menu.js -->
+    <div id="global-nav"></div>
+
+    <!-- Ambient glow -->
+    <div
+      class="fixed top-0 left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none"
+    ></div>
+
+    <!-- PAGE CONTENT -->
+    <main
+      class="w-full max-w-2xl mx-auto px-5 pt-28 pb-20"
+      style="margin-top: 75px"
+    >
+      <!-- Header -->
+      <div class="mb-10 animate-fade-in">
+        <span
+          class="mb-2 inline-block py-1 px-3 border border-zinc-200 dark:border-white/10 rounded-full text-[10px] uppercase tracking-widest text-zinc-500 backdrop-blur-sm"
+        >
+          Transparência
+        </span>
+        <h1
+          class="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white leading-tight"
+        >
+          Precisão das Previsões
+        </h1>
+        <p
+          class="mt-2 text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-md"
+        >
+          Medição em tempo real do quão precisas são as estimativas de chegada,
+          por estação e sentido. Atualiza a cada minuto.
+        </p>
+      </div>
+
+      <!-- ── OVERALL HERO CARD ── -->
+      <div
+        id="overall-card"
+        class="mb-6 animate-fade-in"
+        style="animation-delay: 0.05s"
+      >
+        <!-- Skeleton shown until data loads -->
+        <div
+          id="overall-skeleton"
+          class="skeleton h-32 w-full rounded-2xl"
+        ></div>
+        <div
+          id="overall-content"
+          class="hidden rounded-2xl border bg-white/90 dark:bg-zinc-800/40 backdrop-blur-sm shadow-sm p-6 flex flex-col sm:flex-row items-start sm:items-center gap-6"
+        >
+          <div class="shrink-0 text-center">
+            <div
+              id="overall-pct"
+              class="font-mono text-5xl font-bold leading-none"
+            ></div>
+            <div
+              class="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mt-1"
+            >
+              precisão global
+            </div>
+          </div>
+          <div class="flex-1 min-w-0 space-y-2">
+            <div
+              class="h-2 rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden"
+            >
+              <div
+                id="overall-bar"
+                class="h-full bar-fill rounded-full w-0"
+              ></div>
+            </div>
+            <div
+              class="flex items-center justify-between text-xs text-zinc-500"
+            >
+              <span id="overall-delay" class="font-mono"></span>
+              <span id="overall-count" class="font-mono opacity-60"></span>
+            </div>
+            <p class="text-[10px] text-zinc-400 leading-snug">
+              Considera chegada "a horas" com até
+              <strong class="text-zinc-300">±60 s</strong>
+              de diferença. Excluídas discrepâncias &gt; 5 min (paragens
+              imprevistas).
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── DIRECTION CARDS ── -->
+      <div
+        class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8 animate-fade-in"
+        style="animation-delay: 0.1s"
+      >
+        <!-- Lisboa -->
+        <div>
+          <div id="dir-lisboa-skeleton" class="skeleton h-28 rounded-xl"></div>
+          <div
+            id="dir-lisboa-content"
+            class="hidden rounded-xl border bg-white/90 dark:bg-zinc-800/40 backdrop-blur-sm p-5 shadow-sm"
+          >
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <p
+                  class="text-[9px] font-bold uppercase tracking-widest text-zinc-400"
+                >
+                  Sentido
+                </p>
+                <h2 class="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                  Lisboa
+                </h2>
+              </div>
+              <div
+                id="dir-lisboa-pct"
+                class="font-mono text-2xl font-bold"
+              ></div>
+            </div>
+            <div
+              class="h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden mb-2"
+            >
+              <div
+                id="dir-lisboa-bar"
+                class="h-full bar-fill rounded-full w-0"
+              ></div>
+            </div>
+            <div
+              class="flex justify-between text-[10px] font-mono text-zinc-400"
+            >
+              <span id="dir-lisboa-delay"></span>
+              <span id="dir-lisboa-count"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Margem -->
+        <div>
+          <div id="dir-margem-skeleton" class="skeleton h-28 rounded-xl"></div>
+          <div
+            id="dir-margem-content"
+            class="hidden rounded-xl border bg-white/90 dark:bg-zinc-800/40 backdrop-blur-sm p-5 shadow-sm"
+          >
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <p
+                  class="text-[9px] font-bold uppercase tracking-widest text-zinc-400"
+                >
+                  Sentido
+                </p>
+                <h2 class="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                  Margem Sul
+                </h2>
+              </div>
+              <div
+                id="dir-margem-pct"
+                class="font-mono text-2xl font-bold"
+              ></div>
+            </div>
+            <div
+              class="h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden mb-2"
+            >
+              <div
+                id="dir-margem-bar"
+                class="h-full bar-fill rounded-full w-0"
+              ></div>
+            </div>
+            <div
+              class="flex justify-between text-[10px] font-mono text-zinc-400"
+            >
+              <span id="dir-margem-delay"></span>
+              <span id="dir-margem-count"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── STATION BREAKDOWN ── -->
+      <div class="animate-fade-in" style="animation-delay: 0.15s">
+        <!-- Lisboa Stations -->
+        <div class="mb-8">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="flex-1 h-px bg-zinc-200 dark:bg-white/10"></div>
+            <span
+              class="text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-400"
+            >
+              Estações · Sentido Lisboa
+            </span>
+            <div class="flex-1 h-px bg-zinc-200 dark:bg-white/10"></div>
+          </div>
+          <div id="stations-lisboa-skeleton" class="space-y-2">
+            <div class="skeleton h-14 rounded-xl"></div>
+            <div class="skeleton h-14 rounded-xl"></div>
+            <div class="skeleton h-14 rounded-xl"></div>
+          </div>
+          <div id="stations-lisboa" class="hidden space-y-2"></div>
+        </div>
+
+        <!-- Margem Stations -->
+        <div class="mb-8">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="flex-1 h-px bg-zinc-200 dark:bg-white/10"></div>
+            <span
+              class="text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-400"
+            >
+              Estações · Sentido Margem Sul
+            </span>
+            <div class="flex-1 h-px bg-zinc-200 dark:bg-white/10"></div>
+          </div>
+          <div id="stations-margem-skeleton" class="space-y-2">
+            <div class="skeleton h-14 rounded-xl"></div>
+            <div class="skeleton h-14 rounded-xl"></div>
+            <div class="skeleton h-14 rounded-xl"></div>
+          </div>
+          <div id="stations-margem" class="hidden space-y-2"></div>
+        </div>
+      </div>
+
+      <!-- ── METHODOLOGY NOTE ── -->
+      <div
+        id="methodology"
+        class="hidden animate-fade-in rounded-xl border border-black/5 dark:border-white/5 bg-white/60 dark:bg-white/3 p-5 text-xs text-zinc-500 dark:text-zinc-400 space-y-2 mb-6"
+        style="animation-delay: 0.2s"
+      >
+        <p
+          class="font-bold text-zinc-700 dark:text-zinc-300 text-[10px] uppercase tracking-widest"
+        >
+          Metodologia
+        </p>
+        <p>
+          Para cada comboio em tracking activo, é registado um snapshot da
+          previsão de chegada quando esta está entre
+          <strong>5 e 15 minutos</strong>
+          no futuro.
+        </p>
+        <p>
+          Quando o comboio chega, comparamos a hora real com o snapshot — a
+          diferença é o
+          <strong>delta</strong>
+          . Valores fora de ±5 minutos são descartados (paragem imprevista).
+        </p>
+        <p>
+          Excluídas estações de partida sem previsão real:
+          <strong>Setúbal</strong>
+          e
+          <strong>Coina</strong>
+          (sentido Lisboa),
+          <strong>Roma-Areeiro</strong>
+          (sentido Margem, exceto turnaround).
+        </p>
+      </div>
+
+      <!-- Status bar -->
+      <div
+        class="flex items-center justify-between text-[10px] font-mono text-zinc-400 opacity-70 mb-4"
+      >
+        <span id="last-refresh">A carregar...</span>
+        <span id="next-refresh" class="opacity-50"></span>
+      </div>
+    </main>
+
+    <!-- Footer injected by menu.js -->
+    <div id="global-footer" class="px-5 pb-8"></div>
+
+    <!-- Stats JS -->
+    <script src="./stats.js" defer></script>
+  </body>
+</html>

@@ -4,6 +4,7 @@ const cors = require("cors");
 const fetch = require("node-fetch");
 const path = require("path");
 const fs = require("fs");
+const AnalyticsManager = require("./analytics.js");
 
 const app = express();
 app.use(cors());
@@ -221,9 +222,13 @@ const parseSmartTime = (timeStr, now = new Date()) => {
   // madrugada (ex: 01h) e o comboio é da noite anterior (ex: 23h).
   if (nowH < 5 && h >= 18) {
     d.setDate(d.getDate() - 1);
-  } else if (nowH >= 20 && h < 5) {
   }
-  // noite (ex: 22h) e o comboio é da manhã (ex: 06h), é no dia seguinte.
+  // FIX #3: noite (ex: 23h) e o comboio é de madrugada (ex: 00h-04h) → é no dia seguinte.
+  // Ex: comboio 14306 (00:06), 14200 (00:03/01:06), 14003 (00:23), 14007 (01:23), 14201 (00:53).
+  else if (nowH >= 20 && h < 5) {
+    d.setDate(d.getDate() + 1);
+  }
+  // noite (ex: 22h) e o comboio é da manhã/tarde (ex: 06h-15h), é no dia seguinte.
   else if (nowH >= 18 && h < 16) {
     d.setDate(d.getDate() + 1);
   }
@@ -248,14 +253,15 @@ const subtractMinutes = (timeStr, minutes) => {
   return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
 
-const getTemporaryDelayAdjustment = (stationName, direction) => {
-  const targetStations = ["PRAGAL", "CORROIOS"];
-  if (
-    direction === "margem" &&
-    targetStations.includes(stationName.toUpperCase())
-  ) {
-    return 90; // 90 segundos = 1min 30s
-  }
+const getTemporaryDelayAdjustment = (stationName, direction, pragalPassed = false) => {
+  if (direction !== "margem") return 0;
+  const upper = stationName.toUpperCase();
+  // O atraso da ponte aplica-se sempre ao Pragal (o comboio ainda não a cruzou).
+  if (upper === "PRAGAL") return 90;
+  // O atraso aplica-se ao Corroios APENAS enquanto o comboio ainda não passou o Pragal.
+  // Após o comboio passar o Pragal, o atraso medido já inclui o efeito da ponte,
+  // por isso não se deve voltar a somar os 90s para evitar dupla contagem.
+  if (upper === "CORROIOS" && !pragalPassed) return 90;
   return 0;
 };
 
@@ -493,6 +499,16 @@ const processTrain = async (richInfo, originDateStr) => {
     }
   }
 
+  // Determina se o comboio já passou o Pragal (sentido margem).
+  // Usado para evitar dupla contagem do atraso da ponte 25 de abril no Corroios:
+  // uma vez que o comboio cruza a ponte e chega ao Pragal, o atraso medido já
+  // inclui o efeito da ponte, pelo que não se deve adicionar os 90s extra ao Corroios.
+  const pragalNodeId = STATION_IDS_FIXED["PRAGAL"];
+  const pragalPassed =
+    nodes.some(
+      (n) => n.NomeEstacao.toUpperCase() === "PRAGAL" && n.ComboioPassou === true,
+    ) || !!mem.history[pragalNodeId];
+
   if (isLive) {
     const lastNode = nodes[nodes.length - 1];
     if (lastNode && lastNode.ComboioPassou) {
@@ -503,6 +519,7 @@ const processTrain = async (richInfo, originDateStr) => {
           (lastNode.NomeEstacao.toUpperCase().includes("COINA") ||
             lastNode.NomeEstacao.toUpperCase().includes("SETÚBAL")));
       if (isEnd) {
+        AnalyticsManager.cleanupTrain(trainId);
         delete TRAIN_MEMORY[trainId];
         return null;
       }
@@ -542,7 +559,9 @@ const processTrain = async (richInfo, originDateStr) => {
   nodes.forEach((node) => {
     const passed = node.ComboioPassou;
 
-    if (passed && !mem.history[node.NodeID]) {
+    // isNewlyPassed: primeira vez que este node é marcado como passado
+    const isNewlyPassed = passed && !mem.history[node.NodeID];
+    if (isNewlyPassed) {
       newStationPassed = true;
     }
 
@@ -576,11 +595,22 @@ const processTrain = async (richInfo, originDateStr) => {
           Math.floor((timestamp - dateChegadaProg.getTime()) / 1000) - 10; // Retirados 10 segundos para delays na conexão
         currentDelay = atrasoNode;
       }
+      // Analytics: regista chegada real (só na primeira passagem da estação)
+      if (isNewlyPassed && stationKey && dateChegadaProg) {
+        AnalyticsManager.recordArrival(
+          trainId,
+          stationKey,
+          direction,
+          timestamp,
+          turnaroundDelay > 0,
+        );
+      }
     }
 
     let bridgeAdjustment = getTemporaryDelayAdjustment(
       node.NomeEstacao,
       direction,
+      pragalPassed,
     );
     let horaPrevistaFinal = horaPartidaProgStr; // Inicia com a partida teórica
 
@@ -590,6 +620,23 @@ const processTrain = async (richInfo, originDateStr) => {
         new Date(
           datePartidaProg.getTime() + (currentDelay + bridgeAdjustment) * 1000,
         ),
+      );
+    }
+
+    // Analytics: captura snapshot da previsão para estações ainda não passadas.
+    // predictedArrivalMs usa a hora de CHEGADA programada + atraso acumulado,
+    // evitando dependência dos dwell times (chegada → partida).
+    if (!passed && stationKey && dateChegadaProg) {
+      const predictedArrivalMs =
+        dateChegadaProg.getTime() + (currentDelay + bridgeAdjustment) * 1000;
+      AnalyticsManager.tryRecordSnapshot(
+        trainId,
+        stationKey,
+        direction,
+        predictedArrivalMs,
+        nowObj.getTime(),
+        turnaroundDelay > 0,
+        isLive,
       );
     }
 
@@ -699,10 +746,15 @@ const scheduleNextTick = () => {
 // Rota protegida com middleware
 app.get("/fertagus", protectRoute, (req, res) => res.json(OUTPUT_CACHE));
 
+// Rota pública de estatísticas de precisão das previsões
+app.get("/stats", (req, res) => {
+  res.json(AnalyticsManager.getStats());
+});
+
 app.get("/", (req, res) =>
   res.json({
     status: "online",
-    version: "4.3.7",
+    version: "4.4.0",
     aviso:
       "Pedimos que não uses o nosso endpoint diretamente! Verifica toda as informações e código no github.",
     operational: getOperationalInfo(),
@@ -710,7 +762,7 @@ app.get("/", (req, res) =>
 );
 
 app.listen(PORT, () => {
-  console.log(`LiveTagus API v4.3.7 ativa na porta ${PORT}`);
+  console.log(`LiveTagus API v4.4.0 ativa na porta ${PORT}`);
   console.log(`Endpoint /fertagus protegido com API_KEY.`);
   checkOfflineTrains();
   updateCycle();

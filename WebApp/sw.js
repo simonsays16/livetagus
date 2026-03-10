@@ -1,4 +1,4 @@
-const CACHE_NAME = "livetagus-v.b54.09032026";
+const CACHE_NAME = "livetagus-v.b6.10032026";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
