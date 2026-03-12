@@ -1,5 +1,5 @@
 /* Filename: js/menu.js 
-   Funções: Menu Global, Footer Global, Definições de Tema, API Status
+   Funções: Menu Global, Footer Global, Definições de Tema, API Status, CSP Compliant
 */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initTheme();
   initMenuInteractions();
   checkApiStatus(); // Inicia a verificação do status
-  updateAppVersion(); // bsuca a versão ao sw.js
+  updateAppVersion(); // busca a versão ao sw.js
 });
 
 // --- 1. BARRA DE NAVEGAÇÃO E MENU LATERAL ---
@@ -30,8 +30,8 @@ function injectNavigation() {
             </a>
             
             <button id="menu-trigger" class="flex flex-col items-end gap-1.5 group cursor-pointer p-2 text-zinc-900 dark:text-white" aria-label="Abrir Menu">
-                <span class="w-8 h-[1.5px] bg-current transition-all duration-300 group-hover:w-10"></span>
-                <span class="w-6 h-[1.5px] bg-current transition-all duration-300 group-hover:w-10"></span>
+                <span class="w-8 h-[1.5px] bg-current transition-all duration-300 group-hover:w-10 pointer-events-none"></span>
+                <span class="w-6 h-[1.5px] bg-current transition-all duration-300 group-hover:w-10 pointer-events-none"></span>
             </button>
         </header>
 
@@ -53,9 +53,9 @@ function injectNavigation() {
                     <div class="space-y-4 w-full md:w-auto">
                         <span class="text-xs font-bold tracking-widest text-zinc-500 uppercase">Aparência</span>
                         <div class="flex gap-4">
-                            <button onclick="setTheme('light')" class="theme-btn text-sm text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white uppercase tracking-wider transition-colors" data-mode="light">Light</button>
-                            <button onclick="setTheme('dark')" class="theme-btn text-sm text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white uppercase tracking-wider transition-colors" data-mode="dark">Dark</button>
-                            <button onclick="setTheme('system')" class="theme-btn text-sm text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white uppercase tracking-wider transition-colors" data-mode="system">Auto</button>
+                            <button class="theme-btn text-sm text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white uppercase tracking-wider transition-colors" data-mode="light">Light</button>
+                            <button class="theme-btn text-sm text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white uppercase tracking-wider transition-colors" data-mode="dark">Dark</button>
+                            <button class="theme-btn text-sm text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white uppercase tracking-wider transition-colors" data-mode="system">Auto</button>
                         </div>
                     </div>
 
@@ -209,6 +209,14 @@ function initTheme() {
         setTheme("system");
       }
     });
+
+  // CSP: Delegação de eventos para os botões de tema
+  document.body.addEventListener("click", (e) => {
+    const themeBtn = e.target.closest(".theme-btn");
+    if (themeBtn && themeBtn.dataset.mode) {
+      setTheme(themeBtn.dataset.mode);
+    }
+  });
 }
 
 function setTheme(mode) {

@@ -6,12 +6,12 @@
  * ─────────────────────────────────────────────────────────────────────────────
  * Para cada comboio em tracking real (isLive = true), é guardado um SNAPSHOT
  * da previsão de chegada calculada quando a chegada prevista está entre
- * 5 e 15 minutos de distância (janela "média distância").
+ * 5 e 10 minutos de distância (janela "média distância").
  *
  * Esta janela foi escolhida deliberadamente para excluir:
  *   • Previsões capturadas imediatamente antes da chegada (< 5 min), que são
  *     trivialmente precisas pois o comboio já passou a estação anterior.
- *   • Previsões muito distantes (> 15 min), onde não há dados en-route.
+ *   • Previsões muito distantes (> 10 min), onde não há dados en-route.
  *
  * CÁLCULO DO DELTA:
  *   predictedArrivalMs = scheduledArrivalMs (chegada JSON) + delay_seconds × 1000
@@ -39,9 +39,9 @@
 
 // ─── CONFIGURAÇÃO ─────────────────────────────────────────────────────────────
 
-/** Janela de captura: snapshot quando chegada prevista está entre 5 e 15 min. */
+/** Janela de captura: snapshot quando chegada prevista está entre 5 e 10 min. */
 const SNAPSHOT_MIN_MS = 5 * 60 * 1000;
-const SNAPSHOT_MAX_MS = 15 * 60 * 1000;
+const SNAPSHOT_MAX_MS = 10 * 60 * 1000;
 
 /** Discrepância máxima aceite: > 5 min = paragem inesperada, ignorado. */
 const MAX_DELTA_SEC = 5 * 60;
@@ -118,7 +118,7 @@ const AnalyticsManager = {
 
   /**
    * Tenta registar um snapshot da previsão para uma estação ainda não passada.
-   * Apenas uma vez por comboio/estação, dentro da janela 5–15 min.
+   * Apenas uma vez por comboio/estação, dentro da janela 5–10 min.
    *
    * @param {string}  trainId             ID do comboio
    * @param {string}  stationKey          Chave JSON da estação (ex: 'pragal')

@@ -765,7 +765,7 @@ const processTrain = async (richInfo, originDateStr) => {
 
       if (dateChegadaProg) {
         const rawDelay =
-          Math.floor((timestamp - dateChegadaProg.getTime()) / 1000) - 10;
+          Math.floor((timestamp - dateChegadaProg.getTime()) / 1000) - 15; //Atualização para 15 segunddos para correção de atrasos da API da IP
 
         // FIX Bug 2 (Roma-Areeiro / deteção tardia): evita inflar o atraso acumulado
         // com a latência de deteção do ciclo. No cenário problemático: ciclo sequencial
