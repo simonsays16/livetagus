@@ -1,8 +1,10 @@
 # LiveTagus
 
+[![Mozilla Observatory](https://img.shields.io/mozilla-observatory/grade-score/livetagus.pt)](https://developer.mozilla.org/en-US/observatory/analyze?host=livetagus.pt) [![Netlify Status](https://api.netlify.com/api/v1/badges/0b2c7227-c652-44a1-9e33-db20c3387dd6/deploy-status)](https://app.netlify.com/projects/livetagus/deploys) [![Better Stack Badge](https://uptime.betterstack.com/status-badges/v2/monitor/2dwgi.svg)](https://uptime.betterstack.com/?utm_source=status_badge) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) 
+
 **LiveTagus** is an independent, open-source web interface designed to help commuters in the Lisbon South Bay area track **Fertagus** trains in real-time.
 
-> **Note:** LiveTagus is an independent project and is **not affiliated, associated, authorized, endorsed by, or in any way officially connected with Fertagus not Infraestruturas de Portugal (IP)**. The official Fertagus website can be found at [fertagus.pt](https://www.fertagus.pt). The official IP website can be found at [infraestruturasdeportugal.pt](https://www.infraestruturasdeportugal.pt/).
+> **Note:** LiveTagus is an independent project and is **not affiliated, associated, authorized, endorsed by, or in any way officially connected with Fertagus nor Infraestruturas de Portugal (IP)**. The official Fertagus website can be found at [fertagus.pt](https://www.fertagus.pt). The official IP website can be found at [infraestruturasdeportugal.pt](https://www.infraestruturasdeportugal.pt/).
 
 ## Live Demo
 
@@ -82,6 +84,6 @@ This project is licensed under the MIT License. See the [LICENSE](https://github
 LiveTagus is an independent project and is **not affiliated, associated, authorized, endorsed by, or in any way officially connected with Fertagus**. The official Fertagus website can be found at [fertagus.pt](https://www.fertagus.pt).
 
 ---
-<img src="https://livetagus.pt/imagens/badge_coded_in_europe_portugal_margem_sul.svg" alt="Coded in Europe | Portugal | Margem Sul" width="150"/>
+<img src="https://livetagus.pt/imagens/badge_coded_in_europe_portugal_margem_sul.svg?github" alt="Coded in Europe | Portugal | Margem Sul" width="150"/>
 
 Developed with ❤️ in Margem Sul.
