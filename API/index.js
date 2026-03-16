@@ -428,11 +428,14 @@ const checkOfflineTrains = async () => {
           // "Em circulação" ou "Atrasado", fazendo a app acreditar que já circulam.
           // Se nenhum node foi passado E o estado não é terminal, normaliza para
           // "Sem Informação" para não enganar a app.
-          const isTerminal =
-            situacao.toUpperCase().includes("REALIZADO") ||
-            situacao.toUpperCase().includes("SUPRIMIDO");
+          // Só normaliza estados que implicam circulação activa num comboio
+          // que ainda não partiu (herança de atraso de rede da IP).
+          // "Programado", "SUPRIMIDO" e qualquer estado terminal passam direto.
+          const impliesSpuriousLive =
+            !hasStarted &&
+            (/em circulação/i.test(situacao) || /a horas/i.test(situacao));
 
-          if (!hasStarted && !isTerminal) {
+          if (impliesSpuriousLive) {
             results[String(t.id)] = "Sem Informação";
           } else {
             results[String(t.id)] = situacao;
@@ -1062,12 +1065,40 @@ const updateCycle = async () => {
     });
   }
 
+  // --- Limpeza de estados obsoletos no FUTURE_TRAINS_CACHE ---
+  //
+  // checkOfflineTrains corre de 15 em 15 minutos. Um comboio pode terminar a
+  // viagem entre duas verificações com um estado de atraso ainda em cache
+  // (ex: "Atraso 9 min" copiado às 10:40, comboio termina às 10:45, próxima
+  // verificação só às 10:55 → durante 10 min o cache mente ao cliente).
+  //
+  // Esta lógica corre a cada 10 segundos e marca "Realizado" assim que a hora
+  // de chegada ao destino final já passou, sem precisar de chamada à API IP.
+  // O GHOST_SUPPRESSED não é tocado aqui — esses têm o seu próprio ciclo.
+  const nowMs = now.getTime();
+  for (const [trainId, cachedStatus] of Object.entries(FUTURE_TRAINS_CACHE)) {
+    if (cachedStatus === "Realizado" || cachedStatus === "SUPRIMIDO") continue;
+
+    const entry = RICH_SCHEDULE.find((t) => String(t.id) === trainId);
+    if (!entry) continue;
+
+    const endStr =
+      entry.direction === "lisboa"
+        ? entry.roma_areeiro
+        : entry.setubal || entry.coina;
+    if (!endStr) continue;
+
+    const endDate = parseSmartTime(endStr.substring(0, 5), now);
+    if (endDate && nowMs > endDate.getTime()) {
+      FUTURE_TRAINS_CACHE[trainId] = "Realizado";
+    }
+  }
+
   OUTPUT_CACHE = { ...newOutput, futureTrains: FUTURE_TRAINS_CACHE };
 
   // --- Limpeza periódica do GHOST_SUPPRESSED ---
   // Remove entradas de comboios cujo horário de fim já passou há mais de 4 horas,
   // evitando que o Set cresça indefinidamente ao longo de dias de serviço.
-  const nowMs = now.getTime();
   for (const ghostId of GHOST_SUPPRESSED) {
     const entry = RICH_SCHEDULE.find((t) => String(t.id) === ghostId);
     if (entry) {
@@ -1121,7 +1152,7 @@ app.get("/stats", (req, res) => {
 app.get("/", (req, res) =>
   res.json({
     status: "online",
-    version: "4.5.4",
+    version: "4.5.5",
     aviso:
       "Pedimos que não uses o nosso endpoint diretamente! Verifica toda as informações e código no github.",
     operational: getOperationalInfo(),
@@ -1133,7 +1164,7 @@ app.get("/", (req, res) =>
 );
 
 app.listen(PORT, () => {
-  console.log(`LiveTagus API v4.5.4 ativa na porta ${PORT}`);
+  console.log(`LiveTagus API v4.5.5 ativa na porta ${PORT}`);
   console.log(`Endpoint /fertagus protegido com API_KEY.`);
   checkOfflineTrains();
   updateCycle();
