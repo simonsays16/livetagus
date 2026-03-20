@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
   injectFooter();
   initTheme();
   initMenuInteractions();
+  initShareButton(); // Botão de partilha nativa no footer
   checkApiStatus(); // Inicia a verificação do status
   updateAppVersion(); // busca a versão ao sw.js
 });
@@ -111,6 +112,9 @@ function injectFooter() {
                             <a href="https://bsky.app/profile/livetagus.pt" target="_blank" rel="noopener noreferrer" class="hover:opacity-70 transition-opacity" aria-label="Bluesky">
                                 <svg fill="currentColor" width="20" height="20" viewBox="0 0 24 24"><path d="M6.33526 4.37382C8.62822 6.09522 11.0945 9.58551 12.0001 11.4586C12.9056 9.58565 15.3718 6.09519 17.6649 4.37382C19.3193 3.13172 22 2.17066 22 5.22881C22 5.83957 21.6498 10.3595 21.4445 11.0933C20.7306 13.6444 18.1292 14.2951 15.8152 13.9013C19.86 14.5897 20.8889 16.87 18.6668 19.1502C14.4465 23.4809 12.601 18.0636 12.1278 16.6755C12.0412 16.4211 12.0006 16.302 12 16.4033C11.9994 16.302 11.9588 16.4211 11.8721 16.6755C11.3993 18.0636 9.55378 23.481 5.33322 19.1502C3.11103 16.87 4.13995 14.5896 8.18483 13.9013C5.87077 14.2951 3.26934 13.6444 2.55555 11.0933C2.35016 10.3594 2 5.8395 2 5.22881C2 2.17066 4.68074 3.13172 6.33515 4.37382H6.33526Z"></path></svg>
                             </a>
+                            <button id="footer-share-btn" class="hover:opacity-70 transition-opacity cursor-pointer text-black dark:text-white" aria-label="Partilhar LiveTagus">
+                                <svg fill="currentColor" width="20" height="20" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
+                            </button>
                         </div>
                     </div>
                     
@@ -167,7 +171,105 @@ function injectFooter() {
     `;
 }
 
-// --- 3. INTERAÇÕES DO MENU ---
+// --- 3. BOTÃO DE PARTILHA NATIVA ---
+function initShareButton() {
+  const btn = document.getElementById("footer-share-btn");
+  if (!btn) return;
+
+  const SHARE_URL = "https://livetagus.pt";
+  const SHARE_TEXT =
+    "Monitoriza os comboios da Fertagus em tempo real — sem anúncios e gratuita.";
+
+  // Criar pill de notificação (uma só vez, reutilizado)
+  let pill = document.getElementById("share-pill-notification");
+  if (!pill) {
+    pill = document.createElement("div");
+    pill.id = "share-pill-notification";
+    pill.setAttribute("role", "status");
+    pill.setAttribute("aria-live", "polite");
+    pill.textContent = "Link Copiado!";
+    Object.assign(pill.style, {
+      position: "fixed",
+      bottom: "2rem",
+      left: "50%",
+      transform: "translateX(-50%) translateY(calc(100% + 2rem))",
+      background: "#18181b",
+      color: "#ffffff",
+      padding: "0.5rem 1.25rem",
+      borderRadius: "9999px",
+      fontSize: "0.7rem",
+      fontWeight: "600",
+      letterSpacing: "0.08em",
+      fontFamily: "ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace",
+      zIndex: "9999",
+      opacity: "0",
+      pointerEvents: "none",
+      whiteSpace: "nowrap",
+      boxShadow: "0 4px 24px rgba(0,0,0,0.35)",
+      border: "1px solid rgba(255,255,255,0.08)",
+      transition:
+        "transform 0.35s cubic-bezier(0.16,1,0.3,1), opacity 0.35s ease",
+      textTransform: "uppercase",
+    });
+    document.body.appendChild(pill);
+  }
+
+  let pillTimeout;
+  function showPill() {
+    clearTimeout(pillTimeout);
+    pill.style.transform = "translateX(-50%) translateY(0)";
+    pill.style.opacity = "1";
+    pillTimeout = setTimeout(() => {
+      pill.style.transform = "translateX(-50%) translateY(calc(100% + 2rem))";
+      pill.style.opacity = "0";
+    }, 2200);
+  }
+
+  btn.addEventListener("click", async () => {
+    // Tentar Web Share API nativa (mobile/desktop moderno)
+    const shareData = { title: "LiveTagus", text: SHARE_TEXT, url: SHARE_URL };
+    if (
+      navigator.share &&
+      (!navigator.canShare || navigator.canShare(shareData))
+    ) {
+      try {
+        await navigator.share(shareData);
+        return; // sucesso — a UI nativa tomou conta
+      } catch (err) {
+        if (err.name === "AbortError") return; // utilizador cancelou
+        // outro erro → fallback para clipboard
+      }
+    }
+
+    // Fallback 1: Clipboard API (seguro, sem permissões extra)
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(SHARE_URL);
+        showPill();
+        return;
+      } catch {
+        // sem permissão → último fallback
+      }
+    }
+
+    // Fallback 2: execCommand (legado, sem dependências externas)
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = SHARE_URL;
+      ta.style.cssText =
+        "position:fixed;top:0;left:0;opacity:0;pointer-events:none;";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      showPill();
+    } catch {
+      // silencioso — não há nada mais a fazer sem bibliotecas externas
+    }
+  });
+}
+
 function initMenuInteractions() {
   const trigger = document.getElementById("menu-trigger");
   const overlay = document.getElementById("menu-overlay");
