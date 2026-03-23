@@ -19,8 +19,21 @@ async function fetchFertagusNewAPI() {
       },
       cache: "no-store",
     });
+
+    // NOVO: Deteta o disjuntor do teu backend (Código 503)
+    if (res.status === 503) {
+      window.apiIsDown = true;
+      return []; // Devolve lista vazia para forçar o ecrã de erro
+    }
+
     if (!res.ok) throw new Error("API Middleware Error");
     const data = await res.json();
+
+    // Garantia dupla caso o erro venha em JSON (Status 200 com erro)
+    if (data.error === "IP_DOWN") {
+      window.apiIsDown = true;
+      return [];
+    }
 
     const futureTrains = data.futureTrains || {};
     const apiTrains = Object.values(data).filter((v) => v && v["id-comboio"]);

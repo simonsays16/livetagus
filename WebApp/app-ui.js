@@ -459,6 +459,51 @@ window.renderList = function (list) {
   currentTrainList = list;
   container.innerHTML = "";
 
+  // 1. POP-UP DE BLOQUEIO TOTAL (FALHA DA IP)
+  let ipModal = document.getElementById("ip-down-modal");
+
+  if (window.apiIsDown) {
+    if (!ipModal) {
+      // Cria e injeta o pop-up a cobrir a app inteira
+      ipModal = document.createElement("div");
+      ipModal.id = "ip-down-modal";
+      ipModal.className =
+        "fixed inset-0 z-[100] flex items-center justify-center bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-md animate-fade-in px-6";
+
+      ipModal.innerHTML = `
+        <div class="bg-white dark:bg-zinc-900 border border-red-500/70 shadow-2xl rounded-3xl p-6 md:p-8 max-w-sm w-full text-center flex flex-col items-center">
+          
+          <div class="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-5">
+            <i data-lucide="server-crash" class="w-8 h-8 text-red-500 animate-pulse"></i>
+          </div>
+          
+          <h2 class="text-xl font-bold text-zinc-900 dark:text-white mb-2 leading-tight">Falha na Infraestruturas de Portugal</h2>
+          
+          <p class="text-xs text-zinc-500 dark:text-zinc-400 mb-6 leading-relaxed">
+            Os servidores centrais da <b>IP</b> foram abaixo. A infraestrutura da LiveTagus encontra-se 100% operacional, mas sem a fonte oficial não conseguimos obter a localização dos comboios.
+          </p>
+          
+          <a data-action="go-offline" href="./horarios" class="w-full py-3.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold tracking-widest uppercase transition-all active:scale-95 shadow-lg shadow-red-500/20">
+            Ver Horários Offline
+          </a>
+          
+          <div class="flex items-center gap-2 mt-5 text-[10px] text-zinc-400">
+            <span class="w-1.5 h-1.5 rounded-full bg-zinc-400 animate-ping"></span>
+            A tentar religar automaticamente...
+          </div>
+          
+        </div>
+      `;
+      document.body.appendChild(ipModal);
+      if (window.lucide) lucide.createIcons();
+    }
+    // Aborta a renderização da lista para não fazer nada por trás do modal
+    return;
+  } else {
+    // Se a IP recuperou, remove o modal automaticamente
+    if (ipModal) ipModal.remove();
+  }
+
   if (!list || !list.length) {
     container.innerHTML = `<div class="h-60 flex flex-col items-center justify-center text-zinc-500 gap-3"><i data-lucide="train-track" class="w-10 h-10 opacity-20"></i><p class="text-xs tracking-wider uppercase font-medium">Sem comboios próximos<br><a class="text-center underline underline-offset-2" data-action="go-offline" href="./horarios">Vê Horários Offline</a></p></div>`;
     if (window.lucide) lucide.createIcons();
