@@ -181,6 +181,10 @@ document.body.addEventListener("click", function (e) {
       sa_event("offline_schedules_forced");
       break;
 
+    case "sudoku-offline":
+      sa_event("sudoku-offline-play");
+      break;
+
     default:
       break;
   }

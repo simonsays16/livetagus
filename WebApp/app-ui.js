@@ -480,11 +480,15 @@ window.renderList = function (list) {
           <h2 class="text-xl font-bold text-zinc-900 dark:text-white mb-2 leading-tight">Falha na Infraestruturas de Portugal</h2>
           
           <p class="text-xs text-zinc-500 dark:text-zinc-400 mb-6 leading-relaxed">
-            Os servidores centrais da <b>IP</b> foram abaixo. A infraestrutura da LiveTagus encontra-se 100% operacional, mas sem a fonte oficial não conseguimos obter a localização dos comboios.
+            Os servidores com informações de circulação da <b>IP</b> foram abaixo. A infraestrutura da LiveTagus encontra-se 100% operacional, mas sem a fonte oficial não conseguimos obter a localização dos comboios. Isto <b>não</b> significa que os comboios estejam com perturbações na circulação!
           </p>
           
           <a data-action="go-offline" href="./horarios" class="w-full py-3.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold tracking-widest uppercase transition-all active:scale-95 shadow-lg shadow-red-500/20">
             Ver Horários Offline
+          </a>
+
+          <a data-action="sudoku-offline" href="./sudoku" class="mt-6 w-full py-3.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold tracking-widest uppercase transition-all active:scale-95 shadow-lg shadow-red-500/20">
+            Aproveitar e Jogar Sudoku
           </a>
           
           <div class="flex items-center gap-2 mt-5 text-[10px] text-zinc-400">
