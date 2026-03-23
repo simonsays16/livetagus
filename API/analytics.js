@@ -1,6 +1,7 @@
 /**
  * analytics.js
  * Sistema de analytics para medir a precisão das previsões LiveTagus.
+ * Ficheiro claude verificado
  *
  * METODOLOGIA:
  * ─────────────────────────────────────────────────────────────────────────────

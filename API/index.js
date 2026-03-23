@@ -287,8 +287,22 @@ const fetchDetails = async (tid, dateStr) => {
     const r = await fetch(url, { headers: FETCH_HEADERS, timeout: 8000 });
     if (!r.ok) return null;
     const j = await r.json();
+    IP_CONSECUTIVE_ERRORS = 0;
+    IP_IS_DOWN = false;
+
     return j.response;
   } catch (e) {
+    IP_CONSECUTIVE_ERRORS++;
+
+    // Se 10 chamadas seguidas falharem (aprox. 1 a 2 batches), assumimos queda geral da IP
+    if (IP_CONSECUTIVE_ERRORS > 10) {
+      if (!IP_IS_DOWN)
+        console.error(
+          `[ALERTA FATAL] Servidores da IP em baixo detectados! (${e.message})`,
+        );
+      IP_IS_DOWN = true;
+    }
+
     return null;
   }
 };
@@ -359,7 +373,7 @@ const checkTurnaroundDelay = (
             (minDepartureDate.getTime() - scheduledDepartureDate.getTime()) /
               1000,
           );
-          if (delaySeconds > 30) {
+          if (delaySeconds > 100) {
             return {
               delaySeconds: delaySeconds,
               predictedDeparture: formatTimeHHMMSS(minDepartureDate),
@@ -1142,7 +1156,18 @@ const scheduleNextTick = () => {
 // --- ROUTES ---
 
 // Rota protegida com middleware
-app.get("/fertagus", protectRoute, (req, res) => res.json(OUTPUT_CACHE));
+app.get("/fertagus", protectRoute, (req, res) => {
+  // Se a IP morreu, o backend recusa-se a servir dados obsoletos e avisa a app
+  if (IP_IS_DOWN) {
+    return res.status(503).json({
+      error: "IP_DOWN",
+      status: "offline",
+      message: "Infraestruturas de Portugal Incontactável",
+    });
+  }
+
+  res.json(OUTPUT_CACHE);
+});
 
 // Rota pública de estatísticas de precisão das previsões
 app.get("/stats", (req, res) => {
@@ -1152,7 +1177,7 @@ app.get("/stats", (req, res) => {
 app.get("/", (req, res) =>
   res.json({
     status: "online",
-    version: "4.5.6",
+    version: "4.6.0",
     aviso:
       "Pedimos que não uses o nosso endpoint diretamente! Verifica toda as informações e código no github.",
     operational: getOperationalInfo(),
@@ -1164,7 +1189,7 @@ app.get("/", (req, res) =>
 );
 
 app.listen(PORT, () => {
-  console.log(`LiveTagus API v4.5.6 ativa na porta ${PORT}`);
+  console.log(`LiveTagus API v4.6.0 ativa na porta ${PORT}`);
   console.log(`Endpoint /fertagus protegido com API_KEY.`);
   checkOfflineTrains();
   updateCycle();
