@@ -287,7 +287,7 @@ let IP_IS_DOWN = false; // ADICIONA ESTA LINHA
 const fetchDetails = async (tid, dateStr) => {
   const url = `${API_BASE}/horarios-ncombio/${tid}/${dateStr}`;
   try {
-    const r = await fetch(url, { headers: FETCH_HEADERS, timeout: 8000 });
+    const r = await fetch(url, { headers: FETCH_HEADERS, timeout: 14000 });
     if (!r.ok) return null;
     const j = await r.json();
     IP_CONSECUTIVE_ERRORS = 0;
@@ -1180,7 +1180,7 @@ app.get("/stats", (req, res) => {
 app.get("/", (req, res) =>
   res.json({
     status: "online",
-    version: "4.6.0",
+    version: "4.6.1",
     aviso:
       "Pedimos que não uses o nosso endpoint diretamente! Verifica toda as informações e código no github.",
     operational: getOperationalInfo(),
@@ -1192,7 +1192,7 @@ app.get("/", (req, res) =>
 );
 
 app.listen(PORT, () => {
-  console.log(`LiveTagus API v4.6.0 ativa na porta ${PORT}`);
+  console.log(`LiveTagus API v4.6.1 ativa na porta ${PORT}`);
   console.log(`Endpoint /fertagus protegido com API_KEY.`);
   checkOfflineTrains();
   updateCycle();
