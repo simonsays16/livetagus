@@ -279,6 +279,9 @@ const subtractMinutes = (timeStr, minutes) => {
 // em delays.js. A nova função cobre os três troços da Margem Sul com suporte a hora de ponta.
 // Ver: delays.js → getStructuralDelay(stationKey, direction, { pragalPassed, penalvaPassed, now })
 
+let IP_CONSECUTIVE_ERRORS = 0; // ADICIONA ESTA LINHA
+let IP_IS_DOWN = false; // ADICIONA ESTA LINHA
+
 // --- FETCHING ---
 
 const fetchDetails = async (tid, dateStr) => {
