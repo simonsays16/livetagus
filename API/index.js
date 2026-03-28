@@ -457,6 +457,12 @@ const checkOfflineTrains = async () => {
           } else {
             results[String(t.id)] = situacao;
           }
+        } else if (
+          // Adicionado para supressões causadas por obras
+          (!details || !details.SituacaoComboio) &&
+          (t.id === "14306" || t.id === "14001")
+        ) {
+          results[String(t.id)] = "SUPRIMIDO";
         }
       }),
     );
@@ -482,14 +488,8 @@ const checkOfflineTrains = async () => {
  * enganar utilizadores e verifica de minuto a minuto se retomou circulação.
  *
  * Timings:
- *   Stage 2 → entrada: 30+ min desde HoraPrevista da próxima estação
+ *   Stage 2 → entrada: 15+ min desde HoraPrevista da próxima estação
  *   Stage 3 → 60+ min desde HoraPrevista da próxima estação (30 min de monitoring)
- *
- * @param {string} trainId                - ID do comboio
- * @param {object} richInfo               - Entrada do RICH_SCHEDULE
- * @param {string} originDateStr          - Data operacional (YYYY-MM-DD)
- * @param {Date}   nextStationExpectedDate - HoraPrevista da próxima estação não visitada
- * @param {number} currentPassedCount     - Nº de estações já passadas na deteção
  */
 const initiateGhostMonitoring = (
   trainId,
@@ -630,6 +630,15 @@ const processTrain = async (richInfo, originDateStr) => {
 
   let isLive = false;
   let situacao = details?.SituacaoComboio || "Sem dados IP";
+
+  // Adicionado para mostrar comboios suprimidos devido às obras.
+  if (
+    (!details || !details.SituacaoComboio) &&
+    (trainId === "14306" || trainId === "14001")
+  ) {
+    situacao = "SUPRIMIDO";
+  }
+
   let nodes = details?.NodesPassagemComboio || [];
   let duracao = details?.DuracaoViagem || "--:--";
   let operador = details?.Operador || "FERTAGUS";
@@ -937,10 +946,10 @@ const processTrain = async (richInfo, originDateStr) => {
   // Aplica-se apenas a comboios live não declarados suprimidos pela IP.
   // Deteta comboios imobilizados sem anúncio e aplica cancelamento gradual.
   //
-  // Stage 1 (5–29 min): SituacaoComboio = "Possível Perturbação"
+  // Stage 1 (5–14 min): SituacaoComboio = "Possível Perturbação"
   //   → comboio permanece visível na API com aviso para a app mostrar
   //
-  // Stage 2 (30–59 min): comboio removido da OUTPUT_CACHE pública
+  // Stage 2 (15–59 min): comboio removido da OUTPUT_CACHE pública
   //   → monitorização background de minuto a minuto (máx. 30 min)
   //   → se retomar circulação, o próximo updateCycle re-integra-o
   //
@@ -968,7 +977,7 @@ const processTrain = async (richInfo, originDateStr) => {
       if (nextExpectedDate) {
         const minutesLate = (nowTime - nextExpectedDate.getTime()) / 60000;
 
-        if (minutesLate >= 30) {
+        if (minutesLate >= 15) {
           // === STAGE 2 ===
           console.log(
             `[GHOST] Stage 2: Comboio ${trainId} a ${minutesLate.toFixed(1)} min ` +
@@ -1180,7 +1189,7 @@ app.get("/stats", (req, res) => {
 app.get("/", (req, res) =>
   res.json({
     status: "online",
-    version: "4.6.1",
+    version: "4.6.2",
     aviso:
       "Pedimos que não uses o nosso endpoint diretamente! Verifica toda as informações e código no github.",
     operational: getOperationalInfo(),
@@ -1192,7 +1201,7 @@ app.get("/", (req, res) =>
 );
 
 app.listen(PORT, () => {
-  console.log(`LiveTagus API v4.6.1 ativa na porta ${PORT}`);
+  console.log(`LiveTagus API v4.6.2 ativa na porta ${PORT}`);
   console.log(`Endpoint /fertagus protegido com API_KEY.`);
   checkOfflineTrains();
   updateCycle();
