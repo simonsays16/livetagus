@@ -262,12 +262,12 @@ function showMaintenanceMode(mode) {
       </div>
 
       <div class="flex flex-col w-full gap-3">
-        <button onclick="window.location.href='./horarios'" class="w-full py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 uppercase tracking-[0.15em] text-[10px] font-medium transition-opacity hover:opacity-80">
+        <a href="./horarios" class="block text-center w-full py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 uppercase tracking-[0.15em] text-[10px] font-medium transition-opacity hover:opacity-80">
           Horários Offline
-        </button>
-        <button onclick="window.location.href='./sudoku'" class="w-full py-4 bg-transparent border border-zinc-900/20 dark:border-white/20 text-zinc-900 dark:text-white uppercase tracking-[0.15em] text-[10px] font-medium transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
+        </a>
+        <a href="./sudoku" class="block text-center w-full py-4 bg-transparent border border-zinc-900/20 dark:border-white/20 text-zinc-900 dark:text-white uppercase tracking-[0.15em] text-[10px] font-medium transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
           Jogo Sudoku
-        </button>
+        </a>
       </div>
     </div>
   `;
