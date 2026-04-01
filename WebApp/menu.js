@@ -1,5 +1,5 @@
 /* Filename: js/menu.js 
-   Funções: Menu Global, Footer Global, Definições de Tema, API Status, CSP Compliant
+   Funções: Menu Global, Footer Global, Definições de Tema, API Status, CSP Compliant snd analitycs
 */
 
 window.sa_event =
@@ -10,21 +10,20 @@ window.sa_event =
   };
 
 document.addEventListener("DOMContentLoaded", () => {
-  injectNavigation();
-  injectFooter();
-  initTheme();
-  initMenuInteractions();
-  initShareButton(); // Botão de partilha nativa no footer
-  checkApiStatus(); // Inicia a verificação do status
-  updateAppVersion(); // busca a versão ao sw.js
+  injectNavigation(); // injetar header
+  injectFooter(); // injetar footer
+  initTheme(); // verificar tema escuro/claro/auto
+  initMenuInteractions(); // interações menu
+  initShareButton(); // partilha nativa no footer
+  checkApiStatus(); // verificar estado
+  updateAppVersion(); // versao sw.js
 });
 
-// --- 1. BARRA DE NAVEGAÇÃO E MENU LATERAL ---
+// --- BARRA DE NAVEGAÇÃO E MENU LATERAL ---
 function injectNavigation() {
   const navContainer = document.getElementById("global-nav");
   if (!navContainer) return;
 
-  // O src inicial não importa muito pois o initTheme corre logo a seguir e corrige
   const logoSrc = "./imagens/logotransparente.svg";
 
   const githubIcon = `<svg viewBox="0 0 24 24" class="w-5 h-5 fill-current"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>`;
@@ -91,7 +90,7 @@ function injectNavigation() {
     `;
 }
 
-// --- 2. FOOTER GLOBAL (Para o fundo das páginas) ---
+// --- FOOTER GLOBAL ---
 function injectFooter() {
   const footerContainer = document.getElementById("global-footer");
   if (!footerContainer) return;
@@ -179,7 +178,7 @@ function injectFooter() {
     `;
 }
 
-// --- 3. BOTÃO DE PARTILHA NATIVA ---
+// --- BOTÃO DE PARTILHA NATIVA ---
 function initShareButton() {
   const btn = document.getElementById("footer-share-btn");
   if (!btn) return;
@@ -188,7 +187,6 @@ function initShareButton() {
   const SHARE_TEXT =
     "Olha a nova aplicação web para ver a fertagus em tempo real! Gratuita e sem anúncios!";
 
-  // Criar pill de notificação (uma só vez, reutilizado)
   let pill = document.getElementById("share-pill-notification");
   if (!pill) {
     pill = document.createElement("div");
@@ -235,7 +233,6 @@ function initShareButton() {
 
   btn.addEventListener("click", async () => {
     sa_event("native_share_button");
-    // Tentar Web Share API nativa (mobile/desktop moderno)
     const shareData = { title: "LiveTagus", text: SHARE_TEXT, url: SHARE_URL };
     if (
       navigator.share &&
@@ -243,25 +240,20 @@ function initShareButton() {
     ) {
       try {
         await navigator.share(shareData);
-        return; // sucesso — a UI nativa tomou conta
+        return;
       } catch (err) {
-        if (err.name === "AbortError") return; // utilizador cancelou
-        // outro erro → fallback para clipboard
+        if (err.name === "AbortError") return;
       }
     }
 
-    // Fallback 1: Clipboard API (seguro, sem permissões extra)
     if (navigator.clipboard && navigator.clipboard.writeText) {
       try {
         await navigator.clipboard.writeText(SHARE_URL);
         showPill();
         return;
-      } catch {
-        // sem permissão → último fallback
-      }
+      } catch {}
     }
 
-    // Fallback 2: execCommand (legado, sem dependências externas)
     try {
       const ta = document.createElement("textarea");
       ta.value = SHARE_URL;
@@ -273,9 +265,7 @@ function initShareButton() {
       document.execCommand("copy");
       document.body.removeChild(ta);
       showPill();
-    } catch {
-      // silencioso — não há nada mais a fazer sem bibliotecas externas
-    }
+    } catch {}
   });
 }
 
@@ -306,7 +296,7 @@ function initMenuInteractions() {
   });
 }
 
-// --- 4. GESTÃO DE TEMA (DARK/LIGHT) ---
+// --- GESTÃO DE TEMA ---
 function initTheme() {
   const savedTheme = localStorage.getItem("theme") || "system";
   setTheme(savedTheme);
@@ -315,13 +305,11 @@ function initTheme() {
   window
     .matchMedia("(prefers-color-scheme: dark)")
     .addEventListener("change", (e) => {
-      // Só aplica a mudança automaticamente se o utilizador estiver em modo 'system'
       if (localStorage.getItem("theme") === "system") {
         setTheme("system");
       }
     });
 
-  // CSP: Delegação de eventos para os botões de tema
   document.body.addEventListener("click", (e) => {
     const themeBtn = e.target.closest(".theme-btn");
     if (themeBtn && themeBtn.dataset.mode) {
@@ -376,13 +364,13 @@ function setTheme(mode) {
   });
 }
 
-// --- 5. API STATUS CHECKER ---
+// --- API STATUS ---
 async function checkApiStatus() {
   const dot = document.getElementById("status-dot");
   const dot_footer = document.getElementById("status-dot-footer");
   const text = document.getElementById("status-text");
 
-  // Se o menu ainda não foi injetado, tenta de novo em breve
+  // menu ainda não foi injetado
   if (!dot || !text) {
     setTimeout(checkApiStatus, 500);
     return;
@@ -390,8 +378,8 @@ async function checkApiStatus() {
 
   const now = new Date();
 
-  // --- MODO POUPANÇA (COMENTADO PARA TESTES) ---
-  /* const hour = now.getHours();
+  /* --- MODO POUPANÇA (COMENTADO PARA TESTES) ---
+  const hour = now.getHours();
   BLOQUEIO: Entre as 02:00 e as 05:00 não gastamos recursos
   if (hour >= 2 && hour < 5) {
     dot.className = "w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-700";
@@ -404,10 +392,9 @@ async function checkApiStatus() {
 
   try {
     const controller = new AbortController();
-    // Timeout curto (5s) para o status check
+    // Timeout de 5s para o status check
     const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-    // Endpoint raiz, sem API_KEY
     const res = await fetch("https://api.livetagus.pt/", {
       method: "GET",
       signal: controller.signal,
@@ -416,7 +403,6 @@ async function checkApiStatus() {
     clearTimeout(timeoutId);
 
     if (res.ok) {
-      // ONLINE
       const successClass =
         "w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse";
 
@@ -435,7 +421,6 @@ async function checkApiStatus() {
       throw new Error("Servidor respondeu com erro");
     }
   } catch (err) {
-    // OFFLINE
     const errorClass = "w-2 h-2 rounded-full bg-amber-500/50";
 
     dot.className = errorClass;
@@ -443,14 +428,14 @@ async function checkApiStatus() {
 
     text.textContent = "A ligar ao servidor...";
 
-    // Tentativas 30 em 30 segundos
+    // tentar 30 em 30 segundos
     setTimeout(checkApiStatus, 30000);
   }
 }
 
 // INJEÇÃO DO SISTEMA OFFLINE
 (function initOfflineSystem() {
-  // 1. Registar Service Worker
+  // Registar Service worker
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker
       .register("./sw.js")
@@ -458,7 +443,7 @@ async function checkApiStatus() {
       .catch((err) => console.log("[SW] Falha ao registar:", err));
   }
 
-  // 2. Injetar Script Offline
+  // Injetar script Offline
   if (!document.querySelector('script[src="./offline.js"]')) {
     const script = document.createElement("script");
     script.src = "./offline.js";
@@ -471,7 +456,7 @@ async function checkApiStatus() {
 async function updateAppVersion() {
   const menuVersionEl = document.getElementById("menu-version-display");
   const footerVersionEl = document.getElementById("footer-version-display");
-  const roadmapVersionEl = document.getElementById("roadmap-version-display"); //roadmap
+  const roadmapVersionEl = document.getElementById("roadmap-version-display");
 
   // versao default
   let version = "v.base";
@@ -485,21 +470,19 @@ async function updateAppVersion() {
       );
 
       if (match && match[1]) {
-        version = match[1]; // retirar apenas versão
+        version = match[1];
       }
     }
   } catch (err) {
     console.warn("[App Version] Não foi possível ler a versão do sw.js", err);
   }
 
-  // Atualiza os textos na interface
   if (menuVersionEl) menuVersionEl.textContent = `LiveTagus • ${version}`;
   if (footerVersionEl) footerVersionEl.textContent = version;
-  if (roadmapVersionEl) roadmapVersionEl.textContent = `Versão: ${version}`; // ROadmap
+  if (roadmapVersionEl) roadmapVersionEl.textContent = `Versão: ${version}`;
 }
 
 // 100% privacy-first analytics
-// Injetar Simple Analytics dinamicamente via Proxy
 const saScript = document.createElement("script");
 saScript.src = "/api/sa.js";
 saScript.async = true;

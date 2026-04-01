@@ -1,0 +1,2571 @@
+{
+    "9417087": {
+        "name": "Pragal",
+        "ligacoes": {
+            "cm": [
+                {
+                    "id": "020073",
+                    "name": "PRAGAL (AV JOSE C PIRES) ESTAÇÃO",
+                    "location": [
+                        38.666696,
+                        -9.179479
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.666696,-9.179479",
+                    "lines": [
+                        {
+                            "line-id": "3017",
+                            "line-name": "3017",
+                            "line-long-name": "Charneca de Caparica - Pragal (Estação)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3024",
+                            "line-name": "3024",
+                            "line-long-name": "Costa da Caparica (Terminal) - Pragal (Estação)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3025",
+                            "line-name": "3025",
+                            "line-long-name": "Costa da Caparica (Terminal) - Pragal (Estação) via IC20",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3503",
+                            "line-name": "3503",
+                            "line-long-name": "Pragal (Estação) - Vale de Milhaços",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "020275",
+                    "name": "PRAGAL (AV TORRADO SILVA) ESTAÇÃO",
+                    "location": [
+                        38.666514,
+                        -9.180188
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.666514,-9.180188",
+                    "lines": [
+                        {
+                            "line-id": "3009",
+                            "line-name": "3009",
+                            "line-long-name": "Cacilhas (Terminal) - Trafaria (Terminal)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3012",
+                            "line-name": "3012",
+                            "line-long-name": "Cacilhas (Terminal) - Fonte da Telha",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3504",
+                            "line-name": "3504",
+                            "line-long-name": "Hospital Garcia de Orta - Quintinhas",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3507",
+                            "line-name": "3507",
+                            "line-long-name": "Cacilhas (Terminal) - Marisol",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "020276",
+                    "name": "PRAGAL (AV TORRADO SILVA) ESTAÇÃO",
+                    "location": [
+                        38.66662,
+                        -9.180547
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.66662,-9.180547",
+                    "lines": [
+                        {
+                            "line-id": "3009",
+                            "line-name": "3009",
+                            "line-long-name": "Cacilhas (Terminal) - Trafaria (Terminal)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3012",
+                            "line-name": "3012",
+                            "line-long-name": "Cacilhas (Terminal) - Fonte da Telha",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3504",
+                            "line-name": "3504",
+                            "line-long-name": "Hospital Garcia de Orta - Quintinhas",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3507",
+                            "line-name": "3507",
+                            "line-long-name": "Cacilhas (Terminal) - Marisol",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "027998",
+                    "name": "PRAGAL (AV TORRADO SILVA) ESTAÇÃO",
+                    "location": [
+                        38.666711,
+                        -9.180311
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.666711,-9.180311",
+                    "lines": [
+                        {
+                            "line-id": "3007",
+                            "line-name": "3007",
+                            "line-long-name": "Bairro Fundo Fomento - Cacilhas (Terminal)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3022",
+                            "line-name": "3022",
+                            "line-long-name": "Costa da Caparica (Terminal) - Cacilhas (Terminal)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3027",
+                            "line-name": "3027",
+                            "line-long-name": "Hospital Garcia de Orta - Sobreda",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3524",
+                            "line-name": "3524",
+                            "line-long-name": "Hospital Garcia de Orta - Marisol",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3601",
+                            "line-name": "3601",
+                            "line-long-name": "Barreiro - Cova da Piedade (Metro)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "027999",
+                    "name": "PRAGAL (AV TORRADO SILVA) ESTAÇÃO",
+                    "location": [
+                        38.666619,
+                        -9.179919
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.666619,-9.179919",
+                    "lines": [
+                        {
+                            "line-id": "3007",
+                            "line-name": "3007",
+                            "line-long-name": "Bairro Fundo Fomento - Cacilhas (Terminal)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3017",
+                            "line-name": "3017",
+                            "line-long-name": "Charneca de Caparica - Pragal (Estação)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3022",
+                            "line-name": "3022",
+                            "line-long-name": "Costa da Caparica (Terminal) - Cacilhas (Terminal)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3025",
+                            "line-name": "3025",
+                            "line-long-name": "Costa da Caparica (Terminal) - Pragal (Estação) via IC20",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3027",
+                            "line-name": "3027",
+                            "line-long-name": "Hospital Garcia de Orta - Sobreda",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3524",
+                            "line-name": "3524",
+                            "line-long-name": "Hospital Garcia de Orta - Marisol",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3601",
+                            "line-name": "3601",
+                            "line-long-name": "Barreiro - Cova da Piedade (Metro)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                }
+            ],
+            "mts": [
+                {
+                    "type": "metro",
+                    "operator": "MTS"
+                },
+                {
+                    "line": "Linha 2 - Corroios"
+                },
+                {
+                    "line": "Linha 3 - Cacilhas/FCT Universidade"
+                }
+            ],
+            "cp": [
+                {
+                    "type": "train",
+                    "operator": "CP"
+                },
+                {
+                    "line": "Comboios Intercidades"
+                }
+            ]
+        }
+    },
+    "9417095": {
+        "name": "Penalva",
+        "ligacoes": {
+            "cm": [
+                {
+                    "id": "130093",
+                    "name": "Penalva (Estação)",
+                    "location": [
+                        38.589796,
+                        -8.996074
+                    ],
+                    "gmapslink": "https://maps.app.goo.gl/Tp8Kq1TTp8f7ttMk8",
+                    "lines": [
+                        {
+                            "line-id": "4304",
+                            "line-name": "4304",
+                            "line-long-name": "Palmela (Terminal) - Penalva",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4313",
+                            "line-name": "4313",
+                            "line-long-name": "São Gonçalo - Penalva",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4611",
+                            "line-name": "4611",
+                            "line-long-name": "Penalva - Moita (Esc. Secundária)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4612",
+                            "line-name": "4612",
+                            "line-long-name": "Bairro dos Marinheiros - Palmela (Terminal)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    "9417137": {
+        "name": "Corroios",
+        "ligacoes": {
+            "cm": [
+                {
+                    "id": "140089",
+                    "name": "Corroios Estação P4",
+                    "location": [
+                        38.636832,
+                        -9.149686
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.636832,-9.149686",
+                    "lines": [
+                        {
+                            "line-id": "3515",
+                            "line-name": "3515",
+                            "line-long-name": "Corroios (Estação) - Lazarim (Pilotos)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3516",
+                            "line-name": "3516",
+                            "line-long-name": "Charneca de Caparica - Corroios (Estação)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3519",
+                            "line-name": "3519",
+                            "line-long-name": "Costa da Caparica (Terminal) - Corroios (Estação)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "140389",
+                    "name": "CORROIOS(AV VL MILHAÇOS) VIADUTO ESTAÇÃO",
+                    "location": [
+                        38.637508,
+                        -9.154792
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.637508,-9.154792",
+                    "lines": [
+                        {
+                            "line-id": "3104",
+                            "line-name": "3104",
+                            "line-long-name": "Corroios (Estação) - Vale de Milhaços",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3503",
+                            "line-name": "3503",
+                            "line-long-name": "Pragal (Estação) - Vale de Milhaços",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3511",
+                            "line-name": "3511",
+                            "line-long-name": "Cacilhas (Terminal) - Pinheirinho",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3513",
+                            "line-name": "3513",
+                            "line-long-name": "Cacilhas (Terminal) - Santa Marta do Pinhal",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3514",
+                            "line-name": "3514",
+                            "line-long-name": "Cacilhas (Terminal) - Vale de Milhaços",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3526",
+                            "line-name": "3526",
+                            "line-long-name": "Laranjeiro - Pinheirinho",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3527",
+                            "line-name": "3527",
+                            "line-long-name": "Monte de Caparica (FCT) - Paio Pires (Bairro Cucena)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "140946",
+                    "name": "Corroios (Estação) P0",
+                    "location": [
+                        38.636748,
+                        -9.151455
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.636748,-9.151455",
+                    "lines": [
+                        {
+                            "line-id": "3103",
+                            "line-name": "3103",
+                            "line-long-name": "Corroios (Estação) - Paio Pires (Centro) via Farinheiras",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3104",
+                            "line-name": "3104",
+                            "line-long-name": "Corroios (Estação) - Vale de Milhaços",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3116",
+                            "line-name": "3116",
+                            "line-long-name": "Marisol (Valadares) - Seixal (Terminal Fluvial) via Corroios (Estação)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3506",
+                            "line-name": "3506",
+                            "line-long-name": "Cacilhas (Terminal) - Corroios (Estação) via Miratejo",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3508",
+                            "line-name": "3508",
+                            "line-long-name": "Cacilhas (Terminal) - Paio Pires (Centro)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3515",
+                            "line-name": "3515",
+                            "line-long-name": "Corroios (Estação) - Lazarim (Pilotos)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3516",
+                            "line-name": "3516",
+                            "line-long-name": "Charneca de Caparica - Corroios (Estação)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3517",
+                            "line-name": "3517",
+                            "line-long-name": "Chegadinho - Corroios (Estação)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3518",
+                            "line-name": "3518",
+                            "line-long-name": "Corroios (Estação) - Vale de Figueira",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3519",
+                            "line-name": "3519",
+                            "line-long-name": "Costa da Caparica (Terminal) - Corroios (Estação)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "149996",
+                    "name": "Corroios Estação P5",
+                    "location": [
+                        38.636961,
+                        -9.149453
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.636961,-9.149453",
+                    "lines": [
+                        {
+                            "line-id": "3103",
+                            "line-name": "3103",
+                            "line-long-name": "Corroios (Estação) - Paio Pires (Centro) via Farinheiras",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3116",
+                            "line-name": "3116",
+                            "line-long-name": "Marisol (Valadares) - Seixal (Terminal Fluvial) via Corroios (Estação)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3508",
+                            "line-name": "3508",
+                            "line-long-name": "Cacilhas (Terminal) - Paio Pires (Centro)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "149997",
+                    "name": "Corroios Estação P3",
+                    "location": [
+                        38.636658,
+                        -9.15
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.636658,-9.15",
+                    "lines": [
+                        {
+                            "line-id": "3104",
+                            "line-name": "3104",
+                            "line-long-name": "Corroios (Estação) - Vale de Milhaços",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3514",
+                            "line-name": "3514",
+                            "line-long-name": "Cacilhas (Terminal) - Vale de Milhaços",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3518",
+                            "line-name": "3518",
+                            "line-long-name": "Corroios (Estação) - Vale de Figueira",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "149998",
+                    "name": "Corroios Estação P1",
+                    "location": [
+                        38.636491,
+                        -9.1503
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.636491,-9.1503",
+                    "lines": [
+                        {
+                            "line-id": "3509",
+                            "line-name": "3509",
+                            "line-long-name": "Cacilhas (Terminal) - Paio Pires (Centro) via Seixal (Terminal Fluvial) e Amora",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3511",
+                            "line-name": "3511",
+                            "line-long-name": "Cacilhas (Terminal) - Pinheirinho",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3526",
+                            "line-name": "3526",
+                            "line-long-name": "Laranjeiro - Pinheirinho",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "149999",
+                    "name": "Corroios Estação P2",
+                    "location": [
+                        38.636571,
+                        -9.150157
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.636571,-9.150157",
+                    "lines": [
+                        {
+                            "line-id": "3506",
+                            "line-name": "3506",
+                            "line-long-name": "Cacilhas (Terminal) - Corroios (Estação) via Miratejo",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3517",
+                            "line-name": "3517",
+                            "line-long-name": "Chegadinho - Corroios (Estação)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3525",
+                            "line-name": "3525",
+                            "line-long-name": "Hospital Garcia de Orta - Miratejo",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                }
+            ],
+            "mts": [
+                {
+                    "type": "metro",
+                    "operator": "MTS"
+                },
+                {
+                    "line": "Linha 1 - Cacilhas"
+                },
+                {
+                    "line": "Linha 2 - Pragal"
+                }
+            ]
+        }
+    },
+    "9417152": {
+        "name": "Foros da Amora",
+        "ligacoes": {
+            "cm": [
+                {
+                    "id": "140167",
+                    "name": "Foros de Amora P1",
+                    "location": [
+                        38.62052,
+                        -9.128127
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.62052,-9.128127",
+                    "lines": [
+                        {
+                            "line-id": "3101",
+                            "line-name": "3101",
+                            "line-long-name": "Amora - Foros de Amora (Estação)",
+                            "route-type": 3,
+                            "route-color": "#3D85C6"
+                        }
+                    ]
+                },
+                {
+                    "id": "141569",
+                    "name": "Foros de Amora (Estação) P0",
+                    "location": [
+                        38.620955,
+                        -9.128682
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.620955,-9.128682",
+                    "lines": [
+                        {
+                            "line-id": "3101",
+                            "line-name": "3101",
+                            "line-long-name": "Amora - Foros de Amora (Estação)",
+                            "route-type": 3,
+                            "route-color": "#3D85C6"
+                        },
+                        {
+                            "line-id": "3108",
+                            "line-name": "3108",
+                            "line-long-name": "Fogueteiro - Foros de Amora (Estação)",
+                            "route-type": 3,
+                            "route-color": "#3D85C6"
+                        },
+                        {
+                            "line-id": "3114",
+                            "line-name": "3114",
+                            "line-long-name": "Foros de Amora (Estação) - Paio Pires (Quinta Flamância)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3118",
+                            "line-name": "3118",
+                            "line-long-name": "Marisol (Valadares) - Seixal (Terminal Fluvial)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3536",
+                            "line-name": "3536",
+                            "line-long-name": "Cacilhas (Terminal) - Sesimbra (Terminal)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "149989",
+                    "name": "Foros de Amora P4",
+                    "location": [
+                        38.620219,
+                        -9.12769
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.620219,-9.12769",
+                    "lines": [
+                        {
+                            "line-id": "3118",
+                            "line-name": "3118",
+                            "line-long-name": "Marisol (Valadares) - Seixal (Terminal Fluvial)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3512",
+                            "line-name": "3512",
+                            "line-long-name": "Cacilhas (Terminal) - Quinta Princesa",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3521",
+                            "line-name": "3521",
+                            "line-long-name": "Cruz de Pau - Fonte da Telha",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3523",
+                            "line-name": "3523",
+                            "line-long-name": "Fonte da Telha - Paio Pires (Quinta Flamância) via Seixal (Terminal Fluvial) e Foros de Amora (Estação)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "149990",
+                    "name": "Foros de Amora P3",
+                    "location": [
+                        38.620336,
+                        -9.12786
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.620336,-9.12786",
+                    "lines": [
+                        {
+                            "line-id": "3114",
+                            "line-name": "3114",
+                            "line-long-name": "Foros de Amora (Estação) - Paio Pires (Quinta Flamância)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3119",
+                            "line-name": "3119",
+                            "line-long-name": "Pinhal Conde Cunha - Seixal (Terminal Fluvial)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3508",
+                            "line-name": "3508",
+                            "line-long-name": "Cacilhas (Terminal) - Paio Pires (Centro)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3536",
+                            "line-name": "3536",
+                            "line-long-name": "Cacilhas (Terminal) - Sesimbra (Terminal)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "149991",
+                    "name": "Foros de Amora P2",
+                    "location": [
+                        38.620413,
+                        -9.127972
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.620413,-9.127972",
+                    "lines": [
+                        {
+                            "line-id": "3108",
+                            "line-name": "3108",
+                            "line-long-name": "Fogueteiro - Foros de Amora (Estação)",
+                            "route-type": 3,
+                            "route-color": "#3D85C6"
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    "9417186": {
+        "name": "Fogueteiro",
+        "ligacoes": {
+            "cm": [
+                {
+                    "id": "140039",
+                    "name": "Estação do Fogueteiro P3",
+                    "location": [
+                        38.609759,
+                        -9.10068
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.609759,-9.10068",
+                    "lines": [
+                        {
+                            "line-id": "3112",
+                            "line-name": "3112",
+                            "line-long-name": "Fogueteiro (Estação) - Seixal (Terminal Fluvial) via Paio Pires",
+                            "route-type": 3,
+                            "route-color": "#3D85C6"
+                        },
+                        {
+                            "line-id": "4621",
+                            "line-name": "4621",
+                            "line-long-name": "Moita (Esc. Secundária) - Seixal (Terminal Fluvial)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "140139",
+                    "name": "Estação do Fogueteiro P4",
+                    "location": [
+                        38.609954,
+                        -9.101011
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.609954,-9.101011",
+                    "lines": [
+                        {
+                            "line-id": "3111",
+                            "line-name": "3111",
+                            "line-long-name": "Fogueteiro (Estação) - Seixal (Terminal Fluvial)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3509",
+                            "line-name": "3509",
+                            "line-long-name": "Cacilhas (Terminal) - Paio Pires (Centro) via Seixal (Terminal Fluvial) e Amora",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "140537",
+                    "name": "Estação do Fogueteiro P6",
+                    "location": [
+                        38.610695,
+                        -9.102513
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.610695,-9.102513",
+                    "lines": [
+                        {
+                            "line-id": "3109",
+                            "line-name": "3109",
+                            "line-long-name": "Fogueteiro (Estação) - Parque Empresarial do Seixal",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3110",
+                            "line-name": "3110",
+                            "line-long-name": "Fogueteiro (Estação) - Redondos",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3122",
+                            "line-name": "3122",
+                            "line-long-name": "Casal do Sapo - Fogueteiro (Estação)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "140555",
+                    "name": "Estação do Fogueteiro P5",
+                    "location": [
+                        38.610608,
+                        -9.102293
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.610608,-9.102293",
+                    "lines": [
+                        {
+                            "line-id": "3105",
+                            "line-name": "3105",
+                            "line-long-name": "Fernão Ferro - Fogueteiro (Estação)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "148812",
+                    "name": "Fogueteiro (Estação) P0",
+                    "location": [
+                        38.61014,
+                        -9.101271
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.61014,-9.101271",
+                    "lines": [
+                        {
+                            "line-id": "3111",
+                            "line-name": "3111",
+                            "line-long-name": "Fogueteiro (Estação) - Seixal (Terminal Fluvial)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3112",
+                            "line-name": "3112",
+                            "line-long-name": "Fogueteiro (Estação) - Seixal (Terminal Fluvial) via Paio Pires",
+                            "route-type": 3,
+                            "route-color": "#3D85C6"
+                        },
+                        {
+                            "line-id": "3113",
+                            "line-name": "3113",
+                            "line-long-name": "Fogueteiro (Estação) - Seixal (Terminal Fluvial) via Quinta do Cabral",
+                            "route-type": 3,
+                            "route-color": "#3D85C6"
+                        }
+                    ]
+                },
+                {
+                    "id": "149003",
+                    "name": "Estação do Fogueteiro P7",
+                    "location": [
+                        38.610767,
+                        -9.102684
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.610767,-9.102684",
+                    "lines": [
+                        {
+                            "line-id": "3535",
+                            "line-name": "3535",
+                            "line-long-name": "Cacilhas (Terminal) - Quinta do Conde",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3546",
+                            "line-name": "3546",
+                            "line-long-name": "Cruz de Pau - Quinta do Conde",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3547",
+                            "line-name": "3547",
+                            "line-long-name": "Fogueteiro (Estação) - Quinta do Conde",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "149992",
+                    "name": "Estação do Fogueteiro P2",
+                    "location": [
+                        38.609632,
+                        -9.10045
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.609632,-9.10045",
+                    "lines": [
+                        {
+                            "line-id": "3113",
+                            "line-name": "3113",
+                            "line-long-name": "Fogueteiro (Estação) - Seixal (Terminal Fluvial) via Quinta do Cabral",
+                            "route-type": 3,
+                            "route-color": "#3D85C6"
+                        }
+                    ]
+                },
+                {
+                    "id": "149993",
+                    "name": "Estação do Fogueteiro P1",
+                    "location": [
+                        38.609586,
+                        -9.100227
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.609586,-9.100227",
+                    "lines": [
+                        {
+                            "line-id": "3119",
+                            "line-name": "3119",
+                            "line-long-name": "Pinhal Conde Cunha - Seixal (Terminal Fluvial)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3601",
+                            "line-name": "3601",
+                            "line-long-name": "Barreiro - Cova da Piedade (Metro)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3605",
+                            "line-name": "3605",
+                            "line-long-name": "Cacilhas (Terminal) - Setúbal (ITS) via Azeitão",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    "9417236": {
+        "name": "Coina",
+        "ligacoes": {
+            "cm": [
+                {
+                    "id": "043343",
+                    "name": "Coina (Estação) P5",
+                    "location": [
+                        38.584447,
+                        -9.050275
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.584447,-9.050275",
+                    "lines": [
+                        {
+                            "line-id": "3635",
+                            "line-name": "3635",
+                            "line-long-name": "Coina (Estação) - Sesimbra (Terminal) via Azeitão e Sampaio",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "140027",
+                    "name": "Coina (Estação) P1",
+                    "location": [
+                        38.585432,
+                        -9.052001
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.585432,-9.052001",
+                    "lines": [
+                        {
+                            "line-id": "3106",
+                            "line-name": "3106",
+                            "line-long-name": "Coina (Estação) - Fernão Ferro",
+                            "route-type": 3,
+                            "route-color": "#3D85C6"
+                        },
+                        {
+                            "line-id": "3540",
+                            "line-name": "3540",
+                            "line-long-name": "Zambujal - Coina (Estação)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3541",
+                            "line-name": "3541",
+                            "line-long-name": "Coina (Estação) - Fernão Ferro via Casal do Sapo e Pinhal do General",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3542",
+                            "line-name": "3542",
+                            "line-long-name": "Coina (Estação) - Praia do Meco",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3544",
+                            "line-name": "3544",
+                            "line-long-name": "Coina (Estação) - Sesimbra (Terminal) via Marco do Grilo",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "140028",
+                    "name": "Coina (Estação) P4",
+                    "location": [
+                        38.584548,
+                        -9.050488
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.584548,-9.050488",
+                    "lines": [
+                        {
+                            "line-id": "3543",
+                            "line-name": "3543",
+                            "line-long-name": "Coina (Estação) | Circular via Quinta do Conde",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3626",
+                            "line-name": "3626",
+                            "line-long-name": "Coina (Estação) - Vila Nogueira de Azeitão",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4632",
+                            "line-name": "4632",
+                            "line-long-name": "Coina (Estação) - Quinta do Anjo via Vendas de Azeitão",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "140857",
+                    "name": "Coina (Estação) P3",
+                    "location": [
+                        38.584623,
+                        -9.050615
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.584623,-9.050615",
+                    "lines": [
+                        {
+                            "line-id": "3620",
+                            "line-name": "3620",
+                            "line-long-name": "Coina (Estação) - Quinta do Conde",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4620",
+                            "line-name": "4620",
+                            "line-long-name": "Moita (Esc. Secundária) - Paio Pires",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4621",
+                            "line-name": "4621",
+                            "line-long-name": "Moita (Esc. Secundária) - Seixal (Terminal Fluvial)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "142335",
+                    "name": "Coina (Estação) P0",
+                    "location": [
+                        38.585073,
+                        -9.051287
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.585073,-9.051287",
+                    "lines": [
+                        {
+                            "line-id": "3543",
+                            "line-name": "3543",
+                            "line-long-name": "Coina (Estação) | Circular via Quinta do Conde",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3620",
+                            "line-name": "3620",
+                            "line-long-name": "Coina (Estação) - Quinta do Conde",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3626",
+                            "line-name": "3626",
+                            "line-long-name": "Coina (Estação) - Vila Nogueira de Azeitão",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3635",
+                            "line-name": "3635",
+                            "line-long-name": "Coina (Estação) - Sesimbra (Terminal) via Azeitão e Sampaio",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4632",
+                            "line-name": "4632",
+                            "line-long-name": "Coina (Estação) - Quinta do Anjo via Vendas de Azeitão",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                }
+            ],
+            "tcb": [
+                {
+                    "type": "bus",
+                    "operator": "Transportes Coletivos do Barreiro"
+                },
+                {
+                    "line": "6"
+                },
+                {
+                    "line": "10"
+                },
+                {
+                    "line": "16"
+                }
+            ]
+        }
+    },
+    "9466035": {
+        "name": "Roma Areeiro",
+        "ligacoes": {
+            "cp": [
+                {
+                    "type": "train",
+                    "operator": "CP"
+                },
+                {
+                    "line": "Azambuja"
+                },
+                {
+                    "line": "Sintra (Oriente)"
+                }
+            ],
+            "cm": [
+                {
+                    "id": "061206",
+                    "name": "Pç. Areeiro",
+                    "location": [
+                        38.743838,
+                        -9.133906
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.743838,-9.133906",
+                    "lines": [
+                        {
+                            "line-id": "2722",
+                            "line-name": "2722",
+                            "line-long-name": "Lisboa (Areeiro) - Via Rara",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "2790",
+                            "line-name": "2790",
+                            "line-long-name": "Alverca (Estação) - Lisboa (Areeiro)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                }
+            ],
+            "metro": [
+                {
+                    "type": "metro",
+                    "operator": "Metro Lisboa"
+                },
+                {
+                    "line": "Linha Verde - Roma | Areeiro"
+                }
+            ],
+            "carris": [
+                {
+                    "type": "bus",
+                    "operator": "Carris"
+                },
+                {
+                    "line": "49B"
+                },
+                {
+                    "line": "727"
+                },
+                {
+                    "line": "718"
+                },
+                {
+                    "line": "793"
+                },
+                {
+                    "line": "705"
+                }
+            ]
+        }
+    },
+    "9466050": {
+        "name": "Entrecampos",
+        "ligacoes": {
+            "cp": [
+                {
+                    "type": "train",
+                    "operator": "CP"
+                },
+                {
+                    "line": "Azambuja"
+                },
+                {
+                    "line": "Sintra (Oriente)"
+                },
+                {
+                    "line": "Comboios Intercidades"
+                }
+            ],
+            "metro": [
+                {
+                    "type": "metro",
+                    "operator": "Metro Lisboa"
+                },
+                {
+                    "line": "Linha Amarela - Entrecampos"
+                }
+            ],
+            "carris": [
+                {
+                    "type": "bus",
+                    "operator": "Carris"
+                },
+                {
+                    "line": "207"
+                },
+                {
+                    "line": "727"
+                },
+                {
+                    "line": "736"
+                },
+                {
+                    "line": "738"
+                },
+                {
+                    "line": "744"
+                },
+                {
+                    "line": "749"
+                },
+                {
+                    "line": "754"
+                },
+                {
+                    "line": "783"
+                }
+            ]
+        }
+    },
+    "9466076": {
+        "name": "Sete Rios",
+        "ligacoes": {
+            "cp": [
+                {
+                    "type": "train",
+                    "operator": "CP"
+                },
+                {
+                    "line": "Azambuja"
+                },
+                {
+                    "line": "Sintra (Oriente)"
+                },
+                {
+                    "line": "Comboios Intercidades"
+                }
+            ],
+            "metro": [
+                {
+                    "type": "metro",
+                    "operator": "Metro Lisboa"
+                },
+                {
+                    "line": "Linha Azul - Jardim Zoológico"
+                }
+            ],
+            "carris": [
+                {
+                    "type": "bus",
+                    "operator": "Carris"
+                },
+                {
+                    "line": "701"
+                },
+                {
+                    "line": "202"
+                },
+                {
+                    "line": "716"
+                },
+                {
+                    "line": "731"
+                },
+                {
+                    "line": "746"
+                },
+                {
+                    "line": "758"
+                },
+                {
+                    "line": "770"
+                }
+            ],
+            "re": [
+                {
+                    "type": "bus",
+                    "operator": "Rede Expresso"
+                }
+            ],
+            "cm": [
+                {
+                    "id": "060453",
+                    "name": "Sete Rios (Estação) P3",
+                    "location": [
+                        38.741962,
+                        -9.167221
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.741962,-9.167221",
+                    "lines": [
+                        {
+                            "line-id": "3720",
+                            "line-name": "3720",
+                            "line-long-name": "Lisboa (Sete Rios) - Quinta do Conde",
+                            "route-type": 3,
+                            "route-color": "#FDB71A"
+                        },
+                        {
+                            "line-id": "3721",
+                            "line-name": "3721",
+                            "line-long-name": "Lisboa (Sete Rios) - Sesimbra (Terminal)",
+                            "route-type": 3,
+                            "route-color": "#FDB71A"
+                        }
+                    ]
+                },
+                {
+                    "id": "060454",
+                    "name": "Sete Rios (Estação) P4",
+                    "location": [
+                        38.742059,
+                        -9.167037
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.742059,-9.167037",
+                    "lines": [
+                        {
+                            "line-id": "3706",
+                            "line-name": "3706",
+                            "line-long-name": "Charneca de Caparica - Lisboa (Sete Rios) via Feijó",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3717",
+                            "line-name": "3717",
+                            "line-long-name": "Lisboa (Sete Rios) - Quinta do Brasileiro",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "060455",
+                    "name": "Sete Rios (Estação) P5",
+                    "location": [
+                        38.742155,
+                        -9.16685
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.742155,-9.16685",
+                    "lines": [
+                        {
+                            "line-id": "3705",
+                            "line-name": "3705",
+                            "line-long-name": "Charneca de Caparica (Centro) - Lisboa (Sete Rios)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3711",
+                            "line-name": "3711",
+                            "line-long-name": "Monte de Caparica (FCT) - Lisboa (Sete Rios)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "060456",
+                    "name": "Sete Rios (Estação) P6",
+                    "location": [
+                        38.742253,
+                        -9.166661
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.742253,-9.166661",
+                    "lines": [
+                        {
+                            "line-id": "3716",
+                            "line-name": "3716",
+                            "line-long-name": "Lisboa (Sete Rios) - Marisol",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "060458",
+                    "name": "Sete Rios (Estação) P7",
+                    "location": [
+                        38.742509,
+                        -9.16617
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.742509,-9.16617",
+                    "lines": [
+                        {
+                            "line-id": "4725",
+                            "line-name": "4725",
+                            "line-long-name": "Lisboa (Sete Rios) - Setúbal (Terminal Várzea)",
+                            "route-type": 3,
+                            "route-color": "#FDB71A"
+                        },
+                        {
+                            "line-id": "4730",
+                            "line-name": "4730",
+                            "line-long-name": "Lisboa (Sete Rios) - Setúbal (ITS) via Azeitão",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "060459",
+                    "name": "Sete Rios (Estação) P1",
+                    "location": [
+                        38.741105,
+                        -9.167782
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.741105,-9.167782",
+                    "lines": [
+                        {
+                            "line-id": "3705",
+                            "line-name": "3705",
+                            "line-long-name": "Charneca de Caparica (Centro) - Lisboa (Sete Rios)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3706",
+                            "line-name": "3706",
+                            "line-long-name": "Charneca de Caparica - Lisboa (Sete Rios) via Feijó",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3711",
+                            "line-name": "3711",
+                            "line-long-name": "Monte de Caparica (FCT) - Lisboa (Sete Rios)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3716",
+                            "line-name": "3716",
+                            "line-long-name": "Lisboa (Sete Rios) - Marisol",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3717",
+                            "line-name": "3717",
+                            "line-long-name": "Lisboa (Sete Rios) - Quinta do Brasileiro",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3720",
+                            "line-name": "3720",
+                            "line-long-name": "Lisboa (Sete Rios) - Quinta do Conde",
+                            "route-type": 3,
+                            "route-color": "#FDB71A"
+                        },
+                        {
+                            "line-id": "3721",
+                            "line-name": "3721",
+                            "line-long-name": "Lisboa (Sete Rios) - Sesimbra (Terminal)",
+                            "route-type": 3,
+                            "route-color": "#FDB71A"
+                        },
+                        {
+                            "line-id": "4725",
+                            "line-name": "4725",
+                            "line-long-name": "Lisboa (Sete Rios) - Setúbal (Terminal Várzea)",
+                            "route-type": 3,
+                            "route-color": "#FDB71A"
+                        },
+                        {
+                            "line-id": "4730",
+                            "line-name": "4730",
+                            "line-long-name": "Lisboa (Sete Rios) - Setúbal (ITS) via Azeitão",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    "9467033": {
+        "name": "Campolide",
+        "ligacoes": {
+            "cp": [
+                {
+                    "type": "train",
+                    "operator": "CP"
+                },
+                {
+                    "line": "Azambuja"
+                },
+                {
+                    "line": "Sintra (Rossio)"
+                }
+            ],
+            "carris": [
+                {
+                    "type": "bus",
+                    "operator": "Carris"
+                },
+                {
+                    "line": "702"
+                },
+                {
+                    "line": "713"
+                },
+                {
+                    "line": "751"
+                },
+                {
+                    "line": "756"
+                }
+            ],
+            "cm": [
+                {
+                    "id": "060399",
+                    "name": "LISBOA (AV C GULBENKIAN) EST CAMPOLIDE",
+                    "location": [
+                        38.72999,
+                        -9.165973
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.72999,-9.165973",
+                    "lines": [
+                        {
+                            "line-id": "3703",
+                            "line-name": "3703",
+                            "line-long-name": "Almada (Parque Urbano) - Lisboa (Areeiro)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3705",
+                            "line-name": "3705",
+                            "line-long-name": "Charneca de Caparica (Centro) - Lisboa (Sete Rios)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3706",
+                            "line-name": "3706",
+                            "line-long-name": "Charneca de Caparica - Lisboa (Sete Rios) via Feijó",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3710",
+                            "line-name": "3710",
+                            "line-long-name": "Costa da Caparica (Terminal) - Lisboa (Areeiro)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3711",
+                            "line-name": "3711",
+                            "line-long-name": "Monte de Caparica (FCT) - Lisboa (Sete Rios)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3716",
+                            "line-name": "3716",
+                            "line-long-name": "Lisboa (Sete Rios) - Marisol",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3717",
+                            "line-name": "3717",
+                            "line-long-name": "Lisboa (Sete Rios) - Quinta do Brasileiro",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3720",
+                            "line-name": "3720",
+                            "line-long-name": "Lisboa (Sete Rios) - Quinta do Conde",
+                            "route-type": 3,
+                            "route-color": "#FDB71A"
+                        },
+                        {
+                            "line-id": "3721",
+                            "line-name": "3721",
+                            "line-long-name": "Lisboa (Sete Rios) - Sesimbra (Terminal)",
+                            "route-type": 3,
+                            "route-color": "#FDB71A"
+                        }
+                    ]
+                },
+                {
+                    "id": "060403",
+                    "name": "LISBOA (AV C GULBENKIAN) EST CAMPOLIDE",
+                    "location": [
+                        38.730003,
+                        -9.168238
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.730003,-9.168238",
+                    "lines": [
+                        {
+                            "line-id": "3703",
+                            "line-name": "3703",
+                            "line-long-name": "Almada (Parque Urbano) - Lisboa (Areeiro)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3705",
+                            "line-name": "3705",
+                            "line-long-name": "Charneca de Caparica (Centro) - Lisboa (Sete Rios)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3706",
+                            "line-name": "3706",
+                            "line-long-name": "Charneca de Caparica - Lisboa (Sete Rios) via Feijó",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3710",
+                            "line-name": "3710",
+                            "line-long-name": "Costa da Caparica (Terminal) - Lisboa (Areeiro)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3711",
+                            "line-name": "3711",
+                            "line-long-name": "Monte de Caparica (FCT) - Lisboa (Sete Rios)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3716",
+                            "line-name": "3716",
+                            "line-long-name": "Lisboa (Sete Rios) - Marisol",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3717",
+                            "line-name": "3717",
+                            "line-long-name": "Lisboa (Sete Rios) - Quinta do Brasileiro",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "3720",
+                            "line-name": "3720",
+                            "line-long-name": "Lisboa (Sete Rios) - Quinta do Conde",
+                            "route-type": 3,
+                            "route-color": "#FDB71A"
+                        },
+                        {
+                            "line-id": "3721",
+                            "line-name": "3721",
+                            "line-long-name": "Lisboa (Sete Rios) - Sesimbra (Terminal)",
+                            "route-type": 3,
+                            "route-color": "#FDB71A"
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    "9468007": {
+        "name": "Pinhal Novo",
+        "ligacoes": {
+            "cm": [
+                {
+                    "id": "130228",
+                    "name": "Praça José Maria dos Santos (Jardim) P1",
+                    "location": [
+                        38.631432,
+                        -8.915945
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.631432,-8.915945",
+                    "lines": [
+                        {
+                            "line-id": "4308",
+                            "line-name": "4308",
+                            "line-long-name": "Palmela (Terminal) - Pinhal Novo (Estação)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4320",
+                            "line-name": "4320",
+                            "line-long-name": "Pinhal Novo | Circular",
+                            "route-type": 3,
+                            "route-color": "#3D85C6"
+                        },
+                        {
+                            "line-id": "4321",
+                            "line-name": "4321",
+                            "line-long-name": "Pinhal Novo - Qta do Anjo",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4322",
+                            "line-name": "4322",
+                            "line-long-name": "Pinhal Novo - Rio Frio",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4512",
+                            "line-name": "4512",
+                            "line-long-name": "Alcochete (Freeport) - Setúbal (ITS)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4530",
+                            "line-name": "4530",
+                            "line-long-name": "Bairro Vila Morena - Pinhal Novo",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                }
+            ],
+            "cp": [
+                {
+                    "type": "train",
+                    "operator": "CP"
+                },
+                {
+                    "line": "Sado"
+                }
+            ]
+        }
+    },
+    "9468049": {
+        "name": "Venda do Alcaite",
+        "ligacoes": {
+            "cm": [
+                {
+                    "id": "130213",
+                    "name": "ESTAÇÃO VENDA DO ALCAIDE",
+                    "location": [
+                        38.606667,
+                        -8.888575
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.606667,-8.888575",
+                    "lines": [
+                        {
+                            "line-id": "4308",
+                            "line-name": "4308",
+                            "line-long-name": "Palmela (Terminal) - Pinhal Novo (Estação)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4322",
+                            "line-name": "4322",
+                            "line-long-name": "Pinhal Novo - Rio Frio",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                }
+            ],
+            "cp": [
+                {
+                    "type": "train",
+                    "operator": "CP"
+                },
+                {
+                    "line": "Sado"
+                }
+            ]
+        }
+    },
+    "9468098": {
+        "name": "Palmela",
+        "ligacoes": {
+            "cm": [
+                {
+                    "id": "130009",
+                    "name": "PALMELA (ESTAÇÃO) TERMINAL REFER",
+                    "location": [
+                        38.571304,
+                        -8.873035
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.571304,-8.873035",
+                    "lines": [
+                        {
+                            "line-id": "4302",
+                            "line-name": "4302",
+                            "line-long-name": "Palmela (Estação) - Palmela (Terminal)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4305",
+                            "line-name": "4305",
+                            "line-long-name": "Brejos do Assa - Palmela (Terminal)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4307",
+                            "line-name": "4307",
+                            "line-long-name": "Loja Nova - Palmela (Terminal)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4524",
+                            "line-name": "4524",
+                            "line-long-name": "Palmela (Terminal) - Pegões",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4562",
+                            "line-name": "4562",
+                            "line-long-name": "Setúbal (ITS) - Vila Nogueira de Azeitão (Escola) via Palmela (Estação)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "130011",
+                    "name": "PALMELA (AV CAMINHOS FERRO 16) ESTAÇ CP",
+                    "location": [
+                        38.577057,
+                        -8.875076
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.577057,-8.875076",
+                    "lines": [
+                        {
+                            "line-id": "4302",
+                            "line-name": "4302",
+                            "line-long-name": "Palmela (Estação) - Palmela (Terminal)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4305",
+                            "line-name": "4305",
+                            "line-long-name": "Brejos do Assa - Palmela (Terminal)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4307",
+                            "line-name": "4307",
+                            "line-long-name": "Loja Nova - Palmela (Terminal)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4524",
+                            "line-name": "4524",
+                            "line-long-name": "Palmela (Terminal) - Pegões",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "130012",
+                    "name": "PALMELA (AV CAMINHOS FERRO 16) ESTAÇ CP",
+                    "location": [
+                        38.57697,
+                        -8.875015
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.57697,-8.875015",
+                    "lines": [
+                        {
+                            "line-id": "4302",
+                            "line-name": "4302",
+                            "line-long-name": "Palmela (Estação) - Palmela (Terminal)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4305",
+                            "line-name": "4305",
+                            "line-long-name": "Brejos do Assa - Palmela (Terminal)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4307",
+                            "line-name": "4307",
+                            "line-long-name": "Loja Nova - Palmela (Terminal)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4524",
+                            "line-name": "4524",
+                            "line-long-name": "Palmela (Terminal) - Pegões",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                }
+            ],
+            "cp": [
+                {
+                    "type": "train",
+                    "operator": "CP"
+                },
+                {
+                    "line": "Sado"
+                }
+            ]
+        }
+    },
+    "9468122": {
+        "name": "Setúbal",
+        "ligacoes": {
+            "cm": [
+                {
+                    "id": "160068",
+                    "name": "Avenida dos Ciprestes (ITS) P2",
+                    "location": [
+                        38.529845,
+                        -8.885899
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.529845,-8.885899",
+                    "lines": [
+                        {
+                            "line-id": "4422",
+                            "line-name": "4422",
+                            "line-long-name": "Setúbal (Bairro Camolas) - Setúbal (Casal Figueiras) via Bairro do Viso",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4426",
+                            "line-name": "4426",
+                            "line-long-name": "Setúbal (Bairro do Viso) - Setúbal (Bairro Quinta Santo António)",
+                            "route-type": 3,
+                            "route-color": "#3D85C6"
+                        },
+                        {
+                            "line-id": "4427",
+                            "line-name": "4427",
+                            "line-long-name": "Setúbal (Bela Vista) - Setúbal (Mercado)",
+                            "route-type": 3,
+                            "route-color": "#3D85C6"
+                        },
+                        {
+                            "line-id": "4428",
+                            "line-name": "4428",
+                            "line-long-name": "Setúbal (Casal Figueiras) - Vale Ana Gomes",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4433",
+                            "line-name": "4433",
+                            "line-long-name": "Alto Guerra - Setúbal (Casal Figueiras)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4470",
+                            "line-name": "4470",
+                            "line-long-name": "Setúbal (ITS) - Praia do Creiro via Vila Nogueira de Azeitão",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4474",
+                            "line-name": "4474",
+                            "line-long-name": "Praia da Figueirinha - Setúbal (Centro Comercial)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4481",
+                            "line-name": "4481",
+                            "line-long-name": "ITS | Circular via Av. Luísa Todi",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4482",
+                            "line-name": "4482",
+                            "line-long-name": "ITS | Circular via Parque Urbano da Várzea",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4551",
+                            "line-name": "4551",
+                            "line-long-name": "Palmela (Alameda Nun'Álvares Pereira) - Setúbal (Av. Luísa Todi)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "160095",
+                    "name": "Avenida dos Ciprestes (ITS) P3",
+                    "location": [
+                        38.529872,
+                        -8.886131
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.529872,-8.886131",
+                    "lines": [
+                        {
+                            "line-id": "3642",
+                            "line-name": "3642",
+                            "line-long-name": "Sesimbra (Terminal) - Setúbal (Hospital)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4405",
+                            "line-name": "4405",
+                            "line-long-name": "Várzea (Terminal) | Circular via ITS",
+                            "route-type": 3,
+                            "route-color": "#3D85C6"
+                        },
+                        {
+                            "line-id": "4422",
+                            "line-name": "4422",
+                            "line-long-name": "Setúbal (Bairro Camolas) - Setúbal (Casal Figueiras) via Bairro do Viso",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4427",
+                            "line-name": "4427",
+                            "line-long-name": "Setúbal (Bela Vista) - Setúbal (Mercado)",
+                            "route-type": 3,
+                            "route-color": "#3D85C6"
+                        },
+                        {
+                            "line-id": "4428",
+                            "line-name": "4428",
+                            "line-long-name": "Setúbal (Casal Figueiras) - Vale Ana Gomes",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4433",
+                            "line-name": "4433",
+                            "line-long-name": "Alto Guerra - Setúbal (Casal Figueiras)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "160117",
+                    "name": "SETÚBAL (AV REP GUINÉ-BISSAU11) MACONDE",
+                    "location": [
+                        38.530803,
+                        -8.887117
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.530803,-8.887117",
+                    "lines": [
+                        {
+                            "line-id": "3642",
+                            "line-name": "3642",
+                            "line-long-name": "Sesimbra (Terminal) - Setúbal (Hospital)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4403",
+                            "line-name": "4403",
+                            "line-long-name": "Ferro Engomar (Terminal) - Setúbal (Av. Luísa Todi) via ITS",
+                            "route-type": 3,
+                            "route-color": "#3D85C6"
+                        },
+                        {
+                            "line-id": "4427",
+                            "line-name": "4427",
+                            "line-long-name": "Setúbal (Bela Vista) - Setúbal (Mercado)",
+                            "route-type": 3,
+                            "route-color": "#3D85C6"
+                        },
+                        {
+                            "line-id": "4481",
+                            "line-name": "4481",
+                            "line-long-name": "ITS | Circular via Av. Luísa Todi",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4482",
+                            "line-name": "4482",
+                            "line-long-name": "ITS | Circular via Parque Urbano da Várzea",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "160118",
+                    "name": "SETÚBAL (AV REP GUINÉ-BISSAU11) MACONDE",
+                    "location": [
+                        38.530557,
+                        -8.887672
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.530557,-8.887672",
+                    "lines": [
+                        {
+                            "line-id": "3642",
+                            "line-name": "3642",
+                            "line-long-name": "Sesimbra (Terminal) - Setúbal (Hospital)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4403",
+                            "line-name": "4403",
+                            "line-long-name": "Ferro Engomar (Terminal) - Setúbal (Av. Luísa Todi) via ITS",
+                            "route-type": 3,
+                            "route-color": "#3D85C6"
+                        },
+                        {
+                            "line-id": "4427",
+                            "line-name": "4427",
+                            "line-long-name": "Setúbal (Bela Vista) - Setúbal (Mercado)",
+                            "route-type": 3,
+                            "route-color": "#3D85C6"
+                        },
+                        {
+                            "line-id": "4481",
+                            "line-name": "4481",
+                            "line-long-name": "ITS | Circular via Av. Luísa Todi",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4482",
+                            "line-name": "4482",
+                            "line-long-name": "ITS | Circular via Parque Urbano da Várzea",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "162001",
+                    "name": "Interface de Transportes de Setúbal P1",
+                    "location": [
+                        38.53004,
+                        -8.885432
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.53004,-8.885432",
+                    "lines": [
+                        {
+                            "line-id": "4715",
+                            "line-name": "4715",
+                            "line-long-name": "Lisboa (Oriente) - Setúbal (ITS) via Palmela",
+                            "route-type": 3,
+                            "route-color": "#FDB71A"
+                        },
+                        {
+                            "line-id": "4720",
+                            "line-name": "4720",
+                            "line-long-name": "Lisboa (Oriente) - Setúbal (Terminal Várzea)",
+                            "route-type": 3,
+                            "route-color": "#FDB71A"
+                        },
+                        {
+                            "line-id": "4721",
+                            "line-name": "4721",
+                            "line-long-name": "Lisboa (Oriente) - Setúbal (ITS) | Expresso",
+                            "route-type": 3,
+                            "route-color": "#FDB71A"
+                        }
+                    ]
+                },
+                {
+                    "id": "162002",
+                    "name": "Interface de Transportes de Setúbal P2",
+                    "location": [
+                        38.529881,
+                        -8.885516
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.529881,-8.885516",
+                    "lines": [
+                        {
+                            "line-id": "4414",
+                            "line-name": "4414",
+                            "line-long-name": "Outão (Hospital) - Setúbal (ITS)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4415",
+                            "line-name": "4415",
+                            "line-long-name": "Outão (Hospital) - Setúbal (ITS) via Aldeia Grande",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4451",
+                            "line-name": "4451",
+                            "line-long-name": "Mitrena (Lisnave) - Setúbal (ITS)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4452",
+                            "line-name": "4452",
+                            "line-long-name": "Mitrena (Portucel) - Setúbal (ITS)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4453",
+                            "line-name": "4453",
+                            "line-long-name": "Mitrena (Portucel) - Setúbal (ITS) via Estrada Graça",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "162003",
+                    "name": "Interface de Transportes de Setúbal (Terminal) P3",
+                    "location": [
+                        38.529722,
+                        -8.885599
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.529722,-8.885599",
+                    "lines": [
+                        {
+                            "line-id": "4402",
+                            "line-name": "4402",
+                            "line-long-name": "Complexo Desportivo Vale Rosa - Setúbal (ITS)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4412",
+                            "line-name": "4412",
+                            "line-long-name": "Morgada - Setúbal (Mercado)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4437",
+                            "line-name": "4437",
+                            "line-long-name": "Faralhão - Setúbal (ITS)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "162004",
+                    "name": "Interface de Transportes de Setúbal (Terminal) P4",
+                    "location": [
+                        38.529562,
+                        -8.885682
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.529562,-8.885682",
+                    "lines": [
+                        {
+                            "line-id": "4431",
+                            "line-name": "4431",
+                            "line-long-name": "Setúbal (ITS) - Setúbal (Quinta Varzinha)",
+                            "route-type": 3,
+                            "route-color": "#3D85C6"
+                        },
+                        {
+                            "line-id": "4432",
+                            "line-name": "4432",
+                            "line-long-name": "Setúbal (ITS) - Vale de Choupo",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4439",
+                            "line-name": "4439",
+                            "line-long-name": "Praias do Sado - Setúbal (ITS)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4542",
+                            "line-name": "4542",
+                            "line-long-name": "Algeruz - Setúbal (ITS)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4543",
+                            "line-name": "4543",
+                            "line-long-name": "Algeruz - Setúbal (ITS) via Poçoilos",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "162005",
+                    "name": "Setúbal (ITS) Interior P5",
+                    "location": [
+                        38.530062,
+                        -8.885506
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.530062,-8.885506",
+                    "lines": [
+                        {
+                            "line-id": "4725",
+                            "line-name": "4725",
+                            "line-long-name": "Lisboa (Sete Rios) - Setúbal (Terminal Várzea)",
+                            "route-type": 3,
+                            "route-color": "#FDB71A"
+                        }
+                    ]
+                },
+                {
+                    "id": "162006",
+                    "name": "Interface de Transportes de Setúbal P6",
+                    "location": [
+                        38.529902,
+                        -8.88559
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.529902,-8.88559",
+                    "lines": [
+                        {
+                            "line-id": "4540",
+                            "line-name": "4540",
+                            "line-long-name": "Águas de Moura - Setúbal (ITS)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4544",
+                            "line-name": "4544",
+                            "line-long-name": "Bairro Margaça - Setúbal (ITS)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4546",
+                            "line-name": "4546",
+                            "line-long-name": "Biscainho - Setúbal (ITS)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4548",
+                            "line-name": "4548",
+                            "line-long-name": "Lagameças - Setúbal (ITS)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4901",
+                            "line-name": "4901",
+                            "line-long-name": "Landeira - Setúbal (ITS)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4906",
+                            "line-name": "4906",
+                            "line-long-name": "Setúbal (ITS) - Vendas Novas via Landeira",
+                            "route-type": 3,
+                            "route-color": "#BB3E96"
+                        }
+                    ]
+                },
+                {
+                    "id": "162007",
+                    "name": "Interface de Transportes de Setúbal P7",
+                    "location": [
+                        38.529744,
+                        -8.885674
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.529744,-8.885674",
+                    "lines": [
+                        {
+                            "line-id": "4641",
+                            "line-name": "4641",
+                            "line-long-name": "Quinta do Conde - Setúbal (ITS)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4730",
+                            "line-name": "4730",
+                            "line-long-name": "Lisboa (Sete Rios) - Setúbal (ITS) via Azeitão",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "162008",
+                    "name": "Interface de Transportes de Setúbal (Terminal) P8",
+                    "location": [
+                        38.529585,
+                        -8.885758
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.529585,-8.885758",
+                    "lines": [
+                        {
+                            "line-id": "4512",
+                            "line-name": "4512",
+                            "line-long-name": "Alcochete (Freeport) - Setúbal (ITS)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4549",
+                            "line-name": "4549",
+                            "line-long-name": "Palmela (Terminal) - Setúbal (ITS)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        },
+                        {
+                            "line-id": "4562",
+                            "line-name": "4562",
+                            "line-long-name": "Setúbal (ITS) - Vila Nogueira de Azeitão (Escola) via Palmela (Estação)",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                },
+                {
+                    "id": "162011",
+                    "name": "Setúbal (ITS) Interior P11",
+                    "location": [
+                        38.529352,
+                        -8.885812
+                    ],
+                    "gmapslink": "https://www.google.com/maps?q=38.529352,-8.885812",
+                    "lines": [
+                        {
+                            "line-id": "3605",
+                            "line-name": "3605",
+                            "line-long-name": "Cacilhas (Terminal) - Setúbal (ITS) via Azeitão",
+                            "route-type": 3,
+                            "route-color": "#C61D23"
+                        }
+                    ]
+                }
+            ],
+            "cp": [
+                {
+                    "type": "train",
+                    "operator": "CP"
+                },
+                {
+                    "line": "Sado"
+                }
+            ]
+        }
+    }
+}

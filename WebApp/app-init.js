@@ -2,10 +2,6 @@
  * app-init.js
  * Inicialização da app e configuração de todos os event listeners.
  *
- * ═══════════════════════════════════════════════════════════════════════
- *  FLUXO DE ARRANQUE (optimizado para CLS = 0)
- * ═══════════════════════════════════════════════════════════════════════
- *
  *  1. Carrega preferências do localStorage (síncrono, <1ms)
  *  2. Remove "hidden" do #next-train-header ANTES de qualquer render
  *     → o espaço fica reservado desde o início; só opacity muda depois
@@ -185,6 +181,10 @@ document.body.addEventListener("click", function (e) {
       break;
     case "go-offline":
       sa_event("offline_schedules_forced");
+      break;
+    case "open-smart-menu":
+      const menuTrigger = document.getElementById("menu-trigger");
+      if (menuTrigger) menuTrigger.click();
       break;
     case "sudoku-offline":
       sa_event("sudoku-offline-play");

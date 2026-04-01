@@ -892,7 +892,7 @@ function openDetails(trainId) {
               </div>
             </div>
           </div>
-          ${t.occupancy != null ? `<div class="hidden flex gap-1.5 w-full mt-1">${carsHtml}</div>` : ""}
+          ${t.occupancy != null ? `<div class="flex gap-1.5 w-full mt-1">${carsHtml}</div>` : ""}
           <p style="margin-top:-14px" class="text-[9px] text-zinc-500 dark:text-zinc-400 leading-relaxed ${t.occupancy != null ? "" : "hidden"}">
             Estimativa de Lotação: Os dados baseiam-se no histórico oficial da Fertagus e <b>não</b> em tempo real.
             <a class="underline" target="_blank" href="https://www.fertagus.pt/Fertagus-pt/Viajar/Comunicados-e-Campanhas/Nova-oferta-de-comboios-duplos-e-simples-20-de-janeiro-25">Vê a Fonte da Informação</a>

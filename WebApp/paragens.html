@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="pt-PT" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="theme-color" content="#09090b" />
+    <meta
+      name="description"
+      content="A Minha Paragem - Tempos de espera em tempo real da Carris Metropolitana."
+    />
+    <title>A Minha Paragem | LiveTagus</title>
+
+    <link href="./output.css" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <script src="./lucide-icons.js"></script>
+    <script src="./menu.js" defer></script>
+    <script src="./paragens.js" defer></script>
+  </head>
+
+  <body
+    class="bg-white text-zinc-900 dark:bg-[#09090b] dark:text-white overflow-x-hidden transition-colors duration-500 flex flex-col min-h-screen font-['Inter']"
+  >
+    <div id="global-nav"></div>
+
+    <main
+      class="flex-grow pt-24 pb-12 px-6 max-w-2xl mx-auto w-full flex flex-col gap-10"
+    >
+      <header class="text-center mt-4">
+        <h1 class="text-3xl font-light tracking-tight mb-2">A MINHA PARAGEM</h1>
+        <p
+          class="text-[9px] uppercase tracking-[0.2em] font-semibold text-zinc-400"
+        >
+          Carris Metropolitana em Tempo Real
+        </p>
+      </header>
+
+      <section
+        class="bg-zinc-50 dark:bg-zinc-900/50 p-6 border border-zinc-100 dark:border-zinc-800 rounded-sm"
+      >
+        <div class="flex items-start gap-4">
+          <i
+            data-lucide="info"
+            class="w-5 h-5 mt-0.5 text-zinc-400 shrink-0"
+          ></i>
+          <div>
+            <p class="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
+              Guarde os IDs das paragens do seu dia a dia (ex: Casa ou Trabalho)
+              para consultar instantaneamente os próximos autocarros.
+              <br />
+              <br />
+              <span class="font-medium text-zinc-900 dark:text-zinc-300">
+                Onde encontro o ID?
+              </span>
+              Procure o código de 6 dígitos impresso no canto inferior da placa
+              da paragem física.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <form
+          id="add-stop-form"
+          class="flex flex-col sm:flex-row gap-6 items-end"
+        >
+          <div class="w-full relative group">
+            <label
+              for="stop-id"
+              class="absolute -top-3 left-0 text-[9px] font-bold uppercase tracking-widest text-zinc-400"
+            >
+              ID da Paragem
+            </label>
+            <input
+              type="text"
+              id="stop-id"
+              inputmode="numeric"
+              pattern="[0-9]{5,6}"
+              placeholder="Ex: 020073"
+              required
+              class="w-full bg-transparent border-b border-zinc-300 dark:border-zinc-700 pb-2 pt-2 text-sm focus:outline-none focus:border-zinc-900 dark:focus:border-white transition-colors placeholder:text-zinc-300 dark:placeholder:text-zinc-700"
+            />
+          </div>
+
+          <div class="w-full relative group">
+            <label
+              for="stop-name"
+              class="absolute -top-3 left-0 text-[9px] font-bold uppercase tracking-widest text-zinc-400"
+            >
+              Etiqueta
+            </label>
+            <input
+              type="text"
+              id="stop-name"
+              placeholder="Ex: Casa → Estação"
+              required
+              maxlength="30"
+              class="w-full bg-transparent border-b border-zinc-300 dark:border-zinc-700 pb-2 pt-2 text-sm focus:outline-none focus:border-zinc-900 dark:focus:border-white transition-colors placeholder:text-zinc-300 dark:placeholder:text-zinc-700"
+            />
+          </div>
+
+          <button
+            type="submit"
+            class="w-full sm:w-auto px-8 py-3 bg-zinc-900 dark:bg-white text-white dark:text-zinc-800 text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors shrink-0"
+          >
+            Adicionar
+          </button>
+        </form>
+      </section>
+
+      <div class="w-full h-px bg-zinc-100 dark:bg-zinc-800"></div>
+
+      <section>
+        <div class="flex items-center justify-between mb-6">
+          <h2
+            class="text-[10px] font-bold uppercase tracking-widest text-zinc-900 dark:text-white"
+          >
+            As Suas Paragens
+          </h2>
+          <button
+            id="refresh-stops-btn"
+            class="text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"
+            aria-label="Atualizar Tempos"
+          >
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <div id="stops-container" class="flex flex-col gap-6"></div>
+      </section>
+    </main>
+
+    <div id="global-footer"></div>
+  </body>
+</html>

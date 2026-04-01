@@ -8,13 +8,33 @@ const AlertsManager = {
   fetch: async () => {
     try {
       const res = await fetch(API_ALERTS + "?t=" + Date.now());
-      if (!res.ok) return [];
+      if (!res.ok) return { alerts: [], mode: null };
       const data = await res.json();
-      return Object.values(data);
+
+      const mode = data.mode || null;
+      delete data.mode;
+
+      return { alerts: Object.values(data), mode: mode };
     } catch (e) {
       console.error(e);
-      return [];
+      return { alerts: [], mode: null };
     }
+  },
+
+  parseDatePT: (str) => {
+    if (!str || typeof str !== "string" || !str.includes("/")) return null;
+
+    const parts = str.trim().split(" ");
+    const [d, m, y] = parts[0].split("/");
+    const date = new Date(y, m - 1, d);
+
+    if (parts[1]) {
+      const [h, min] = parts[1].split(":");
+      date.setHours(h || 0, min || 0, 0, 0);
+    } else {
+      date.setHours(0, 0, 0, 0);
+    }
+    return date;
   },
 
   parseDatePT: (str) => {
@@ -76,7 +96,7 @@ const AlertsManager = {
         id: "pwa-install",
         tipo: "informacao",
         nome: "Instalar App",
-        mensagem: "Para acesso rápido e direto.",
+        mensagem: "Para acesso rápido e direto. Disponível Iphone e Android!",
         textolink: "Instalar",
         isPWA: true,
         icon: "download",
@@ -182,16 +202,90 @@ async function updateAlertsSystem(trainList) {
   if (pwa) tempAlerts.push(pwa);
   const sudoku = AlertsManager.checkSudoku(trainList);
   if (sudoku) tempAlerts.push(sudoku);
-  const external = await AlertsManager.fetch();
-  external.forEach((alert) => {
+  const { alerts, mode } = await AlertsManager.fetch();
+
+  if (mode) {
+    const isMaintenanceTrue =
+      mode.maintance === "true" || mode.maintenance === "true";
+    const now = new Date();
+    let isWithinDates = false;
+
+    if (mode.datainicio && mode.datafim) {
+      const start = AlertsManager.parseDatePT(mode.datainicio);
+      const end = AlertsManager.parseDatePT(mode.datafim);
+      if (start && end && now >= start && now <= end) {
+        isWithinDates = true;
+      }
+    }
+
+    // modo manutençao
+    if (isMaintenanceTrue || isWithinDates) {
+      showMaintenanceMode(mode);
+    } else {
+      removeMaintenanceMode();
+    }
+  }
+
+  alerts.forEach((alert) => {
     if (AlertsManager.isActive(alert)) {
       tempAlerts.push(alert);
     }
   });
+
   tempAlerts.sort((a, b) => {
     if (a.tipo === "aviso" && b.tipo !== "aviso") return -1;
     if (a.tipo !== "aviso" && b.tipo === "aviso") return 1;
     return 0;
   });
+
   activeAlerts = tempAlerts;
+}
+
+function showMaintenanceMode(mode) {
+  if (document.getElementById("maintenance-screen")) return;
+
+  const overlay = document.createElement("div");
+  overlay.id = "maintenance-screen";
+  overlay.className =
+    "fixed inset-0 z-[100] bg-white dark:bg-[#09090b] flex flex-col items-center justify-center p-8 text-center overscroll-none transition-opacity duration-500 opacity-0";
+
+  overlay.innerHTML = `
+    <div class="flex flex-col items-center max-w-sm mx-auto">
+      <i data-lucide="server-crash" class="w-10 h-10 mb-8 text-zinc-900 dark:text-white stroke-[1.2]"></i>
+      
+      <h1 class="text-xl font-light tracking-[0.2em] uppercase text-zinc-900 dark:text-white mb-6">
+        ${mode.titulo}
+      </h1>
+      
+      <div class="text-xs font-light leading-relaxed text-zinc-500 dark:text-zinc-400 mb-12 tracking-wide text-justify">
+        ${mode.texto}
+      </div>
+
+      <div class="flex flex-col w-full gap-3">
+        <button onclick="window.location.href='./horarios'" class="w-full py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 uppercase tracking-[0.15em] text-[10px] font-medium transition-opacity hover:opacity-80">
+          Horários Offline
+        </button>
+        <button onclick="window.location.href='./sudoku'" class="w-full py-4 bg-transparent border border-zinc-900/20 dark:border-white/20 text-zinc-900 dark:text-white uppercase tracking-[0.15em] text-[10px] font-medium transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
+          Jogo Sudoku
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  if (window.lucide) lucide.createIcons();
+  document.body.style.overflow = "hidden";
+  requestAnimationFrame(() => {
+    overlay.classList.remove("opacity-0");
+    overlay.classList.add("opacity-100");
+  });
+}
+
+function removeMaintenanceMode() {
+  const screen = document.getElementById("maintenance-screen");
+  if (screen) {
+    screen.remove();
+    document.body.style.overflow = "";
+  }
 }

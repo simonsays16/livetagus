@@ -1076,7 +1076,7 @@ function showIOSInstallModal() {
 // ─── INJEÇÃO NO MENU ──────────────────────────────────────────────────────────
 
 function injectCustomMenuElements() {
-  // 1. Injeta as Definições (Horário Inteligente)
+  // injeta as Definições (Horário Inteligente) no menu principal
   const menuOverlay = document.getElementById("menu-overlay");
   const settingsTemplate = document.getElementById("menu-settings-template");
 
@@ -1086,8 +1086,6 @@ function injectCustomMenuElements() {
       const wrapper = document.createElement("div");
       wrapper.innerHTML = settingsTemplate.innerHTML;
       nav.parentNode.insertBefore(wrapper, nav.nextSibling);
-
-      // Inicializa o smart section
       const smartContainer = wrapper.querySelector("#smart-schedule-section");
       if (smartContainer) {
         renderSmartSection(smartContainer);
@@ -1097,7 +1095,7 @@ function injectCustomMenuElements() {
     }
   }
 
-  // 2. Botão de Refresh no header
+  // botões do header (intermodais e refresh)
   const header = document.querySelector("#global-nav header");
   const trigger = document.getElementById("menu-trigger");
 
@@ -1106,20 +1104,107 @@ function injectCustomMenuElements() {
     wrapper.id = "menu-controls-wrapper";
     wrapper.className = "flex items-center gap-1";
     header.insertBefore(wrapper, trigger);
-    wrapper.appendChild(trigger);
-
+    const mobilityBtn = document.createElement("button");
+    mobilityBtn.id = "mobility-trigger";
+    mobilityBtn.className =
+      "p-2 rounded-full transition-colors text-zinc-900 dark:text-white group relative";
+    mobilityBtn.setAttribute("aria-label", "Ferramentas Inteligentes");
+    mobilityBtn.innerHTML = `
+      <!--<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-waypoints-icon lucide-waypoints w-5 h-5 transition-transform group-active:scale-90">
+        <path d="m10.586 5.414-5.172 5.172"/><path d="m18.586 13.414-5.172 5.172"/><path d="M6 12h12"/><circle cx="12" cy="20" r="2"/><circle cx="12" cy="4" r="2"/><circle cx="20" cy="12" r="2"/><circle cx="4" cy="12" r="2"/>
+      </svg>
+      <span id="mobility-badge-ping" class="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-500 rounded-full animate-ping"></span>
+      <span id="mobility-badge" class="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-500 rounded-full"></span>-->
+    `;
+    wrapper.appendChild(mobilityBtn);
     const btn = document.createElement("button");
     btn.addEventListener("click", manualRefresh);
     btn.className =
       "p-2 rounded-full transition-colors text-zinc-900 dark:text-white group";
     btn.setAttribute("aria-label", "Atualizar");
     btn.innerHTML = `<i data-lucide="refresh-cw" id="refresh-icon-menu" class="w-5 h-5 transition-transform group-active:scale-90"></i>`;
-    wrapper.insertBefore(btn, trigger);
+    wrapper.appendChild(btn);
+    wrapper.appendChild(trigger);
+    const popover = document.createElement("div");
+    popover.id = "mobility-popover";
+    popover.className =
+      "absolute top-16 right-4 w-64 bg-white dark:bg-[#09090b] border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl hidden origin-top-right transition-all duration-300 transform scale-95 opacity-0 z-50 overflow-hidden";
+
+    popover.innerHTML = `
+      <div class="hidden px-4 py-3 bg-zinc-50 dark:bg-zinc-900/50 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+        <p class="text-[9px] font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">
+          Mobilidade & Smart
+        </p>
+      </div>
+      
+      <div class="flex flex-col">
+        
+        <button data-action="open-smart-menu" class="w-full flex items-center gap-4 px-4 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors text-left group/btn relative">
+          <i data-lucide="zap" class="w-4 h-4 text-zinc-900 dark:text-white group-hover/btn:scale-110 transition-transform duration-300"></i>
+          
+          <div class="flex-1">
+            <p class="text-sm font-medium text-zinc-900 dark:text-white leading-none">Horário Inteligente</p>
+            <p class="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1.5 font-light tracking-wide">Muda o sentido automaticamente</p>
+          </div>
+          
+          <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-zinc-300 dark:text-zinc-600 group-hover/btn:translate-x-1 transition-transform"></i>
+        </button>
+        
+        <div class="h-px w-full bg-zinc-100 dark:bg-zinc-800"></div>
+        
+        <a href="./paragens" class="w-full flex items-center gap-4 px-4 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors text-left group/btn relative">
+          <i data-lucide="bus" class="w-4 h-4 text-zinc-900 dark:text-white group-hover/btn:scale-110 transition-transform duration-300"></i>
+          
+          <div class="flex-1">
+            <p class="text-sm font-medium text-zinc-900 dark:text-white leading-none">A Minha Paragem</p>
+            <p class="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1.5 font-light tracking-wide">Tempos da Carris Metropolitana</p>
+          </div>
+          
+          <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-zinc-300 dark:text-zinc-600 group-hover/btn:translate-x-1 transition-transform"></i>
+        </a>
+
+      </div>
+    `;
+
+    document.getElementById("global-nav").appendChild(popover);
+    mobilityBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isHidden = popover.classList.contains("hidden");
+      const badgePing = document.getElementById("mobility-badge-ping");
+      const badgeSolid = document.getElementById("mobility-badge");
+      if (badgePing) badgePing.remove();
+      if (badgeSolid) badgeSolid.remove();
+
+      if (isHidden) {
+        popover.classList.remove("hidden");
+        requestAnimationFrame(() => {
+          popover.classList.remove("scale-95", "opacity-0");
+          popover.classList.add("scale-100", "opacity-100");
+        });
+      } else {
+        popover.classList.remove("scale-100", "opacity-100");
+        popover.classList.add("scale-95", "opacity-0");
+        setTimeout(() => popover.classList.add("hidden"), 200);
+      }
+    });
+
+    // Fechar modal ao clicar em qualquer sítio fora
+    document.addEventListener("click", (e) => {
+      if (
+        !popover.classList.contains("hidden") &&
+        !popover.contains(e.target) &&
+        !mobilityBtn.contains(e.target)
+      ) {
+        popover.classList.remove("scale-100", "opacity-100");
+        popover.classList.add("scale-95", "opacity-0");
+        setTimeout(() => popover.classList.add("hidden"), 200);
+      }
+    });
 
     if (window.lucide) lucide.createIcons();
   }
 
-  // 3. Aviso legal no footer
+  // aviso no footer
   const footer = document.getElementById("global-footer");
   if (footer) {
     const p = document.createElement("p");
