@@ -1,4 +1,4 @@
-require("dotenv").config(); // Carrega as variáveis do ficheiro .env
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const fetch = require("node-fetch");
@@ -391,32 +391,55 @@ const checkTurnaroundDelay = (
 };
 
 // --- FUTURE TRAIN CHECK ---
+// --- FUTURE TRAIN CHECK ---
 const checkOfflineTrains = async () => {
-  console.log(
-    `[FUTURE CHECK] ${new Date().toLocaleTimeString()} - A atualizar estados futuros (15m interval)...`,
-  );
-  const now = new Date();
-  const activeIds = Object.keys(OUTPUT_CACHE);
+  // 1. Verificação de Repouso Absoluto (Deep Sleep)
+  // Se a app estiver a dormir de madrugada, não acordamos a máquina nem chateamos a IP.
+  if (typeof isSystemInSleepMode === "function" && isSystemInSleepMode()) {
+    console.log(
+      `[SLEEP MODE] ${new Date().toLocaleTimeString()} - A dormir. Verificação de comboios futuros suspensa.`,
+    );
+    return;
+  }
 
+  console.log(
+    `[FUTURE CHECK] ${new Date().toLocaleTimeString()} - A iniciar atualização de estados futuros...`,
+  );
+
+  const now = new Date();
+  const nowMs = now.getTime();
+
+  // Garantir que a string 'futureTrains' não é confundida com o ID de um comboio ativo
+  const activeIds = Object.keys(OUTPUT_CACHE).filter(
+    (k) => k !== "futureTrains",
+  );
+
+  // 2. Mapeamento e Identificação dos Comboios do Dia
   const candidates = RICH_SCHEDULE.map((t) => {
     let startStr =
       t.direction === "lisboa" ? t.setubal || t.coina : t.roma_areeiro;
-    if (!startStr) return null;
+    let endStr =
+      t.direction === "lisboa" ? t.roma_areeiro : t.setubal || t.coina;
+
+    if (!startStr || !endStr) return null;
+
     const startObj = parseSmartTime(startStr, now);
-    return { ...t, startObj };
+    const endObj = parseSmartTime(endStr, now);
+
+    if (!startObj || !endObj) return null;
+
+    return { ...t, startObj, endObj };
   }).filter((t) => {
-    if (!t || !t.startObj) return false;
+    if (!t) return false;
+
+    // Ignorar se o comboio já estiver a circular (está nas mãos do ciclo de 10s)
     if (activeIds.includes(String(t.id))) return false;
 
-    // Não re-verificar comboios confirmados como ghost suppressed (Stage 3):
-    // já estão no FUTURE_TRAINS_CACHE como SUPRIMIDO e não devem ser sobrescritos.
+    // Ignorar anomalias tratadas pelo sistema Ghost
     if (GHOST_SUPPRESSED.has(String(t.id))) return false;
-
-    // Não re-verificar comboios em monitorização ghost ativa (Stage 2):
-    // o initiateGhostMonitoring já faz as verificações de minuto a minuto.
     if (GHOST_TRAINS[String(t.id)]) return false;
 
-    // Avalia o dia específico deste comboio
+    // Verificar calendário (dias úteis vs fins de semana/feriados)
     const trainOpInfo = getOperationalInfo(t.startObj);
     const isTrainWeekendOrHoliday = trainOpInfo.isWeekendOrHoliday;
 
@@ -428,49 +451,78 @@ const checkOfflineTrains = async () => {
   });
 
   const results = {};
-  const CONCURRENCY = 5;
+  const fetchCandidates = [];
 
-  for (let i = 0; i < candidates.length; i += CONCURRENCY) {
-    const chunk = candidates.slice(i, i + CONCURRENCY);
-    await Promise.all(
-      chunk.map(async (t) => {
-        const dateStr = formatDateStr(t.startObj);
-        const details = await fetchDetails(String(t.id), dateStr);
-        if (details && details.SituacaoComboio) {
-          const situacao = details.SituacaoComboio.trim() || "Sem Informação";
-          const nodes = details.NodesPassagemComboio || [];
-          const hasStarted = nodes.some((n) => n.ComboioPassou === true);
+  // 3. O Filtro de Ressurreição e Poupança de Rede
+  for (const t of candidates) {
+    const safeEndMarginMs = t.endObj.getTime() + 60 * 60000;
 
-          // FIX Bug Future Trains: quando a IP declara atrasos de rede, os comboios
-          // futuros (que ainda não partiram) podem herdar um SituacaoComboio de
-          // "Em circulação" ou "Atrasado", fazendo a app acreditar que já circulam.
-          // Se nenhum node foi passado E o estado não é terminal, normaliza para
-          // "Sem Informação" para não enganar a app.
-          // Só normaliza estados que implicam circulação activa num comboio
-          // que ainda não partiu (herança de atraso de rede da IP).
-          // "Programado", "SUPRIMIDO" e qualquer estado terminal passam direto.
-          const impliesSpuriousLive =
-            !hasStarted &&
-            (/em circulação/i.test(situacao) || /a horas/i.test(situacao));
-
-          if (impliesSpuriousLive) {
-            results[String(t.id)] = "Sem Informação";
-          } else {
-            results[String(t.id)] = situacao;
-          }
-        }
-      }),
-    );
-    await new Promise((r) => setTimeout(r, 50));
+    // Se o ciclo rápido de 10s JÁ deu o comboio como terminado, ou se a margem máxima de atraso já passou:
+    if (
+      nowMs > safeEndMarginMs ||
+      FUTURE_TRAINS_CACHE[String(t.id)] === "Realizado"
+    ) {
+      // Carimbamos localmente sem gastar chamadas HTTP à IP
+      results[String(t.id)] = "Realizado";
+    } else {
+      // Comboio legítimo que ainda precisa de verificação
+      fetchCandidates.push(t);
+    }
   }
 
+  // 4. Execução Sequencial Anti-DDoS e Anti-Picos de CPU (Proteção VM Azure)
+  // Sem paralelismo. Executamos de forma puramente linear, 1 a 1.
+  for (const t of fetchCandidates) {
+    try {
+      const dateStr = formatDateStr(t.startObj);
+      const details = await fetchDetails(String(t.id), dateStr);
+
+      if (details && details.SituacaoComboio) {
+        const situacao = details.SituacaoComboio.trim() || "Sem Informação";
+        const nodes = details.NodesPassagemComboio || [];
+        const hasStarted = nodes.some((n) => n.ComboioPassou === true);
+
+        // Prevenir que a IP minta dizendo que um comboio das 17h está "em circulação" às 10h da manhã
+        const impliesSpuriousLive =
+          !hasStarted &&
+          (/em circulação/i.test(situacao) || /a horas/i.test(situacao));
+
+        if (impliesSpuriousLive) {
+          results[String(t.id)] = "Sem Informação";
+        } else {
+          results[String(t.id)] = situacao;
+        }
+      } else {
+        // Fail-safe: Se a IP não devolver dados estruturados, mantemos a última informação sabida
+        results[String(t.id)] =
+          FUTURE_TRAINS_CACHE[String(t.id)] || "Sem Informação";
+      }
+    } catch (error) {
+      // Isolamento de erro: se um pedido falhar (ex: socket hang up), os restantes comboios continuam a ser processados
+      console.error(
+        `[FUTURE CHECK] Erro de rede isolado no comboio ${t.id}:`,
+        error.message,
+      );
+      results[String(t.id)] =
+        FUTURE_TRAINS_CACHE[String(t.id)] || "Sem Informação";
+    }
+
+    // O SEGREDO DO ANTI-DDOS: Pausa cirúrgica de 300ms após CADA pedido.
+    // Garante invisibilidade aos WAFs e limitação orgânica de tráfego (~3 pedidos/segundo).
+    await new Promise((resolve) => setTimeout(resolve, 300));
+  }
+
+  // 5. Atualização Segura da Memória Global
   FUTURE_TRAINS_CACHE = results;
 
-  // Re-injetar os ghost suppressed após a reconstrução do FUTURE_TRAINS_CACHE
-  // para garantir que a app os trata sempre como suprimidos.
+  // Re-injetar os Ghost Suppressed para garantir que nunca mais regressam à vida nesta operação
   for (const ghostId of GHOST_SUPPRESSED) {
     FUTURE_TRAINS_CACHE[ghostId] = "SUPRIMIDO";
   }
+
+  console.log(
+    `[FUTURE CHECK] Concluído. Analisados na base de dados: ${candidates.length} | Pedidos à IP efetuados: ${fetchCandidates.length}`,
+  );
 };
 
 // --- GHOST TRAIN MONITORING ---
@@ -596,14 +648,11 @@ const processTrain = async (richInfo, originDateStr) => {
       lastDelay: 0,
       nextWakeUp: 0,
       lastResult: null,
+      isFetching: false, // Da nossa otimização anti-DDOS
     };
   }
   const mem = TRAIN_MEMORY[trainId];
 
-  // FIX nextWakeUp: reduzido de 120 000ms para 60 000ms.
-  // O valor anterior criava um período "cego" demasiado longo após cada passagem
-  // de estação. Em Roma-Areeiro (primeiro nó sentido Margem), os 120s impediam
-  // a deteção da partida durante 2 min — muito acima do intervalo de 10s pretendido.
   if (nowTime < mem.nextWakeUp && mem.lastResult) {
     return mem.lastResult;
   }
@@ -657,9 +706,53 @@ const processTrain = async (richInfo, originDateStr) => {
           HoraProgramada: time,
           NodeID: STATION_IDS_FIXED[ipName] || 0,
           NomeEstacao: ipName,
+          Observacoes: "", // Previne erros ao ler comboios futuros
         });
       }
     });
+  }
+
+  // --- 1. EXTRAÇÃO INTELIGENTE DE ATRASOS DA IP ---
+  let ipReportedDelay = 0;
+
+  // A) Extração do texto SituacaoComboio (ex: "Circula com atraso de 15 min.")
+  if (situacao.toLowerCase().includes("atraso")) {
+    const match = situacao.match(/(\d+)\s*min/i);
+    if (match) {
+      ipReportedDelay = parseInt(match[1], 10) * 60;
+    }
+  }
+
+  // B) Extração profunda das Observacoes do próximo nó não passado (ex: "Hora Prevista:02:11")
+  const firstUnpassed = nodes.find((n) => !n.ComboioPassou);
+  if (firstUnpassed && firstUnpassed.Observacoes) {
+    const match = firstUnpassed.Observacoes.match(
+      /Hora Prevista:\s*(\d{2}:\d{2})/i,
+    );
+    if (match) {
+      const hpStr = match[1]; // "02:11"
+
+      // Encontrar a hora programada exata, priorizando o estático se possível
+      let horaChegadaProgStr = firstUnpassed.HoraProgramada;
+      const stationKeyProg =
+        STATION_MAP_IP_TO_JSON[firstUnpassed.NomeEstacao.toUpperCase()];
+      if (stationKeyProg && richInfo[stationKeyProg]) {
+        horaChegadaProgStr = richInfo[stationKeyProg];
+      }
+      if (horaChegadaProgStr?.length === 5) horaChegadaProgStr += ":00";
+
+      const progDate = parseSmartTime(horaChegadaProgStr, nowObj);
+      const prevDate = parseSmartTime(hpStr + ":00", nowObj); // Adiciona :00 para o parseSmartTime não falhar
+
+      if (progDate && prevDate) {
+        // Diferença em segundos entre a Hora Programada e a Hora Prevista pela IP
+        const diffS = Math.floor(
+          (prevDate.getTime() - progDate.getTime()) / 1000,
+        );
+        // Garante que ficamos sempre com a pior previsão (IP Text vs IP Observações)
+        if (diffS > ipReportedDelay) ipReportedDelay = diffS;
+      }
+    }
   }
 
   let turnaroundDelay = 0;
@@ -671,24 +764,18 @@ const processTrain = async (richInfo, originDateStr) => {
       const prediction = checkTurnaroundDelay(trainId, scheduledRoma, nowObj);
       if (prediction) {
         turnaroundDelay = prediction.delaySeconds;
-        if (!isLive) situacao = "Atraso Previsto (Turnaround)";
+        // Não reescrevemos aqui o texto, deixamos a sincronização final tratar disso
       }
     }
   }
 
-  // Determina se o comboio já passou o Pragal (sentido margem).
-  // Usado para evitar dupla contagem do atraso da ponte 25 de abril no Corroios
-  // e para remover os atrasos do Troço 1 (Foros de Amora, Fogueteiro).
   const pragalNodeId = STATION_IDS_FIXED["PRAGAL"];
-  // 'let' (não 'const') porque pode ser atualizado ao vivo dentro do forEach
   let pragalPassed =
     nodes.some(
       (n) =>
         n.NomeEstacao.toUpperCase() === "PRAGAL" && n.ComboioPassou === true,
     ) || !!mem.history[pragalNodeId];
 
-  // Determina se o comboio já passou Penalva (sentido margem).
-  // Usado para remover os atrasos do Troço 2 (Penalva → Setúbal).
   const penalvaNodeId = STATION_IDS_FIXED["PENALVA"];
   let penalvaPassed =
     nodes.some(
@@ -706,8 +793,6 @@ const processTrain = async (richInfo, originDateStr) => {
           (lastNode.NomeEstacao.toUpperCase().includes("COINA") ||
             lastNode.NomeEstacao.toUpperCase().includes("SETÚBAL")));
       if (isEnd) {
-        // FIX Analytics Bug 1: recordArrival para a estação terminal.
-        // O forEach nunca corre quando isEnd é true, por isso o registo é feito aqui.
         if (!mem.history[lastNode.NodeID]) {
           const lastKey =
             STATION_MAP_IP_TO_JSON[lastNode.NomeEstacao.toUpperCase()];
@@ -722,10 +807,6 @@ const processTrain = async (richInfo, originDateStr) => {
           }
         }
         AnalyticsManager.cleanupTrain(trainId);
-        // FIX Bug Future Trains: marca imediatamente como realizado para evitar que a app
-        // continue a ver este comboio como "em circulação/atrasado" durante os 15 min
-        // até ao próximo checkOfflineTrains. Sem esta linha, o FUTURE_TRAINS_CACHE mantém
-        // o status herdado de atrasos de rede declarados pela IP.
         FUTURE_TRAINS_CACHE[trainId] = "Realizado";
         delete TRAIN_MEMORY[trainId];
         return null;
@@ -757,24 +838,33 @@ const processTrain = async (richInfo, originDateStr) => {
     Ocupacao: richInfo.ocupacao,
     NodesPassagemComboio: [],
     AtrasoCalculado: 0,
-    SituacaoComboio: situacao,
+    SituacaoComboio: situacao, // Será reescrito no final
   };
 
-  let currentDelay = Math.max(mem.lastDelay, turnaroundDelay);
+  // --- 2. A LEI DO MAIOR ATRASO ---
+  // Arranca com o MAIOR valor entre: histórico da memória, turnaround ou declarado pela IP
+  let currentDelay = Math.max(
+    mem.lastDelay || 0,
+    turnaroundDelay,
+    ipReportedDelay,
+  );
   let newStationPassed = false;
+  let lastPassageRealTime = null; // Para resolver a "Cegueira CPU" de latência
+
+  let capturedNextDelay = false;
+  let nextStationTotalDelay = currentDelay;
 
   nodes.forEach((node) => {
     const passed = node.ComboioPassou;
 
-    // isNewlyPassed: primeira vez que este node é marcado como passado
     const isNewlyPassed = passed && !mem.history[node.NodeID];
     if (isNewlyPassed) {
       newStationPassed = true;
+      lastPassageRealTime = mem.history[node.NodeID] || Date.now();
     }
 
     const stationKey = STATION_MAP_IP_TO_JSON[node.NomeEstacao.toUpperCase()];
 
-    // Hora de Chegada Programada (usada para calcular o atraso real vindo da IP)
     let horaChegadaProgStr =
       stationKey && richInfo[stationKey]
         ? richInfo[stationKey]
@@ -782,7 +872,6 @@ const processTrain = async (richInfo, originDateStr) => {
     if (horaChegadaProgStr?.length === 5) horaChegadaProgStr += ":00";
     const dateChegadaProg = parseSmartTime(horaChegadaProgStr, nowObj);
 
-    // Hora de Partida Programada (para a previsão final apresentada ao utilizador)
     let horaPartidaProgStr =
       stationKey && departureTrip && departureTrip[stationKey]
         ? departureTrip[stationKey]
@@ -800,29 +889,15 @@ const processTrain = async (richInfo, originDateStr) => {
 
       if (dateChegadaProg) {
         const rawDelay =
-          Math.floor((timestamp - dateChegadaProg.getTime()) / 1000) - 15; //Atualização para 15 segunddos para correção de atrasos da API da IP
+          Math.floor((timestamp - dateChegadaProg.getTime()) / 1000) - 15;
 
-        // FIX Bug 2 (Roma-Areeiro / deteção tardia): evita inflar o atraso acumulado
-        // com a latência de deteção do ciclo. No cenário problemático: ciclo sequencial
-        // de ~51s em hora de ponta → comboio que parte de Roma-Areeiro a horas (08:03)
-        // é detetado apenas às 08:04:51 → rawDelay ≈ 101s → atraso falso de ~2 min
-        // propagado para Entrecampos, Sete Rios, Campolide, etc.
-        //
-        // Regra: se o delay bruto calculado for inferior ao delay já conhecido
-        // (mem.lastDelay), mantém o anterior. Isto nunca mascara atrasos reais:
-        // se o comboio genuinamente acelerou, rawDelay seria negativo e
-        // mem.lastDelay (sempre >= 0) seria usado corretamente.
-        if (isNewlyPassed && rawDelay < mem.lastDelay) {
-          atrasoNode = mem.lastDelay;
-        } else {
-          atrasoNode = rawDelay;
-        }
-        currentDelay = atrasoNode;
+        // Permite recuperar tempo usando o Math.max(0) - Fim do "Efeito Catraca"
+        atrasoNode = Math.max(0, rawDelay);
+
+        // Atraso físico vs Atraso IP: Prevalece sempre o pior cenário a ditar a frente do comboio
+        currentDelay = Math.max(atrasoNode, ipReportedDelay, turnaroundDelay);
       }
 
-      // FIX Analytics Bug 2: se o Pragal acabou de ser passado neste ciclo,
-      // atualiza pragalPassed imediatamente para que o Corroios (processado a seguir)
-      // não receba bridgeAdjustment incorretamente na mesma iteração.
       if (
         isNewlyPassed &&
         node.NomeEstacao.toUpperCase() === "PRAGAL" &&
@@ -831,8 +906,6 @@ const processTrain = async (richInfo, originDateStr) => {
         pragalPassed = true;
       }
 
-      // Atualiza penalvaPassed ao vivo: se Penalva acabou de ser passada neste ciclo,
-      // as estações seguintes (Pinhal Novo, etc.) não recebem o atraso do Troço 2.
       if (
         isNewlyPassed &&
         node.NomeEstacao.toUpperCase() === "PENALVA" &&
@@ -841,7 +914,6 @@ const processTrain = async (richInfo, originDateStr) => {
         penalvaPassed = true;
       }
 
-      // Analytics: regista chegada real (só na primeira passagem da estação)
       if (isNewlyPassed && stationKey && dateChegadaProg) {
         AnalyticsManager.recordArrival(
           trainId,
@@ -853,10 +925,6 @@ const processTrain = async (richInfo, originDateStr) => {
       }
     }
 
-    // Atraso estrutural calculado pelo DelayManager (bridge + troço 1 + troço 2).
-    // Substitui getTemporaryDelayAdjustment — agora cobre os três troços da Margem
-    // e distingue hora de ponta. Para estações já passadas o valor é irrelevante
-    // (a previsão usa horaRealStr), mas stationKey pode ser null em nós offline sem mapa.
     const { isWeekendOrHoliday } = getOperationalInfo(nowObj);
     let bridgeAdjustment = DelayManager.getStructuralDelay(
       stationKey,
@@ -868,20 +936,18 @@ const processTrain = async (richInfo, originDateStr) => {
         isWeekendOrHoliday,
       },
     );
-    let horaPrevistaFinal = horaPartidaProgStr; // Inicia com a partida teórica
+    let horaPrevistaFinal = horaPartidaProgStr;
+
+    // NOVO: Capturar o delay projetado (incluindo delay estrutural) APENAS da primeira estação não passada
+    if (!passed && !capturedNextDelay) {
+      nextStationTotalDelay = currentDelay + bridgeAdjustment;
+      capturedNextDelay = true;
+    }
 
     if (datePartidaProg && !passed) {
-      // Previsão = Hora de Partida Planeada + Atraso Acumulado + Ajuste Estrutural
       const rawPredictedMs =
         datePartidaProg.getTime() + (currentDelay + bridgeAdjustment) * 1000;
 
-      // Regra de Segurança (FIX Bug Lógico de Tempo):
-      // A previsão apresentada ao utilizador NUNCA pode ser anterior à hora de
-      // PARTIDA programada estática. Usar datePartidaProg (não dateChegadaProg)
-      // como floor porque é o horário que o utilizador vê no display — o dwell time
-      // entre chegada e partida já está embutido nele.
-      // Nota: o clamp nos analytics (linha abaixo) usa dateChegadaProg como floor,
-      // porque lá a métrica é de chegada — os dois floors têm propósitos distintos.
       const clampedMs = DelayManager.clampToScheduled(
         rawPredictedMs,
         datePartidaProg.getTime(),
@@ -889,10 +955,7 @@ const processTrain = async (richInfo, originDateStr) => {
       horaPrevistaFinal = formatTimeHHMMSS(new Date(clampedMs));
     }
 
-    // Analytics: captura snapshot da previsão para estações ainda não passadas.
     if (!passed && stationKey && dateChegadaProg) {
-      // Usa o mesmo clamp da HoraPrevista para que a métrica de precisão seja coerente
-      // com o que é apresentado ao utilizador.
       const rawArrivalMs =
         dateChegadaProg.getTime() + (currentDelay + bridgeAdjustment) * 1000;
       const predictedArrivalMs = DelayManager.clampToScheduled(
@@ -912,7 +975,7 @@ const processTrain = async (richInfo, originDateStr) => {
 
     trainOutput.NodesPassagemComboio.push({
       ComboioPassou: passed,
-      HoraProgramada: horaPartidaProgStr, // Passamos a mostrar a partida programada
+      HoraProgramada: horaPartidaProgStr,
       HoraReal: passed ? horaRealStr : "HH:MM:SS",
       AtrasoReal: passed ? atrasoNode : 0,
       HoraPrevista: passed ? horaRealStr : horaPrevistaFinal,
@@ -921,29 +984,27 @@ const processTrain = async (richInfo, originDateStr) => {
     });
   });
 
-  // FIX #6: nextWakeUp reduzido de 120 000ms para 90 000ms.
-  if (newStationPassed) {
-    mem.nextWakeUp = Date.now() + 90000;
+  // O tempo de repouso conta a partir da HORA REAL da passagem, para não criarmos latência artificial
+  if (newStationPassed && lastPassageRealTime) {
+    mem.nextWakeUp = lastPassageRealTime + 90000;
+  }
+
+  // --- 3. SINCRONIZAÇÃO DA SITUAÇÃO DO COMBOIO (TEXTO UI) ---
+  if (!situacao.toUpperCase().includes("SUPRIMIDO")) {
+    const displayDelayMins = Math.round(nextStationTotalDelay / 60);
+
+    if (displayDelayMins >= 1) {
+      // Ajusta o texto dependendo de o comboio já ter iniciado serviço físico ou não
+      trainOutput.SituacaoComboio = isLive
+        ? `Circula com atraso de ${displayDelayMins} min.`
+        : `Previsto atraso de ${displayDelayMins} min.`;
+    } else {
+      trainOutput.SituacaoComboio = isLive ? "Em circulação" : "Programado";
+    }
   }
 
   // =========================================================================
   // ADDICTION GHOST TRAIN DETECTION
-  //
-  // Aplicasse apenas a comboios live não declarados suprimidos pela IP.
-  // Deteta comboios imobilizados sem anúncio e aplica cancelamento gradual.
-  //
-  // Stage 1 (5–14 min): SituacaoComboio = "Possível Perturbação"
-  //   → comboio permanece visível na API com aviso para a app mostrar
-  //
-  // Stage 2 (15–59 min): comboio removido da OUTPUT_CACHE pública
-  //   → monitorização background de minuto a minuto (máx. 30 min)
-  //   → se retomar circulação, o próximo updateCycle re-integra-o
-  //
-  // Stage 3 (60+ min): supressão confirmada
-  //   → FUTURE_TRAINS_CACHE["id"] = "SUPRIMIDO"
-  //   → GHOST_SUPPRESSED garante exclusão permanente nesta sessão operacional
-  //   → TRAIN_MEMORY limpo para libertar RAM
-  // =========================================================================
   if (isLive && !situacao.toUpperCase().includes("SUPRIMIDO")) {
     const nextUnvisited = trainOutput.NodesPassagemComboio.find(
       (n) => !n.ComboioPassou,
@@ -954,7 +1015,6 @@ const processTrain = async (richInfo, originDateStr) => {
       nextUnvisited.HoraPrevista &&
       nextUnvisited.HoraPrevista !== "HH:MM:SS"
     ) {
-      // HoraPrevista dos nós não passados está em formato HH:MM:SS — extrai HH:MM
       const nextExpectedDate = parseSmartTime(
         nextUnvisited.HoraPrevista.substring(0, 5),
         nowObj,
@@ -964,7 +1024,6 @@ const processTrain = async (richInfo, originDateStr) => {
         const minutesLate = (nowTime - nextExpectedDate.getTime()) / 60000;
 
         if (minutesLate >= 15) {
-          // === STAGE 2 ===
           console.log(
             `[GHOST] Stage 2: Comboio ${trainId} a ${minutesLate.toFixed(1)} min ` +
               `sem chegar a "${nextUnvisited.NomeEstacao}". A remover da API pública.`,
@@ -979,17 +1038,15 @@ const processTrain = async (richInfo, originDateStr) => {
             nextExpectedDate,
             passedCount,
           );
-          // Remove imediatamente da cache pública para não servir dados obsoletos
-          // em requests que cheguem antes do fim deste ciclo updateCycle.
           delete OUTPUT_CACHE[trainId];
           mem.lastResult = null;
           return null;
         } else if (minutesLate >= 5) {
-          // === STAGE 1 ===
           console.log(
             `[GHOST] Stage 1: Comboio ${trainId} com possível perturbação ` +
               `(${minutesLate.toFixed(1)} min sem progressão em "${nextUnvisited.NomeEstacao}").`,
           );
+          // O ghost train sobrepõe temporariamente o texto de atraso normal, indicando uma falha detetada
           trainOutput.SituacaoComboio = "Possível Perturbação";
         }
       }
@@ -998,7 +1055,8 @@ const processTrain = async (richInfo, originDateStr) => {
 
   trainOutput.AtrasoCalculado = currentDelay;
   mem.lastDelay = currentDelay;
-  mem.lastResult = trainOutput; // Guarda o resultado correto no próprio comboio
+  mem.lastResult = trainOutput;
+
   return trainOutput;
 };
 
@@ -1006,6 +1064,7 @@ const processTrain = async (richInfo, originDateStr) => {
 const updateCycle = async () => {
   const now = new Date();
 
+  // 1. Filtrar os comboios que nos interessam agora
   const activeRichTrains = RICH_SCHEDULE.map((t) => {
     let startStr =
       t.direction === "lisboa" ? t.setubal || t.coina : t.roma_areeiro;
@@ -1027,16 +1086,16 @@ const updateCycle = async () => {
   }).filter((t) => {
     if (!t) return false;
 
-    // FIX Paralelização: excluir comboios em monitorização ghost (Stage 2) e
-    // confirmados suprimidos (Stage 3). Sem este filtro, o updateCycle re-adicionaria
-    // à OUTPUT_CACHE um comboio que o ghost system acabou de remover.
+    // Se o comboio está a ser tratado pelo sistema de Ghost Trains (ou seja,
+    // parou no meio do nada ou já foi dado como suprimido), ignoramos aqui
+    // para não o voltar a injetar na API acidentalmente.
     if (GHOST_TRAINS[String(t.id)] || GHOST_SUPPRESSED.has(String(t.id))) {
       return false;
     }
 
     const isBeingTracked = !!TRAIN_MEMORY[String(t.id)];
 
-    // Avalia se o dia específico deste comboio é de fim de semana/feriado.
+    // Verificação simples de fim de semana/feriado
     const trainOpInfo = getOperationalInfo(t.startObj);
     const isTrainWeekendOrHoliday = trainOpInfo.isWeekendOrHoliday;
 
@@ -1047,9 +1106,10 @@ const updateCycle = async () => {
       (!isTrainWeekendOrHoliday && hType === 0);
     if (!matchesDay) return false;
 
+    // A nossa janela de monitorização: 20 min antes de partir até 2 horas depois de chegar
     const nowTime = now.getTime();
     const isInsideWindow =
-      nowTime >= t.startObj.getTime() - 45 * 60000 &&
+      nowTime >= t.startObj.getTime() - 20 * 60000 &&
       nowTime <= t.endObj.getTime() + 120 * 60000;
 
     const isAlreadyFinished = FUTURE_TRAINS_CACHE[String(t.id)] === "Realizado";
@@ -1057,62 +1117,74 @@ const updateCycle = async () => {
     return (!isAlreadyFinished && isInsideWindow) || isBeingTracked;
   });
 
-  const newOutput = {};
+  // -------------------------------------------------------------------------
+  // 2. O CORAÇÃO DO SISTEMA: PROTEÇÃO ANTI-DDOS E OTIMIZAÇÃO DE VM
+  // -------------------------------------------------------------------------
+  // Em vez de usarmos Promise.all (que bloqueia o servidor e dispara dezenas
+  // de pedidos ao mesmo tempo contra a IP), vamos distribuir os pedidos ao
+  // longo de 8 segundos. Assim, a IP recebe os pedidos pinga a pinga (parece
+  // tráfego humano) e a nossa pequena VM Azure não sofre picos de CPU.
 
-  // FIX Bug 1 (Roma-Areeiro / paralelização):
-  // O ciclo original processava os comboios sequencialmente com await + 50ms gap.
-  // Em hora de ponta (33 comboios ativos), cada ciclo demorava ~51s — 5× o intervalo
-  // pretendido de 10s. O IS_CYCLE_RUNNING impedia sobreposição, fazendo com que todos
-  // os ticks intermédios fossem ignorados. Resultado: polling efetivo de ~51s,
-  // com deteção da partida em Roma-Areeiro sistematicamente atrasada.
-  //
-  // Solução: processamento em batches paralelos de 6. Com fetches de ~1.5s cada:
-  //   33 comboios ÷ 6 por batch × 1.5s ≈ 9s por ciclo → respeita o intervalo de 10s.
-  const BATCH_SIZE = 6;
-  for (let i = 0; i < activeRichTrains.length; i += BATCH_SIZE) {
-    const batch = activeRichTrains.slice(i, i + BATCH_SIZE);
-    const results = await Promise.all(
-      batch.map((t) => processTrain(t, t.originDateStr)),
-    );
-    results.forEach((r) => {
-      if (r) newOutput[r["id-comboio"]] = r;
-    });
-  }
+  const spreadWindowMs = 8000; // Janela segura de 8 segundos
+  const staggerMs =
+    activeRichTrains.length > 0
+      ? Math.floor(spreadWindowMs / activeRichTrains.length)
+      : 0;
 
-  // --- Limpeza de estados obsoletos no FUTURE_TRAINS_CACHE ---
-  //
-  // checkOfflineTrains corre de 15 em 15 minutos. Um comboio pode terminar a
-  // viagem entre duas verificações com um estado de atraso ainda em cache
-  // (ex: "Atraso 9 min" copiado às 10:40, comboio termina às 10:45, próxima
-  // verificação só às 10:55 → durante 10 min o cache mente ao cliente).
-  //
-  // Esta lógica corre a cada 10 segundos e marca "Realizado" assim que a hora
-  // de chegada ao destino final já passou, sem precisar de chamada à API IP.
-  // O GHOST_SUPPRESSED não é tocado aqui — esses têm o seu próprio ciclo.
-  const nowMs = now.getTime();
-  for (const [trainId, cachedStatus] of Object.entries(FUTURE_TRAINS_CACHE)) {
-    if (cachedStatus === "Realizado" || cachedStatus === "SUPRIMIDO") continue;
+  activeRichTrains.forEach((t, index) => {
+    const trainId = String(t.id);
 
-    const entry = RICH_SCHEDULE.find((t) => String(t.id) === trainId);
-    if (!entry) continue;
-
-    const endStr =
-      entry.direction === "lisboa"
-        ? entry.roma_areeiro
-        : entry.setubal || entry.coina;
-    if (!endStr) continue;
-
-    const endDate = parseSmartTime(endStr.substring(0, 5), now);
-    if (endDate && nowMs > endDate.getTime()) {
-      FUTURE_TRAINS_CACHE[trainId] = "Realizado";
+    // Inicializa a memória para este comboio se for a primeira vez que o vemos
+    if (!TRAIN_MEMORY[trainId]) {
+      TRAIN_MEMORY[trainId] = {
+        history: {},
+        lastDelay: 0,
+        nextWakeUp: 0,
+        lastResult: null,
+        isFetching: false,
+      };
     }
-  }
 
-  OUTPUT_CACHE = { ...newOutput, futureTrains: FUTURE_TRAINS_CACHE };
+    // Lock individual: Se a IP estiver super lenta e este comboio ainda
+    // estiver a carregar desde o ciclo anterior, saltamos à frente!
+    // Isto evita encravar o sistema inteiro por causa de um único comboio.
+    if (TRAIN_MEMORY[trainId].isFetching) return;
 
-  // --- Limpeza periódica do GHOST_SUPPRESSED ---
-  // Remove entradas de comboios cujo horário de fim já passou há mais de 4 horas,
-  // evitando que o Set cresça indefinidamente ao longo de dias de serviço.
+    TRAIN_MEMORY[trainId].isFetching = true;
+
+    // Aqui acontece a magia do espaçamento. Multiplicamos o index pelo atraso calculado.
+    setTimeout(async () => {
+      try {
+        const r = await processTrain(t, t.originDateStr);
+        if (r) {
+          OUTPUT_CACHE[trainId] = r;
+        } else {
+          // Retornou null (chegou ao fim da viagem ou entrou em ghost mode), apagamos.
+          delete OUTPUT_CACHE[trainId];
+        }
+      } catch (e) {
+        console.error(
+          `[UPDATE CYCLE] Erro a processar o comboio ${trainId}:`,
+          e.message,
+        );
+      } finally {
+        // Libertamos o lock no fim, quer tenha tido sucesso ou dado erro
+        if (TRAIN_MEMORY[trainId]) {
+          TRAIN_MEMORY[trainId].isFetching = false;
+        }
+        // Asseguramos que os estados futuros não se perdem na cache principal
+        OUTPUT_CACHE.futureTrains = FUTURE_TRAINS_CACHE;
+      }
+    }, index * staggerMs);
+  });
+
+  // -------------------------------------------------------------------------
+  // 3. LIMPEZA DE LIXO (GARBAGE COLLECTION)
+  // -------------------------------------------------------------------------
+
+  const nowMs = now.getTime();
+
+  // Limpar comboios fantasmas (Ghost Suppressed) que já passaram da validade.
   for (const ghostId of GHOST_SUPPRESSED) {
     const entry = RICH_SCHEDULE.find((t) => String(t.id) === ghostId);
     if (entry) {
@@ -1130,6 +1202,50 @@ const updateCycle = async () => {
       GHOST_SUPPRESSED.delete(ghostId);
     }
   }
+
+  // Marcar comboios futuros como "Realizado" assim que a hora de destino passa.
+  // Evita que um atraso antigo fique colado no cache até ao próximo varrimento geral.
+  for (const [trainId, cachedStatus] of Object.entries(FUTURE_TRAINS_CACHE)) {
+    if (cachedStatus === "Realizado" || cachedStatus === "SUPRIMIDO") continue;
+
+    const entry = RICH_SCHEDULE.find((t) => String(t.id) === trainId);
+    if (!entry) continue;
+
+    const endStr =
+      entry.direction === "lisboa"
+        ? entry.roma_areeiro
+        : entry.setubal || entry.coina;
+    if (!endStr) continue;
+
+    const endDate = parseSmartTime(endStr.substring(0, 5), now);
+    if (endDate && nowMs > endDate.getTime()) {
+      FUTURE_TRAINS_CACHE[trainId] = "Realizado";
+    }
+  }
+};
+
+// --- DEEP SLEEP MODE ---
+const isSystemInSleepMode = () => {
+  const now = new Date();
+  const h = now.getHours();
+  const m = now.getMinutes();
+
+  if ((h === 2 && m >= 30) || h === 3 || h === 4) {
+    // só dorme se não existirem comboios na linha
+    const hasActiveTrains = Object.keys(TRAIN_MEMORY).length > 0;
+
+    if (!hasActiveTrains) {
+      console.log(
+        `[SEARCH OFF] API desativada às ${h}:${m}. Future Trains Congelados`,
+      );
+      return true; // Pode dormir.
+    } else {
+      console.log(
+        `[SLEEP OVERRIDE] São ${h}:${m} mas ainda há comboios ativos na linha! API continua a funcionar.`,
+      );
+    }
+  }
+  return false; // Fora do horário de repouso, ou com comboios na linha, trabalha normalmente.
 };
 
 // --- TICKER (10 SEGUNDOS) ---
@@ -1141,6 +1257,12 @@ const scheduleNextTick = () => {
   const delay = (nextTarget - seconds) * 1000 - ms;
 
   setTimeout(async () => {
+    if (isSystemInSleepMode()) {
+      OUTPUT_CACHE = { futureTrains: FUTURE_TRAINS_CACHE };
+      scheduleNextTick();
+      return;
+    }
+
     if (!IS_CYCLE_RUNNING) {
       IS_CYCLE_RUNNING = true;
       try {
@@ -1180,7 +1302,7 @@ app.get("/avisos", (req, res) => {
 app.get("/", (req, res) =>
   res.json({
     status: "online",
-    version: "4.7.2",
+    version: "4.8.0",
     aviso:
       "Pedimos que não uses o nosso endpoint diretamente! Verifica toda as informações e código no github.",
     operational: getOperationalInfo(),
@@ -1192,7 +1314,7 @@ app.get("/", (req, res) =>
 );
 
 app.listen(PORT, () => {
-  console.log(`LiveTagus API v4.7.2 ativa na porta ${PORT}`);
+  console.log(`LiveTagus API v4.8.0 ativa na porta ${PORT}`);
   console.log(`Endpoint /fertagus protegido com API_KEY.`);
   checkOfflineTrains();
   updateCycle();
