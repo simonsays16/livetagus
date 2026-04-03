@@ -391,10 +391,7 @@ const checkTurnaroundDelay = (
 };
 
 // --- FUTURE TRAIN CHECK ---
-// --- FUTURE TRAIN CHECK ---
 const checkOfflineTrains = async () => {
-  // 1. Verificação de Repouso Absoluto (Deep Sleep)
-  // Se a app estiver a dormir de madrugada, não acordamos a máquina nem chateamos a IP.
   if (typeof isSystemInSleepMode === "function" && isSystemInSleepMode()) {
     console.log(
       `[SLEEP MODE] ${new Date().toLocaleTimeString()} - A dormir. Verificação de comboios futuros suspensa.`,
@@ -453,19 +450,17 @@ const checkOfflineTrains = async () => {
   const results = {};
   const fetchCandidates = [];
 
-  // 3. O Filtro de Ressurreição e Poupança de Rede
+  // poupança de pedidos à IP retirando comboios realizados
   for (const t of candidates) {
-    const safeEndMarginMs = t.endObj.getTime() + 60 * 60000;
+    const safeEndMarginMs = t.endObj.getTime() + 90 * 60000;
 
-    // Se o ciclo rápido de 10s JÁ deu o comboio como terminado, ou se a margem máxima de atraso já passou:
-    if (
-      nowMs > safeEndMarginMs ||
-      FUTURE_TRAINS_CACHE[String(t.id)] === "Realizado"
-    ) {
-      // Carimbamos localmente sem gastar chamadas HTTP à IP
+    const isFinishedToday =
+      FUTURE_TRAINS_CACHE[String(t.id)] === "Realizado" &&
+      nowMs > t.startObj.getTime();
+
+    if (nowMs > safeEndMarginMs || isFinishedToday) {
       results[String(t.id)] = "Realizado";
     } else {
-      // Comboio legítimo que ainda precisa de verificação
       fetchCandidates.push(t);
     }
   }
@@ -521,7 +516,7 @@ const checkOfflineTrains = async () => {
   }
 
   console.log(
-    `[FUTURE CHECK] Concluído. Analisados na base de dados: ${candidates.length} | Pedidos à IP efetuados: ${fetchCandidates.length}`,
+    `[FUTURE CHECK] Concluído às ${new Date().toLocaleTimeString()}. Analisados na base de dados: ${candidates.length} | Pedidos à IP efetuados: ${fetchCandidates.length}`,
   );
 };
 
@@ -1112,7 +1107,9 @@ const updateCycle = async () => {
       nowTime >= t.startObj.getTime() - 20 * 60000 &&
       nowTime <= t.endObj.getTime() + 120 * 60000;
 
-    const isAlreadyFinished = FUTURE_TRAINS_CACHE[String(t.id)] === "Realizado";
+    const isAlreadyFinished =
+      FUTURE_TRAINS_CACHE[String(t.id)] === "Realizado" &&
+      nowTime > t.startObj.getTime();
 
     return (!isAlreadyFinished && isInsideWindow) || isBeingTracked;
   });
@@ -1203,21 +1200,37 @@ const updateCycle = async () => {
     }
   }
 
-  // Marcar comboios futuros como "Realizado" assim que a hora de destino passa.
   // Evita que um atraso antigo fique colado no cache até ao próximo varrimento geral.
   for (const [trainId, cachedStatus] of Object.entries(FUTURE_TRAINS_CACHE)) {
-    if (cachedStatus === "Realizado" || cachedStatus === "SUPRIMIDO") continue;
-
     const entry = RICH_SCHEDULE.find((t) => String(t.id) === trainId);
     if (!entry) continue;
 
+    const startStr =
+      entry.direction === "lisboa"
+        ? entry.setubal || entry.coina
+        : entry.roma_areeiro;
     const endStr =
       entry.direction === "lisboa"
         ? entry.roma_areeiro
         : entry.setubal || entry.coina;
-    if (!endStr) continue;
+    if (!startStr || !endStr) continue;
 
+    const startDate = parseSmartTime(startStr.substring(0, 5), now);
     const endDate = parseSmartTime(endStr.substring(0, 5), now);
+
+    // AUTO-HEAL: Se a cache diz "Realizado/Suprimido", mas a partida de HOJE ainda nem aconteceu,
+    // é porque este estado é lixo do dia anterior! Apagamos instantaneamente.
+    if (
+      (cachedStatus === "Realizado" || cachedStatus === "SUPRIMIDO") &&
+      startDate &&
+      nowMs < startDate.getTime()
+    ) {
+      FUTURE_TRAINS_CACHE[trainId] = "Sem Informação";
+      continue;
+    }
+
+    if (cachedStatus === "Realizado" || cachedStatus === "SUPRIMIDO") continue;
+
     if (endDate && nowMs > endDate.getTime()) {
       FUTURE_TRAINS_CACHE[trainId] = "Realizado";
     }
@@ -1235,9 +1248,9 @@ const isSystemInSleepMode = () => {
     const hasActiveTrains = Object.keys(TRAIN_MEMORY).length > 0;
 
     if (!hasActiveTrains) {
-      console.log(
-        `[SEARCH OFF] API desativada às ${h}:${m}. Future Trains Congelados`,
-      );
+      //console.log(
+      //  `[SEARCH OFF] API desativada às ${h}:${m}. Future Trains Congelados`,
+      //);
       return true; // Pode dormir.
     } else {
       console.log(
