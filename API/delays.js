@@ -57,14 +57,14 @@
 
 // ─── CONSTANTES DE ATRASO ─────────────────────────────────────────────────────
 
-/** Atraso de Ponte: Pragal + Corroios (sentido Margem). */
-const BRIDGE_DELAY_BASE_S = 0; //1 * 60 + 30; // 1 min 30 seg
-const BRIDGE_DELAY_PEAK_S = 0; //2 * 60; // 2 min 00 seg
+/** Atraso de Ponte: Pragal + Fogueteiro (sentido Margem). */
+const BRIDGE_DELAY_BASE_S = 45; //1 * 60 + 30; // 1 min 30 seg
+const BRIDGE_DELAY_PEAK_S = 60; //2 * 60; // 2 min 00 seg
 // const BRIDGE_DELAY_PEAK_S_AFTERNOON = 3 * 60 + 45; // 3 min 45 seg
 
-/** Troço 1 Pós-Pragal: Fogueteiro (sentido Margem). */
-const TROCO1_DELAY_BASE_S = 0; //1 * 60 + 45; // 1 min 45 seg
-const TROCO1_DELAY_PEAK_S = 0; //2 * 60 + 15; // 2 min 15 seg
+/** Troço 1 Pós-Pragal: Corroios e Foros (sentido Margem). */
+const TROCO1_DELAY_BASE_S = 2 * 60 + 30; // 1 min 45 seg
+const TROCO1_DELAY_PEAK_S = 2 * 60 + 45; // 2 min 15 seg
 // const TROCO1_DELAY_PEAK_S_AFTERNOON = 2 * 60 + 40; // 2 min 40 seg
 
 /** Troço 2 Pós-Coina: Penalva e restantes até Setúbal (sentido Margem). */
@@ -80,7 +80,7 @@ const TROCO2_DELAY_PEAK_S = 2 * 60 + 30; // 2 min 30 seg
  * após a passagem no Pragal, o delay da ponte já está capturado no
  * atraso real medido, pelo que somá-lo novamente causaria dupla contagem.
  */
-const BRIDGE_STATIONS = new Set(["pragal", "corroios", "foros_de_amora"]);
+const BRIDGE_STATIONS = new Set(["pragal", "fogueteiro"]);
 
 /**
  * Estações do Troço 1 (entre a Ponte e Coina).
@@ -88,20 +88,14 @@ const BRIDGE_STATIONS = new Set(["pragal", "corroios", "foros_de_amora"]);
  * mas com magnitude diferente (1 min vs 2 min).
  * Removido pelo mesmo gatilho que o bridge delay: passagem no Pragal.
  */
-const TROCO1_STATIONS = new Set(["fogueteiro"]);
+const TROCO1_STATIONS = new Set(["corroios", "foros_de_amora"]);
 
 /**
  * Estações do Troço 2 (linha de Setúbal, pós-Coina).
  * Inclui Penalva (estação de referência para remoção) + todas as seguintes.
  * Removido quando o comboio passa em Penalva.
  */
-const TROCO2_STATIONS = new Set([
-  "penalva",
-  "pinhal_novo",
-  "venda_do_alcaide",
-  "palmela",
-  "setubal",
-]);
+const TROCO2_STATIONS = new Set(["penalva", "pinhal_novo"]);
 
 // ─── HORA DE PONTA ────────────────────────────────────────────────────────────
 
@@ -190,13 +184,13 @@ const getBridgeDelay = (
 const getTroco1Delay = (
   stationKey,
   direction,
-  pragalPassed = false,
+  corroiosPassed = false,
   now = new Date(),
   isWeekendOrHoliday = false,
 ) => {
   if (direction !== "margem") return 0;
   if (!TROCO1_STATIONS.has(stationKey)) return 0;
-  if (pragalPassed) return 0;
+  if (corroiosPassed) return 0;
 
   return isPeakHour(now, isWeekendOrHoliday)
     ? TROCO1_DELAY_PEAK_S

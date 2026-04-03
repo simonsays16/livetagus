@@ -1,0 +1,100 @@
+{
+  "margem": {
+    "regras_de_troco": [
+      {
+        "id": 0,
+        "active": true,
+        "nome": "Lentidão da Ponte",
+        "ativo_ate_passar": "PRAGAL"
+      },
+      {
+        "id": 1,
+        "active": true,
+        "nome": "Lentidão Pragal->Corroios",
+        "ativo_ate_passar": "CORROIOS"
+      },
+      {
+        "id": 2,
+        "active": true,
+        "nome": "Lentidão Coina->Penalva",
+        "ativo_ate_passar": "PENALVA"
+      }
+    ],
+    "estacoes": {
+      "ROMA-AREEIRO": {
+        "ajuste_partida": -30,
+        "recuperacao_chegada": 0
+      },
+      "ENTRECAMPOS": {
+        "ajuste_partida": 0,
+        "recuperacao_chegada": -10
+      },
+      "PRAGAL": {
+        "ajuste_partida": 0,
+        "recuperacao_chegada": -20,
+        "0": {
+            "add_normal": 120,
+            "add_ponta_manha": 140,
+            "add_ponta_tarde": 180
+        }
+      },
+      "CORROIOS": {
+        "ajuste_partida": 0,
+        "recuperacao_chegada": 0,
+        "0": {
+            "add_normal": 120,
+            "add_ponta_manha": 120,
+            "add_ponta_tarde": 160
+        },
+        "1": {
+            "add_normal": 60,
+            "add_ponta": 90
+        }
+      },
+      "FOROS DE AMORA": {
+        "ajuste_partida": 0,
+        "recuperacao_chegada": -30,
+        "0": {
+            "add_normal": 120,
+            "add_ponta_manha": 90,
+            "add_ponta_tarde": 140
+        },
+        "1": {
+            "add_normal": 60,
+            "add_ponta": 90
+        }
+      },
+      "FOGUETEIRO": {
+        "ajuste_partida": 0,
+        "recuperacao_chegada": 0,
+        "0": {
+            "add_normal": 60,
+            "add_ponta_manha": 80,
+            "add_ponta_tarde": 105
+        },
+        "1": {
+            "add_normal": 20,
+            "add_ponta": 30
+        }
+      },
+      "COINA": {
+        "ajuste_partida": -40,
+        "recuperacao_chegada": -15
+      }
+    }
+  },
+  "lisboa": {
+    "regras_de_troco": [
+    ],
+    "estacoes": {
+      "SETUBAL": {
+        "ajuste_partida": -60,
+        "recuperacao_chegada": 0
+      },
+      "COINA": {
+        "ajuste_partida": -30,
+        "recuperacao_chegada": -10
+      }
+    }
+  }
+}

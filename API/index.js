@@ -771,6 +771,13 @@ const processTrain = async (richInfo, originDateStr) => {
         n.NomeEstacao.toUpperCase() === "PRAGAL" && n.ComboioPassou === true,
     ) || !!mem.history[pragalNodeId];
 
+  const corroiosNodeId = STATION_IDS_FIXED["CORROIOS"];
+  let corroiosPassed =
+    nodes.some(
+      (n) =>
+        n.NomeEstacao.toUpperCase() === "CORROIOS" && n.ComboioPassou === true,
+    ) || !!mem.history[pragalNodeId];
+
   const penalvaNodeId = STATION_IDS_FIXED["PENALVA"];
   let penalvaPassed =
     nodes.some(
@@ -884,7 +891,7 @@ const processTrain = async (richInfo, originDateStr) => {
 
       if (dateChegadaProg) {
         const rawDelay =
-          Math.floor((timestamp - dateChegadaProg.getTime()) / 1000) - 15;
+          Math.floor((timestamp - datePartidaProg.getTime()) / 1000) - 15;
 
         // Permite recuperar tempo usando o Math.max(0) - Fim do "Efeito Catraca"
         atrasoNode = Math.max(0, rawDelay);
@@ -899,6 +906,14 @@ const processTrain = async (richInfo, originDateStr) => {
         direction === "margem"
       ) {
         pragalPassed = true;
+      }
+
+      if (
+        isNewlyPassed &&
+        node.NomeEstacao.toUpperCase() === "CORROIOS" &&
+        direction === "margem"
+      ) {
+        corroiosPassed = true;
       }
 
       if (
@@ -926,6 +941,7 @@ const processTrain = async (richInfo, originDateStr) => {
       direction,
       {
         pragalPassed,
+        corroiosPassed,
         penalvaPassed,
         now: nowObj,
         isWeekendOrHoliday,
@@ -1315,7 +1331,7 @@ app.get("/avisos", (req, res) => {
 app.get("/", (req, res) =>
   res.json({
     status: "online",
-    version: "4.8.0",
+    version: "4.8.2",
     aviso:
       "Pedimos que não uses o nosso endpoint diretamente! Verifica toda as informações e código no github.",
     operational: getOperationalInfo(),
@@ -1327,7 +1343,7 @@ app.get("/", (req, res) =>
 );
 
 app.listen(PORT, () => {
-  console.log(`LiveTagus API v4.8.0 ativa na porta ${PORT}`);
+  console.log(`LiveTagus API v4.8.2 ativa na porta ${PORT}`);
   console.log(`Endpoint /fertagus protegido com API_KEY.`);
   checkOfflineTrains();
   updateCycle();
