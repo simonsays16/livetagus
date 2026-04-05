@@ -889,15 +889,19 @@ const processTrain = async (richInfo, originDateStr) => {
       mem.history[node.NodeID] = timestamp;
       horaRealStr = formatTimeHHMMSS(new Date(timestamp));
 
-      if (dateChegadaProg) {
-        const rawDelay =
-          Math.floor((timestamp - datePartidaProg.getTime()) / 1000) - 15;
+      if (datePartidaProg) {
+        const rawDelay = Math.floor(
+          (timestamp - datePartidaProg.getTime()) / 1000,
+        );
 
         // Permite recuperar tempo usando o Math.max(0) - Fim do "Efeito Catraca"
         atrasoNode = Math.max(0, rawDelay);
 
-        // Atraso físico vs Atraso IP: Prevalece sempre o pior cenário a ditar a frente do comboio
-        currentDelay = Math.max(atrasoNode, ipReportedDelay, turnaroundDelay);
+        if (ipReportedDelay > atrasoNode + 300) {
+          currentDelay = ipReportedDelay;
+        } else {
+          currentDelay = atrasoNode;
+        }
       }
 
       if (
@@ -991,13 +995,13 @@ const processTrain = async (richInfo, originDateStr) => {
       AtrasoReal: passed ? atrasoNode : 0,
       HoraPrevista: passed ? horaRealStr : horaPrevistaFinal,
       EstacaoID: node.NodeID,
-      NomeEstacao: node.NomeEstacao,
+      NomeEstacao: node.NomeEstacao.replace("-A", ""), // retirar -A das estações campolide e palmela
     });
   });
 
-  // O tempo de repouso conta a partir da HORA REAL da passagem, para não criarmos latência artificial
+  // cooldown para reduzir pedidos a IP
   if (newStationPassed && lastPassageRealTime) {
-    mem.nextWakeUp = lastPassageRealTime + 90000;
+    mem.nextWakeUp = lastPassageRealTime + 60000;
   }
 
   // --- 3. SINCRONIZAÇÃO DA SITUAÇÃO DO COMBOIO (TEXTO UI) ---

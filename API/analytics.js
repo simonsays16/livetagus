@@ -49,7 +49,7 @@ const MAX_DELTA_SEC = 5 * 60;
 /** Número mínimo de amostras para não ser marcado como "baixa confiança". */
 const LOW_CONFIDENCE_THRESHOLD = 20;
 
-/** Número máximo de medições em memória (≈ 1 a 2 dias de operação). */
+/** Número máximo de medições em memória*/
 const MAX_MEASUREMENTS = 10000;
 
 /**
@@ -57,7 +57,7 @@ const MAX_MEASUREMENTS = 10000;
  * Exceção: roma_areeiro no sentido margem COM turnaround activo.
  */
 const EXCLUDED_DEPARTURE_STATIONS = {
-  lisboa: new Set(["setubal", "coina"]),
+  lisboa: new Set(["setubal"]), //removide coina para testes
   margem: new Set(["roma_areeiro"]),
 };
 
