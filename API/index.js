@@ -288,13 +288,33 @@ let IP_IS_DOWN = false; // ADICIONA ESTA LINHA
 const fetchDetails = async (tid, dateStr) => {
   const url = `${API_BASE}/horarios-ncombio/${tid}/${dateStr}`;
   try {
-    const r = await fetch(url, { headers: FETCH_HEADERS, timeout: 14000 });
+    const r = await fetch(url, { headers: FETCH_HEADERS, timeout: 10000 });
     if (!r.ok) return null;
     const j = await r.json();
     IP_CONSECUTIVE_ERRORS = 0;
     IP_IS_DOWN = false;
 
-    return j.response;
+    const response = j.response;
+
+    // se resposta toda null = comboio suprimido/não está planeado
+    if (response) {
+      const isAllNull =
+        response.DataHoraDestino === null &&
+        response.DataHoraOrigem === null &&
+        response.Destino === null &&
+        response.DuracaoViagem === null &&
+        response.NodesPassagemComboio === null &&
+        response.Operador === null &&
+        response.Origem === null &&
+        response.SituacaoComboio === null &&
+        response.TipoServico === null;
+
+      if (isAllNull) {
+        response.SituacaoComboio = "SUPRIMIDO";
+      }
+    }
+
+    return response;
   } catch (e) {
     IP_CONSECUTIVE_ERRORS++;
 
@@ -889,10 +909,9 @@ const processTrain = async (richInfo, originDateStr) => {
       mem.history[node.NodeID] = timestamp;
       horaRealStr = formatTimeHHMMSS(new Date(timestamp));
 
-      if (datePartidaProg) {
-        const rawDelay = Math.floor(
-          (timestamp - datePartidaProg.getTime()) / 1000,
-        );
+      if (dateChegadaProg) {
+        const rawDelay =
+          Math.floor((timestamp - dateChegadaProg.getTime()) / 1000) - 15;
 
         // Permite recuperar tempo usando o Math.max(0) - Fim do "Efeito Catraca"
         atrasoNode = Math.max(0, rawDelay);
@@ -999,17 +1018,16 @@ const processTrain = async (richInfo, originDateStr) => {
     });
   });
 
-  // cooldown para reduzir pedidos a IP
+  // cooldown de 1min para reduzir pedidos a IP
   if (newStationPassed && lastPassageRealTime) {
     mem.nextWakeUp = lastPassageRealTime + 60000;
   }
 
-  // --- 3. SINCRONIZAÇÃO DA SITUAÇÃO DO COMBOIO (TEXTO UI) ---
+  // --- SITUAÇÃO DO COMBOIO ---
   if (!situacao.toUpperCase().includes("SUPRIMIDO")) {
-    const displayDelayMins = Math.round(nextStationTotalDelay / 60);
+    const displayDelayMins = Math.floor(nextStationTotalDelay / 60);
 
     if (displayDelayMins >= 1) {
-      // Ajusta o texto dependendo de o comboio já ter iniciado serviço físico ou não
       trainOutput.SituacaoComboio = isLive
         ? `Circula com atraso de ${displayDelayMins} min.`
         : `Previsto atraso de ${displayDelayMins} min.`;
@@ -1335,7 +1353,7 @@ app.get("/avisos", (req, res) => {
 app.get("/", (req, res) =>
   res.json({
     status: "online",
-    version: "4.8.2",
+    version: "4.8.3",
     aviso:
       "Pedimos que não uses o nosso endpoint diretamente! Verifica toda as informações e código no github.",
     operational: getOperationalInfo(),
@@ -1347,7 +1365,7 @@ app.get("/", (req, res) =>
 );
 
 app.listen(PORT, () => {
-  console.log(`LiveTagus API v4.8.2 ativa na porta ${PORT}`);
+  console.log(`LiveTagus API v4.8.3 ativa na porta ${PORT}`);
   console.log(`Endpoint /fertagus protegido com API_KEY.`);
   checkOfflineTrains();
   updateCycle();
