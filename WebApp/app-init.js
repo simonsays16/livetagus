@@ -179,12 +179,19 @@ document.body.addEventListener("click", function (e) {
     case "open-sudoku-btm":
       sa_event("sudoku_started_btm");
       break;
+    case " topbtnapp_sudoku":
+      sa_event("sudoku_started_topbtnapp");
+      break;
+    case " topbtnapp_paragem":
+      sa_event("paragem_clicked_topbtnapp");
+      break;
     case "go-offline":
       sa_event("offline_schedules_forced");
       break;
     case "open-smart-menu":
       const menuTrigger = document.getElementById("menu-trigger");
       if (menuTrigger) menuTrigger.click();
+      sa_event("topbtnapp_clicked");
       break;
     case "sudoku-offline":
       sa_event("sudoku-offline-play");

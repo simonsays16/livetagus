@@ -122,41 +122,22 @@ async function fetchFertagusNewAPI() {
             pulse = true;
             isLive = true;
           } else if (apiTrain) {
+            // HoraPrevista é quem dá info
             const progStr = originNode.HoraProgramada;
             const prevStr = originNode.HoraPrevista;
-            const obsStr = originNode.Observacoes;
-            let diffMin = 0;
-            let explicitDelayFound = false;
-            if (
-              apiTrain.SituacaoComboio &&
-              /atraso/i.test(apiTrain.SituacaoComboio)
-            ) {
-              const match = apiTrain.SituacaoComboio.match(/(\d+)/);
-              if (match) {
-                diffMin = parseInt(match[1]);
-                explicitDelayFound = true;
-              }
-            }
-            const obsMatch = obsStr
-              ? obsStr.match(/Hora Prevista:(\d{2}:\d{2})/)
-              : null;
-            if (obsMatch) {
-              mainTime = obsMatch[1];
-              if (!explicitDelayFound) {
-                const dProg = window.parseTimeStr(progStr);
-                const dObs = window.parseTimeStr(mainTime);
-                diffMin = Math.round((dObs - dProg) / 60000);
-              }
-            } else if (explicitDelayFound) {
-              mainTime = addMinutes(progStr, diffMin);
-            } else if (prevStr && prevStr !== progStr) {
+
+            if (prevStr && prevStr.length >= 5) {
               mainTime = prevStr.substring(0, 5);
-              const dProg = window.parseTimeStr(progStr);
-              const dPrev = window.parseTimeStr(mainTime);
-              diffMin = Math.round((dPrev - dProg) / 60000);
             } else {
+              // Sem HoraPrevista → usa a hora programada
               mainTime = progStr.substring(0, 5);
             }
+
+            const dProg = window.parseTimeStr(progStr);
+            const dPrev = window.parseTimeStr(mainTime);
+            const diffMin =
+              dProg && dPrev ? Math.round((dPrev - dProg) / 60000) : 0;
+
             if (diffMin > 0) {
               status = `Atraso ${diffMin} min (Estimativa) <br /><span style="text-transform: none;" class="text-[10px] text-left text-zinc-500 dark:text-zinc-400 opacity-60">Atrasos podem ser recuperados.</span>`;
               dotStatus = "yellow";
@@ -164,7 +145,8 @@ async function fetchFertagusNewAPI() {
               secondaryTime = progStr.substring(0, 5);
               isLive = true;
             } else {
-              if (isLive || explicitDelayFound || obsMatch) {
+              // A horas ou sem dados de tempo real
+              if (isLive || prevStr) {
                 status = "A Horas";
                 dotStatus = "green";
                 pulse = true;

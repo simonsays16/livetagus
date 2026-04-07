@@ -2,71 +2,134 @@
 <html lang="pt-PT" class="scroll-smooth">
   <head>
     <meta charset="UTF-8" />
+    <link
+      rel="shortcut icon"
+      href="https://livetagus.pt/imagens/favicon-96x96.png"
+      type="image/x-icon"
+    />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
     <meta name="theme-color" content="#09090b" />
     <meta
       name="description"
-      content="A Minha Paragem - Tempos de espera em tempo real da Carris Metropolitana."
+      content="A Minha Paragem! Tempos de espera em tempo real da Carris Metropolitana."
     />
     <title>A Minha Paragem | LiveTagus</title>
-
+    <!-- Para produção
+    <link
+      href="https://unpkg.com/maplibre-gl@4.x/dist/maplibre-gl.css"
+      rel="stylesheet"
+    />
+    <script
+      src="https://unpkg.com/maplibre-gl@4.x/dist/maplibre-gl.js"
+      defer
+    ></script>-->
     <link href="./output.css" rel="stylesheet" />
+    <link href="/maplibre-gl.css" rel="stylesheet" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap"
       rel="stylesheet"
     />
-    <script src="./lucide-icons.js"></script>
+    <script src="./lucide-icons.js" defer></script>
+    <script src="/maplibre-gl.js" defer></script>
     <script src="./menu.js" defer></script>
     <script src="./paragens.js" defer></script>
+    <script src="./paragens-search.js" defer></script>
+
+    <style>
+      .maplibregl-popup-content {
+        border-radius: 0 !important;
+        padding: 12px !important;
+        box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.2) !important;
+        border: 1px solid #e4e4e7;
+      }
+      .dark .maplibregl-popup-content {
+        background-color: #09090b !important;
+        border-color: #27272a;
+        color: white;
+      }
+      .dark .maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
+        border-top-color: #09090b !important;
+      }
+      #search-results-panel {
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      #search-results-panel.panel-hidden {
+        transform: translateY(100%);
+      }
+      #search-results-panel.panel-visible {
+        transform: translateY(0);
+      }
+    </style>
   </head>
 
   <body
     class="bg-white text-zinc-900 dark:bg-[#09090b] dark:text-white overflow-x-hidden transition-colors duration-500 flex flex-col min-h-screen font-['Inter']"
   >
-    <div id="global-nav"></div>
+    <div class="pt-safe-ios" id="global-nav"></div>
 
     <main
-      class="flex-grow pt-24 pb-12 px-6 max-w-2xl mx-auto w-full flex flex-col gap-10"
+      class="flex-grow pt-24 pb-12 px-6 max-w-2xl mx-auto w-full flex flex-col gap-8"
     >
-      <header class="text-center mt-4">
-        <h1 class="text-3xl font-light tracking-tight mb-2">A MINHA PARAGEM</h1>
-        <p
-          class="text-[9px] uppercase tracking-[0.2em] font-semibold text-zinc-400"
-        >
-          Carris Metropolitana em Tempo Real
-        </p>
-      </header>
-
-      <section
-        class="bg-zinc-50 dark:bg-zinc-900/50 p-6 border border-zinc-100 dark:border-zinc-800 rounded-sm"
-      >
-        <div class="flex items-start gap-4">
-          <i
-            data-lucide="info"
-            class="w-5 h-5 mt-0.5 text-zinc-400 shrink-0"
-          ></i>
+      <!-- ═══ SECÇÃO 1: PARAGENS GUARDADAS (PRIMEIRO) ═══ -->
+      <section class="pt-safe-ios">
+        <div class="flex items-center justify-between mb-5">
           <div>
-            <p class="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-              Guarde os IDs das paragens do seu dia a dia (ex: Casa ou Trabalho)
-              para consultar instantaneamente os próximos autocarros.
-              <br />
-              <br />
-              <span class="font-medium text-zinc-900 dark:text-zinc-300">
-                Onde encontro o ID?
-              </span>
-              Procure o código de 6 dígitos impresso no canto inferior da placa
-              da paragem física.
+            <h1
+              class="text-[10px] font-bold uppercase tracking-widest text-zinc-900 dark:text-white"
+            >
+              As Minhas Paragens (BETA)
+            </h1>
+            <p id="stops-counter" class="text-[10px] text-zinc-400 mt-1">
+              0/10 paragens
             </p>
           </div>
+          <button
+            id="refresh-stops-btn"
+            class="text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors p-2 -mr-2"
+            aria-label="Atualizar Tempos"
+          >
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+          </button>
         </div>
+        <div id="stops-container" class="flex flex-col gap-6"></div>
+        <p
+          class="text-[8px] text-center text-zinc-500 dark:text-zinc-400 opacity-60 block w-full pt-4 uppercase tracking-widest"
+        >
+          * Caso apareça "(Prog.)" significa que a Carris Metropolitana não está
+          a fornecer os dados em tempo real.
+        </p>
       </section>
 
-      <section>
+      <div class="w-full h-px bg-zinc-100 dark:bg-zinc-800"></div>
+
+      <!-- ═══ SECÇÃO 2: ADICIONAR PARAGEM ═══ -->
+      <section class="space-y-6">
+        <div>
+          <h2
+            class="text-[10px] font-bold uppercase tracking-widest text-zinc-900 dark:text-white mb-1"
+          >
+            Adicionar Paragem
+          </h2>
+          <p class="text-[10px] text-zinc-400 tracking-wide leading-relaxed">
+            Guarde até 10 paragens e filtre as carreiras que quer acompanhar.
+          </p>
+        </div>
+
+        <!-- Botão de pesquisa principal -->
+        <button
+          id="btn-open-map"
+          class="w-full px-6 py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors flex items-center justify-center gap-3 shrink-0 shadow-sm"
+        >
+          <i data-lucide="search" class="w-4 h-4"></i>
+          Procurar Paragem (Nome, Linha ou Mapa)
+        </button>
+
+        <!-- Adicionar manualmente por ID -->
         <form
           id="add-stop-form"
           class="flex flex-col sm:flex-row gap-6 items-end"
@@ -76,7 +139,7 @@
               for="stop-id"
               class="absolute -top-3 left-0 text-[9px] font-bold uppercase tracking-widest text-zinc-400"
             >
-              ID da Paragem
+              Adicionar por ID
             </label>
             <input
               type="text"
@@ -85,30 +148,12 @@
               pattern="[0-9]{5,6}"
               placeholder="Ex: 020073"
               required
-              class="w-full bg-transparent border-b border-zinc-300 dark:border-zinc-700 pb-2 pt-2 text-sm focus:outline-none focus:border-zinc-900 dark:focus:border-white transition-colors placeholder:text-zinc-300 dark:placeholder:text-zinc-700"
+              class="w-full bg-transparent border-b border-zinc-300 dark:border-zinc-700 pb-2 pt-2 text-sm focus:outline-none focus:border-zinc-900 dark:focus:border-white transition-colors placeholder:text-zinc-300 dark:placeholder:text-zinc-700 rounded-none"
             />
           </div>
-
-          <div class="w-full relative group">
-            <label
-              for="stop-name"
-              class="absolute -top-3 left-0 text-[9px] font-bold uppercase tracking-widest text-zinc-400"
-            >
-              Etiqueta
-            </label>
-            <input
-              type="text"
-              id="stop-name"
-              placeholder="Ex: Casa → Estação"
-              required
-              maxlength="30"
-              class="w-full bg-transparent border-b border-zinc-300 dark:border-zinc-700 pb-2 pt-2 text-sm focus:outline-none focus:border-zinc-900 dark:focus:border-white transition-colors placeholder:text-zinc-300 dark:placeholder:text-zinc-700"
-            />
-          </div>
-
           <button
             type="submit"
-            class="w-full sm:w-auto px-8 py-3 bg-zinc-900 dark:bg-white text-white dark:text-zinc-800 text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors shrink-0"
+            class="w-full sm:w-auto px-8 py-3 border border-zinc-900 dark:border-white text-zinc-900 dark:text-white text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors shrink-0"
           >
             Adicionar
           </button>
@@ -117,25 +162,243 @@
 
       <div class="w-full h-px bg-zinc-100 dark:bg-zinc-800"></div>
 
-      <section>
-        <div class="flex items-center justify-between mb-6">
-          <h2
-            class="text-[10px] font-bold uppercase tracking-widest text-zinc-900 dark:text-white"
-          >
-            As Suas Paragens
-          </h2>
+      <!-- ═══ SECÇÃO 3: SOBRE A FUNCIONALIDADE (POR BAIXO) ═══ -->
+      <section class="space-y-5 animate-fade-in">
+        <span
+          class="inline-block py-1 px-3 border border-zinc-200 dark:border-white/10 rounded-full text-[10px] uppercase tracking-widest text-zinc-500 backdrop-blur-sm"
+        >
+          Carris Metropolitana · Fase de Testes
+        </span>
+        <h2
+          class="text-3xl md:text-4xl font-light tracking-tighter text-zinc-900 dark:text-white leading-tight"
+        >
+          <span class="font-semibold">A MINHA</span>
+          <br />
+          PARAGEM.
+        </h2>
+        <p
+          class="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed max-w-md"
+        >
+          Desenhada para quem tem uma rotina diária de transportes: apanha
+          sempre o mesmo autocarro na mesma paragem para ir até à estação de
+          comboio. Guarde as suas paragens de
+          <strong class="font-semibold text-zinc-900 dark:text-zinc-300">
+            ida
+          </strong>
+          e de
+          <strong class="font-semibold text-zinc-900 dark:text-zinc-300">
+            regresso
+          </strong>
+          e consulte os próximos autocarros em tempo real.
+        </p>
+
+        <div
+          class="bg-zinc-50 dark:bg-zinc-900/50 p-4 border border-zinc-100 dark:border-zinc-800 rounded-sm"
+        >
+          <div class="flex items-start gap-4">
+            <i
+              data-lucide="info"
+              class="w-5 h-5 mt-0.5 text-zinc-400 shrink-0"
+            ></i>
+            <div class="space-y-3">
+              <p
+                class="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400"
+              >
+                Configure cada paragem e escolha
+                <span class="font-medium text-zinc-900 dark:text-zinc-300">
+                  que carreiras quer ver.
+                </span>
+                Ideal se passa mais do que uma linha pela sua paragem mas só usa
+                algumas.
+              </p>
+              <p
+                class="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400"
+              >
+                <span class="font-medium text-zinc-900 dark:text-zinc-300">
+                  Onde encontro o ID?
+                </span>
+                Procure o código de 6 dígitos impresso no canto inferior da
+                placa da paragem física. Também pode usar o botão "Procurar
+                Paragem" para pesquisar pelo nome ou linha.
+              </p>
+            </div>
+          </div>
+          <div class="flex items-start gap-4 pt-4">
+            <i
+              data-lucide="alert-triangle"
+              class="w-5 h-5 mt-0.5 text-zinc-400 shrink-0"
+            ></i>
+            <div class="space-y-3">
+              <p
+                class="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400"
+              >
+                Esta funcionalidade ainda está instável. Se visto um erro
+                manda-nos email para
+                <a href="mailto:geral@livetagus.pt">
+                  <b>geral@livetagus.pt</b>
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- MODAL DO MAPA COM PESQUISA INTEGRADA -->
+    <div
+      id="map-modal"
+      class="fixed inset-0 z-50 bg-white dark:bg-[#09090b] flex flex-col hidden opacity-0 transition-opacity duration-300"
+    >
+      <!-- Cabeçalho do Modal -->
+      <div
+        class="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#09090b] z-10 shadow-sm shrink-0"
+      >
+        <h2 class="text-[10px] font-bold uppercase tracking-widest">
+          Encontrar Paragem
+        </h2>
+        <button
+          id="btn-close-map"
+          aria-label="Fechar"
+          class="p-2 -mr-2 text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors"
+        >
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Barra de Pesquisa -->
+      <div
+        class="shrink-0 px-4 pt-3 pb-2.5 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#09090b] z-10"
+      >
+        <div class="relative">
+          <i
+            data-lucide="search"
+            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none"
+          ></i>
+          <input
+            id="map-search-input"
+            type="text"
+            autocomplete="off"
+            autocorrect="off"
+            spellcheck="false"
+            placeholder="Pesquisar por linha (ex: 4001)..."
+            class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 pl-9 pr-9 py-2.5 text-sm focus:outline-none focus:border-zinc-900 dark:focus:border-white transition-colors placeholder:text-zinc-400 dark:placeholder:text-zinc-600 rounded-none text-zinc-900 dark:text-white"
+          />
           <button
-            id="refresh-stops-btn"
-            class="text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"
-            aria-label="Atualizar Tempos"
+            id="map-search-clear"
+            aria-label="Limpar pesquisa"
+            class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors p-0.5"
           >
-            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            <i data-lucide="x" class="w-3.5 h-3.5"></i>
           </button>
         </div>
 
-        <div id="stops-container" class="flex flex-col gap-6"></div>
-      </section>
-    </main>
+        <!-- Tabs de Modo de Pesquisa -->
+        <div class="flex items-center gap-2 mt-2.5">
+          <button
+            id="search-mode-line"
+            class="px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest border transition-colors bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 border-zinc-900 dark:border-white"
+          >
+            Por Linha
+          </button>
+          <button
+            id="search-mode-name"
+            class="px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest border transition-colors text-zinc-500 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:border-zinc-500 dark:hover:border-zinc-500"
+          >
+            Por Nome
+          </button>
+          <span
+            class="text-[9px] uppercase tracking-widest text-zinc-400 ml-auto hidden sm:inline"
+          >
+            ou use o mapa abaixo
+          </span>
+        </div>
+      </div>
+
+      <!-- Área do Mapa + Painel de Resultados -->
+      <div class="relative flex-grow overflow-hidden">
+        <div id="map" class="absolute inset-0 w-full h-full"></div>
+
+        <!-- Loading Overlay -->
+        <div
+          id="map-loading"
+          class="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm z-10 transition-opacity duration-300"
+        >
+          <div
+            class="w-6 h-6 border-2 border-zinc-300 border-t-zinc-900 dark:border-zinc-700 dark:border-t-white rounded-full animate-spin"
+          ></div>
+        </div>
+
+        <!-- Botão de Créditos (canto inferior esquerdo) 
+        <div class="absolute bottom-20 left-4 z-20 group">
+          <button
+            aria-label="Créditos dos Dados"
+            class="w-7 h-7 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-full flex items-center justify-center text-zinc-500 hover:text-zinc-900 dark:hover:text-white shadow-sm transition-colors cursor-help"
+          >
+            <i data-lucide="info" class="w-3.5 h-3.5"></i>
+          </button>
+          <div
+            class="absolute bottom-full left-0 mb-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-3 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none w-max max-w-[200px]"
+          >
+            <p
+              class="text-[9px] font-bold uppercase tracking-widest text-zinc-900 dark:text-white mb-2"
+            >
+              Dados Fornecidos Por:
+            </p>
+            <ul
+              class="text-[9px] text-zinc-500 dark:text-zinc-400 tracking-wider space-y-1.5 font-medium"
+            >
+              <li class="flex items-center gap-1.5">
+                <i data-lucide="bus" class="w-3 h-3 shrink-0"></i>
+                Carris Metropolitana (API)
+              </li>
+              <li class="flex items-center gap-1.5">
+                <i data-lucide="train-track" class="w-3 h-3 shrink-0"></i>
+                Infraestruturas de Portugal
+              </li>
+              <li class="flex items-center gap-1.5">
+                <i data-lucide="map" class="w-3 h-3 shrink-0"></i>
+                © OpenStreetMap contributors
+              </li>
+            </ul>
+          </div>
+        </div>-->
+
+        <!-- Painel de Resultados de Pesquisa (desliza de baixo) -->
+        <div
+          id="search-results-panel"
+          class="panel-hidden absolute bottom-0 left-0 right-0 bg-white dark:bg-[#09090b] border-t border-zinc-200 dark:border-zinc-800 z-20 flex flex-col"
+          style="max-height: 60%; min-height: 120px"
+        >
+          <!-- Handle de arrastar + contador -->
+          <div
+            class="flex items-center justify-between px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800 shrink-0"
+          >
+            <div
+              class="w-8 h-1 bg-zinc-200 dark:bg-zinc-700 rounded-full mx-auto absolute left-1/2 -translate-x-1/2"
+            ></div>
+            <span
+              id="search-results-count"
+              class="text-[9px] uppercase tracking-widest text-zinc-500 font-semibold invisible"
+            >
+              0 resultados
+            </span>
+            <button
+              id="search-results-close"
+              class="text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors ml-auto"
+              aria-label="Fechar resultados"
+            >
+              <i data-lucide="chevron-down" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <!-- Lista de Resultados -->
+          <div
+            id="search-results-list"
+            class="overflow-y-auto flex-1 px-4 pb-4 overscroll-contain"
+          ></div>
+        </div>
+      </div>
+    </div>
+    <!-- ═══ FIM DO MODAL ═══ -->
 
     <div id="global-footer"></div>
   </body>

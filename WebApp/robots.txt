@@ -1,4 +1,5 @@
 User-agent: *
+Disallow: /paragens
 Disallow: /stats
 Disallow: /dev
 Disallow: /404

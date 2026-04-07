@@ -261,7 +261,7 @@
                         38.589796,
                         -8.996074
                     ],
-                    "gmapslink": "https://maps.app.goo.gl/Tp8Kq1TTp8f7ttMk8",
+                    "gmapslink": "https://www.google.com/maps?q=38.589796,-8.996074",
                     "lines": [
                         {
                             "line-id": "4304",
@@ -2040,7 +2040,7 @@
                         {
                             "line-id": "4422",
                             "line-name": "4422",
-                            "line-long-name": "Setúbal (Bairro Camolas) - Setúbal (Casal Figueiras) via Bairro do Viso",
+                            "line-long-name": "Setúbal (Bairro Camolas) - Setúbal (Casal Figueiras)",
                             "route-type": 3,
                             "route-color": "#C61D23"
                         },
@@ -2135,7 +2135,7 @@
                         {
                             "line-id": "4422",
                             "line-name": "4422",
-                            "line-long-name": "Setúbal (Bairro Camolas) - Setúbal (Casal Figueiras) via Bairro do Viso",
+                            "line-long-name": "Setúbal (Bairro Camolas) - Setúbal (Casal Figueiras)",
                             "route-type": 3,
                             "route-color": "#C61D23"
                         },

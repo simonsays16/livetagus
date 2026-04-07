@@ -5,6 +5,7 @@ android/
 # Dependencias package main
 /package.json
 /package-lock.json
+API/package-lock.json
 
 # Logs de erros
 npm-debug.log*
