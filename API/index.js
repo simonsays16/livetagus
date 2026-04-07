@@ -7,6 +7,8 @@ const fs = require("fs");
 const AnalyticsManager = require("./analytics.js");
 const DelayManager = require("./delays.js");
 const AvisosManager = require("./avisos.js");
+const GhostManager = require("./ghosts.js");
+const VerifyManager = require("./verify.js");
 
 const app = express();
 app.use(cors());
@@ -99,9 +101,7 @@ const STATION_ORDER_MARGEM = [...STATION_ORDER_LISBOA].reverse();
 const API_BASE = "https://www.infraestruturasdeportugal.pt/negocios-e-servicos";
 
 // FIX #6: Cache-Control e Pragma forçam a IP (e qualquer CDN/proxy intermédio)
-// a retornar sempre uma resposta fresca. Sem estes headers, o servidor Node pode
-// receber respostas em cache enquanto o browser (que envia no-cache nativamente)
-// já veria dados atualizados — causando o delay de propagação de 1-3 min observado.
+// a retornar sempre uma resposta fresca.
 const FETCH_HEADERS = {
   "User-Agent":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -188,22 +188,6 @@ let TRAIN_MEMORY = {}; // { [id]: { history: {}, lastDelay: 0, nextWakeUp: 0, la
 let FUTURE_TRAINS_CACHE = {};
 let IS_CYCLE_RUNNING = false;
 
-// --- GHOST TRAIN STATE ---
-//
-// Sistema de deteção e gestão de comboios parados sem anúncio oficial.
-//
-// GHOST_TRAINS: comboios removidos da API pública em monitorização de fundo
-// (Stage 2: 30-60 min sem progressão na próxima estação prevista).
-// Verificados de minuto a minuto para detetar retoma de circulação.
-// Estrutura: { [trainId]: { richInfo, originDateStr, nextStationExpected: Date,
-//                           intervalHandle, lastPassedCount } }
-//
-// GHOST_SUPPRESSED: comboios confirmados como suprimidos ao vivo (Stage 3: 60+ min).
-// Excluídos de OUTPUT_CACHE e checkOfflineTrains.
-// Mantidos em FUTURE_TRAINS_CACHE como "SUPRIMIDO" para tratamento correto pela app.
-let GHOST_TRAINS = {};
-let GHOST_SUPPRESSED = new Set();
-
 // --- DATE & SCHEDULE HELPERS ---
 
 const formatDateStr = (d) => {
@@ -276,12 +260,8 @@ const subtractMinutes = (timeStr, minutes) => {
   return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
 
-// DEPRECATED: getTemporaryDelayAdjustment foi substituída por DelayManager.getStructuralDelay()
-// em delays.js. A nova função cobre os três troços da Margem Sul com suporte a hora de ponta.
-// Ver: delays.js → getStructuralDelay(stationKey, direction, { pragalPassed, penalvaPassed, now })
-
-let IP_CONSECUTIVE_ERRORS = 0; // ADICIONA ESTA LINHA
-let IP_IS_DOWN = false; // ADICIONA ESTA LINHA
+let IP_CONSECUTIVE_ERRORS = 0;
+let IP_IS_DOWN = false;
 
 // --- FETCHING ---
 
@@ -318,7 +298,6 @@ const fetchDetails = async (tid, dateStr) => {
   } catch (e) {
     IP_CONSECUTIVE_ERRORS++;
 
-    // Se 10 chamadas seguidas falharem (aprox. 1 a 2 batches), assumimos queda geral da IP
     if (IP_CONSECUTIVE_ERRORS > 10) {
       if (!IP_IS_DOWN)
         console.error(
@@ -330,6 +309,18 @@ const fetchDetails = async (tid, dateStr) => {
     return null;
   }
 };
+
+// --- INICIALIZAÇÃO DO GHOST MANAGER ---
+// Injetamos as referências após a definição de fetchDetails e TRAIN_MEMORY.
+// Usamos closures para garantir que o GhostManager acede sempre ao estado atual,
+// mesmo quando FUTURE_TRAINS_CACHE é reassigned (FUTURE_TRAINS_CACHE = results).
+GhostManager.init(
+  fetchDetails,
+  () => TRAIN_MEMORY,
+  (id, value) => {
+    FUTURE_TRAINS_CACHE[id] = value;
+  },
+);
 
 // --- TURNAROUND PREDICTION ---
 
@@ -385,13 +376,11 @@ const checkTurnaroundDelay = (
       );
 
       if (predictedArrivalDate && scheduledDepartureDate) {
-        // Tempo mínimo de paragem técnica Fertagus: 3 minutos.
-        const minTurnaroundMs = 3 * 60 * 1000; // DIminuido para 3 minutos após extensas análises de precisão
+        const minTurnaroundMs = 3 * 60 * 1000;
         const minDepartureDate = new Date(
           predictedArrivalDate.getTime() + minTurnaroundMs,
         );
 
-        // Se a chegada real + paragem técnica > partida planeada, prevemos atraso
         if (minDepartureDate > scheduledDepartureDate) {
           const delaySeconds = Math.floor(
             (minDepartureDate.getTime() - scheduledDepartureDate.getTime()) /
@@ -426,13 +415,16 @@ const checkOfflineTrains = async () => {
   const now = new Date();
   const nowMs = now.getTime();
 
+  // Data de calendário para consultar as alterações do dia
+  const todayDateStr = formatDateStr(now);
+
   // Garantir que a string 'futureTrains' não é confundida com o ID de um comboio ativo
   const activeIds = Object.keys(OUTPUT_CACHE).filter(
     (k) => k !== "futureTrains",
   );
 
-  // 2. Mapeamento e Identificação dos Comboios do Dia
-  const candidates = RICH_SCHEDULE.map((t) => {
+  // 2. Mapeamento e Identificação dos Comboios do Dia (horário base)
+  const baseCandidates = RICH_SCHEDULE.map((t) => {
     let startStr =
       t.direction === "lisboa" ? t.setubal || t.coina : t.roma_areeiro;
     let endStr =
@@ -453,8 +445,8 @@ const checkOfflineTrains = async () => {
     if (activeIds.includes(String(t.id))) return false;
 
     // Ignorar anomalias tratadas pelo sistema Ghost
-    if (GHOST_SUPPRESSED.has(String(t.id))) return false;
-    if (GHOST_TRAINS[String(t.id)]) return false;
+    if (GhostManager.GHOST_SUPPRESSED.has(String(t.id))) return false;
+    if (GhostManager.GHOST_TRAINS[String(t.id)]) return false;
 
     // Verificar calendário (dias úteis vs fins de semana/feriados)
     const trainOpInfo = getOperationalInfo(t.startObj);
@@ -467,26 +459,112 @@ const checkOfflineTrains = async () => {
     return false;
   });
 
+  // Adicionar comboios de substituição (horário base mas novo ID na IP)
+  const replacementCandidates = VerifyManager.buildReplacementRichInfoList(
+    todayDateStr,
+    RICH_SCHEDULE,
+  )
+    .map((t) => {
+      const startStr =
+        t.direction === "lisboa" ? t.setubal || t.coina : t.roma_areeiro;
+      const endStr =
+        t.direction === "lisboa" ? t.roma_areeiro : t.setubal || t.coina;
+
+      if (!startStr || !endStr) return null;
+
+      const startObj = parseSmartTime(startStr, now);
+      const endObj = parseSmartTime(endStr, now);
+
+      if (!startObj || !endObj) return null;
+
+      return { ...t, startObj, endObj };
+    })
+    .filter(Boolean)
+    .filter((t) => {
+      // Excluir se o comboio de substituição já está a circular
+      if (activeIds.includes(String(t.id))) return false;
+      if (GhostManager.GHOST_SUPPRESSED.has(String(t.id))) return false;
+      if (GhostManager.GHOST_TRAINS[String(t.id)]) return false;
+      return true;
+    });
+
+  // Adicionar comboios extra (especiais, não existem no horário base)
+  const extraCandidates = VerifyManager.buildExtraRichInfoList(todayDateStr)
+    .map((t) => {
+      const startStr =
+        t.direction === "lisboa" ? t.setubal || t.coina : t.roma_areeiro;
+      if (!startStr) return null;
+
+      const startObj = parseSmartTime(startStr, now);
+      if (!startObj) return null;
+
+      // Fim sintético: +3h desde a partida (cobertura conservadora)
+      const endObj = new Date(startObj.getTime() + 3 * 60 * 60 * 1000);
+
+      return { ...t, startObj, endObj };
+    })
+    .filter(Boolean)
+    .filter((t) => {
+      if (activeIds.includes(String(t.id))) return false;
+      if (GhostManager.GHOST_SUPPRESSED.has(String(t.id))) return false;
+      if (GhostManager.GHOST_TRAINS[String(t.id)]) return false;
+      return true;
+    });
+
+  // Combinar todos os candidatos
+  const candidates = [
+    ...baseCandidates,
+    ...replacementCandidates,
+    ...extraCandidates,
+  ];
+
   const results = {};
   const fetchCandidates = [];
 
-  // poupança de pedidos à IP retirando comboios realizados
   for (const t of candidates) {
+    const trainDateStr = formatDateStr(t.startObj);
+    const trainId = String(t.id);
+
+    // VERIFY: Supressão programada (obras, eventos) — marcar diretamente sem fetch
+    // Apenas para comboios do horário base (não para substituições/extras que já são o resultado correto)
+    if (
+      !t._isReplacement &&
+      !t._isExtra &&
+      VerifyManager.isSuppressed(trainId, trainDateStr)
+    ) {
+      console.log(
+        `[VERIFY] Comboio ${trainId} suprimido por alteração programada em ${trainDateStr}.`,
+      );
+      results[trainId] = "SUPRIMIDO";
+      continue;
+    }
+
+    // VERIFY: Se este comboio base tem substituição no dia, o original não circula
+    if (
+      !t._isReplacement &&
+      !t._isExtra &&
+      VerifyManager.getReplacementId(trainId, trainDateStr)
+    ) {
+      // O comboio original não está ativo — a substituição já foi adicionada como replacementCandidates
+      results[trainId] = "SUPRIMIDO";
+      continue;
+    }
+
+    // poupança de pedidos à IP retirando comboios realizados
     const safeEndMarginMs = t.endObj.getTime() + 90 * 60000;
 
     const isFinishedToday =
-      FUTURE_TRAINS_CACHE[String(t.id)] === "Realizado" &&
+      FUTURE_TRAINS_CACHE[trainId] === "Realizado" &&
       nowMs > t.startObj.getTime();
 
     if (nowMs > safeEndMarginMs || isFinishedToday) {
-      results[String(t.id)] = "Realizado";
+      results[trainId] = "Realizado";
     } else {
       fetchCandidates.push(t);
     }
   }
 
-  // 4. Execução Sequencial Anti-DDoS e Anti-Picos de CPU (Proteção VM Azure)
-  // Sem paralelismo. Executamos de forma puramente linear, 1 a 1.
+  // 4. Execução Sequencial Anti-DDoS e Anti-Picos de CPU
   for (const t of fetchCandidates) {
     try {
       const dateStr = formatDateStr(t.startObj);
@@ -508,12 +586,10 @@ const checkOfflineTrains = async () => {
           results[String(t.id)] = situacao;
         }
       } else {
-        // Fail-safe: Se a IP não devolver dados estruturados, mantemos a última informação sabida
         results[String(t.id)] =
           FUTURE_TRAINS_CACHE[String(t.id)] || "Sem Informação";
       }
     } catch (error) {
-      // Isolamento de erro: se um pedido falhar (ex: socket hang up), os restantes comboios continuam a ser processados
       console.error(
         `[FUTURE CHECK] Erro de rede isolado no comboio ${t.id}:`,
         error.message,
@@ -522,131 +598,20 @@ const checkOfflineTrains = async () => {
         FUTURE_TRAINS_CACHE[String(t.id)] || "Sem Informação";
     }
 
-    // O SEGREDO DO ANTI-DDOS: Pausa cirúrgica de 300ms após CADA pedido.
-    // Garante invisibilidade aos WAFs e limitação orgânica de tráfego (~3 pedidos/segundo).
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    await new Promise((resolve) => setTimeout(resolve, 350));
   }
 
   // 5. Atualização Segura da Memória Global
   FUTURE_TRAINS_CACHE = results;
 
-  // Re-injetar os Ghost Suppressed para garantir que nunca mais regressam à vida nesta operação
-  for (const ghostId of GHOST_SUPPRESSED) {
+  // Re-injetar os Ghost Suppressed para garantir que nunca mais regressam à vida
+  for (const ghostId of GhostManager.GHOST_SUPPRESSED) {
     FUTURE_TRAINS_CACHE[ghostId] = "SUPRIMIDO";
   }
 
   console.log(
-    `[FUTURE CHECK] Concluído às ${new Date().toLocaleTimeString()}. Analisados na base de dados: ${candidates.length} | Pedidos à IP efetuados: ${fetchCandidates.length}`,
+    `[FUTURE CHECK] Concluído às ${new Date().toLocaleTimeString()}. Analisados: ${candidates.length} | Pedidos à IP: ${fetchCandidates.length}`,
   );
-};
-
-// --- GHOST TRAIN MONITORING ---
-
-/**
- * Inicia a monitorização em background de um comboio parado sem anúncio (Stage 2).
- *
- * O comboio passou pelo menos uma estação (isLive=true) mas ficou imobilizado
- * sem que a IP declare SUPRIMIDO. A LiveTagus retira-o da API pública para não
- * enganar utilizadores e verifica de minuto a minuto se retomou circulação.
- *
- * Timings:
- *   Stage 2 → entrada: 15+ min desde HoraPrevista da próxima estação
- *   Stage 3 → 60+ min desde HoraPrevista da próxima estação (30 min de monitoring)
- */
-const initiateGhostMonitoring = (
-  trainId,
-  richInfo,
-  originDateStr,
-  nextStationExpectedDate,
-  currentPassedCount,
-) => {
-  // Evita duplicação se já está em monitorização
-  if (GHOST_TRAINS[trainId]) return;
-
-  console.log(
-    `[GHOST] Stage 2: Comboio ${trainId} removido da API pública. ` +
-      `Monitorização background iniciada. ` +
-      `Próxima estação esperada: ${nextStationExpectedDate.toLocaleTimeString("pt-PT")}.`,
-  );
-
-  const intervalHandle = setInterval(async () => {
-    const ghost = GHOST_TRAINS[trainId];
-    if (!ghost) return; // Entrada removida externamente — intervalo será limpo
-
-    const minutesLate =
-      (Date.now() - ghost.nextStationExpected.getTime()) / 60000;
-
-    // === STAGE 3: 60+ minutos sem progressão ===
-    // O comboio passou 30 min em Stage 2 sem retomar → supressão confirmada.
-    if (minutesLate >= 60) {
-      console.log(
-        `[GHOST] Stage 3: Comboio ${trainId} confirmado suprimido ao vivo ` +
-          `(${minutesLate.toFixed(1)} min sem progressão). Removido definitivamente da API.`,
-      );
-      FUTURE_TRAINS_CACHE[String(trainId)] = "SUPRIMIDO";
-      GHOST_SUPPRESSED.add(String(trainId));
-      clearInterval(ghost.intervalHandle);
-      delete GHOST_TRAINS[trainId];
-      delete TRAIN_MEMORY[trainId]; // Liberta RAM
-      return;
-    }
-
-    // --- Verificação de retoma de circulação (minuto a minuto) ---
-    try {
-      const details = await fetchDetails(trainId, ghost.originDateStr);
-
-      if (details && details.NodesPassagemComboio) {
-        // A IP declarou SUPRIMIDO entretanto → Stage 3 imediato, sem esperar 60 min
-        if (
-          details.SituacaoComboio &&
-          details.SituacaoComboio.toUpperCase().includes("SUPRIMIDO")
-        ) {
-          console.log(
-            `[GHOST] Comboio ${trainId} declarado SUPRIMIDO pela IP durante monitorização. Stage 3 imediato.`,
-          );
-          FUTURE_TRAINS_CACHE[String(trainId)] = "SUPRIMIDO";
-          GHOST_SUPPRESSED.add(String(trainId));
-          clearInterval(ghost.intervalHandle);
-          delete GHOST_TRAINS[trainId];
-          delete TRAIN_MEMORY[trainId];
-          return;
-        }
-
-        const newPassedCount = details.NodesPassagemComboio.filter(
-          (n) => n.ComboioPassou,
-        ).length;
-
-        // Comboio retomou: passou uma nova estação desde que entrou em Stage 2
-        if (newPassedCount > ghost.lastPassedCount) {
-          console.log(
-            `[GHOST] Comboio ${trainId} retomou circulação ` +
-              `(${ghost.lastPassedCount} → ${newPassedCount} estações passadas). ` +
-              `Removido da monitorização ghost — o próximo ciclo re-integra na API.`,
-          );
-          clearInterval(ghost.intervalHandle);
-          delete GHOST_TRAINS[trainId];
-          // O próximo updateCycle deteta-o dentro da janela e volta a processá-lo.
-          return;
-        }
-
-        // Atualiza o contador para a próxima verificação
-        ghost.lastPassedCount = newPassedCount;
-      }
-    } catch (e) {
-      console.error(
-        `[GHOST] Erro na verificação do comboio ${trainId}:`,
-        e.message,
-      );
-    }
-  }, 60000); // Verifica de minuto a minuto
-
-  GHOST_TRAINS[trainId] = {
-    richInfo,
-    originDateStr,
-    nextStationExpected: nextStationExpectedDate,
-    intervalHandle,
-    lastPassedCount: currentPassedCount,
-  };
 };
 
 // --- PROCESSAMENTO ---
@@ -663,7 +628,7 @@ const processTrain = async (richInfo, originDateStr) => {
       lastDelay: 0,
       nextWakeUp: 0,
       lastResult: null,
-      isFetching: false, // Da nossa otimização anti-DDOS
+      isFetching: false,
     };
   }
   const mem = TRAIN_MEMORY[trainId];
@@ -721,7 +686,7 @@ const processTrain = async (richInfo, originDateStr) => {
           HoraProgramada: time,
           NodeID: STATION_IDS_FIXED[ipName] || 0,
           NomeEstacao: ipName,
-          Observacoes: "", // Previne erros ao ler comboios futuros
+          Observacoes: "",
         });
       }
     });
@@ -738,16 +703,15 @@ const processTrain = async (richInfo, originDateStr) => {
     }
   }
 
-  // B) Extração profunda das Observacoes do próximo nó não passado (ex: "Hora Prevista:02:11")
+  // B) Extração profunda das Observacoes do próximo nó não passado
   const firstUnpassed = nodes.find((n) => !n.ComboioPassou);
   if (firstUnpassed && firstUnpassed.Observacoes) {
     const match = firstUnpassed.Observacoes.match(
       /Hora Prevista:\s*(\d{2}:\d{2})/i,
     );
     if (match) {
-      const hpStr = match[1]; // "02:11"
+      const hpStr = match[1];
 
-      // Encontrar a hora programada exata, priorizando o estático se possível
       let horaChegadaProgStr = firstUnpassed.HoraProgramada;
       const stationKeyProg =
         STATION_MAP_IP_TO_JSON[firstUnpassed.NomeEstacao.toUpperCase()];
@@ -757,14 +721,12 @@ const processTrain = async (richInfo, originDateStr) => {
       if (horaChegadaProgStr?.length === 5) horaChegadaProgStr += ":00";
 
       const progDate = parseSmartTime(horaChegadaProgStr, nowObj);
-      const prevDate = parseSmartTime(hpStr + ":00", nowObj); // Adiciona :00 para o parseSmartTime não falhar
+      const prevDate = parseSmartTime(hpStr + ":00", nowObj);
 
       if (progDate && prevDate) {
-        // Diferença em segundos entre a Hora Programada e a Hora Prevista pela IP
         const diffS = Math.floor(
           (prevDate.getTime() - progDate.getTime()) / 1000,
         );
-        // Garante que ficamos sempre com a pior previsão (IP Text vs IP Observações)
         if (diffS > ipReportedDelay) ipReportedDelay = diffS;
       }
     }
@@ -779,7 +741,6 @@ const processTrain = async (richInfo, originDateStr) => {
       const prediction = checkTurnaroundDelay(trainId, scheduledRoma, nowObj);
       if (prediction) {
         turnaroundDelay = prediction.delaySeconds;
-        // Não reescrevemos aqui o texto, deixamos a sincronização final tratar disso
       }
     }
   }
@@ -796,7 +757,7 @@ const processTrain = async (richInfo, originDateStr) => {
     nodes.some(
       (n) =>
         n.NomeEstacao.toUpperCase() === "CORROIOS" && n.ComboioPassou === true,
-    ) || !!mem.history[pragalNodeId];
+    ) || !!mem.history[corroiosNodeId];
 
   const penalvaNodeId = STATION_IDS_FIXED["PENALVA"];
   let penalvaPassed =
@@ -849,8 +810,8 @@ const processTrain = async (richInfo, originDateStr) => {
 
   const trainOutput = {
     "id-comboio": trainId,
-    DataHoraDestino: `${displayDate} ${headerDestino?.substring(0, 5)}`,
-    DataHoraOrigem: `${displayDate} ${headerOrigem?.substring(0, 5)}`,
+    DataHoraDestino: `${displayDate} ${headerDestino?.substring(0, 5) ?? "--:--"}`,
+    DataHoraOrigem: `${displayDate} ${headerOrigem?.substring(0, 5) ?? "--:--"}`,
     Destino: destinoIp,
     DuracaoViagem: duracao,
     Operador: operador,
@@ -860,18 +821,17 @@ const processTrain = async (richInfo, originDateStr) => {
     Ocupacao: richInfo.ocupacao,
     NodesPassagemComboio: [],
     AtrasoCalculado: 0,
-    SituacaoComboio: situacao, // Será reescrito no final
+    SituacaoComboio: situacao,
   };
 
   // --- 2. A LEI DO MAIOR ATRASO ---
-  // Arranca com o MAIOR valor entre: histórico da memória, turnaround ou declarado pela IP
   let currentDelay = Math.max(
     mem.lastDelay || 0,
     turnaroundDelay,
     ipReportedDelay,
   );
   let newStationPassed = false;
-  let lastPassageRealTime = null; // Para resolver a "Cegueira CPU" de latência
+  let lastPassageRealTime = null;
 
   let capturedNextDelay = false;
   let nextStationTotalDelay = currentDelay;
@@ -913,10 +873,9 @@ const processTrain = async (richInfo, originDateStr) => {
         const rawDelay =
           Math.floor((timestamp - dateChegadaProg.getTime()) / 1000) - 15;
 
-        // Permite recuperar tempo usando o Math.max(0) - Fim do "Efeito Catraca"
         atrasoNode = Math.max(0, rawDelay);
 
-        if (ipReportedDelay > atrasoNode + 300) {
+        if (ipReportedDelay > atrasoNode + 350) {
           currentDelay = ipReportedDelay;
         } else {
           currentDelay = atrasoNode;
@@ -972,7 +931,6 @@ const processTrain = async (richInfo, originDateStr) => {
     );
     let horaPrevistaFinal = horaPartidaProgStr;
 
-    // NOVO: Capturar o delay projetado (incluindo delay estrutural) APENAS da primeira estação não passada
     if (!passed && !capturedNextDelay) {
       nextStationTotalDelay = currentDelay + bridgeAdjustment;
       capturedNextDelay = true;
@@ -1014,7 +972,7 @@ const processTrain = async (richInfo, originDateStr) => {
       AtrasoReal: passed ? atrasoNode : 0,
       HoraPrevista: passed ? horaRealStr : horaPrevistaFinal,
       EstacaoID: node.NodeID,
-      NomeEstacao: node.NomeEstacao.replace("-A", ""), // retirar -A das estações campolide e palmela
+      NomeEstacao: node.NomeEstacao.replace(/-A$/, ""),
     });
   });
 
@@ -1037,7 +995,7 @@ const processTrain = async (richInfo, originDateStr) => {
   }
 
   // =========================================================================
-  // ADDICTION GHOST TRAIN DETECTION
+  // GHOST TRAIN DETECTION
   if (isLive && !situacao.toUpperCase().includes("SUPRIMIDO")) {
     const nextUnvisited = trainOutput.NodesPassagemComboio.find(
       (n) => !n.ComboioPassou,
@@ -1064,7 +1022,7 @@ const processTrain = async (richInfo, originDateStr) => {
           const passedCount = trainOutput.NodesPassagemComboio.filter(
             (n) => n.ComboioPassou,
           ).length;
-          initiateGhostMonitoring(
+          GhostManager.initiateGhostMonitoring(
             trainId,
             richInfo,
             originDateStr,
@@ -1079,7 +1037,6 @@ const processTrain = async (richInfo, originDateStr) => {
             `[GHOST] Stage 1: Comboio ${trainId} com possível perturbação ` +
               `(${minutesLate.toFixed(1)} min sem progressão em "${nextUnvisited.NomeEstacao}").`,
           );
-          // O ghost train sobrepõe temporariamente o texto de atraso normal, indicando uma falha detetada
           trainOutput.SituacaoComboio = "Possível Perturbação";
         }
       }
@@ -1096,8 +1053,9 @@ const processTrain = async (richInfo, originDateStr) => {
 // --- LOOP PRINCIPAL ---
 const updateCycle = async () => {
   const now = new Date();
+  const todayDateStr = formatDateStr(now); // Data calendário para consultar alterações
 
-  // 1. Filtrar os comboios que nos interessam agora
+  // 1. Filtrar os comboios que nos interessam agora (horário base)
   const activeRichTrains = RICH_SCHEDULE.map((t) => {
     let startStr =
       t.direction === "lisboa" ? t.setubal || t.coina : t.roma_areeiro;
@@ -1119,16 +1077,28 @@ const updateCycle = async () => {
   }).filter((t) => {
     if (!t) return false;
 
-    // Se o comboio está a ser tratado pelo sistema de Ghost Trains (ou seja,
-    // parou no meio do nada ou já foi dado como suprimido), ignoramos aqui
-    // para não o voltar a injetar na API acidentalmente.
-    if (GHOST_TRAINS[String(t.id)] || GHOST_SUPPRESSED.has(String(t.id))) {
+    // Ignorar comboios geridos pelo sistema Ghost
+    if (
+      GhostManager.GHOST_TRAINS[String(t.id)] ||
+      GhostManager.GHOST_SUPPRESSED.has(String(t.id))
+    ) {
+      return false;
+    }
+
+    // VERIFY: Ignorar comboios suprimidos por obras/eventos programados
+    if (VerifyManager.isSuppressed(String(t.id), formatDateStr(t.startObj))) {
+      return false;
+    }
+
+    // VERIFY: Ignorar comboios cujo ID foi substituído (o substituto será adicionado abaixo)
+    if (
+      VerifyManager.getReplacementId(String(t.id), formatDateStr(t.startObj))
+    ) {
       return false;
     }
 
     const isBeingTracked = !!TRAIN_MEMORY[String(t.id)];
 
-    // Verificação simples de fim de semana/feriado
     const trainOpInfo = getOperationalInfo(t.startObj);
     const isTrainWeekendOrHoliday = trainOpInfo.isWeekendOrHoliday;
 
@@ -1139,7 +1109,6 @@ const updateCycle = async () => {
       (!isTrainWeekendOrHoliday && hType === 0);
     if (!matchesDay) return false;
 
-    // A nossa janela de monitorização: 20 min antes de partir até 2 horas depois de chegar
     const nowTime = now.getTime();
     const isInsideWindow =
       nowTime >= t.startObj.getTime() - 20 * 60000 &&
@@ -1152,15 +1121,86 @@ const updateCycle = async () => {
     return (!isAlreadyFinished && isInsideWindow) || isBeingTracked;
   });
 
-  // -------------------------------------------------------------------------
-  // 2. O CORAÇÃO DO SISTEMA: PROTEÇÃO ANTI-DDOS E OTIMIZAÇÃO DE VM
-  // -------------------------------------------------------------------------
-  // Em vez de usarmos Promise.all (que bloqueia o servidor e dispara dezenas
-  // de pedidos ao mesmo tempo contra a IP), vamos distribuir os pedidos ao
-  // longo de 8 segundos. Assim, a IP recebe os pedidos pinga a pinga (parece
-  // tráfego humano) e a nossa pequena VM Azure não sofre picos de CPU.
+  // Adicionar comboios de substituição ao ciclo ativo
+  const replacements = VerifyManager.buildReplacementRichInfoList(
+    todayDateStr,
+    RICH_SCHEDULE,
+  );
+  for (const r of replacements) {
+    const startStr =
+      r.direction === "lisboa" ? r.setubal || r.coina : r.roma_areeiro;
+    const endStr =
+      r.direction === "lisboa" ? r.roma_areeiro : r.setubal || r.coina;
+    if (!startStr || !endStr) continue;
 
-  const spreadWindowMs = 8000; // Janela segura de 8 segundos
+    const start = parseSmartTime(startStr, now);
+    const end = parseSmartTime(endStr, now);
+    if (!start || !end) continue;
+
+    if (
+      GhostManager.GHOST_TRAINS[String(r.id)] ||
+      GhostManager.GHOST_SUPPRESSED.has(String(r.id))
+    )
+      continue;
+
+    const nowTime = now.getTime();
+    const isInsideWindow =
+      nowTime >= start.getTime() - 20 * 60000 &&
+      nowTime <= end.getTime() + 120 * 60000;
+    const isBeingTracked = !!TRAIN_MEMORY[String(r.id)];
+    const isAlreadyFinished =
+      FUTURE_TRAINS_CACHE[String(r.id)] === "Realizado" &&
+      nowTime > start.getTime();
+
+    if ((!isAlreadyFinished && isInsideWindow) || isBeingTracked) {
+      activeRichTrains.push({
+        ...r,
+        startObj: start,
+        endObj: end,
+        originDateStr: formatDateStr(start),
+      });
+    }
+  }
+
+  // Adicionar comboios extra ao ciclo ativo
+  const extras = VerifyManager.buildExtraRichInfoList(todayDateStr);
+  for (const e of extras) {
+    const startStr =
+      e.direction === "lisboa" ? e.setubal || e.coina : e.roma_areeiro;
+    if (!startStr) continue;
+
+    const start = parseSmartTime(startStr, now);
+    if (!start) continue;
+
+    if (
+      GhostManager.GHOST_TRAINS[String(e.id)] ||
+      GhostManager.GHOST_SUPPRESSED.has(String(e.id))
+    )
+      continue;
+
+    // Fim sintético: +3h desde a partida
+    const end = new Date(start.getTime() + 3 * 60 * 60 * 1000);
+
+    const nowTime = now.getTime();
+    const isInsideWindow =
+      nowTime >= start.getTime() - 20 * 60000 &&
+      nowTime <= end.getTime() + 120 * 60000;
+    const isBeingTracked = !!TRAIN_MEMORY[String(e.id)];
+
+    if (isInsideWindow || isBeingTracked) {
+      activeRichTrains.push({
+        ...e,
+        startObj: start,
+        endObj: end,
+        originDateStr: formatDateStr(start),
+      });
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // 2. PROTEÇÃO ANTI-DDOS: Distribuição de pedidos ao longo de 8 segundos
+  // -------------------------------------------------------------------------
+  const spreadWindowMs = 8000;
   const staggerMs =
     activeRichTrains.length > 0
       ? Math.floor(spreadWindowMs / activeRichTrains.length)
@@ -1169,7 +1209,6 @@ const updateCycle = async () => {
   activeRichTrains.forEach((t, index) => {
     const trainId = String(t.id);
 
-    // Inicializa a memória para este comboio se for a primeira vez que o vemos
     if (!TRAIN_MEMORY[trainId]) {
       TRAIN_MEMORY[trainId] = {
         history: {},
@@ -1180,21 +1219,16 @@ const updateCycle = async () => {
       };
     }
 
-    // Lock individual: Se a IP estiver super lenta e este comboio ainda
-    // estiver a carregar desde o ciclo anterior, saltamos à frente!
-    // Isto evita encravar o sistema inteiro por causa de um único comboio.
     if (TRAIN_MEMORY[trainId].isFetching) return;
 
     TRAIN_MEMORY[trainId].isFetching = true;
 
-    // Aqui acontece a magia do espaçamento. Multiplicamos o index pelo atraso calculado.
     setTimeout(async () => {
       try {
         const r = await processTrain(t, t.originDateStr);
         if (r) {
           OUTPUT_CACHE[trainId] = r;
         } else {
-          // Retornou null (chegou ao fim da viagem ou entrou em ghost mode), apagamos.
           delete OUTPUT_CACHE[trainId];
         }
       } catch (e) {
@@ -1203,11 +1237,9 @@ const updateCycle = async () => {
           e.message,
         );
       } finally {
-        // Libertamos o lock no fim, quer tenha tido sucesso ou dado erro
         if (TRAIN_MEMORY[trainId]) {
           TRAIN_MEMORY[trainId].isFetching = false;
         }
-        // Asseguramos que os estados futuros não se perdem na cache principal
         OUTPUT_CACHE.futureTrains = FUTURE_TRAINS_CACHE;
       }
     }, index * staggerMs);
@@ -1219,27 +1251,12 @@ const updateCycle = async () => {
 
   const nowMs = now.getTime();
 
-  // Limpar comboios fantasmas (Ghost Suppressed) que já passaram da validade.
-  for (const ghostId of GHOST_SUPPRESSED) {
-    const entry = RICH_SCHEDULE.find((t) => String(t.id) === ghostId);
-    if (entry) {
-      const endStr =
-        entry.direction === "lisboa"
-          ? entry.roma_areeiro
-          : entry.setubal || entry.coina;
-      if (endStr) {
-        const endDate = parseSmartTime(endStr.substring(0, 5), now);
-        if (endDate && nowMs > endDate.getTime() + 4 * 60 * 60 * 1000) {
-          GHOST_SUPPRESSED.delete(ghostId);
-        }
-      }
-    } else {
-      GHOST_SUPPRESSED.delete(ghostId);
-    }
-  }
+  // Limpar Ghost Suppressed expirados (delegado ao GhostManager)
+  GhostManager.cleanupExpiredGhosts(now, RICH_SCHEDULE, parseSmartTime);
 
-  // Evita que um atraso antigo fique colado no cache até ao próximo varrimento geral.
+  // Auto-heal: limpar estados obsoletos da FUTURE_TRAINS_CACHE
   for (const [trainId, cachedStatus] of Object.entries(FUTURE_TRAINS_CACHE)) {
+    // Comboios de substituição e extra não têm entrada no RICH_SCHEDULE — ignorar
     const entry = RICH_SCHEDULE.find((t) => String(t.id) === trainId);
     if (!entry) continue;
 
@@ -1256,8 +1273,8 @@ const updateCycle = async () => {
     const startDate = parseSmartTime(startStr.substring(0, 5), now);
     const endDate = parseSmartTime(endStr.substring(0, 5), now);
 
-    // AUTO-HEAL: Se a cache diz "Realizado/Suprimido", mas a partida de HOJE ainda nem aconteceu,
-    // é porque este estado é lixo do dia anterior! Apagamos instantaneamente.
+    // AUTO-HEAL: Se a cache diz "Realizado/Suprimido", mas a partida de HOJE ainda não aconteceu,
+    // é lixo do dia anterior — apagar e deixar o próximo checkOfflineTrains reavaliar.
     if (
       (cachedStatus === "Realizado" || cachedStatus === "SUPRIMIDO") &&
       startDate &&
@@ -1282,21 +1299,17 @@ const isSystemInSleepMode = () => {
   const m = now.getMinutes();
 
   if ((h === 2 && m >= 30) || h === 3 || h === 4) {
-    // só dorme se não existirem comboios na linha
     const hasActiveTrains = Object.keys(TRAIN_MEMORY).length > 0;
 
     if (!hasActiveTrains) {
-      //console.log(
-      //  `[SEARCH OFF] API desativada às ${h}:${m}. Future Trains Congelados`,
-      //);
-      return true; // Pode dormir.
+      return true;
     } else {
       console.log(
         `[SLEEP OVERRIDE] São ${h}:${m} mas ainda há comboios ativos na linha! API continua a funcionar.`,
       );
     }
   }
-  return false; // Fora do horário de repouso, ou com comboios na linha, trabalha normalmente.
+  return false;
 };
 
 // --- TICKER (10 SEGUNDOS) ---
@@ -1328,9 +1341,7 @@ const scheduleNextTick = () => {
 
 // --- ROUTES ---
 
-// Rota protegida com middleware
 app.get("/fertagus", protectRoute, (req, res) => {
-  // Se a IP morreu, o backend recusa-se a servir dados obsoletos e avisa a app
   if (IP_IS_DOWN) {
     return res.status(503).json({
       error: "IP_DOWN",
@@ -1353,19 +1364,22 @@ app.get("/avisos", (req, res) => {
 app.get("/", (req, res) =>
   res.json({
     status: "online",
-    version: "4.8.3",
+    version: "4.9.22",
     aviso:
       "Pedimos que não uses o nosso endpoint diretamente! Verifica toda as informações e código no github.",
     operational: getOperationalInfo(),
     ghost: {
-      monitoring: Object.keys(GHOST_TRAINS).length,
-      suppressed: GHOST_SUPPRESSED.size,
+      monitoring: Object.keys(GhostManager.GHOST_TRAINS).length,
+      suppressed: GhostManager.GHOST_SUPPRESSED.size,
+    },
+    changes: {
+      today: VerifyManager.getChangesForDate(formatDateStr(new Date())),
     },
   }),
 );
 
 app.listen(PORT, () => {
-  console.log(`LiveTagus API v4.8.3 ativa na porta ${PORT}`);
+  console.log(`LiveTagus API v4.9.22 ativa na porta ${PORT}`);
   console.log(`Endpoint /fertagus protegido com API_KEY.`);
   checkOfflineTrains();
   updateCycle();

@@ -18,7 +18,7 @@
  *   │ Pragal + Foguetiro → BRIDGE DELAY   (+1:30 min / +1:45 ponta)        │
  *   │   [Remoção: após comboio passar no Pragal]                           │
  *   ├──────────────────────────────────────────────────────────────────────┤
- *   │ Corroios + Foros → TROÇO 1  (+2:30 min / +2:45 ponta)                │
+ *   │ Corroios + Foros → TROÇO 1  (+1:15 min / +1:30 ponta)                │
  *   │   [Remoção: após comboio passar no Pragal]                           │
  *   ├──────────────────────────────────────────────────────────────────────┤
  *   │ Coina                                                                │
@@ -46,8 +46,8 @@ const BRIDGE_DELAY_BASE_S = 1 * 60 + 30; // 1 min 30 seg
 const BRIDGE_DELAY_PEAK_S = 1 * 60 + 45; // 1 min 45 seg
 
 /** Troço 1 Pós-Pragal: Corroios e Foros (sentido Margem). */
-const TROCO1_DELAY_BASE_S = 2 * 60 + 30; // 2 min 30 seg
-const TROCO1_DELAY_PEAK_S = 2 * 60 + 45; // 2 min 45 seg
+const TROCO1_DELAY_BASE_S = 1 * 60 + 15; // 1 min 15 seg
+const TROCO1_DELAY_PEAK_S = 1 * 60 + 30; // 1 min 30 seg
 
 /** Troço 2 Pós-Coina: Penalva e restantes até Setúbal (sentido Margem). */
 const TROCO2_DELAY_BASE_S = 2 * 60 + 30; // 2 min 00 seg
@@ -63,7 +63,7 @@ const TROCO2_STATIONS = new Set(["penalva", "pinhal_novo"]);
 
 const PEAK_WINDOWS = [
   { start: 7 * 60, end: 9 * 60 + 30 }, // 07:00 – 09:30
-  { start: 17 * 60, end: 19 * 60 + 30 }, // 17:00 – 19:30
+  { start: 16 * 60 + 45, end: 19 * 60 + 30 }, // 16:45 – 19:30
 ];
 
 const isPeakHour = (now = new Date(), isWeekendOrHoliday = false) => {
