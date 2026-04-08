@@ -142,10 +142,13 @@ document.addEventListener("DOMContentLoaded", () => {
     if (searchMode === "name") {
       // Pesquisa por nome: normaliza acentos e faz substring match
       const q = normalizeStr(query);
+      const digits = query.replace(/\D/g, "");
       results = stopsData
         .filter((s) => {
           const name = normalizeStr(s.n);
-          return name.includes(q) || s.id.includes(query.replace(/\D/g, ""));
+          return (
+            name.includes(q) || (digits.length > 0 && s.id.includes(digits))
+          );
         })
         .slice(0, 60);
     } else {

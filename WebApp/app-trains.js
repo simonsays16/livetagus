@@ -9,9 +9,61 @@
  *   [...]  → lista de comboios processada com sucesso
  */
 
+// ─── CHANGES MANAGER ────────────────────────────────────────────────────────
+// Carrega changes.json e resolve, para a data operacional de hoje, quais
+// comboios estão suprimidos e quais sofreram substituição de número.
+// Toda a lógica é client-side para contornar falhas/atrasos da API.
+
+const ChangesManager = {
+  _cache: null,
+
+  load: async function () {
+    if (this._cache !== null) return this._cache;
+    try {
+      const res = await fetch("./json/changes.json?t=" + Date.now());
+      if (!res.ok)
+        throw new Error("changes.json nao encontrado (" + res.status + ")");
+      this._cache = await res.json();
+    } catch (e) {
+      console.warn("[ChangesManager] Erro a carregar changes.json:", e.message);
+      this._cache = { changes: [] };
+    }
+    return this._cache;
+  },
+
+  getActiveChange: async function () {
+    const data = await this.load();
+    const todayStr = this._todayISO();
+    return (
+      data.changes.find((c) => {
+        const [start, end] = c.targetDates;
+        return todayStr >= start && todayStr <= end;
+      }) || null
+    );
+  },
+
+  _todayISO: function () {
+    const d = getOperationalDate();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return y + "-" + m + "-" + day;
+  },
+};
+
+// ────────────────────────────────────────────────────────────────────────────
+
 async function fetchFertagusNewAPI() {
   const currentDB = activeTab === "lisboa" ? DB_LISBOA : DB_MARGEM;
   if (!currentDB) return [];
+
+  // Resolve changes.json ANTES do try/catch da API para que forceSuppressed e
+  // replacements estejam sempre definidos, mesmo que o fetch à API falhe.
+  const activeChange = await ChangesManager.getActiveChange();
+  const forceSuppressed = new Set(
+    activeChange ? activeChange.suppressed.map(String) : [],
+  );
+  const replacements = activeChange ? activeChange.replacements : {};
 
   try {
     const res = await fetch(API_FERTAGUS_NEW + "?t=" + Date.now(), {
@@ -23,7 +75,6 @@ async function fetchFertagusNewAPI() {
       cache: "no-store",
     });
 
-    // Disjuntor do backend (503)
     if (res.status === 503) {
       window.apiIsDown = true;
       return [];
@@ -33,7 +84,6 @@ async function fetchFertagusNewAPI() {
 
     const data = await res.json();
 
-    // Erro em JSON (200 com corpo de erro)
     if (data.error === "IP_DOWN") {
       window.apiIsDown = true;
       return [];
@@ -75,7 +125,11 @@ async function fetchFertagusNewAPI() {
         if (opDate.getHours() < 5) opDate.setDate(opDate.getDate() - 1);
         const trainIsSpecialDay = isWeekendOrHoliday(opDate);
 
-        const apiTrain = apiTrains.find((t) => t["id-comboio"] == dbTrain.id);
+        // Se há número provisório, procura na API por ele; exibe o original.
+        const lookupId = replacements[String(dbTrain.id)] || String(dbTrain.id);
+        const apiTrain = apiTrains.find(
+          (t) => String(t["id-comboio"]) === lookupId,
+        );
 
         let originNode = null;
         let destNode = null;
@@ -98,19 +152,31 @@ async function fetchFertagusNewAPI() {
         let isSuppressed = false;
         let hasPassedOrigin = false;
         let originLabel = "FERTAGUS";
-        if (dbTrain.setubal) originLabel = "SETÚBAL";
+        if (dbTrain.setubal) originLabel = "SETUBAL";
         else if (dbTrain.coina) originLabel = "COINA";
         let arrTime = scheduledDestStr;
 
+        // ── SUPRESSAO LOCAL (changes.json) ───────────────────────────────────
+        // Aplicada antes de qualquer dado da API — o override local nao pode
+        // ser desfeito por estados incorretos reportados pelo servidor.
+        const isForceSuppr = forceSuppressed.has(String(dbTrain.id));
+        if (isForceSuppr) {
+          isSuppressed = true;
+          status = "SUPRIMIDO";
+          dotStatus = "red";
+          pulse = true;
+        }
+
         if (apiTrain && originNode) {
           isLive = apiTrain.Live;
-          isSuppressed = apiTrain.SituacaoComboio === "SUPRIMIDO";
+          isSuppressed =
+            isSuppressed || apiTrain.SituacaoComboio === "SUPRIMIDO";
           hasPassedOrigin = originNode.ComboioPassou;
           if (destNode && destNode.HoraPrevista) {
             arrTime = destNode.HoraPrevista.substring(0, 5);
           }
           const isPerturbacao =
-            apiTrain.SituacaoComboio === "Possível Perturbação";
+            apiTrain.SituacaoComboio === "Possivel Perturbacao";
 
           if (isSuppressed) {
             status = "SUPRIMIDO";
@@ -122,14 +188,14 @@ async function fetchFertagusNewAPI() {
             pulse = true;
             isLive = true;
           } else if (apiTrain) {
-            // HoraPrevista é quem dá info
+            // Fonte de verdade: HoraPrevista do no de origem.
+            // Atraso = HoraPrevista - HoraProgramada (nunca inferido do texto).
             const progStr = originNode.HoraProgramada;
             const prevStr = originNode.HoraPrevista;
 
             if (prevStr && prevStr.length >= 5) {
               mainTime = prevStr.substring(0, 5);
             } else {
-              // Sem HoraPrevista → usa a hora programada
               mainTime = progStr.substring(0, 5);
             }
 
@@ -139,13 +205,15 @@ async function fetchFertagusNewAPI() {
               dProg && dPrev ? Math.round((dPrev - dProg) / 60000) : 0;
 
             if (diffMin > 0) {
-              status = `Atraso ${diffMin} min (Estimativa) <br /><span style="text-transform: none;" class="text-[10px] text-left text-zinc-500 dark:text-zinc-400 opacity-60">Atrasos podem ser recuperados.</span>`;
+              status =
+                "Atraso " +
+                diffMin +
+                ' min (Estimativa) <br /><span style="text-transform: none;" class="text-[10px] text-left text-zinc-500 dark:text-zinc-400 opacity-60">Atrasos podem ser recuperados.</span>';
               dotStatus = "yellow";
               pulse = true;
               secondaryTime = progStr.substring(0, 5);
               isLive = true;
             } else {
-              // A horas ou sem dados de tempo real
               if (isLive || prevStr) {
                 status = "A Horas";
                 dotStatus = "green";
@@ -163,7 +231,7 @@ async function fetchFertagusNewAPI() {
             if (currentIdx >= 0) {
               const currNode = apiTrain.NodesPassagemComboio[currentIdx];
               const currName = currNode.NomeEstacao;
-              if (hasPassedOrigin && !isSuppressed) status = `Em ${currName}`;
+              if (hasPassedOrigin && !isSuppressed) status = "Em " + currName;
               const prevNode =
                 currentIdx > 0
                   ? apiTrain.NodesPassagemComboio[currentIdx - 1]
@@ -198,7 +266,14 @@ async function fetchFertagusNewAPI() {
             }
           }
         } else {
-          const fStatus = futureTrains[dbTrain.id];
+          // FutureTrains: para comboios sem dados detalhados na API.
+          // Se ja esta em forceSuppressed, ignoramos completamente o estado
+          // da API — "Realizado" ou outro valor nao pode desfazer a supressao.
+          // Para comboios com número provisório (replacements), o estado no
+          // futureTrains está sob o novo ID — usa lookupId em vez do original.
+          const fStatus = isForceSuppr
+            ? null
+            : futureTrains[lookupId] || futureTrains[String(dbTrain.id)];
           if (fStatus) {
             if (fStatus.toUpperCase().includes("SUPRIMIDO")) {
               status = "SUPRIMIDO";
@@ -213,7 +288,7 @@ async function fetchFertagusNewAPI() {
               const match = fStatus.match(/(\d+)/);
               if (match) {
                 const delay = parseInt(match[1]);
-                status = `Atraso ${delay} min`;
+                status = "Atraso " + delay + " min";
                 dotStatus = "yellow";
                 pulse = true;
                 mainTime = addMinutes(scheduledTimeStr, delay);
@@ -227,10 +302,15 @@ async function fetchFertagusNewAPI() {
             }
           }
         }
-        if (isSuppressed && scheduledDate < now) return null;
-        if (isLive) {
+
+        // ── FILTROS DE VISIBILIDADE ──────────────────────────────────────────
+        // Suprimidos pela API: removidos assim que a hora agendada passa.
+        // Suprimidos pelo changes.json (isForceSuppr): visiveis todo o dia
+        // operacional — o utilizador precisa de saber que o comboio foi suprimido.
+        if (isSuppressed && !isForceSuppr && scheduledDate < now) return null;
+        if (isLive && !isForceSuppr) {
           if (destNode && destNode.ComboioPassou) return null;
-        } else {
+        } else if (!isSuppressed) {
           if (scheduledDate < now) return null;
         }
 
@@ -265,7 +345,6 @@ async function fetchFertagusNewAPI() {
     return processed;
   } catch (e) {
     console.warn("[Fertagus API] Erro de rede:", e.message);
-    // null → sinaliza erro de rede; a UI preserva os cartões offline actuais
     return null;
   }
 }
