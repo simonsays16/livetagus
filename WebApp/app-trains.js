@@ -156,9 +156,8 @@ async function fetchFertagusNewAPI() {
         else if (dbTrain.coina) originLabel = "COINA";
         let arrTime = scheduledDestStr;
 
-        // ── SUPRESSAO LOCAL (changes.json) ───────────────────────────────────
-        // Aplicada antes de qualquer dado da API — o override local nao pode
-        // ser desfeito por estados incorretos reportados pelo servidor.
+        // FIX PROVISORIO
+        // override local para comboios suprimidos por obras
         const isForceSuppr = forceSuppressed.has(String(dbTrain.id));
         if (isForceSuppr) {
           isSuppressed = true;
@@ -175,8 +174,9 @@ async function fetchFertagusNewAPI() {
           if (destNode && destNode.HoraPrevista) {
             arrTime = destNode.HoraPrevista.substring(0, 5);
           }
-          const isPerturbacao =
-            apiTrain.SituacaoComboio === "Possivel Perturbacao";
+          const isPerturbacao = /poss.{0,2}vel perturba/i.test(
+            apiTrain.SituacaoComboio || "",
+          );
 
           if (isSuppressed) {
             status = "SUPRIMIDO";
@@ -225,13 +225,15 @@ async function fetchFertagusNewAPI() {
                 pulse = true;
               }
             }
+          }
+          if (apiTrain && !isSuppressed) {
             const currentIdx = apiTrain.NodesPassagemComboio.findIndex(
               (n) => !n.ComboioPassou,
             );
             if (currentIdx >= 0) {
               const currNode = apiTrain.NodesPassagemComboio[currentIdx];
               const currName = currNode.NomeEstacao;
-              if (hasPassedOrigin && !isSuppressed) status = "Em " + currName;
+              if (hasPassedOrigin) status = "Em " + currName;
               const prevNode =
                 currentIdx > 0
                   ? apiTrain.NodesPassagemComboio[currentIdx - 1]
