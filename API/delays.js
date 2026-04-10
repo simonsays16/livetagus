@@ -15,10 +15,10 @@
  *   │ Roma-Areeiro → Entrecampos → Sete Rios → Campolide                   │
  *   │   [Sem ajuste — troço Lisboa antes da ponte]                         │
  *   ├──────────────────────────────────────────────────────────────────────┤
- *   │ Pragal + Foguetiro → BRIDGE DELAY   (+1:30 min / +1:45 ponta)        │
+ *   │ Pragal → BRIDGE DELAY   (+45 seg / +1:00 ponta)                      │
  *   │   [Remoção: após comboio passar no Pragal]                           │
  *   ├──────────────────────────────────────────────────────────────────────┤
- *   │ Corroios + Foros → TROÇO 1  (+1:15 min / +1:30 ponta)                │
+ *   │ Corroios + Foros → TROÇO 1  (+30s / +30s ponta)                      │
  *   │   [Remoção: após comboio passar no Pragal]                           │
  *   ├──────────────────────────────────────────────────────────────────────┤
  *   │ Coina                                                                │
@@ -42,12 +42,12 @@
 // ─── CONSTANTES DE ATRASO ─────────────────────────────────────────────────────
 
 /** Atraso de Ponte: Pragal + Fogueteiro (sentido Margem). */
-const BRIDGE_DELAY_BASE_S = 1 * 60 + 30; // 1 min 30 seg
-const BRIDGE_DELAY_PEAK_S = 1 * 60 + 45; // 1 min 45 seg
+const BRIDGE_DELAY_BASE_S = 45; // 45 seg
+const BRIDGE_DELAY_PEAK_S = 1 * 60; // 1 min 00 seg
 
 /** Troço 1 Pós-Pragal: Corroios e Foros (sentido Margem). */
-const TROCO1_DELAY_BASE_S = 1 * 60 + 15; // 1 min 15 seg
-const TROCO1_DELAY_PEAK_S = 1 * 60 + 30; // 1 min 30 seg
+const TROCO1_DELAY_BASE_S = 30; // 30 seg
+const TROCO1_DELAY_PEAK_S = 30; // 30 seg
 
 /** Troço 2 Pós-Coina: Penalva e restantes até Setúbal (sentido Margem). */
 const TROCO2_DELAY_BASE_S = 2 * 60 + 30; // 2 min 00 seg
@@ -55,7 +55,7 @@ const TROCO2_DELAY_PEAK_S = 2 * 60 + 45; // 2 min 30 seg
 
 // ─── GRUPO DE ESTAÇÕES ───────────────────────────────────────────────────────
 
-const BRIDGE_STATIONS = new Set(["pragal", "fogueteiro"]);
+const BRIDGE_STATIONS = new Set(["pragal"]);
 const TROCO1_STATIONS = new Set(["corroios", "foros_de_amora"]);
 const TROCO2_STATIONS = new Set(["penalva", "pinhal_novo"]);
 

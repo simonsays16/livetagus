@@ -36,9 +36,13 @@ function _isOfflineAvailable(href) {
   // Links externos bloqueados
   if (href.startsWith("http://") || href.startsWith("https://")) return false;
   // Verifica paths disponíveis
-  var clean = href.split("?")[0].split("#")[0].replace(/\/+$/, "");
+  var clean = href
+    .split("?")[0]
+    .split("#")[0]
+    .replace(/\/+$/, "")
+    .toLowerCase();
   return OFFLINE_ALLOWED_PATHS.some(function (p) {
-    var pc = p.replace(/\/+$/, "");
+    var pc = p.replace(/\/+$/, "").toLowerCase();
     return (
       clean === pc ||
       clean === "./" + pc ||

@@ -1,4 +1,4 @@
-const CACHE_NAME = "livetagus-v.rc5.08042026";
+const CACHE_NAME = "livetagus-v.rc11.10042026";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
@@ -35,28 +35,29 @@ const ASSETS_TO_CACHE = [
 // Instalação: Guarda os ficheiros
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      // console.log("[Service Worker] Caching app shell");
-      return cache.addAll(ASSETS_TO_CACHE);
-    }),
+    caches
+      .open(CACHE_NAME)
+      .then((cache) => cache.addAll(ASSETS_TO_CACHE))
+      .then(() => self.skipWaiting()),
   );
-  self.skipWaiting();
 });
 
 // Ativação: Limpa caches antigas
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keyList) => {
-      return Promise.all(
-        keyList.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        }),
-      );
-    }),
+    caches
+      .keys()
+      .then((keyList) =>
+        Promise.all(
+          keyList.map((key) => {
+            if (key !== CACHE_NAME) {
+              return caches.delete(key);
+            }
+          }),
+        ),
+      )
+      .then(() => self.clients.claim()),
   );
-  return self.clients.claim();
 });
 
 // offline-first: procurar ficheiro em cache depois online
@@ -87,10 +88,12 @@ self.addEventListener("fetch", (event) => {
         if (indexMatch) return indexMatch;
       }
 
-      // correção: nada em cache -> web
+      // correção: nada em cache -> web (fallback para app.html em navegação)
       return fetch(event.request).catch((err) => {
         console.error("[SW] Falha na rede:", err);
-        // return caches.match("./offline-page.html");
+        if (event.request.mode === "navigate") {
+          return caches.match("./app.html");
+        }
       });
     }),
   );

@@ -2,42 +2,10 @@
  * app-ui.js
  * Toda a lógica de UI: renderização da lista de comboios, modal de detalhes,
  * selects de estações, status, tabs e ações do utilizador.
- *
- * ═══════════════════════════════════════════════════════════════════════
- *  ARQUITECTURA CLS-FREE (Cumulative Layout Shift = 0)
- * ═══════════════════════════════════════════════════════════════════════
- *
- *  PROBLEMA ORIGINAL:
- *    renderList() fazia container.innerHTML = "" e reconstruía tudo.
- *    Quando a API respondia, o divisor "PRÓXIMO COMBOIO" e os alertas
- *    eram inseridos ENTRE cartões já desenhados → tudo descia → CLS 0.807.
- *
- *  SOLUÇÃO:
- *    1. buildOfflineTrainList()  → gera lista a partir do JSON local (SW cache)
- *       chamada em app-init.js ANTES do fetch à API. Cartões aparecem
- *       imediatamente com status "OFFLINE" e ponto cinzento.
- *
- *    2. _reconcile(container, desired) → compara sequência desejada com DOM
- *       actual e faz apenas inserções/remoções mínimas. Elementos já no
- *       lugar correcto não são movidos → ZERO CLS.
- *
- *    3. _patchCard(card, t) → actualiza apenas campos dinâmicos (status, horas,
- *       dot) de um cartão já existente, sem recriar o elemento → ZERO CLS.
- *
- *    4. updateNextCountdown() → usa apenas opacity (não display:none/block)
- *       para o cabeçalho do próximo comboio → ZERO CLS no header fixo.
- *
- *    5. loadData() → se a API devolve null (erro de rede), preserva os cartões
- *       offline actuais sem qualquer alteração ao DOM.
- *
- * NOTA CSP: Todos os botões dinâmicos usam data-action. O despacho é em app-init.js.
  * Depende de: app-config.js, app-alerts.js, app-trains.js
  */
 
-// ═══════════════════════════════════════════════════════════════════════
 // HELPERS: CONSTRUÇÃO DE HTML DOS CARTÕES
-// ═══════════════════════════════════════════════════════════════════════
-
 /** Classe + glow do ponto de estado. */
 function _dotInfo(t) {
   if (t.isOffline) {
@@ -525,9 +493,11 @@ window.loadData = async function (silent = false) {
       return;
     }
 
-    // API marcada como em baixo → modal de aviso
+    // API marcada como em baixo → popup de aviso + lista offline
     if (window.apiIsDown) {
-      renderList([]);
+      renderList(buildOfflineTrainList());
+      setStatus("offline");
+      showIpDownPopup();
       return;
     }
 
@@ -923,6 +893,62 @@ function closeDetails() {
   setTimeout(() => backdrop.classList.add("hidden"), 300);
 }
 
+// POPUP "IP EM BAIXO" (+ossilel remover)
+
+let ipPopupDismissed = false;
+
+function showIpDownPopup() {
+  if (ipPopupDismissed) return;
+  if (document.getElementById("ip-down-popup")) return;
+
+  const overlay = document.createElement("div");
+  overlay.id = "ip-down-popup";
+  overlay.className =
+    "fixed inset-0 z-[100] flex items-center justify-center bg-black/40 dark:bg-black/60 backdrop-blur-sm animate-fade-in px-6";
+
+  overlay.innerHTML = `
+    <div class="bg-white dark:bg-zinc-900 border border-red-500/70 shadow-2xl rounded-3xl p-6 md:p-8 max-w-sm w-full text-center flex flex-col items-center">
+      <div class="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-5">
+        <i data-lucide="server-crash" class="w-8 h-8 text-red-500 animate-pulse"></i>
+      </div>
+      <h2 class="text-xl font-bold text-zinc-900 dark:text-white mb-2 leading-tight">Falha na Infraestruturas de Portugal</h2>
+      <p class="text-xs text-zinc-500 dark:text-zinc-400 mb-6 leading-relaxed">
+        Os servidores com informações de circulação da <b>IP</b> foram abaixo. A infraestrutura da LiveTagus encontra-se 100% operacional, mas sem a fonte oficial não conseguimos obter a localização dos comboios. Isto <b>não</b> significa que os comboios estejam com perturbações na circulação!
+      </p>
+      <button data-action="dismiss-ip-popup" class="w-full py-3.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold tracking-widest uppercase transition-all active:scale-95 shadow-lg shadow-red-500/20 mb-3">
+        Entendido
+      </button>
+      <a data-action="go-offline" href="./horarios" class="w-full py-3.5 rounded-xl border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-sm font-bold tracking-widest uppercase transition-all active:scale-95 text-center">
+        Ver Horários Offline
+      </a>
+      <a data-action="sudoku-offline" href="./sudoku" class="mt-3 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 underline underline-offset-2 transition-colors">
+        Aproveitar e Jogar Sudoku
+      </a>
+      <div class="flex items-center gap-2 mt-5 text-[10px] text-zinc-400">
+        <span class="w-1.5 h-1.5 rounded-full bg-zinc-400 animate-ping"></span>
+        A tentar religar automaticamente...
+      </div>
+    </div>
+  `;
+
+  overlay.addEventListener("click", function (e) {
+    if (e.target === overlay) dismissIpDownPopup();
+  });
+
+  document.body.appendChild(overlay);
+  if (window.lucide) lucide.createIcons();
+}
+
+window.dismissIpDownPopup = function () {
+  const popup = document.getElementById("ip-down-popup");
+  if (popup) {
+    popup.style.opacity = "0";
+    popup.style.transition = "opacity 0.3s ease";
+    setTimeout(() => popup.remove(), 300);
+  }
+  ipPopupDismissed = true;
+};
+
 // ═══════════════════════════════════════════════════════════════════════
 // RENDERIZAÇÃO DA LISTA (CLS-FREE via reconciliador)
 // ═══════════════════════════════════════════════════════════════════════
@@ -932,41 +958,11 @@ window.renderList = function (list) {
   const loadMoreBtn = document.getElementById("load-more-btn");
   currentTrainList = list;
 
-  // ── 0. Modal "API em baixo" ────────────────────────────────────────
-  let ipModal = document.getElementById("ip-down-modal");
-  if (window.apiIsDown) {
-    if (!ipModal) {
-      ipModal = document.createElement("div");
-      ipModal.id = "ip-down-modal";
-      ipModal.className =
-        "fixed inset-0 z-[100] flex items-center justify-center bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-md animate-fade-in px-6";
-      ipModal.innerHTML = `
-        <div class="bg-white dark:bg-zinc-900 border border-red-500/70 shadow-2xl rounded-3xl p-6 md:p-8 max-w-sm w-full text-center flex flex-col items-center">
-          <div class="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-5">
-            <i data-lucide="server-crash" class="w-8 h-8 text-red-500 animate-pulse"></i>
-          </div>
-          <h2 class="text-xl font-bold text-zinc-900 dark:text-white mb-2 leading-tight">Falha na Infraestruturas de Portugal</h2>
-          <p class="text-xs text-zinc-500 dark:text-zinc-400 mb-6 leading-relaxed">
-            Os servidores com informações de circulação da <b>IP</b> foram abaixo. A infraestrutura da LiveTagus encontra-se 100% operacional, mas sem a fonte oficial não conseguimos obter a localização dos comboios. Isto <b>não</b> significa que os comboios estejam com perturbações na circulação!
-          </p>
-          <a data-action="go-offline" href="./horarios" class="w-full py-3.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold tracking-widest uppercase transition-all active:scale-95 shadow-lg shadow-blue-500/20 mb-3">
-            Ver Horários Offline
-          </a>
-          <a data-action="sudoku-offline" href="./sudoku" class="mt-6 w-full py-3.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold tracking-widest uppercase transition-all active:scale-95 shadow-lg shadow-red-500/20">
-            Aproveitar e Jogar Sudoku
-          </a>
-          <div class="flex items-center gap-2 mt-5 text-[10px] text-zinc-400">
-            <span class="w-1.5 h-1.5 rounded-full bg-zinc-400 animate-ping"></span>
-            A tentar religar automaticamente...
-          </div>
-        </div>
-      `;
-      document.body.appendChild(ipModal);
-      if (window.lucide) lucide.createIcons();
-    }
-    return;
-  } else {
-    if (ipModal) ipModal.remove();
+  // ── 0. Limpa popup "API em baixo" quando a API volta ───────────────
+  const ipPopup = document.getElementById("ip-down-popup");
+  if (!window.apiIsDown && ipPopup) {
+    ipPopup.remove();
+    ipPopupDismissed = false;
   }
 
   // ── 1. Lista vazia ─────────────────────────────────────────────────

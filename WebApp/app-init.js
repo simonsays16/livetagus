@@ -164,6 +164,9 @@ document.body.addEventListener("click", function (e) {
     case "close-details":
       closeDetails();
       break;
+    case "dismiss-ip-popup":
+      dismissIpDownPopup();
+      break;
     case "dismiss-alert":
       AlertsManager.dismiss(
         parseInt(el.dataset.alertIndex, 10),
