@@ -56,6 +56,11 @@
   status = 200
   force = true
 
+[[redirects]]
+  from = "/estacao/*"
+  to = "/estacao.html"
+  status = 200
+
 # Regra 404
 [[redirects]]
   from = "/*"

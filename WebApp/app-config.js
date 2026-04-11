@@ -6,6 +6,7 @@
 
 // ─── API & CONSTANTES ────────────────────────────────────────────────────────
 
+// const API_FERTAGUS_NEW = "http://localhost:3000/fertagus/";
 const API_FERTAGUS_NEW = "https://api.livetagus.pt/fertagus/";
 const API_ALERTS = "https://api.livetagus.pt/avisos/";
 const CLIENT_API_KEY = "KoKi30rVWuwkF9lqKL6j4mb0VMg3dIXWs6QDHZ3de0G8lC5qvu";

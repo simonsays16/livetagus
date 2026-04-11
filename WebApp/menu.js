@@ -24,14 +24,14 @@ function injectNavigation() {
   const navContainer = document.getElementById("global-nav");
   if (!navContainer) return;
 
-  const logoSrc = "./imagens/logotransparente.svg";
+  const logoSrc = "/imagens/logotransparente.svg";
 
   const githubIcon = `<svg viewBox="0 0 24 24" class="w-5 h-5 fill-current"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>`;
 
   navContainer.innerHTML = `
         <header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 py-4 transition-all duration-500 bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-md border-b border-zinc-200/50 dark:border-white/5 supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-[#09090b]/60 pt-safe-ios">
             
-            <a href="./" class="flex items-center gap-3 group" aria-label="Ir para a página inicial">
+            <a href="/" class="flex items-center gap-3 group" aria-label="Ir para a página inicial">
                 <img id="nav-logo" src="${logoSrc}" class="w-8 h-8 opacity-100 transition-opacity object-contain" alt="LiveTagus Logo" width="32" height="32">
                 <span class="font-sans font-bold tracking-tighter text-lg text-zinc-900 dark:text-white">LIVETAGUS</span>
             </a>
@@ -47,11 +47,11 @@ function injectNavigation() {
             <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 dark:bg-blue-900/10 rounded-full blur-[120px] pointer-events-none"></div>
 
             <nav class="flex flex-col gap-2 relative z-10">
-                <a href="./" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Início</a>
-                <a href="./app" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-black dark:text-white transition-colors uppercase italic">Tempo Real</a>
-                <a href="./horarios" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Horários</a>
+                <a href="/" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Início</a>
+                <a href="/app" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-black dark:text-white transition-colors uppercase italic">Tempo Real</a>
+                <a href="/horarios" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Horários</a>
                 <a id="btn-menu-estado" href="https://status.livetagus.pt/pt-pt" target="_blank" rel="noopener noreferrer" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Estado</a>
-                <a id="btn-menu-sobre" href="./sobre" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Sobre</a>
+                <a id="btn-menu-sobre" href="/sobre" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Sobre</a>
             </nav>
 
             <div class="relative z-10 border-t border-zinc-200 dark:border-white/10 pt-8 mt-8 md:pb-0">
@@ -79,7 +79,7 @@ function injectNavigation() {
                                 ${githubIcon}
                             </a>
                             <a href="https://www.netlify.com" target="_blank" aria-label="Alojado na Netlify">
-                                <img id="netlify-badge-menu" src="./imagens/netlify-light.svg" alt="Deploys by Netlify" class="h-6 w-auto" width="114" height="51" />
+                                <img id="netlify-badge-menu" src="/imagens/netlify-light.svg" alt="Deploys by Netlify" class="h-6 w-auto" width="114" height="51" />
                             </a>
                         </div>
                     </div>
@@ -95,7 +95,7 @@ function injectFooter() {
   const footerContainer = document.getElementById("global-footer");
   if (!footerContainer) return;
 
-  const logoSrc = "./imagens/logotransparente.svg";
+  const logoSrc = "/imagens/logotransparente.svg";
   const githubIcon = `<svg viewBox="0 0 24 24" class="w-9 h-9 fill-current"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>`;
 
   footerContainer.innerHTML = `
@@ -105,7 +105,7 @@ function injectFooter() {
                 
                 <div class="space-y-4 md:w-1/2">
                     <div class="flex items-center gap-4">
-                        <a href="./" class="inline-block hover:opacity-70 transition-opacity" aria-label="Voltar ao início">
+                        <a href="/" class="inline-block hover:opacity-70 transition-opacity" aria-label="Voltar ao início">
                             <img id="footer-logo" src="${logoSrc}" class="w-10 h-10 opacity-100" alt="LiveTagus" width="40" height="40">
                         </a>
                         
@@ -139,24 +139,24 @@ function injectFooter() {
                 <div class="flex flex-col items-end text-right gap-2 md:w-1/2">
                     <span class="text-[10px] uppercase font-bold text-zinc-400 tracking-widest mb-2">Links & Info</span>
                     
-                    <a href="./license" class="text-xs text-zinc-500 hover:text-black dark:hover:text-white transition-colors">Licença</a>
+                    <a href="/license" class="text-xs text-zinc-500 hover:text-black dark:hover:text-white transition-colors">Licença</a>
                     
-                    <a href="./app" class="text-xs w-full flex justify-end items-center gap-2 text-zinc-500 hover:text-black dark:hover:text-white transition-colors">
+                    <a href="/app" class="text-xs w-full flex justify-end items-center gap-2 text-zinc-500 hover:text-black dark:hover:text-white transition-colors">
                         <span id="status-dot-footer" class="w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-700"></span>
                         Tempo Real
                     </a>
 
-                    <a href="./sobre" class="text-xs text-zinc-500 hover:text-black dark:hover:text-white transition-colors">Apoia o Projeto</a>
-                    <a href="./code_of_conduct" class="text-xs text-zinc-500 hover:text-black dark:hover:text-white transition-colors">Código de Conduta</a>
-                    <a href="./privacidade" class="text-xs text-zinc-500 hover:text-black dark:hover:text-white transition-colors">Termos & Privacidade</a>
+                    <a href="/sobre" class="text-xs text-zinc-500 hover:text-black dark:hover:text-white transition-colors">Apoia o Projeto</a>
+                    <a href="/code_of_conduct" class="text-xs text-zinc-500 hover:text-black dark:hover:text-white transition-colors">Código de Conduta</a>
+                    <a href="/privacidade" class="text-xs text-zinc-500 hover:text-black dark:hover:text-white transition-colors">Termos & Privacidade</a>
                     <a href="https://status.livetagus.pt/pt-pt" target="_blank" rel="noopener noreferrer" class="text-xs text-zinc-500 hover:text-black dark:hover:text-white transition-colors">Estado dos servidores</a>
-                    <a href="./sobre" class="text-xs text-zinc-500 hover:text-black dark:hover:text-white transition-colors">Sobre Nós e Contactos</a>
+                    <a href="/sobre" class="text-xs text-zinc-500 hover:text-black dark:hover:text-white transition-colors">Sobre Nós e Contactos</a>
                     
                     
                     <div class="flex justify-center mt-2">
-                      <a href="./sobre?badge" class="opacity-80 hover:opacity-100 transition-opacity">                     
+                      <a href="/sobre?badge" class="opacity-80 hover:opacity-100 transition-opacity">                     
                         <img
-                          src="./imagens/badge_coded_in_europe_portugal_margem_sul.svg"
+                          src="/imagens/badge_coded_in_europe_portugal_margem_sul.svg"
                           alt="Badge saying Coded in Europe, Portugal, Margem Sul"
                           width="140px"
                           height="46.72px"
@@ -168,7 +168,7 @@ function injectFooter() {
                             ${githubIcon}
                         </a>
                         <a href="https://www.netlify.com" target="_blank" rel="noopener noreferrer" class="flex items-center opacity-85 hover:opacity-100">
-                            <img id="netlify-badge-footer" src="./imagens/netlify-light.svg" alt="Deploys by Netlify" width="114" height="51" />
+                            <img id="netlify-badge-footer" src="/imagens/netlify-light.svg" alt="Deploys by Netlify" width="114" height="51" />
                         </a>
                     </div>
                 </div>
@@ -335,10 +335,10 @@ function setTheme(mode) {
   const netlifyBadgeMenu = document.getElementById("netlify-badge-menu");
   const netlifyBadgeFooter = document.getElementById("netlify-badge-footer");
 
-  const logoLight = "./imagens/logotransparente.svg";
-  const logoDark = "./imagens/icon.svg";
-  const badgeDark = "./imagens/netlify-dark.svg";
-  const badgeLight = "./imagens/netlify-light.svg";
+  const logoLight = "/imagens/logotransparente.svg";
+  const logoDark = "/imagens/icon.svg";
+  const badgeDark = "/imagens/netlify-dark.svg";
+  const badgeLight = "/imagens/netlify-light.svg";
 
   if (isDark) {
     html.classList.add("dark");
@@ -438,15 +438,15 @@ async function checkApiStatus() {
   // Registar Service worker
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker
-      .register("./sw.js")
+      .register("/sw.js")
       // .then(() => console.log("[SW] Registado com sucesso"))
       .catch((err) => console.log("[SW] Falha ao registar:", err));
   }
 
   // Injetar script Offline
-  if (!document.querySelector('script[src="./offline.js"]')) {
+  if (!document.querySelector('script[src="/offline.js"]')) {
     const script = document.createElement("script");
-    script.src = "./offline.js";
+    script.src = "/offline.js";
     script.defer = true;
     document.head.appendChild(script);
   }
@@ -462,7 +462,7 @@ async function updateAppVersion() {
   let version = "v.base";
 
   try {
-    const res = await fetch("./sw.js");
+    const res = await fetch("/sw.js");
     if (res.ok) {
       const text = await res.text();
       const match = text.match(
@@ -481,12 +481,28 @@ async function updateAppVersion() {
   if (footerVersionEl) footerVersionEl.textContent = version;
   if (roadmapVersionEl) roadmapVersionEl.textContent = `Versão: ${version}`;
 }
+// ignorar certas páginas
+const ignorePaths = ["/stats", "/estacao", "/estacoes", "/404"];
+const currentPath = window.location.pathname.toLowerCase();
+const shouldIgnoreAnalytics = ignorePaths.some((path) =>
+  currentPath.includes(path),
+);
 
-// 100% privacy-first analytics
-const saScript = document.createElement("script");
-saScript.src = "/api/sa.js";
-saScript.async = true;
-saScript.defer = true;
-saScript.setAttribute("data-collect-dnt", "true");
-saScript.setAttribute("data-api", "/api/sa-events");
-document.head.appendChild(saScript);
+if (!shouldIgnoreAnalytics) {
+  // 100% privacy-first analytics (Simple Analytics)
+  const saScript = document.createElement("script");
+  saScript.src = "/api/sa.js";
+  saScript.async = true;
+  saScript.defer = true;
+  saScript.setAttribute("data-collect-dnt", "true");
+  saScript.setAttribute("data-api", "/api/sa-events");
+  document.head.appendChild(saScript);
+  window.sa_event =
+    window.sa_event ||
+    function () {
+      var a = [].slice.call(arguments);
+      window.sa_event.q ? window.sa_event.q.push(a) : (window.sa_event.q = [a]);
+    };
+} else {
+  window.sa_event = function () {};
+}

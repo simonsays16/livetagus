@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="pt-PT" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <link
+      rel="shortcut icon"
+      href="/imagens/favicon-96x96.png"
+      type="image/x-icon"
+    />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#09090b" />
+    <meta
+      name="description"
+      content="Estação Fertagus — Ligações intermodais e tempos de espera em tempo real."
+    />
+    <title>Estação | LiveTagus</title>
+    <link href="/output.css" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="/lucide-icons.js" defer></script>
+    <script src="/menu.js" defer></script>
+    <script src="/estacoes/estacao.js" defer></script>
+
+    <style>
+      :root {
+        --bg: #fafafa;
+        --bg-card: #ffffff;
+        --text: #111111;
+        --text-secondary: #6b7280;
+        --text-tertiary: #9ca3af;
+        --border: #e5e7eb;
+        --border-light: #f3f4f6;
+        --accent: #111111;
+        --green: #16a34a;
+        --skeleton-from: #f3f4f6;
+        --skeleton-to: #e5e7eb;
+      }
+
+      .dark {
+        --bg: #09090b;
+        --bg-card: #111113;
+        --text: #fafafa;
+        --text-secondary: #a1a1aa;
+        --text-tertiary: #52525b;
+        --border: #27272a;
+        --border-light: #18181b;
+        --accent: #ffffff;
+        --green: #22c55e;
+        --skeleton-from: #18181b;
+        --skeleton-to: #27272a;
+      }
+
+      body {
+        font-family:
+          "Inter",
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      /* Skeleton loader animation */
+      @keyframes skeleton-pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.4;
+        }
+      }
+      .skeleton {
+        background: linear-gradient(
+          90deg,
+          var(--skeleton-from) 0%,
+          var(--skeleton-to) 50%,
+          var(--skeleton-from) 100%
+        );
+        background-size: 200% 100%;
+        animation: skeleton-pulse 1.8s ease-in-out infinite;
+        border-radius: 4px;
+      }
+
+      /* Card hover */
+      .stop-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        transition:
+          box-shadow 0.2s ease,
+          border-color 0.2s ease;
+      }
+      .stop-card:hover {
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+      }
+      .dark .stop-card:hover {
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+      }
+
+      /* Expand/collapse */
+      .arrivals-panel {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .arrivals-panel.open {
+        max-height: 600px;
+      }
+
+      /* Chevron rotation */
+      .chevron-icon {
+        transition: transform 0.3s ease;
+      }
+      .chevron-icon.rotated {
+        transform: rotate(180deg);
+      }
+
+      /* Operator section badge */
+      .operator-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border: 1px solid var(--border);
+        border-radius: 100px;
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--text-secondary);
+      }
+
+      /* Line pill */
+      .line-pill {
+        display: inline-block;
+        padding: 3px 8px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        border-radius: 4px;
+        line-height: 1.4;
+      }
+      .line-pill-dark {
+        background: var(--accent);
+        color: var(--bg);
+      }
+
+      /* Arrival row */
+      .arrival-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border-light);
+        transition: background 0.15s;
+      }
+      .arrival-row:last-child {
+        border-bottom: none;
+      }
+      .arrival-row:hover {
+        background: rgba(0, 0, 0, 0.015);
+      }
+      .dark .arrival-row:hover {
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      /* Info lines list */
+      .info-line-item {
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border-light);
+        font-size: 13px;
+        color: var(--text-secondary);
+      }
+      .info-line-item:last-child {
+        border-bottom: none;
+      }
+
+      /* Not found state */
+      .not-found-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 50vh;
+        gap: 16px;
+        text-align: center;
+      }
+
+      /* Google Maps link */
+      .gmaps-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-tertiary);
+        text-decoration: none;
+        transition: color 0.15s;
+      }
+      .gmaps-link:hover {
+        color: var(--text);
+      }
+    </style>
+  </head>
+
+  <body
+    class="bg-white text-zinc-900 dark:bg-[#09090b] dark:text-white overflow-x-hidden transition-colors duration-500 flex flex-col min-h-screen font-['Inter']"
+  >
+    <div class="pt-safe-ios" id="global-nav"></div>
+
+    <main class="flex-grow pt-24 pb-16 px-6 max-w-2xl mx-auto w-full">
+      <!-- Station header skeleton (replaced by JS) -->
+      <section id="station-header" class="mb-10">
+        <div
+          class="skeleton"
+          style="width: 60%; height: 14px; margin-bottom: 10px"
+        ></div>
+        <div class="skeleton" style="width: 40%; height: 32px"></div>
+      </section>
+
+      <!-- Content injected by JS -->
+      <div id="station-content">
+        <!-- Skeleton sections -->
+        <div class="mb-8">
+          <div
+            class="skeleton"
+            style="
+              width: 120px;
+              height: 24px;
+              margin-bottom: 16px;
+              border-radius: 100px;
+            "
+          ></div>
+          <div class="stop-card" style="padding: 16px">
+            <div
+              class="skeleton"
+              style="width: 80%; height: 14px; margin-bottom: 10px"
+            ></div>
+            <div
+              class="skeleton"
+              style="width: 50%; height: 14px; margin-bottom: 10px"
+            ></div>
+            <div class="skeleton" style="width: 60%; height: 14px"></div>
+          </div>
+        </div>
+        <div class="mb-8">
+          <div
+            class="skeleton"
+            style="
+              width: 160px;
+              height: 24px;
+              margin-bottom: 16px;
+              border-radius: 100px;
+            "
+          ></div>
+          <div class="stop-card" style="padding: 16px">
+            <div
+              class="skeleton"
+              style="width: 70%; height: 14px; margin-bottom: 10px"
+            ></div>
+            <div class="skeleton" style="width: 45%; height: 14px"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>
