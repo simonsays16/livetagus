@@ -14,6 +14,7 @@ yarn-error.log*
 
 # Ficheiros atoa
 capacitor.config.json
+fiveserver.config.js
 update_cm.js
 .DS_Store
 Thumbs.db

@@ -57,7 +57,7 @@
   force = true
 
 [[redirects]]
-  from = "/estacao/*"
+  from = "/estacoes/*"
   to = "/estacao.html"
   status = 200
 
