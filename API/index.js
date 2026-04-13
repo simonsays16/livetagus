@@ -186,6 +186,7 @@ let OUTPUT_CACHE = {};
 let TRAIN_MEMORY = {}; // { [id]: { history: {}, lastDelay: 0, nextWakeUp: 0, lastResult: null } }
 let FUTURE_TRAINS_CACHE = {};
 let IS_CYCLE_RUNNING = false;
+let OFFLINE_NULL_COUNTS = {}; // { [trainId]: number } - Contador de respostas nulas consecutivas no checkOfflineTrains
 
 // --- DATE & SCHEDULE HELPERS ---
 
@@ -275,7 +276,9 @@ const fetchDetails = async (tid, dateStr) => {
 
     const response = j.response;
 
-    // se resposta toda null = comboio suprimido/não está planeado
+    // FIX: Deteção de resposta totalmente nula da IP (bug intermitente)
+    // Em vez de marcar imediatamente como SUPRIMIDO, sinalizamos para que
+    // processTrain e checkOfflineTrains decidam com base no contexto.
     if (response) {
       const isAllNull =
         response.DataHoraDestino === null &&
@@ -289,7 +292,7 @@ const fetchDetails = async (tid, dateStr) => {
         response.TipoServico === null;
 
       if (isAllNull) {
-        response.SituacaoComboio = "SUPRIMIDO";
+        response._isAllNull = true;
       }
     }
 
@@ -565,11 +568,31 @@ const checkOfflineTrains = async () => {
 
   // 4. Execução Sequencial Anti-DDoS e Anti-Picos de CPU
   for (const t of fetchCandidates) {
+    const trainId = String(t.id);
     try {
       const dateStr = formatDateStr(t.startObj);
-      const details = await fetchDetails(String(t.id), dateStr);
+      const details = await fetchDetails(trainId, dateStr);
 
-      if (details && details.SituacaoComboio) {
+      // NULL GUARD para comboios offline:
+      // Respostas totalmente nulas precisam de 5 confirmações consecutivas
+      if (details && details._isAllNull) {
+        OFFLINE_NULL_COUNTS[trainId] = (OFFLINE_NULL_COUNTS[trainId] || 0) + 1;
+
+        if (OFFLINE_NULL_COUNTS[trainId] < 5) {
+          console.log(
+            `[NULL GUARD OFFLINE] Comboio ${trainId} resposta nula ${OFFLINE_NULL_COUNTS[trainId]}/5. A manter estado anterior.`,
+          );
+          results[trainId] = FUTURE_TRAINS_CACHE[trainId] || "Sem Informação";
+        } else {
+          console.log(
+            `[NULL GUARD OFFLINE] Comboio ${trainId} confirmado SUPRIMIDO após ${OFFLINE_NULL_COUNTS[trainId]} respostas nulas.`,
+          );
+          results[trainId] = "SUPRIMIDO";
+        }
+      } else if (details && details.SituacaoComboio) {
+        // Resposta válida → resetar contador
+        OFFLINE_NULL_COUNTS[trainId] = 0;
+
         const situacao = details.SituacaoComboio.trim() || "Sem Informação";
         const nodes = details.NodesPassagemComboio || [];
         const hasStarted = nodes.some((n) => n.ComboioPassou === true);
@@ -580,21 +603,19 @@ const checkOfflineTrains = async () => {
           (/em circulação/i.test(situacao) || /a horas/i.test(situacao));
 
         if (impliesSpuriousLive) {
-          results[String(t.id)] = "Sem Informação";
+          results[trainId] = "Sem Informação";
         } else {
-          results[String(t.id)] = situacao;
+          results[trainId] = situacao;
         }
       } else {
-        results[String(t.id)] =
-          FUTURE_TRAINS_CACHE[String(t.id)] || "Sem Informação";
+        results[trainId] = FUTURE_TRAINS_CACHE[trainId] || "Sem Informação";
       }
     } catch (error) {
       console.error(
         `[FUTURE CHECK] Erro de rede isolado no comboio ${t.id}:`,
         error.message,
       );
-      results[String(t.id)] =
-        FUTURE_TRAINS_CACHE[String(t.id)] || "Sem Informação";
+      results[trainId] = FUTURE_TRAINS_CACHE[trainId] || "Sem Informação";
     }
 
     await new Promise((resolve) => setTimeout(resolve, 350));
@@ -606,6 +627,14 @@ const checkOfflineTrains = async () => {
   // Re-injetar os Ghost Suppressed para garantir que nunca mais regressam à vida
   for (const ghostId of GhostManager.GHOST_SUPPRESSED) {
     FUTURE_TRAINS_CACHE[ghostId] = "SUPRIMIDO";
+  }
+
+  // Limpar contadores de nulos para comboios que já não são candidatos
+  const candidateIds = new Set(candidates.map((t) => String(t.id)));
+  for (const id of Object.keys(OFFLINE_NULL_COUNTS)) {
+    if (!candidateIds.has(id)) {
+      delete OFFLINE_NULL_COUNTS[id];
+    }
   }
 
   console.log(
@@ -628,6 +657,7 @@ const processTrain = async (richInfo, originDateStr) => {
       nextWakeUp: 0,
       lastResult: null,
       isFetching: false,
+      nullResponseCount: 0,
     };
   }
   const mem = TRAIN_MEMORY[trainId];
@@ -650,6 +680,41 @@ const processTrain = async (richInfo, originDateStr) => {
   }
 
   const details = await fetchDetails(trainId, originDateStr);
+  // NULL GUARD: Proteção contra respostas totalmente nulas da IP
+  // A IP devolve por vezes tudo null mesmo com o comboio em circulação (bug).
+  if (details && details._isAllNull) {
+    const wasLive = mem.lastResult && mem.lastResult.Live === true;
+
+    if (wasLive) {
+      // CASO 1: Comboio estava Live → ignorar resposta nula, congelar dados
+      console.log(
+        `[NULL GUARD] Comboio ${trainId} está Live mas IP devolveu resposta nula. Dados congelados até ao próximo ciclo.`,
+      );
+      return mem.lastResult;
+    }
+
+    // CASO 2: Comboio NÃO estava Live → contar respostas nulas consecutivas
+    mem.nullResponseCount = (mem.nullResponseCount || 0) + 1;
+
+    if (mem.nullResponseCount < 5) {
+      console.log(
+        `[NULL GUARD] Comboio ${trainId} resposta nula ${mem.nullResponseCount}/5. A aguardar confirmação.`,
+      );
+      // Se já temos dados anteriores, mantemos congelados
+      if (mem.lastResult) return mem.lastResult;
+      // Caso contrário, não temos dados para devolver — ignoramos este ciclo
+      return null;
+    }
+
+    // CASO 3: 5 respostas nulas consecutivas → confirmar SUPRIMIDO
+    console.log(
+      `[NULL GUARD] Comboio ${trainId} confirmado SUPRIMIDO após ${mem.nullResponseCount} respostas nulas consecutivas.`,
+    );
+    details.SituacaoComboio = "SUPRIMIDO";
+  } else if (details && !details._isAllNull) {
+    // Resposta válida → resetar contador de nulos
+    mem.nullResponseCount = 0;
+  }
 
   let isLive = false;
   let situacao = details?.SituacaoComboio || "Sem dados IP";
@@ -1215,6 +1280,7 @@ const updateCycle = async () => {
         nextWakeUp: 0,
         lastResult: null,
         isFetching: false,
+        nullResponseCount: 0,
       };
     }
 
