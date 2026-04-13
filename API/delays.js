@@ -157,6 +157,7 @@ const getStructuralDelay = (
   direction,
   {
     pragalPassed = false,
+    corroiosPassed = false,
     penalvaPassed = false,
     now = new Date(),
     isWeekendOrHoliday = false,
