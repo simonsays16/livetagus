@@ -4,6 +4,8 @@ const cors = require("cors");
 const fetch = require("node-fetch");
 const path = require("path");
 const fs = require("fs");
+const os = require("os");
+const { exec } = require("child_process");
 const AnalyticsManager = require("./analytics.js");
 const DelayManager = require("./delays.js");
 const AvisosManager = require("./avisos.js");
@@ -1404,6 +1406,96 @@ const scheduleNextTick = () => {
   }, delay || 10000);
 };
 
+// Admin management
+
+const ADMIN_API_KEY = process.env.ADMIN_API_KEY;
+const ADMIN_ROUTE = process.env.ADMIN_ROUTE;
+
+const adminAuth = (req, res, next) => {
+  const userAdminKey = req.headers["x-admin-key"];
+
+  if (!userAdminKey || userAdminKey !== ADMIN_API_KEY) {
+    return res.status(401).json({ error: "Não autorizado" });
+  }
+  next();
+};
+
+// check
+app.get(`${ADMIN_ROUTE}/ping`, adminAuth, (req, res) => {
+  res.json({ ok: true, timestamp: new Date().toISOString() });
+});
+
+// vitais server
+app.get(`${ADMIN_ROUTE}/vitals`, adminAuth, (req, res) => {
+  res.json({
+    uptime: os.uptime(),
+    freemem: os.freemem(),
+    totalmem: os.totalmem(),
+    loadavg: os.loadavg(),
+    cpus: os.cpus().length,
+    node_version: process.version,
+    platform: os.platform(),
+  });
+});
+
+// Avisos
+app.get(`${ADMIN_ROUTE}/avisos`, adminAuth, (req, res) => {
+  try {
+    const data = fs.readFileSync(path.join(__dirname, "avisos.json"), "utf8");
+    res.json(JSON.parse(data));
+  } catch (err) {
+    res.status(500).json({ error: "Erro ao ler avisos.json" });
+  }
+});
+
+app.post(`${ADMIN_ROUTE}/avisos`, adminAuth, express.json(), (req, res) => {
+  try {
+    const newAvisos = req.body;
+    fs.writeFileSync(
+      path.join(__dirname, "avisos.json"),
+      JSON.stringify(newAvisos, null, 2),
+    );
+    res.json({ success: true, message: "Avisos atualizados com sucesso" });
+  } catch (err) {
+    res.status(500).json({ error: "Erro ao gravar avisos.json" });
+  }
+});
+
+// Processos de gestão api
+app.get(`${ADMIN_ROUTE}/pm2`, adminAuth, (req, res) => {
+  exec("pm2 jlist", (err, stdout) => {
+    if (err) return res.status(500).json({ error: "Erro ao executar PM2" });
+    try {
+      res.json(JSON.parse(stdout));
+    } catch (e) {
+      res.status(500).json({ error: "Erro ao processar dados do PM2" });
+    }
+  });
+});
+
+// açoes pm2 (restart stop start)
+app.post(`${ADMIN_ROUTE}/pm2-action`, adminAuth, express.json(), (req, res) => {
+  const { action, process: procName } = req.body;
+  const allowedActions = ["restart", "stop", "start"];
+
+  if (!allowedActions.includes(action)) {
+    return res.status(400).json({ error: "Ação não permitida" });
+  }
+
+  // --- command injection protection ---
+  if (!procName || !/^[a-zA-Z0-9_\-]+$/.test(procName)) {
+    return res.status(400).json({ error: "Nome de processo inválido/crazy." });
+  }
+
+  exec(`pm2 ${action} ${procName}`, (err) => {
+    if (err)
+      return res
+        .status(500)
+        .json({ error: `Erro ao executar ${action} no ${procName}` });
+    res.json({ success: true, message: `${procName} ${action}ed` });
+  });
+});
+
 // --- ROUTES ---
 
 app.get("/fertagus", protectRoute, (req, res) => {
@@ -1429,7 +1521,7 @@ app.get("/avisos", (req, res) => {
 app.get("/", (req, res) =>
   res.json({
     status: "online",
-    version: "4.9.24",
+    version: "4.9.26",
     aviso:
       "Pedimos que não uses o nosso endpoint diretamente! Verifica toda as informações e código no github.",
     operational: getOperationalInfo(),
@@ -1444,7 +1536,7 @@ app.get("/", (req, res) =>
 );
 
 app.listen(PORT, () => {
-  console.log(`LiveTagus API v4.9.24 ativa na porta ${PORT}`);
+  console.log(`LiveTagus API v4.9.26 ativa na porta ${PORT}`);
   console.log(`Endpoint /fertagus protegido com API_KEY.`);
   checkOfflineTrains();
   updateCycle();

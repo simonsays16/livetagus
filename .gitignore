@@ -16,6 +16,7 @@ yarn-error.log*
 capacitor.config.json
 fiveserver.config.js
 update_cm.js
+avisos.json
 .DS_Store
 Thumbs.db
 .hintrc
