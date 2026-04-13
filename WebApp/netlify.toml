@@ -58,7 +58,7 @@
 
 [[redirects]]
   from = "/estacoes/*"
-  to = "/estacao.html"
+  to = "/estacoes/estacao.html"
   status = 200
 
 # Regra 404

@@ -18,7 +18,7 @@
  *   │ Pragal → BRIDGE DELAY   (+45 seg / +1:00 ponta)                      │
  *   │   [Remoção: após comboio passar no Pragal]                           │
  *   ├──────────────────────────────────────────────────────────────────────┤
- *   │ Corroios + Foros → TROÇO 1  (+30s / +30s ponta)                      │
+ *   │ Corroios + Foros → TROÇO 1  (+45s / +45s ponta)                      │
  *   │   [Remoção: após comboio passar no Pragal]                           │
  *   ├──────────────────────────────────────────────────────────────────────┤
  *   │ Coina                                                                │
@@ -46,18 +46,23 @@ const BRIDGE_DELAY_BASE_S = 45; // 45 seg
 const BRIDGE_DELAY_PEAK_S = 1 * 60; // 1 min 00 seg
 
 /** Troço 1 Pós-Pragal: Corroios e Foros (sentido Margem). */
-const TROCO1_DELAY_BASE_S = 30; // 30 seg
-const TROCO1_DELAY_PEAK_S = 30; // 30 seg
+const TROCO1_DELAY_BASE_S = 45; // 45 seg
+const TROCO1_DELAY_PEAK_S = 45; // 45 seg
+
+/** Troço 2 Pós-Coina: Penalva (sentido Margem). */
+const TROCO2_DELAY_BASE_S = 2 * 60 + 30; // 2 min 30 seg
+const TROCO2_DELAY_PEAK_S = 2 * 60 + 45; // 2 min 45 seg
 
 /** Troço 2 Pós-Coina: Penalva e restantes até Setúbal (sentido Margem). */
-const TROCO2_DELAY_BASE_S = 2 * 60 + 30; // 2 min 00 seg
-const TROCO2_DELAY_PEAK_S = 2 * 60 + 45; // 2 min 30 seg
+const TROCO3_DELAY_BASE_S = 1 * 60 + 30; // 2 min 30 seg
+const TROCO3_DELAY_PEAK_S = 1 * 60 + 45; // 2 min 45 seg
 
 // ─── GRUPO DE ESTAÇÕES ───────────────────────────────────────────────────────
 
 const BRIDGE_STATIONS = new Set(["pragal"]);
 const TROCO1_STATIONS = new Set(["corroios", "foros_de_amora"]);
-const TROCO2_STATIONS = new Set(["penalva", "pinhal_novo"]);
+const TROCO2_STATIONS = new Set(["penalva"]);
+const TROCO3_STATIONS = new Set(["pinhal_novo", "venda_do_alcaide"]);
 
 // ─── HORAS DE PONTA ────────────────────────────────────────────────────────────
 
@@ -129,6 +134,22 @@ const getTroco2Delay = (
     : TROCO2_DELAY_BASE_S;
 };
 
+const getTroco3Delay = (
+  stationKey,
+  direction,
+  penalvaPassed = false,
+  now = new Date(),
+  isWeekendOrHoliday = false,
+) => {
+  if (direction !== "margem") return 0;
+  if (!TROCO3_STATIONS.has(stationKey)) return 0;
+  if (penalvaPassed) return 0;
+
+  return isPeakHour(now, isWeekendOrHoliday)
+    ? TROCO3_DELAY_PEAK_S
+    : TROCO3_DELAY_BASE_S;
+};
+
 // ─── FUNÇÃO PRINCIPAL ─────────────────────────────────────────────────────────
 
 const getStructuralDelay = (
@@ -155,11 +176,18 @@ const getStructuralDelay = (
     getTroco1Delay(
       stationKey,
       direction,
-      pragalPassed,
+      corroiosPassed,
       now,
       isWeekendOrHoliday,
     ) +
     getTroco2Delay(
+      stationKey,
+      direction,
+      penalvaPassed,
+      now,
+      isWeekendOrHoliday,
+    ) +
+    getTroco3Delay(
       stationKey,
       direction,
       penalvaPassed,
@@ -186,6 +214,7 @@ module.exports = {
   getBridgeDelay,
   getTroco1Delay,
   getTroco2Delay,
+  getTroco3Delay,
   getStructuralDelay,
   clampToScheduled,
 };

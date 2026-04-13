@@ -20,7 +20,7 @@ async function updateAvisos() {
 }
 
 updateAvisos();
-setInterval(updateAvisos, 10000);
+setInterval(updateAvisos, 60000);
 
 module.exports = {
   getAvisos: () => avisosCache,

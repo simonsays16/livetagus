@@ -16,6 +16,7 @@ app.use(cors());
 // --- CONFIGURAÇÃO ---
 const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.API_KEY;
+const API_BASE = process.env.API_BASE;
 
 // Middleware para verificar a API Key
 const protectRoute = (req, res, next) => {
@@ -97,8 +98,6 @@ const STATION_ORDER_LISBOA = [
 
 // Ordem Norte -> Sul (Inversa)
 const STATION_ORDER_MARGEM = [...STATION_ORDER_LISBOA].reverse();
-
-const API_BASE = "https://www.infraestruturasdeportugal.pt/negocios-e-servicos";
 
 // FIX #6: Cache-Control e Pragma forçam a IP (e qualquer CDN/proxy intermédio)
 // a retornar sempre uma resposta fresca.
@@ -1364,7 +1363,7 @@ app.get("/avisos", (req, res) => {
 app.get("/", (req, res) =>
   res.json({
     status: "online",
-    version: "4.9.22",
+    version: "4.9.24",
     aviso:
       "Pedimos que não uses o nosso endpoint diretamente! Verifica toda as informações e código no github.",
     operational: getOperationalInfo(),
@@ -1379,7 +1378,7 @@ app.get("/", (req, res) =>
 );
 
 app.listen(PORT, () => {
-  console.log(`LiveTagus API v4.9.22 ativa na porta ${PORT}`);
+  console.log(`LiveTagus API v4.9.24 ativa na porta ${PORT}`);
   console.log(`Endpoint /fertagus protegido com API_KEY.`);
   checkOfflineTrains();
   updateCycle();
