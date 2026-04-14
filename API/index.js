@@ -264,6 +264,7 @@ const subtractMinutes = (timeStr, minutes) => {
 
 let IP_CONSECUTIVE_ERRORS = 0;
 let IP_IS_DOWN = false;
+let LAST_RECOVERY_PING = 0;
 
 // --- FETCHING ---
 
@@ -410,6 +411,11 @@ const checkOfflineTrains = async () => {
       `[SLEEP MODE] ${new Date().toLocaleTimeString()} - A dormir. Verificação de comboios futuros suspensa.`,
     );
     return;
+  }
+
+  if (IP_IS_DOWN) {
+    console.log("[CIRCUIT BREAKER] Offline Check cancelado. IP em baixo.");
+    return; //abortar
   }
 
   console.log(
@@ -620,7 +626,7 @@ const checkOfflineTrains = async () => {
       results[trainId] = FUTURE_TRAINS_CACHE[trainId] || "Sem Informação";
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 350));
+    await new Promise((resolve) => setTimeout(resolve, 1200)); // não há concorrência de pedidos (1.2s)
   }
 
   // 5. Atualização Segura da Memória Global
@@ -1042,9 +1048,38 @@ const processTrain = async (richInfo, originDateStr) => {
     });
   });
 
-  // cooldown de 1min para reduzir pedidos a IP
-  if (newStationPassed && lastPassageRealTime) {
-    mem.nextWakeUp = lastPassageRealTime + 60000;
+  // cooldown inteligente, ativa 2 min 30s antes da hora prevista de chegada
+  const nextUnvisitedNode = trainOutput.NodesPassagemComboio.find(
+    (n) => !n.ComboioPassou,
+  );
+
+  if (
+    nextUnvisitedNode &&
+    nextUnvisitedNode.HoraPrevista &&
+    nextUnvisitedNode.HoraPrevista !== "HH:MM:SS"
+  ) {
+    const nextExpectedDate = parseSmartTime(
+      nextUnvisitedNode.HoraPrevista.substring(0, 5),
+      nowObj,
+    );
+
+    if (nextExpectedDate) {
+      const msUntilNext = nextExpectedDate.getTime() - nowTime;
+
+      if (msUntilNext > 2 * 60000 + 30000) {
+        mem.nextWakeUp = nextExpectedDate.getTime() - 2 * 60000 + 30000;
+      } else if (msUntilNext < 0) {
+        mem.nextWakeUp = nowTime + 15000;
+      } else {
+        mem.nextWakeUp = nowTime + 15000;
+      }
+    } else {
+      mem.nextWakeUp = nowTime + 15000;
+    }
+  } else if (!isLive) {
+    mem.nextWakeUp = nowTime + 60000;
+  } else {
+    mem.nextWakeUp = nowTime + 15000;
   }
 
   // --- SITUAÇÃO DO COMBOIO ---
@@ -1119,7 +1154,19 @@ const processTrain = async (richInfo, originDateStr) => {
 // --- LOOP PRINCIPAL ---
 const updateCycle = async () => {
   const now = new Date();
-  const todayDateStr = formatDateStr(now); // Data calendário para consultar alterações
+  const todayDateStr = formatDateStr(now);
+  if (IP_IS_DOWN) {
+    const nowMs = Date.now();
+    if (nowMs - LAST_RECOVERY_PING > 120000) {
+      LAST_RECOVERY_PING = nowMs;
+      console.log(
+        "[CIRCUIT BREAKER] IP em baixo. A enviar ping de recuperação...",
+      );
+      fetchDetails(String(14205), formatDateStr(new Date())).catch(() => {});
+    }
+    // abortar, ip continua em baixo
+    return;
+  }
 
   // 1. Filtrar os comboios que nos interessam agora (horário base)
   const activeRichTrains = RICH_SCHEDULE.map((t) => {
@@ -1177,7 +1224,7 @@ const updateCycle = async () => {
 
     const nowTime = now.getTime();
     const isInsideWindow =
-      nowTime >= t.startObj.getTime() - 20 * 60000 &&
+      nowTime >= t.startObj.getTime() - 5 * 60000 &&
       nowTime <= t.endObj.getTime() + 120 * 60000;
 
     const isAlreadyFinished =
@@ -1211,7 +1258,7 @@ const updateCycle = async () => {
 
     const nowTime = now.getTime();
     const isInsideWindow =
-      nowTime >= start.getTime() - 20 * 60000 &&
+      nowTime >= start.getTime() - 5 * 60000 &&
       nowTime <= end.getTime() + 120 * 60000;
     const isBeingTracked = !!TRAIN_MEMORY[String(r.id)];
     const isAlreadyFinished =
@@ -1249,7 +1296,7 @@ const updateCycle = async () => {
 
     const nowTime = now.getTime();
     const isInsideWindow =
-      nowTime >= start.getTime() - 20 * 60000 &&
+      nowTime >= start.getTime() - 5 * 60000 &&
       nowTime <= end.getTime() + 120 * 60000;
     const isBeingTracked = !!TRAIN_MEMORY[String(e.id)];
 
@@ -1379,12 +1426,12 @@ const isSystemInSleepMode = () => {
   return false;
 };
 
-// --- TICKER (10 SEGUNDOS) ---
+// --- TICKER (15 SEGUNDOS) ---
 const scheduleNextTick = () => {
   const now = new Date();
   const seconds = now.getSeconds();
   const ms = now.getMilliseconds();
-  const nextTarget = (Math.floor(seconds / 10) + 1) * 10;
+  const nextTarget = (Math.floor(seconds / 15) + 1) * 15;
   const delay = (nextTarget - seconds) * 1000 - ms;
 
   setTimeout(async () => {
@@ -1403,7 +1450,7 @@ const scheduleNextTick = () => {
       }
     }
     scheduleNextTick();
-  }, delay || 10000);
+  }, delay || 15000);
 };
 
 // Admin management
@@ -1521,7 +1568,7 @@ app.get("/avisos", (req, res) => {
 app.get("/", (req, res) =>
   res.json({
     status: "online",
-    version: "4.9.26",
+    version: "4.9.28",
     aviso:
       "Pedimos que não uses o nosso endpoint diretamente! Verifica toda as informações e código no github.",
     operational: getOperationalInfo(),
@@ -1536,11 +1583,11 @@ app.get("/", (req, res) =>
 );
 
 app.listen(PORT, () => {
-  console.log(`LiveTagus API v4.9.26 ativa na porta ${PORT}`);
+  console.log(`LiveTagus API v4.9.28 ativa na porta ${PORT}`);
   console.log(`Endpoint /fertagus protegido com API_KEY.`);
   checkOfflineTrains();
   updateCycle();
   scheduleNextTick();
 
-  setInterval(checkOfflineTrains, 15 * 60 * 1000);
+  setInterval(checkOfflineTrains, 15 * 60 * 1000); // considerar troca para 20 -> poupados cerca de 2000 pedidos por dia
 });
