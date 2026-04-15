@@ -203,7 +203,7 @@ function renderStationContent(ligacoes, stationName) {
       renderFn: renderInfoSection,
     },
     {
-      key: "tcb",
+      key: "tcb", // endpoint TCB realtime: https://backend.tcbarreiro.pt/api/bus-stops/000095?locale=pt-PT
       label: "TCB - Barreiro",
       icon: "bus",
       renderFn: renderInfoSection,
