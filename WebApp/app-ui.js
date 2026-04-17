@@ -818,8 +818,8 @@ function openDetails(trainId) {
 
   const fullContent = `
     <div class="flex flex-col h-full bg-[#09090b]">
-      <div class="relative z-20 backdrop-blur-md border-b border-white/5 pt-6 pb-6 px-6 shadow-xl bg-zinc-50 dark:bg-zinc-900/65">
-        <button data-action="close-details" class="absolute top-5 right-5 p-2 bg-white/5 hover:bg-white/10 rounded-full text-zinc-400 hover:text-white transition-all">
+      <div class="relative z-20 backdrop-blur-md border-b border-white/5 pb-6 px-6 shadow-xl bg-zinc-50 dark:bg-zinc-900/65" style="padding-top: max(1.5rem, calc(0.5rem + env(safe-area-inset-top)));">
+        <button data-action="close-details" class="absolute right-5 p-2 bg-white/5 hover:bg-white/10 rounded-full text-zinc-400 hover:text-white transition-all" style="top: max(1.25rem, calc(0.25rem + env(safe-area-inset-top)));">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
         <div class="flex flex-col gap-6">
@@ -871,7 +871,13 @@ function openDetails(trainId) {
       </div>
       <div class="flex-grow overflow-y-auto px-6 py-8 relative bg-zinc-50 dark:bg-[#09090b]">
         ${timelineHtml}
-        <div class="h-12"></div>
+        <button
+          data-action="close-details"
+          class="w-full mt-6 mb-2 py-3.5 flex items-center justify-center gap-2 text-sm font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 active:scale-[0.98] transition-all border border-zinc-200 dark:border-zinc-700 rounded-xs">
+          <i data-lucide="x" class="w-4 h-4"></i>
+          Fechar Detalhes
+        </button>
+        <div class="h-8"></div>
       </div>
     </div>
   `;

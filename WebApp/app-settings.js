@@ -1075,6 +1075,21 @@ function showIOSInstallModal() {
 
 // ─── INJEÇÃO NO MENU ──────────────────────────────────────────────────────────
 
+if (menuOverlay) {
+  const isIOS =
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const isPWA = window.matchMedia("(display-mode: standalone)").matches;
+  if (isIOS && isPWA) {
+    const existingPT =
+      parseFloat(window.getComputedStyle(menuOverlay).paddingTop) || 0;
+    if (existingPT < 20) {
+      menuOverlay.style.paddingTop = "pt-24 mt-12";
+    }
+  }
+}
+const settingsTemplate = document.getElementById("menu-settings-template");
+
 function injectCustomMenuElements() {
   // injeta as Definições (Horário Inteligente) no menu principal
   const menuOverlay = document.getElementById("menu-overlay");

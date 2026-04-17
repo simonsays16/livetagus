@@ -113,6 +113,17 @@
         animation: fadeIn 0.6s ease-out forwards;
       }
 
+      #train-details-modal {
+        height: 85vh;
+        height: 85dvh;
+      }
+
+      @media all and (display-mode: standalone) {
+        body.is-ios #menu-overlay {
+          margin-top: calc(env(safe-area-inset-top) - 8px) !important;
+        }
+      }
+
       .mask-gradient {
         -webkit-mask-image: linear-gradient(180deg, #000 90%, transparent);
         mask-image: linear-gradient(180deg, #000 90%, transparent);
@@ -411,11 +422,11 @@
     <!-- Train Details Modal -->
     <div
       id="modal-backdrop"
-      class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 hidden transition-opacity opacity-0"
+      class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] hidden transition-opacity opacity-0"
     ></div>
     <div
       id="train-details-modal"
-      class="fixed inset-x-0 bottom-0 w-full max-w-md mx-auto h-[85vh] bg-white/85 dark:bg-[#09090b]/95 backdrop-blur-xl border-t border-black/5 dark:border-white/10 rounded-t-[2rem] z-50 transform translate-y-full transition-transform duration-300 flex flex-col shadow-2xl overflow-hidden"
+      class="fixed inset-x-0 bottom-0 w-full max-w-md mx-auto bg-white/85 dark:bg-[#09090b]/95 z-50 backdrop-blur-xl border-t border-black/5 dark:border-white/10 rounded-t-[2rem] z-[100] transform translate-y-full transition-transform duration-300 flex flex-col shadow-2xl overflow-hidden"
     ></div>
 
     <!-- menu -->
