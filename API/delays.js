@@ -42,16 +42,16 @@
 // ─── CONSTANTES DE ATRASO ─────────────────────────────────────────────────────
 
 /** Atraso de Ponte: Pragal + Fogueteiro (sentido Margem). */
-const BRIDGE_DELAY_BASE_S = 45; // 45 seg
+const BRIDGE_DELAY_BASE_S = 0; // 45 seg
 const BRIDGE_DELAY_PEAK_S = 1 * 60; // 1 min 00 seg
 
 /** Troço 1 Pós-Pragal: Corroios e Foros (sentido Margem). */
-const TROCO1_DELAY_BASE_S = 45; // 45 seg
-const TROCO1_DELAY_PEAK_S = 45; // 45 seg
+const TROCO1_DELAY_BASE_S = 0; // 45 seg
+const TROCO1_DELAY_PEAK_S = 20; // 45 seg
 
 /** Troço 2 Pós-Coina: Penalva (sentido Margem). */
-const TROCO2_DELAY_BASE_S = 2 * 60 + 30; // 2 min 30 seg
-const TROCO2_DELAY_PEAK_S = 2 * 60 + 45; // 2 min 45 seg
+const TROCO2_DELAY_BASE_S = 2 * 60 + 15; // 2 min 30 seg
+const TROCO2_DELAY_PEAK_S = 2 * 60 + 30; // 2 min 45 seg
 
 /** Troço 2 Pós-Coina: Penalva e restantes até Setúbal (sentido Margem). */
 const TROCO3_DELAY_BASE_S = 1 * 60 + 30; // 2 min 30 seg

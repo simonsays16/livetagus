@@ -943,7 +943,7 @@ const processTrain = async (richInfo, originDateStr) => {
 
       if (dateChegadaProg) {
         const rawDelay =
-          Math.floor((timestamp - dateChegadaProg.getTime()) / 1000) - 15;
+          Math.floor((timestamp - dateChegadaProg.getTime()) / 1000) - 20;
 
         atrasoNode = Math.max(0, rawDelay);
 
@@ -1568,7 +1568,7 @@ app.get("/avisos", (req, res) => {
 app.get("/", (req, res) =>
   res.json({
     status: "online",
-    version: "4.9.28",
+    version: "4.9.29",
     aviso:
       "Pedimos que não uses o nosso endpoint diretamente! Verifica toda as informações e código no github.",
     operational: getOperationalInfo(),
@@ -1583,7 +1583,7 @@ app.get("/", (req, res) =>
 );
 
 app.listen(PORT, () => {
-  console.log(`LiveTagus API v4.9.28 ativa na porta ${PORT}`);
+  console.log(`LiveTagus API v4.9.29 ativa na porta ${PORT}`);
   console.log(`Endpoint /fertagus protegido com API_KEY.`);
   checkOfflineTrains();
   updateCycle();
