@@ -27,6 +27,14 @@
       property="og:description"
       content="Mapa em tempo real dos comboios Fertagus na área metropolitana de Lisboa."
     />
+    <meta
+      property="og:image"
+      content="https://livetagus.pt/imagens/opengraph-map-livetagus.png"
+    />
+    <meta
+      property="twitter:image"
+      content="https://livetagus.pt/imagens/opengraph-map-livetagus.png"
+    />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="pt_PT" />
 
@@ -442,6 +450,24 @@
         #details-panel {
           animation: none !important;
           transition: none !important;
+        }
+      }
+
+      @media (display-mode: standalone), (display-mode: fullscreen) {
+        /* Levantar o botão da legenda (1.5rem = bottom-6 no Tailwind) */
+        #btn-legend {
+          bottom: calc(1.5rem + env(safe-area-inset-bottom, 16px)) !important;
+        }
+
+        /* Levantar o painel da legenda aberto (5rem = bottom-20) */
+        #legend-card {
+          bottom: calc(5rem + env(safe-area-inset-bottom, 16px)) !important;
+        }
+
+        /* Levantar as informações de direitos de autor e zoom do MapLibre */
+        .maplibregl-ctrl-bottom-right,
+        .maplibregl-ctrl-bottom-left {
+          margin-bottom: env(safe-area-inset-bottom, 16px) !important;
         }
       }
     </style>
