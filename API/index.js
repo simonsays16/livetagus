@@ -11,6 +11,8 @@ const DelayManager = require("./delays.js");
 const AvisosManager = require("./avisos.js");
 const GhostManager = require("./ghosts.js");
 const VerifyManager = require("./verify.js");
+const StationPoller = require("./station-poller.js");
+const ExtrasHelpers = require("./extras-helpers.js");
 
 const app = express();
 app.use(cors());
@@ -189,6 +191,8 @@ let TRAIN_MEMORY = {}; // { [id]: { history: {}, lastDelay: 0, nextWakeUp: 0, la
 let FUTURE_TRAINS_CACHE = {};
 let IS_CYCLE_RUNNING = false;
 let OFFLINE_NULL_COUNTS = {}; // { [trainId]: number } - Contador de respostas nulas consecutivas no checkOfflineTrains
+let EXTRA_TRAINS_CACHE = {}; // { [id]: extraTrainOutput }
+let DYNAMIC_EXTRA_SCHEDULE = {}; // { [id]: richInfo }
 
 // --- DATE & SCHEDULE HELPERS ---
 
@@ -404,7 +408,26 @@ const checkTurnaroundDelay = (
   return null;
 };
 
-// --- FUTURE TRAIN CHECK ---
+// --- PROCURAR DE EXTRAS ──────────────────────────────────────────
+const buildExtraTrainOutput = ExtrasHelpers.buildExtraTrainOutput;
+const buildSyntheticRichInfoFromDetails = (trainId, details, stationEntry) =>
+  ExtrasHelpers.buildSyntheticRichInfo(
+    trainId,
+    details,
+    stationEntry,
+    STATION_MAP_IP_TO_JSON,
+  );
+const startDateFromStationEntry = ExtrasHelpers.startDateFromStationEntry;
+
+// --- FUTURE TRAIN CHECK (v2: PROCURA DINÂMICA) ──────────────────────────────────
+//
+// alteraçoes:
+// A versão antiga fazia um pedido INDIVIDUAL por comboio (+-80/ciclo). Esta
+// versão faz +-5-10 pedidos à estação de Corroios e resolve o estado
+// de quase todos os comboios num único batch. recorre a pedidos individuais para:
+//   Comboios no JSON mas ausentes da IP → supressão planeada (5 nulls → SUPRIMIDO)
+//   comboios na IP mas ausentes do JSON → descoberta de extras
+//
 const checkOfflineTrains = async () => {
   if (typeof isSystemInSleepMode === "function" && isSystemInSleepMode()) {
     console.log(
@@ -415,50 +438,55 @@ const checkOfflineTrains = async () => {
 
   if (IP_IS_DOWN) {
     console.log("[CIRCUIT BREAKER] Offline Check cancelado. IP em baixo.");
-    return; //abortar
+    return;
   }
 
   console.log(
-    `[FUTURE CHECK] ${new Date().toLocaleTimeString()} - A iniciar atualização de estados futuros...`,
+    `[FUTURE CHECK v2] ${new Date().toLocaleTimeString()} - A iniciar (station-poll)...`,
   );
 
   const now = new Date();
   const nowMs = now.getTime();
-
-  // Data de calendário para consultar as alterações do dia
   const todayDateStr = formatDateStr(now);
 
-  // Garantir que a string 'futureTrains' não é confundida com o ID de um comboio ativo
-  const activeIds = Object.keys(OUTPUT_CACHE).filter(
-    (k) => k !== "futureTrains",
+  // POLL À ESTAÇÃO DE CORROIOS
+  let stationMap;
+  try {
+    stationMap = await StationPoller.pollAllWindows(now);
+  } catch (e) {
+    console.error(
+      "[FUTURE CHECK v2] Falha crítica no station-poll:",
+      e.message,
+    );
+    return;
+  }
+  console.log(
+    `[FUTURE CHECK v2] Station-poll: ${stationMap.size} comboios FERTAGUS descobertos.`,
   );
 
-  // 2. Mapeamento e Identificação dos Comboios do Dia (horário base)
-  const baseCandidates = RICH_SCHEDULE.map((t) => {
-    let startStr =
-      t.direction === "lisboa" ? t.setubal || t.coina : t.roma_areeiro;
-    let endStr =
-      t.direction === "lisboa" ? t.roma_areeiro : t.setubal || t.coina;
+  // CANDIDATOS DO HORÁRIO BASE + SUBSTITUIÇÕES + EXTRAS MANUAIS
+  const activeIds = Object.keys(OUTPUT_CACHE).filter(
+    (k) => k !== "futureTrains" && k !== "extratrains",
+  );
 
+  const baseCandidates = RICH_SCHEDULE.map((t) => {
+    const startStr =
+      t.direction === "lisboa" ? t.setubal || t.coina : t.roma_areeiro;
+    const endStr =
+      t.direction === "lisboa" ? t.roma_areeiro : t.setubal || t.coina;
     if (!startStr || !endStr) return null;
 
     const startObj = parseSmartTime(startStr, now);
     const endObj = parseSmartTime(endStr, now);
-
     if (!startObj || !endObj) return null;
 
     return { ...t, startObj, endObj };
   }).filter((t) => {
     if (!t) return false;
-
-    // Ignorar se o comboio já estiver a circular (está nas mãos do ciclo de 10s)
     if (activeIds.includes(String(t.id))) return false;
-
-    // Ignorar anomalias tratadas pelo sistema Ghost
     if (GhostManager.GHOST_SUPPRESSED.has(String(t.id))) return false;
     if (GhostManager.GHOST_TRAINS[String(t.id)]) return false;
 
-    // Verificar calendário (dias úteis vs fins de semana/feriados)
     const trainOpInfo = getOperationalInfo(t.startObj);
     const isTrainWeekendOrHoliday = trainOpInfo.isWeekendOrHoliday;
 
@@ -469,7 +497,6 @@ const checkOfflineTrains = async () => {
     return false;
   });
 
-  // Adicionar comboios de substituição (horário base mas novo ID na IP)
   const replacementCandidates = VerifyManager.buildReplacementRichInfoList(
     todayDateStr,
     RICH_SCHEDULE,
@@ -479,38 +506,30 @@ const checkOfflineTrains = async () => {
         t.direction === "lisboa" ? t.setubal || t.coina : t.roma_areeiro;
       const endStr =
         t.direction === "lisboa" ? t.roma_areeiro : t.setubal || t.coina;
-
       if (!startStr || !endStr) return null;
-
       const startObj = parseSmartTime(startStr, now);
       const endObj = parseSmartTime(endStr, now);
-
       if (!startObj || !endObj) return null;
-
       return { ...t, startObj, endObj };
     })
     .filter(Boolean)
     .filter((t) => {
-      // Excluir se o comboio de substituição já está a circular
       if (activeIds.includes(String(t.id))) return false;
       if (GhostManager.GHOST_SUPPRESSED.has(String(t.id))) return false;
       if (GhostManager.GHOST_TRAINS[String(t.id)]) return false;
       return true;
     });
 
-  // Adicionar comboios extra (especiais, não existem no horário base)
-  const extraCandidates = VerifyManager.buildExtraRichInfoList(todayDateStr)
+  const manualExtraCandidates = VerifyManager.buildExtraRichInfoList(
+    todayDateStr,
+  )
     .map((t) => {
       const startStr =
         t.direction === "lisboa" ? t.setubal || t.coina : t.roma_areeiro;
       if (!startStr) return null;
-
       const startObj = parseSmartTime(startStr, now);
       if (!startObj) return null;
-
-      // Fim sintético: +3h desde a partida (cobertura conservadora)
       const endObj = new Date(startObj.getTime() + 3 * 60 * 60 * 1000);
-
       return { ...t, startObj, endObj };
     })
     .filter(Boolean)
@@ -521,22 +540,21 @@ const checkOfflineTrains = async () => {
       return true;
     });
 
-  // Combinar todos os candidatos
   const candidates = [
     ...baseCandidates,
     ...replacementCandidates,
-    ...extraCandidates,
+    ...manualExtraCandidates,
   ];
 
   const results = {};
-  const fetchCandidates = [];
+  const toIndividualCheck = [];
 
+  // RESOLVER ESTADO DE CADA CANDIDATO
   for (const t of candidates) {
-    const trainDateStr = formatDateStr(t.startObj);
     const trainId = String(t.id);
+    const trainDateStr = formatDateStr(t.startObj);
 
-    // VERIFY: Supressão programada (obras, eventos) — marcar diretamente sem fetch
-    // Apenas para comboios do horário base (não para substituições/extras que já são o resultado correto)
+    // Supressões programadas pelo VerifyManager (exemplo obras)
     if (
       !t._isReplacement &&
       !t._isExtra &&
@@ -549,63 +567,82 @@ const checkOfflineTrains = async () => {
       continue;
     }
 
-    // VERIFY: Se este comboio base tem substituição no dia, o original não circula
     if (
       !t._isReplacement &&
       !t._isExtra &&
       VerifyManager.getReplacementId(trainId, trainDateStr)
     ) {
-      // O comboio original não está ativo — a substituição já foi adicionada como replacementCandidates
       results[trainId] = "SUPRIMIDO";
       continue;
     }
 
-    // poupança de pedidos à IP retirando comboios realizados
     const safeEndMarginMs = t.endObj.getTime() + 90 * 60000;
-
     const isFinishedToday =
       FUTURE_TRAINS_CACHE[trainId] === "Realizado" &&
       nowMs > t.startObj.getTime();
 
     if (nowMs > safeEndMarginMs || isFinishedToday) {
       results[trainId] = "Realizado";
-    } else {
-      fetchCandidates.push(t);
+      continue;
     }
+
+    // Consultar o station-poll
+    const stationEntry = stationMap.get(trainId);
+
+    // 5 NULLS --> SUPRIMIDO
+
+    if (!stationEntry) {
+      toIndividualCheck.push(t);
+      continue;
+    }
+
+    if (/SUPRIMIDO/i.test(stationEntry.observacoes)) {
+      if (FUTURE_TRAINS_CACHE[trainId] === "SUPRIMIDO") {
+        results[trainId] = "SUPRIMIDO";
+        continue;
+      }
+      toIndividualCheck.push({ ...t, _stationPollSuppressed: true });
+      continue;
+    }
+    results[trainId] = "Programado";
   }
 
-  // 4. Execução Sequencial Anti-DDoS e Anti-Picos de CPU
-  for (const t of fetchCandidates) {
+  // CONFIRMAÇÃO INDIVIDUAL
+  for (const t of toIndividualCheck) {
     const trainId = String(t.id);
+    const tag = t._stationPollSuppressed
+      ? "[CROSS VALIDATE]"
+      : "[NULL GUARD OFFLINE]";
+
     try {
       const dateStr = formatDateStr(t.startObj);
       const details = await fetchDetails(trainId, dateStr);
 
-      // NULL GUARD para comboios offline:
-      // Respostas totalmente nulas precisam de 5 confirmações consecutivas
       if (details && details._isAllNull) {
         OFFLINE_NULL_COUNTS[trainId] = (OFFLINE_NULL_COUNTS[trainId] || 0) + 1;
 
         if (OFFLINE_NULL_COUNTS[trainId] < 5) {
           console.log(
-            `[NULL GUARD OFFLINE] Comboio ${trainId} resposta nula ${OFFLINE_NULL_COUNTS[trainId]}/5. A manter estado anterior.`,
+            `${tag} Comboio ${trainId} resposta nula ${OFFLINE_NULL_COUNTS[trainId]}/5. A manter estado anterior.`,
           );
-          results[trainId] = FUTURE_TRAINS_CACHE[trainId] || "Sem Informação";
+          if (t._stationPollSuppressed) {
+            results[trainId] = FUTURE_TRAINS_CACHE[trainId] || "Programado";
+          } else {
+            results[trainId] = FUTURE_TRAINS_CACHE[trainId] || "Sem Informação";
+          }
         } else {
           console.log(
-            `[NULL GUARD OFFLINE] Comboio ${trainId} confirmado SUPRIMIDO após ${OFFLINE_NULL_COUNTS[trainId]} respostas nulas.`,
+            `${tag} Comboio ${trainId} confirmado SUPRIMIDO após ${OFFLINE_NULL_COUNTS[trainId]} respostas nulas.`,
           );
           results[trainId] = "SUPRIMIDO";
         }
       } else if (details && details.SituacaoComboio) {
-        // Resposta válida → resetar contador
         OFFLINE_NULL_COUNTS[trainId] = 0;
 
         const situacao = details.SituacaoComboio.trim() || "Sem Informação";
         const nodes = details.NodesPassagemComboio || [];
         const hasStarted = nodes.some((n) => n.ComboioPassou === true);
 
-        // Prevenir que a IP minta dizendo que um comboio das 17h está "em circulação" às 10h da manhã
         const impliesSpuriousLive =
           !hasStarted &&
           (/em circulação/i.test(situacao) || /a horas/i.test(situacao));
@@ -614,39 +651,164 @@ const checkOfflineTrains = async () => {
           results[trainId] = "Sem Informação";
         } else {
           results[trainId] = situacao;
+          if (t._stationPollSuppressed && !/SUPRIMIDO/i.test(situacao)) {
+            console.warn(
+              `${tag} Station-poll disse SUPRIMIDO para ${trainId} mas IP individual responde "${situacao}". Confiando no individual.`,
+            );
+          }
         }
       } else {
         results[trainId] = FUTURE_TRAINS_CACHE[trainId] || "Sem Informação";
       }
     } catch (error) {
       console.error(
-        `[FUTURE CHECK] Erro de rede isolado no comboio ${t.id}:`,
+        `${tag} Erro isolado no comboio ${trainId}:`,
         error.message,
       );
       results[trainId] = FUTURE_TRAINS_CACHE[trainId] || "Sem Informação";
     }
-
-    await new Promise((resolve) => setTimeout(resolve, 1200)); // não há concorrência de pedidos (1.2s)
+    await new Promise((resolve) => setTimeout(resolve, 1200));
   }
 
-  // 5. Atualização Segura da Memória Global
+  // DESCOBERTA DE EXTRAS (IDs na IP mas AUSENTES do JSON base)
+  const jsonBaseIds = new Set(RICH_SCHEDULE.map((t) => String(t.id)));
+  const manualExtraIds = new Set(
+    manualExtraCandidates.map((t) => String(t.id)),
+  );
+  const replacementIds = new Set(
+    replacementCandidates.map((t) => String(t.id)),
+  );
+  const knownIds = new Set([
+    ...jsonBaseIds,
+    ...manualExtraIds,
+    ...replacementIds,
+  ]);
+
+  let newExtrasDiscovered = 0;
+  let extrasRefreshed = 0;
+
+  for (const [trainId, stationEntry] of stationMap) {
+    if (knownIds.has(trainId)) continue;
+    if (activeIds.includes(trainId)) continue;
+    if (GhostManager.GHOST_SUPPRESSED.has(trainId)) continue;
+    if (GhostManager.GHOST_TRAINS[trainId]) continue;
+
+    const existing = EXTRA_TRAINS_CACHE[trainId];
+    const REFRESH_THRESHOLD_MS = 5 * 60 * 1000;
+
+    if (
+      existing &&
+      existing._lastUpdate &&
+      nowMs - existing._lastUpdate < REFRESH_THRESHOLD_MS
+    ) {
+      if (
+        /SUPRIMIDO/i.test(stationEntry.observacoes) &&
+        existing.SituacaoComboio !== "SUPRIMIDO"
+      ) {
+        existing.SituacaoComboio = "SUPRIMIDO";
+        existing._lastUpdate = nowMs;
+      }
+      continue;
+    }
+
+    // Fetch individual para obter os nodes completos
+    let dateStr = formatDateStr(startDateFromStationEntry(stationEntry, now));
+
+    try {
+      const details = await fetchDetails(trainId, dateStr);
+
+      if (!details || details._isAllNull) {
+        console.warn(
+          `[EXTRA DISCOVERY] Comboio ${trainId} apareceu no station-poll mas fetch individual devolveu nulo. A ignorar neste ciclo.`,
+        );
+        continue;
+      }
+
+      const extraOutput = buildExtraTrainOutput(trainId, details, stationEntry);
+      if (!extraOutput) continue;
+
+      EXTRA_TRAINS_CACHE[trainId] = { ...extraOutput, _lastUpdate: nowMs };
+      const syntheticRich = buildSyntheticRichInfoFromDetails(
+        trainId,
+        details,
+        stationEntry,
+      );
+      if (syntheticRich) {
+        DYNAMIC_EXTRA_SCHEDULE[trainId] = syntheticRich;
+      }
+
+      if (existing) {
+        extrasRefreshed++;
+      } else {
+        newExtrasDiscovered++;
+        console.log(
+          `[EXTRA DISCOVERY] Comboio ${trainId} descoberto ` +
+            `(${extraOutput.Origem} → ${extraOutput.Destino}, ${extraOutput.SituacaoComboio}).`,
+        );
+      }
+    } catch (e) {
+      console.error(
+        `[EXTRA DISCOVERY] Falha ao obter detalhes de ${trainId}:`,
+        e.message,
+      );
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+  }
+
+  // LIMPEZA DE EXTRAS ANTIOGS
+  for (const trainId of Object.keys(EXTRA_TRAINS_CACHE)) {
+    const extra = EXTRA_TRAINS_CACHE[trainId];
+    const stillInPoll = stationMap.has(trainId);
+
+    if (stillInPoll) continue;
+    if (activeIds.includes(trainId)) continue;
+
+    let isOld = false;
+    if (extra.DataHoraDestino && extra.DataHoraDestino.includes(" ")) {
+      const destTime = extra.DataHoraDestino.split(" ")[1]?.substring(0, 5);
+      if (destTime) {
+        const endDate = parseSmartTime(destTime, now);
+        if (endDate && nowMs > endDate.getTime() + 2 * 60 * 60 * 1000) {
+          isOld = true;
+        }
+      }
+    }
+
+    if (extra._lastUpdate && nowMs - extra._lastUpdate > 4 * 60 * 60 * 1000) {
+      isOld = true;
+    }
+
+    if (isOld) {
+      delete EXTRA_TRAINS_CACHE[trainId];
+      delete DYNAMIC_EXTRA_SCHEDULE[trainId];
+      console.log(
+        `[EXTRA DISCOVERY] Comboio extra ${trainId} removido da cache (expirado).`,
+      );
+    }
+  }
+
+  // ATUALIZAÇÃO SEGURA DA MEMÓRIA GLOBAL
   FUTURE_TRAINS_CACHE = results;
 
-  // Re-injetar os Ghost Suppressed para garantir que nunca mais regressam à vida
   for (const ghostId of GhostManager.GHOST_SUPPRESSED) {
     FUTURE_TRAINS_CACHE[ghostId] = "SUPRIMIDO";
   }
 
-  // Limpar contadores de nulos para comboios que já não são candidatos
   const candidateIds = new Set(candidates.map((t) => String(t.id)));
   for (const id of Object.keys(OFFLINE_NULL_COUNTS)) {
-    if (!candidateIds.has(id)) {
-      delete OFFLINE_NULL_COUNTS[id];
-    }
+    if (!candidateIds.has(id)) delete OFFLINE_NULL_COUNTS[id];
   }
 
+  StationPoller.cleanupCache(now);
+
   console.log(
-    `[FUTURE CHECK] Concluído às ${new Date().toLocaleTimeString()}. Analisados: ${candidates.length} | Pedidos à IP: ${fetchCandidates.length}`,
+    `[FUTURE CHECK v2] Concluído às ${new Date().toLocaleTimeString()}. ` +
+      `Candidatos: ${candidates.length} | ` +
+      `Station-poll hits: ${candidates.length - toIndividualCheck.length} | ` +
+      `Individuais: ${toIndividualCheck.length} | ` +
+      `Extras ativos: ${Object.keys(EXTRA_TRAINS_CACHE).length} ` +
+      `(+${newExtrasDiscovered} novos, ${extrasRefreshed} refresh)`,
   );
 };
 
@@ -943,7 +1105,7 @@ const processTrain = async (richInfo, originDateStr) => {
 
       if (dateChegadaProg) {
         const rawDelay =
-          Math.floor((timestamp - dateChegadaProg.getTime()) / 1000) - 20;
+          Math.floor((timestamp - dateChegadaProg.getTime()) / 1000) - 25;
 
         atrasoNode = Math.max(0, rawDelay);
 
@@ -1310,6 +1472,48 @@ const updateCycle = async () => {
     }
   }
 
+  // ─── EXTRAS DINÂMICOS (descobertos pelo station-poller) ──────────────────
+  // Promove extras descobertos dinamicamente ao mesmo tracking live que os
+  // comboios do horário base. Quando começam a andar, aparecem em OUTPUT_CACHE
+  // com histórico, atrasos, ghost detection, etc. O campo `extratrains` na
+  // resposta da API continua a listar os pré-live para a app saber que existem.
+  const alreadyActiveIds = new Set(activeRichTrains.map((t) => String(t.id)));
+  for (const e of Object.values(DYNAMIC_EXTRA_SCHEDULE)) {
+    const trainId = String(e.id);
+
+    // Não duplicar se já foi adicionado via RICH_SCHEDULE/replacements/extras manuais
+    if (alreadyActiveIds.has(trainId)) continue;
+
+    const startStr =
+      e.direction === "lisboa" ? e.setubal || e.coina : e.roma_areeiro;
+    if (!startStr) continue;
+
+    const start = parseSmartTime(startStr, now);
+    if (!start) continue;
+
+    if (
+      GhostManager.GHOST_TRAINS[trainId] ||
+      GhostManager.GHOST_SUPPRESSED.has(trainId)
+    )
+      continue;
+
+    const end = new Date(start.getTime() + 3 * 60 * 60 * 1000);
+    const nowTime = now.getTime();
+    const isInsideWindow =
+      nowTime >= start.getTime() - 5 * 60000 &&
+      nowTime <= end.getTime() + 120 * 60000;
+    const isBeingTracked = !!TRAIN_MEMORY[trainId];
+
+    if (isInsideWindow || isBeingTracked) {
+      activeRichTrains.push({
+        ...e,
+        startObj: start,
+        endObj: end,
+        originDateStr: formatDateStr(start),
+      });
+    }
+  }
+
   // -------------------------------------------------------------------------
   // 2. PROTEÇÃO ANTI-DDOS: Distribuição de pedidos ao longo de 8 segundos
   // -------------------------------------------------------------------------
@@ -1342,6 +1546,12 @@ const updateCycle = async () => {
         const r = await processTrain(t, t.originDateStr);
         if (r) {
           OUTPUT_CACHE[trainId] = r;
+          // Se este comboio já está a andar (Live) e estava em EXTRA_TRAINS_CACHE,
+          // remover o duplicado "pré-live" dos extras — a partir de agora a app
+          // vai vê-lo como comboio normal em OUTPUT_CACHE[trainId].
+          if (r.Live && EXTRA_TRAINS_CACHE[trainId]) {
+            delete EXTRA_TRAINS_CACHE[trainId];
+          }
         } else {
           delete OUTPUT_CACHE[trainId];
         }
@@ -1355,6 +1565,7 @@ const updateCycle = async () => {
           TRAIN_MEMORY[trainId].isFetching = false;
         }
         OUTPUT_CACHE.futureTrains = FUTURE_TRAINS_CACHE;
+        OUTPUT_CACHE.extratrains = EXTRA_TRAINS_CACHE;
       }
     }, index * staggerMs);
   });
@@ -1436,7 +1647,10 @@ const scheduleNextTick = () => {
 
   setTimeout(async () => {
     if (isSystemInSleepMode()) {
-      OUTPUT_CACHE = { futureTrains: FUTURE_TRAINS_CACHE };
+      OUTPUT_CACHE = {
+        futureTrains: FUTURE_TRAINS_CACHE,
+        extratrains: EXTRA_TRAINS_CACHE,
+      };
       scheduleNextTick();
       return;
     }
@@ -1568,13 +1782,17 @@ app.get("/avisos", (req, res) => {
 app.get("/", (req, res) =>
   res.json({
     status: "online",
-    version: "4.9.29",
+    version: "4.10.0",
     aviso:
       "Pedimos que não uses o nosso endpoint diretamente! Verifica toda as informações e código no github.",
     operational: getOperationalInfo(),
     ghost: {
       monitoring: Object.keys(GhostManager.GHOST_TRAINS).length,
       suppressed: GhostManager.GHOST_SUPPRESSED.size,
+    },
+    extras: {
+      active: Object.keys(EXTRA_TRAINS_CACHE).length,
+      tracked: Object.keys(DYNAMIC_EXTRA_SCHEDULE).length,
     },
     changes: {
       today: VerifyManager.getChangesForDate(formatDateStr(new Date())),
@@ -1583,7 +1801,7 @@ app.get("/", (req, res) =>
 );
 
 app.listen(PORT, () => {
-  console.log(`LiveTagus API v4.9.29 ativa na porta ${PORT}`);
+  console.log(`LiveTagus API v4.10.0 ativa na porta ${PORT}`);
   console.log(`Endpoint /fertagus protegido com API_KEY.`);
   checkOfflineTrains();
   updateCycle();

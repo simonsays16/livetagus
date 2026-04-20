@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="pt-PT" class="scroll-smooth">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no"
+    />
+    <meta name="theme-color" content="#09090b" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="format-detection" content="telephone=no" />
+
+    <title>Mapa ao Vivo · LiveTagus</title>
+    <meta
+      name="description"
+      content="Mapa em tempo real dos comboios Fertagus na área metropolitana de Lisboa. Posição estimada, atrasos e percurso completo."
+    />
+    <meta name="author" content="LiveTagus" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Mapa ao Vivo | LiveTagus" />
+    <meta
+      property="og:description"
+      content="Mapa em tempo real dos comboios Fertagus na área metropolitana de Lisboa."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="pt_PT" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="./imagens/favicon.svg" />
+    <link rel="apple-touch-icon" href="./imagens/apple-touch-icon.png" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- MapLibre GL -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
+    />
+    <link href="/maplibre-gl.css" rel="stylesheet" />
+
+    <!-- Tailwind compilado -->
+    <link rel="stylesheet" href="./output.css" />
+
+    <style>
+      :root {
+        --car-empty: rgba(161, 161, 170, 0.22);
+      }
+      html.dark {
+        --car-empty: rgba(82, 82, 91, 0.55);
+      }
+
+      html,
+      body {
+        overscroll-behavior-y: contain;
+        text-size-adjust: 100%;
+        -webkit-text-size-adjust: 100%;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .train-marker {
+        cursor: pointer;
+        pointer-events: auto;
+        position: relative;
+        width: 0;
+        height: 0;
+      }
+
+      .train-view {
+        position: absolute;
+        left: 0;
+        top: 0;
+        transition: opacity 0.25s ease;
+      }
+      /* data-view controla qual vista está visível */
+      .train-marker[data-view="cars"] .train-view-icon,
+      .train-marker:not([data-view="cars"]) .train-view-cars {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .train-marker[data-view="cars"] .train-view-cars,
+      .train-marker:not([data-view="cars"]) .train-view-icon {
+        opacity: 1;
+      }
+
+      .train-view-icon {
+        width: 52px;
+        height: 44px;
+        transform: translate(-50%, -50%);
+        pointer-events: auto;
+      }
+
+      .train-icon-disc {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 40px;
+        height: 40px;
+      }
+
+      .train-ring {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        border: 2.5px solid var(--ring-color, #10b981);
+        box-shadow:
+          0 0 0 2px rgba(255, 255, 255, 0.85),
+          0 0 14px var(--ring-glow, rgba(16, 185, 129, 0.4)),
+          0 1px 4px rgba(0, 0, 0, 0.2);
+        background: white;
+      }
+      html.dark .train-ring {
+        box-shadow:
+          0 0 0 2px rgba(9, 9, 11, 0.85),
+          0 0 16px var(--ring-glow, rgba(16, 185, 129, 0.45)),
+          0 1px 6px rgba(0, 0, 0, 0.5);
+        background: #09090b;
+      }
+
+      .train-view-icon.pulse .train-ring {
+        animation: ring-pulse 1.6s ease-in-out infinite;
+      }
+      @keyframes ring-pulse {
+        0%,
+        100% {
+          box-shadow:
+            0 0 0 2px rgba(255, 255, 255, 0.85),
+            0 0 10px var(--ring-glow),
+            0 1px 4px rgba(0, 0, 0, 0.2);
+        }
+        50% {
+          box-shadow:
+            0 0 0 2px rgba(255, 255, 255, 0.85),
+            0 0 0 8px var(--ring-glow),
+            0 0 22px var(--ring-color),
+            0 1px 4px rgba(0, 0, 0, 0.2);
+        }
+      }
+
+      .train-front {
+        position: absolute;
+        inset: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .train-front-img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+      }
+      .train-front-fallback {
+        width: 22px;
+        height: 22px;
+        display: block;
+        background: linear-gradient(180deg, #3b82f6 0%, #1e40af 100%);
+        border-radius: 4px 4px 12px 12px;
+        position: relative;
+      }
+      .train-front-fallback::before,
+      .train-front-fallback::after {
+        content: "";
+        position: absolute;
+        top: 3px;
+        width: 4px;
+        height: 3px;
+        background: #e0f2fe;
+        border-radius: 1px;
+      }
+      .train-front-fallback::before {
+        left: 4px;
+      }
+      .train-front-fallback::after {
+        right: 4px;
+      }
+
+      /* Seta de direção — posicionada à direita do disco, rodada pelo bearing */
+      .train-arrow {
+        position: absolute;
+        /* Coloca no centro exato do disco (que tem 40x40) */
+        left: 20px;
+        top: 20px;
+        width: 22px;
+        height: 22px;
+        transform-origin: center center;
+        transition:
+          transform 0.4s cubic-bezier(0.22, 0.61, 0.36, 1),
+          opacity 0.3s ease;
+        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+      }
+      .train-arrow-svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      .train-view-cars {
+        /* Âncora no centro exato — o corpo é que define o tamanho */
+        width: 0;
+        height: 0;
+      }
+
+      .train-cars-body {
+        position: absolute;
+        left: 0;
+        top: 0;
+        transform: translate(-50%, -50%) rotate(0deg);
+        transform-origin: center center;
+        transition: transform 0.4s cubic-bezier(0.22, 0.61, 0.36, 1);
+        will-change: transform;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .train-wifi-badge {
+        /* Fica sobre a primeira carruagem (frente) */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        height: 17px;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 50% 50% 6px 6px / 60% 60% 30% 30%;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+        padding: 1px;
+        margin-bottom: 3px;
+        z-index: 2;
+      }
+      html.dark .train-wifi-badge {
+        background: rgba(9, 9, 11, 0.95);
+      }
+
+      .train-wifi {
+        width: 18px;
+        height: 14px;
+        display: block;
+      }
+      .train-wifi path,
+      .train-wifi circle {
+        fill: none;
+        stroke: var(--wifi-color, #10b981);
+        stroke-width: 1.6;
+        stroke-linecap: round;
+      }
+      .train-wifi circle {
+        fill: var(--wifi-color, #10b981);
+        stroke: none;
+      }
+      .train-wifi .wifi-arc {
+        stroke-dasharray: 30;
+        stroke-dashoffset: 30;
+        animation: wifi-draw 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      }
+      .train-wifi .wifi-arc-1 {
+        animation-delay: 0s;
+      }
+      .train-wifi .wifi-arc-2 {
+        animation-delay: 0.25s;
+      }
+      .train-wifi .wifi-arc-3 {
+        animation-delay: 0.5s;
+      }
+      .train-wifi .wifi-dot {
+        opacity: 0;
+        animation: wifi-dot 2.2s ease-in-out infinite;
+      }
+      @keyframes wifi-draw {
+        0% {
+          stroke-dashoffset: 30;
+          opacity: 0;
+        }
+        15% {
+          opacity: 1;
+        }
+        55%,
+        78% {
+          stroke-dashoffset: 0;
+          opacity: 1;
+        }
+        90%,
+        100% {
+          stroke-dashoffset: 30;
+          opacity: 0;
+        }
+      }
+      @keyframes wifi-dot {
+        0%,
+        10% {
+          opacity: 0;
+        }
+        15%,
+        78% {
+          opacity: 1;
+        }
+        90%,
+        100% {
+          opacity: 0;
+        }
+      }
+
+      /* Wrapper das carruagens: flex-column empilha no eixo do movimento.
+         Largura/altura são geridas em JS (scaleCarriagesToRealWorld). */
+      .train-cars-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        background: transparent;
+        /* width / gap / padding aplicados via JS */
+      }
+
+      /* Cada carruagem — largura dinâmica em JS, aparência minimalista */
+      .train-carriage {
+        width: 100%;
+        border: 1px solid var(--car-empty);
+        border-radius: 2px;
+        background: var(--car-empty);
+        box-shadow:
+          inset 0 0 0 0.5px rgba(0, 0, 0, 0.1),
+          0 1px 2px rgba(0, 0, 0, 0.12);
+        transition:
+          background-color 0.3s ease,
+          border-color 0.3s ease;
+      }
+      html.dark .train-carriage {
+        box-shadow:
+          inset 0 0 0 0.5px rgba(255, 255, 255, 0.08),
+          0 1px 3px rgba(0, 0, 0, 0.5);
+      }
+
+      /* Pulsação do corpo todo quando está em estado de alerta */
+      .train-view-cars.pulse .train-cars-wrapper {
+        animation: cars-pulse 1.6s ease-in-out infinite;
+      }
+      @keyframes cars-pulse {
+        0%,
+        100% {
+          filter: drop-shadow(0 0 4px var(--ring-color));
+        }
+        50% {
+          filter: drop-shadow(0 0 14px var(--ring-color));
+        }
+      }
+
+      #details-panel {
+        transition: transform 0.36s cubic-bezier(0.22, 0.61, 0.36, 1);
+        /* overscroll-behavior evita que o scroll da sheet puxe a página */
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+      }
+      #details-backdrop {
+        transition: opacity 0.3s ease;
+      }
+
+      .maplibregl-ctrl-attrib {
+        font-size: 10px !important;
+        background: rgba(255, 255, 255, 0.75) !important;
+      }
+      html.dark .maplibregl-ctrl-attrib {
+        background: rgba(9, 9, 11, 0.8) !important;
+        color: #a1a1aa !important;
+      }
+      html.dark .maplibregl-ctrl-attrib a {
+        color: #71717a !important;
+      }
+      html.dark .maplibregl-ctrl-group {
+        background: #09090b !important;
+        border: 1px solid #27272a !important;
+      }
+      html.dark .maplibregl-ctrl-group button {
+        background: transparent !important;
+        color: #fafafa !important;
+      }
+      html.dark .maplibregl-ctrl-group button:hover {
+        background: #18181b !important;
+      }
+
+      /* IOS CRAZY */
+
+      body.is-ios .pt-safe-ios {
+        padding-top: env(safe-area-inset-top);
+      }
+      body.is-ios .pb-safe-ios {
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+
+      /* Toast safe-area: empurra para cima em iOS com home bar */
+      body.is-ios #mapa-toast {
+        margin-bottom: env(safe-area-inset-bottom);
+      }
+
+      /* Scrollbar minimalista */
+      [data-details-scroll] {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(161, 161, 170, 0.25) transparent;
+      }
+      [data-details-scroll]::-webkit-scrollbar {
+        width: 4px;
+      }
+      [data-details-scroll]::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      [data-details-scroll]::-webkit-scrollbar-thumb {
+        background: rgba(161, 161, 170, 0.25);
+        border-radius: 2px;
+      }
+
+      /* Evita que o mapa receba scroll da página em telemóveis */
+      .mapa-container {
+        overflow: hidden;
+        touch-action: manipulation;
+      }
+
+      /* Hover states só em dispositivos com ponteiro preciso (desktop).
+         Em touch, :hover pode ficar "colado" até próximo toque. */
+      @media (hover: none) {
+        .train-marker:hover .train-ring,
+        .train-marker:hover .train-cars-wrapper {
+          /* Neutralizar possíveis hovers indesejados em mobile */
+        }
+      }
+
+      /* Acessibilidade: respeita reduced motion */
+      @media (prefers-reduced-motion: reduce) {
+        .train-view-icon.pulse .train-ring,
+        .train-view-cars.pulse .train-cars-wrapper,
+        .train-wifi .wifi-arc,
+        .train-wifi .wifi-dot,
+        .train-arrow,
+        .train-cars-body,
+        #details-panel {
+          animation: none !important;
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+
+  <body
+    class="font-['Inter'] antialiased bg-white text-zinc-900 dark:bg-[#09090b] dark:text-white flex flex-col min-h-screen"
+  >
+    <!-- ─── GLOBAL NAV ────────────────────────────────────────────── -->
+    <div class="pt-safe-ios" id="global-nav"></div>
+
+    <!-- ─── MAIN ──────────────────────────────────────────────────── -->
+    <main class="flex-grow relative flex flex-col">
+      <div class="mapa-container relative w-full h-[100dvh]">
+        <!-- Mapa -->
+        <div id="map" class="absolute inset-0"></div>
+
+        <!-- ─── LEGENDA (canto inferior-esquerdo) ──────────────────── -->
+        <button
+          id="btn-legend"
+          class="absolute bottom-6 left-4 z-10 p-3 border border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-[#09090b]/90 backdrop-blur-sm rounded-sm shadow-sm hover:bg-white dark:hover:bg-[#09090b] transition-colors"
+          aria-label="Mostrar legenda"
+        >
+          <i
+            data-lucide="circle-question-mark"
+            class="w-4 h-4 text-zinc-700 dark:text-zinc-300"
+          ></i>
+        </button>
+
+        <div
+          id="legend-card"
+          class="hidden absolute bottom-20 left-4 z-10 w-64 p-5 border border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-[#09090b]/95 backdrop-blur rounded-sm shadow-lg"
+        >
+          <div class="flex items-center justify-between mb-4">
+            <span
+              class="text-[9px] font-bold uppercase tracking-[0.3em] text-zinc-900 dark:text-white"
+            >
+              Legenda
+            </span>
+            <button
+              id="legend-close"
+              aria-label="Fechar"
+              class="text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+            >
+              <i data-lucide="x" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+          <div class="space-y-3">
+            <div class="flex items-center gap-3">
+              <span
+                class="w-2 h-2 rounded-full bg-emerald-500"
+                style="box-shadow: 0 0 6px #10b981"
+              ></span>
+              <span
+                class="text-[10px] uppercase tracking-wider text-zinc-600 dark:text-zinc-400"
+              >
+                A horas
+              </span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span
+                class="w-2 h-2 rounded-full bg-amber-500"
+                style="box-shadow: 0 0 6px #f59e0b"
+              ></span>
+              <span
+                class="text-[10px] uppercase tracking-wider text-zinc-600 dark:text-zinc-400"
+              >
+                Com atraso
+              </span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span
+                class="w-2 h-2 rounded-full bg-orange-500 animate-pulse"
+                style="box-shadow: 0 0 6px #f97316"
+              ></span>
+              <span
+                class="text-[10px] uppercase tracking-wider text-zinc-600 dark:text-zinc-400"
+              >
+                Possível perturbação
+              </span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span
+                class="w-2 h-2 rounded-full bg-red-500 animate-pulse"
+                style="box-shadow: 0 0 6px #ef4444"
+              ></span>
+              <span
+                class="text-[10px] uppercase tracking-wider text-zinc-600 dark:text-zinc-400"
+              >
+                Suprimido
+              </span>
+            </div>
+            <div class="flex items-center gap-3">
+              <svg
+                class="w-3 h-3"
+                viewBox="0 0 24 24"
+                fill="#3b82f6"
+                stroke="white"
+                stroke-width="2"
+                stroke-linejoin="round"
+              >
+                <polygon points="6,3 21,12 6,21" />
+              </svg>
+              <span
+                class="text-[10px] uppercase tracking-wider text-zinc-600 dark:text-zinc-400"
+              >
+                Direção de movimento
+              </span>
+            </div>
+          </div>
+          <div class="mt-5 pt-4 border-t border-zinc-100 dark:border-zinc-900">
+            <p
+              class="text-[9px] leading-relaxed text-zinc-500 dark:text-zinc-500 font-light"
+            >
+              A posição é estimada com base nos horários e dados em tempo real
+              da LiveTagus. Aproxime o zoom para ver as carruagens. Toque numa
+              estação para ver as próximas partidas.
+            </p>
+          </div>
+        </div>
+
+        <!-- ─── LOADING OVERLAY ────────────────────────────────────── -->
+        <div
+          id="map-loading"
+          class="absolute inset-0 z-20 bg-white dark:bg-[#09090b] flex items-center justify-center transition-opacity duration-400"
+        >
+          <div class="text-center">
+            <div
+              class="inline-block w-8 h-8 border-2 border-zinc-200 dark:border-zinc-800 border-t-blue-500 rounded-full animate-spin mb-4"
+            ></div>
+            <p
+              class="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-500 dark:text-zinc-400"
+            >
+              A carregar Mapa
+            </p>
+          </div>
+        </div>
+
+        <!-- ─── DETAILS / STATION PANEL (shared) ───────────────────── -->
+        <div
+          id="details-backdrop"
+          class="hidden fixed inset-0 z-40 bg-black/40 opacity-0 pointer-events-none"
+        ></div>
+        <div
+          id="details-panel"
+          class="fixed left-0 right-0 bottom-0 z-50 translate-y-full h-[85dvh] max-h-[85dvh] md:h-auto md:max-h-[80dvh] md:left-auto md:right-8 md:bottom-8 md:top-auto md:w-[440px] md:rounded-sm border-t md:border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#09090b] shadow-2xl overflow-hidden"
+          role="dialog"
+          aria-modal="true"
+        ></div>
+      </div>
+    </main>
+
+    <!-- SCRIPTS-->
+    <!-- Bibliotecas externas (link externos apra produção) -->
+    <script
+      src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"
+      defer
+    ></script>
+    <script src="/maplibre-gl.js" defer></script>
+    <script src="https://unpkg.com/@turf/turf@7.2.0/turf.min.js" defer></script>
+    <script src="/turf.min.js" defer></script>
+
+    <!-- Menu global -->
+    <script src="./menu.js" defer></script>
+
+    <!-- App do mapa (ordem de dependências) -->
+    <script src="./lucide-icons.js" defer></script>
+    <script src="./mapa-config.js" defer></script>
+    <script src="./mapa-geo.js" defer></script>
+    <script src="./mapa-api.js" defer></script>
+    <script src="./mapa-render.js" defer></script>
+    <script src="./mapa-details.js" defer></script>
+    <script src="./mapa-station.js" defer></script>
+    <script src="./mapa-share.js" defer></script>
+    <script src="./mapa.js" defer></script>
+  </body>
+</html>

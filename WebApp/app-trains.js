@@ -341,8 +341,87 @@ async function fetchFertagusNewAPI() {
           isOffline: false,
         };
       })
-      .filter((t) => t !== null)
-      .sort((a, b) => a.effectiveDate - b.effectiveDate);
+      .filter((t) => t !== null);
+
+    // ─── EXTRA TRAINS (descobertos dinamicamente pela API) ────────────────
+    // Comboios que não existem no JSON estático mas aparecem na IP — ex:
+    // comboios especiais/de reforço. Formato minimalista (ver index.js).
+    // Mostramos na lista do utilizador se passarem pela origem→destino na
+    // ordem correta (sentido compatível com o tab ativo).
+    const extraTrains = data.extratrains || {};
+    const existingIds = new Set(processed.map((t) => String(t.id)));
+
+    for (const extra of Object.values(extraTrains)) {
+      if (!extra || !extra["id-comboio"]) continue;
+
+      const extraId = String(extra["id-comboio"]);
+      // Se o extra já apareceu como comboio ativo (já promovido a tracking live),
+      // não duplicar — a versão completa em processed tem mais informação.
+      if (existingIds.has(extraId)) continue;
+
+      const nodes = Array.isArray(extra.NodesPassagemComboio)
+        ? extra.NodesPassagemComboio
+        : [];
+      if (nodes.length === 0) continue;
+
+      const orgIdx = nodes.findIndex((n) => n && n.EstacaoID == orgInfo.id);
+      const dstIdx = nodes.findIndex(
+        (n) =>
+          n &&
+          (n.NomeEstacao || "").toUpperCase() === dstInfo.name.toUpperCase(),
+      );
+
+      // Tem de passar por ambas as estações, e origem antes do destino.
+      if (orgIdx === -1 || dstIdx === -1 || orgIdx >= dstIdx) continue;
+
+      const orgNode = nodes[orgIdx];
+      const dstNode = nodes[dstIdx];
+
+      const mainTime =
+        orgNode.HoraPrevista && orgNode.HoraPrevista.length >= 5
+          ? orgNode.HoraPrevista.substring(0, 5)
+          : "--:--";
+      const arrTime =
+        dstNode.HoraPrevista && dstNode.HoraPrevista.length >= 5
+          ? dstNode.HoraPrevista.substring(0, 5)
+          : "--:--";
+
+      const scheduledDate = window.parseTimeStr(mainTime);
+      if (!scheduledDate) continue;
+
+      // Esconder extras já passados (origem no passado, exceto se SUPRIMIDO)
+      const isSuppr = extra.SituacaoComboio === "SUPRIMIDO";
+      if (!isSuppr && scheduledDate < now) continue;
+
+      const status = isSuppr ? "SUPRIMIDO" : "Programado";
+
+      processed.push({
+        id: extraId,
+        num: extraId,
+        op: "EXTRA", // Label visual específica para comboios extra
+        time: mainTime,
+        secTime: null,
+        dest: dstInfo.name,
+        status: status,
+        arr: arrTime,
+        dotStatus: isSuppr ? "red" : "green",
+        pulse: isSuppr,
+        isLive: false,
+        isSuppressed: isSuppr,
+        carriages: 4, // Default razoável para comboios extra
+        occupancy: null,
+        context: null,
+        isPassed: false,
+        isEffectiveFuture: !isSuppr,
+        rawTime: scheduledDate,
+        effectiveDate: scheduledDate,
+        fullSchedule: nodes,
+        isOffline: false,
+        isExtra: true,
+      });
+    }
+
+    processed.sort((a, b) => a.effectiveDate - b.effectiveDate);
 
     return processed;
   } catch (e) {

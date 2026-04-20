@@ -179,6 +179,9 @@ document.body.addEventListener("click", function (e) {
     case "play-sudoku":
       sa_event("sudoku_started_alertbtn");
       break;
+    case "open-map":
+      sa_event("open_map_train_card");
+      break;
     case "open-sudoku-btm":
       sa_event("sudoku_started_btm");
       break;

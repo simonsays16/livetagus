@@ -994,7 +994,6 @@ window.installPWA = async function () {
 // ─── modal de como instalar em ios ──────────────────────────────────────────────
 function showIOSInstallModal() {
   let modal = document.getElementById("ios-install-modal");
-  const backdrop = document.getElementById("modal-backdrop");
 
   if (!modal) {
     modal = document.createElement("div");
@@ -1143,7 +1142,7 @@ function injectCustomMenuElements() {
     const popover = document.createElement("div");
     popover.id = "mobility-popover";
     popover.className =
-      "absolute top-16 right-4 w-64 bg-white dark:bg-[#09090b] border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl hidden origin-top-right transition-all duration-300 transform scale-95 opacity-0 z-50 overflow-hidden";
+      "absolute top-16 right-4 w-70 bg-white dark:bg-[#09090b] border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl hidden origin-top-right transition-all duration-300 transform scale-95 opacity-0 z-50 overflow-hidden";
 
     popover.innerHTML = `
       <div class="px-4 py-3 bg-zinc-50 dark:bg-zinc-900/50 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
@@ -1167,28 +1166,36 @@ function injectCustomMenuElements() {
         
         <div class="h-px w-full bg-zinc-100 dark:bg-zinc-800"></div>
         
-        <a href="./paragens" data-action="topbtnapp_paragem" class="w-full flex items-center gap-4 px-4 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors text-left group/btn relative">
-          <i data-lucide="bus" class="w-4 h-4 text-zinc-900 dark:text-white group-hover/btn:scale-110 transition-transform duration-300"></i>
-          
+        <a href="./mapa" data-action="topbtnapp_mapa" class="w-full flex items-center gap-4 px-4 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors text-left">
+          <i data-lucide="map" class="w-4 h-4 text-zinc-900 dark:text-white"></i>
+          <div class="flex-1">
+            <p class="text-sm font-medium text-zinc-900 dark:text-white leading-none">Mapa Tempo Real (BETA)</p>
+            <p class="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1.5 font-light tracking-wide">Estimativa de localização dos comboios</p>
+          </div>
+          <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-zinc-300 dark:text-zinc-600"></i>
+        </a>
+        
+        <div class="h-px w-full bg-zinc-100 dark:bg-zinc-800"></div>
+        
+        <div class="h-px w-full bg-zinc-100 dark:bg-zinc-800"></div>
+        <a href="./paragens" class="w-full flex items-center gap-4 px-4 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors text-left">
+          <i data-lucide="bus" class="w-4 h-4 text-zinc-900 dark:text-white"></i>
           <div class="flex-1">
             <p class="text-sm font-medium text-zinc-900 dark:text-white leading-none">A Minha Paragem (BETA)</p>
-            <p class="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1.5 font-light tracking-wide">Apanhas autocarro para a estação?</p>
+            <p class="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1.5 font-light tracking-wide">Vais de autocarro para a estação?</p>
           </div>
-          
-          <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-zinc-300 dark:text-zinc-600 group-hover/btn:translate-x-1 transition-transform"></i>
+          <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-zinc-300 dark:text-zinc-600"></i>
         </a>
 
         <div class="h-px w-full bg-zinc-100 dark:bg-zinc-800"></div>
         
-        <a href="./sudoku" data-action="topbtnapp_sudoku" class="w-full flex items-center gap-4 px-4 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors text-left group/btn relative">
-          <i data-lucide="gamepad-2" class="w-4 h-4 text-zinc-900 dark:text-white group-hover/btn:scale-110 transition-transform duration-300"></i>
-          
+        <a href="./sudoku" data-action="topbtnapp_sudoku" class="w-full flex items-center gap-4 px-4 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors text-left">
+          <i data-lucide="train-track" class="w-4 h-4 text-zinc-900 dark:text-white"></i>
           <div class="flex-1">
             <p class="text-sm font-medium text-zinc-900 dark:text-white leading-none">Jogo de Sudoku</p>
             <p class="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1.5 font-light tracking-wide">Tempo extra? Joga Sudoku</p>
           </div>
-          
-          <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-zinc-300 dark:text-zinc-600 group-hover/btn:translate-x-1 transition-transform"></i>
+          <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-zinc-300 dark:text-zinc-600"></i>
         </a>
 
       </div>

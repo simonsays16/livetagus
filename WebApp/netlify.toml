@@ -57,6 +57,12 @@
   force = true
 
 [[redirects]]
+  from = "/turf.min.js"
+  to = "https://unpkg.com/@turf/turf@7.2.0/turf.min.js"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/estacoes/*"
   to = "/estacoes/estacao.html"
   status = 200

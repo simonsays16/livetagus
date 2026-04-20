@@ -119,12 +119,24 @@ function _cardInnerHTML(t) {
         <div data-field="dot" class="w-1.5 h-1.5 rounded-full ${dotCls}" ${dotStyle}></div>
         <span data-field="status" class="text-[0.65rem] uppercase tracking-wide font-medium ${_statusCls(t)}">${t.status}</span>
       </div>
-      <button
-        data-action="open-details"
-        data-train-id="${t.id}"
-        class="text-[10px] font-medium text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 underline decoration-zinc-300 dark:decoration-zinc-700 underline-offset-2 transition-colors">
-        Ver Detalhes
-      </button>
+      
+      <div class="flex items-center gap-3">
+        <a
+          data-field="map-btn"
+          data-action="open-map"
+          href="/mapa#${t.id}"
+          class="${t.isLive ? "flex" : "hidden"} items-center gap-1 text-[10px] font-bold text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 transition-colors animate-pulse">
+          <i data-lucide="map" class="w-3 h-3"></i>
+          Ver no Mapa
+        </a>
+        
+        <button
+          data-action="open-details"
+          data-train-id="${t.id}"
+          class="text-[10px] font-medium text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 underline decoration-zinc-300 dark:decoration-zinc-700 underline-offset-2 transition-colors">
+          Ver Detalhes
+        </button>
+      </div>
     </div>
     <div data-field="cars">${_carsHtml(t)}</div>
     <div data-field="ctx">${_ctxHtml(t)}</div>
@@ -197,6 +209,18 @@ function _patchCard(el, t, isPassed) {
   const arrWrap = el.querySelector("[data-field='arr-wrap']");
   if (arrWrap)
     arrWrap.className = `flex items-baseline mt-1 ${t.isSuppressed ? "opacity-0" : ""}`;
+
+  const mapBtn = el.querySelector("[data-field='map-btn']");
+  if (mapBtn) {
+    if (t.isLive) {
+      mapBtn.classList.remove("hidden");
+      mapBtn.classList.add("flex");
+      mapBtn.href = `/mapa#${t.id}`;
+    } else {
+      mapBtn.classList.add("hidden");
+      mapBtn.classList.remove("flex");
+    }
+  }
 
   const carsEl = el.querySelector("[data-field='cars']");
   if (carsEl) carsEl.innerHTML = _carsHtml(t);
@@ -733,7 +757,7 @@ function openDetails(trainId) {
           ? "bg-blue-500 border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.4)]"
           : "bg-zinc-800 border-zinc-600";
       const textColor = passed
-        ? "text-zinc-600"
+        ? "text-zinc-600 line-through"
         : isNext
           ? "text-zinc-600 font-bold dark:text-zinc-200"
           : "text-zinc-500";

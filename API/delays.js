@@ -41,11 +41,11 @@
 
 // ─── CONSTANTES DE ATRASO ─────────────────────────────────────────────────────
 
-/** Atraso de Ponte: Pragal + Fogueteiro (sentido Margem). */
-const BRIDGE_DELAY_BASE_S = 0; // 45 seg
+/** Atraso de Ponte: Pragal (sentido Margem). */
+const BRIDGE_DELAY_BASE_S = 30; // 30 seg
 const BRIDGE_DELAY_PEAK_S = 1 * 60; // 1 min 00 seg
 
-/** Troço 1 Pós-Pragal: Corroios e Foros (sentido Margem). */
+/** Troço 1 Pós-Pragal: Foros (sentido Margem). */
 const TROCO1_DELAY_BASE_S = 0; // 45 seg
 const TROCO1_DELAY_PEAK_S = 20; // 45 seg
 
@@ -59,8 +59,8 @@ const TROCO3_DELAY_PEAK_S = 1 * 60 + 45; // 2 min 45 seg
 
 // ─── GRUPO DE ESTAÇÕES ───────────────────────────────────────────────────────
 
-const BRIDGE_STATIONS = new Set(["pragal"]);
-const TROCO1_STATIONS = new Set(["corroios", "foros_de_amora"]);
+const BRIDGE_STATIONS = new Set(["pragal", "corroios"]);
+const TROCO1_STATIONS = new Set(["foros_de_amora"]);
 const TROCO2_STATIONS = new Set(["penalva"]);
 const TROCO3_STATIONS = new Set(["pinhal_novo", "venda_do_alcaide"]);
 

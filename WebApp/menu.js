@@ -48,6 +48,7 @@ function injectNavigation() {
 
             <nav class="flex flex-col gap-2 relative z-10">
                 <a href="/" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Início</a>
+                <a href="/mapa" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Mapa</a>
                 <a href="/app" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-black dark:text-white transition-colors uppercase italic">Tempo Real</a>
                 <a href="/horarios" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Horários</a>
                 <a id="btn-menu-estado" href="https://status.livetagus.pt/pt-pt" target="_blank" rel="noopener noreferrer" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Estado</a>
@@ -88,6 +89,49 @@ function injectNavigation() {
             </div>
         </div>
     `;
+
+  // --- Marca o link activo com base no pathname actual ---
+  // Remove o "italic" do link que está hardcoded e aplica-o ao link que
+  // corresponde à página actual. Mantém compatibilidade com páginas
+  // existentes quando o pathname começa pelo href.
+  try {
+    const path = (window.location.pathname || "/").replace(/\/$/, "") || "/";
+    const links = document.querySelectorAll("#global-nav .menu-link");
+    let matched = null;
+    links.forEach((l) => {
+      const href = l.getAttribute("href") || "";
+      // Ignora links externos (http…)
+      if (/^https?:/i.test(href)) return;
+      const hrefNorm = href.replace(/\/$/, "") || "/";
+      // Match exacto, ou prefixo (ex: /mapa/foo corresponde a /mapa)
+      if (
+        path === hrefNorm ||
+        (hrefNorm !== "/" && path.startsWith(hrefNorm + "/"))
+      ) {
+        matched = l;
+      }
+    });
+    if (matched) {
+      links.forEach((l) => {
+        l.classList.remove("italic", "text-black", "dark:text-white");
+        l.classList.add(
+          "text-zinc-500",
+          "dark:text-zinc-400",
+          "hover:text-black",
+          "dark:hover:text-white",
+        );
+      });
+      matched.classList.remove(
+        "text-zinc-500",
+        "dark:text-zinc-400",
+        "hover:text-black",
+        "dark:hover:text-white",
+      );
+      matched.classList.add("italic", "text-black", "dark:text-white");
+    }
+  } catch (e) {
+    /* silencioso */
+  }
 }
 
 // --- FOOTER GLOBAL ---
