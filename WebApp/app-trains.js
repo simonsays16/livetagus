@@ -348,16 +348,28 @@ async function fetchFertagusNewAPI() {
     // comboios especiais/de reforço. Formato minimalista (ver index.js).
     // Mostramos na lista do utilizador se passarem pela origem→destino na
     // ordem correta (sentido compatível com o tab ativo).
+    // ─── EXTRA TRAINS (descobertos dinamicamente pela API) ────────────────
+    // Comboios que não existem no JSON estático mas aparecem na IP — ex:
+    // comboios especiais/de reforço.
+    // Combinamos os "extratrains" (não começaram) com os que já estão "live"
+    // na raiz da API mas não constam na DB estática (live extras).
     const extraTrains = data.extratrains || {};
     const existingIds = new Set(processed.map((t) => String(t.id)));
 
-    for (const extra of Object.values(extraTrains)) {
+    // Extraímos também da raiz (apiTrains) os comboios que não estão no DB (live extras)
+    const liveExtraTrains = apiTrains.filter(
+      (t) => !existingIds.has(String(t["id-comboio"])),
+    );
+
+    const allExtraTrains = [...Object.values(extraTrains), ...liveExtraTrains];
+
+    for (const extra of allExtraTrains) {
       if (!extra || !extra["id-comboio"]) continue;
 
       const extraId = String(extra["id-comboio"]);
-      // Se o extra já apareceu como comboio ativo (já promovido a tracking live),
-      // não duplicar — a versão completa em processed tem mais informação.
+      // Evitar duplicações caso algo venha repetido
       if (existingIds.has(extraId)) continue;
+      existingIds.add(extraId);
 
       const nodes = Array.isArray(extra.NodesPassagemComboio)
         ? extra.NodesPassagemComboio
@@ -371,50 +383,153 @@ async function fetchFertagusNewAPI() {
           (n.NomeEstacao || "").toUpperCase() === dstInfo.name.toUpperCase(),
       );
 
-      // Tem de passar por ambas as estações, e origem antes do destino.
+      // Tem de passar por ambas as estações, e a origem antes do destino.
       if (orgIdx === -1 || dstIdx === -1 || orgIdx >= dstIdx) continue;
 
       const orgNode = nodes[orgIdx];
       const dstNode = nodes[dstIdx];
 
-      const mainTime =
-        orgNode.HoraPrevista && orgNode.HoraPrevista.length >= 5
-          ? orgNode.HoraPrevista.substring(0, 5)
-          : "--:--";
-      const arrTime =
+      const progStr = orgNode.HoraProgramada || "";
+      const prevStr = orgNode.HoraPrevista || "";
+
+      // Usar HoraProgramada preferencialmente para o horário base, fallback para Prevista
+      const scheduledTimeStr =
+        progStr.length >= 5
+          ? progStr.substring(0, 5)
+          : prevStr.length >= 5
+            ? prevStr.substring(0, 5)
+            : "--:--";
+
+      let mainTime = scheduledTimeStr;
+      let secondaryTime = null;
+      let isLive = extra.Live || false;
+      let isSuppressed = extra.SituacaoComboio === "SUPRIMIDO";
+      let hasPassedOrigin = orgNode.ComboioPassou || false;
+
+      let arrTime =
         dstNode.HoraPrevista && dstNode.HoraPrevista.length >= 5
           ? dstNode.HoraPrevista.substring(0, 5)
-          : "--:--";
+          : dstNode.HoraProgramada && dstNode.HoraProgramada.length >= 5
+            ? dstNode.HoraProgramada.substring(0, 5)
+            : "--:--";
 
-      const scheduledDate = window.parseTimeStr(mainTime);
+      let status = "Programado";
+      let dotStatus = "green";
+      let pulse = false;
+      let context = null;
+
+      const isPerturbacao = /poss.{0,2}vel perturba/i.test(
+        extra.SituacaoComboio || "",
+      );
+
+      // Processar lógica de Live Tracking tal como nos comboios estáticos
+      if (isSuppressed) {
+        status = "SUPRIMIDO";
+        dotStatus = "red";
+        pulse = true;
+      } else if (isPerturbacao) {
+        status = "Possível Perturbação";
+        dotStatus = "orange";
+        pulse = true;
+        isLive = true;
+      } else if (isLive || prevStr) {
+        if (prevStr && prevStr.length >= 5) {
+          mainTime = prevStr.substring(0, 5);
+        }
+        const dProg = window.parseTimeStr(progStr || scheduledTimeStr);
+        const dPrev = window.parseTimeStr(mainTime);
+        const diffMin =
+          dProg && dPrev ? Math.round((dPrev - dProg) / 60000) : 0;
+
+        if (diffMin > 0) {
+          status =
+            "Atraso " +
+            diffMin +
+            ' min (Estimativa) <br /><span style="text-transform: none;" class="text-[10px] text-left text-zinc-500 dark:text-zinc-400 opacity-60">Atrasos podem ser recuperados.</span>';
+          dotStatus = "yellow";
+          pulse = true;
+          secondaryTime = scheduledTimeStr;
+          isLive = true;
+        } else {
+          status = isLive ? "A Horas" : "Programado";
+          dotStatus = "green";
+          pulse = true;
+          if (isLive) isLive = true;
+        }
+      }
+
+      // Adicionar tracking da estação atual se estiver Live
+      if (!isSuppressed && isLive) {
+        const currentIdx = nodes.findIndex((n) => !n.ComboioPassou);
+        if (currentIdx >= 0) {
+          const currNode = nodes[currentIdx];
+          const currName = currNode.NomeEstacao;
+          if (hasPassedOrigin) status = "Em " + currName;
+          const prevNode = currentIdx > 0 ? nodes[currentIdx - 1] : null;
+          const nextNode = nodes[currentIdx + 1] ? nodes[currentIdx + 1] : null;
+          context = {
+            prev: prevNode
+              ? {
+                  name: prevNode.NomeEstacao,
+                  time: prevNode.HoraReal
+                    ? prevNode.HoraReal.substring(0, 5)
+                    : "--:--",
+                }
+              : null,
+            curr: {
+              name: currName,
+              time: currNode.HoraPrevista
+                ? currNode.HoraPrevista.substring(0, 5)
+                : currNode.HoraProgramada
+                  ? currNode.HoraProgramada.substring(0, 5)
+                  : "--:--",
+            },
+            next: nextNode
+              ? {
+                  name: nextNode.NomeEstacao,
+                  time: nextNode.HoraPrevista
+                    ? nextNode.HoraPrevista.substring(0, 5)
+                    : nextNode.HoraProgramada
+                      ? nextNode.HoraProgramada.substring(0, 5)
+                      : "--:--",
+                }
+              : null,
+          };
+        }
+      }
+
+      const scheduledDate = window.parseTimeStr(scheduledTimeStr);
       if (!scheduledDate) continue;
 
-      // Esconder extras já passados (origem no passado, exceto se SUPRIMIDO)
-      const isSuppr = extra.SituacaoComboio === "SUPRIMIDO";
-      if (!isSuppr && scheduledDate < now) continue;
+      // Ocultar comboios baseando nas regras live vs programado
+      if (isLive) {
+        if (dstNode && dstNode.ComboioPassou) continue;
+      } else if (!isSuppressed) {
+        if (scheduledDate < now) continue;
+      }
 
-      const status = isSuppr ? "SUPRIMIDO" : "Programado";
+      const effectiveDate = window.parseTimeStr(mainTime);
 
       processed.push({
         id: extraId,
         num: extraId,
         op: "EXTRA", // Label visual específica para comboios extra
         time: mainTime,
-        secTime: null,
+        secTime: secondaryTime,
         dest: dstInfo.name,
         status: status,
         arr: arrTime,
-        dotStatus: isSuppr ? "red" : "green",
-        pulse: isSuppr,
-        isLive: false,
-        isSuppressed: isSuppr,
+        dotStatus: dotStatus,
+        pulse: pulse || isSuppressed,
+        isLive: isLive,
+        isSuppressed: isSuppressed,
         carriages: 4, // Default razoável para comboios extra
         occupancy: null,
-        context: null,
-        isPassed: false,
-        isEffectiveFuture: !isSuppr,
-        rawTime: scheduledDate,
-        effectiveDate: scheduledDate,
+        context: context,
+        isPassed: hasPassedOrigin,
+        isEffectiveFuture: !hasPassedOrigin && !isSuppressed,
+        rawTime: window.parseTimeStr(scheduledTimeStr),
+        effectiveDate: effectiveDate,
         fullSchedule: nodes,
         isOffline: false,
         isExtra: true,
