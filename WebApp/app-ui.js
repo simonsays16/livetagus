@@ -995,11 +995,23 @@ window.renderList = function (list) {
     ipPopupDismissed = false;
   }
 
-  // ── 1. Lista vazia ─────────────────────────────────────────────────
+  // ── 1. Lista vazia (erro -> forçar refresh)
   if (!list || !list.length) {
-    // Remove todos os elementos geridos pelo reconciliador
+    // anti loop indinito de refresh
+    const reloadCount = parseInt(
+      sessionStorage.getItem("livetagus_empty_reload") || "0",
+      10,
+    );
+    if (reloadCount < 1) {
+      sessionStorage.setItem(
+        "livetagus_empty_reload",
+        (reloadCount + 1).toString(),
+      );
+      window.location.reload();
+      return;
+    }
+    sessionStorage.removeItem("livetagus_empty_reload");
     container.querySelectorAll("[data-key]").forEach((el) => el.remove());
-    // Remove qualquer estado vazio anterior (sem data-key)
     [...container.children].forEach((el) => {
       if (!el.dataset.key) el.remove();
     });
@@ -1017,6 +1029,9 @@ window.renderList = function (list) {
     updateNextCountdown();
     return;
   }
+
+  // tudo bem agora, limpar contador
+  sessionStorage.removeItem("livetagus_empty_reload");
 
   // ── 2. Limite de exibição ──────────────────────────────────────────
   const visibleList = list.slice(0, displayLimit);
