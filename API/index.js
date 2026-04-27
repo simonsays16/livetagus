@@ -882,6 +882,9 @@ const processTrain = async (richInfo, originDateStr) => {
       `[NULL GUARD] Comboio ${trainId} confirmado SUPRIMIDO após ${mem.nullResponseCount} respostas nulas consecutivas.`,
     );
     details.SituacaoComboio = "SUPRIMIDO";
+    GhostManager.GHOST_SUPPRESSED.add(trainId);
+    delete TRAIN_MEMORY[trainId];
+    return null;
   } else if (details && !details._isAllNull) {
     // Resposta válida → resetar contador de nulos
     mem.nullResponseCount = 0;
