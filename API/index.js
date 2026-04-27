@@ -635,6 +635,7 @@ const checkOfflineTrains = async () => {
             `${tag} Comboio ${trainId} confirmado SUPRIMIDO após ${OFFLINE_NULL_COUNTS[trainId]} respostas nulas.`,
           );
           results[trainId] = "SUPRIMIDO";
+          GhostManager.GHOST_SUPPRESSED.add(trainId);
         }
       } else if (details && details.SituacaoComboio) {
         OFFLINE_NULL_COUNTS[trainId] = 0;
@@ -1605,6 +1606,12 @@ const updateCycle = async () => {
       startDate &&
       nowMs < startDate.getTime()
     ) {
+      if (
+        cachedStatus === "SUPRIMIDO" &&
+        GhostManager.GHOST_SUPPRESSED.has(trainId)
+      ) {
+        continue;
+      }
       FUTURE_TRAINS_CACHE[trainId] = "Sem Informação";
       continue;
     }
