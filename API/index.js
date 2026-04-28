@@ -190,7 +190,6 @@ let OUTPUT_CACHE = {};
 let TRAIN_MEMORY = {}; // { [id]: { history: {}, lastDelay: 0, nextWakeUp: 0, lastResult: null } }
 let FUTURE_TRAINS_CACHE = {};
 let IS_CYCLE_RUNNING = false;
-let OFFLINE_NULL_COUNTS = {}; // { [trainId]: number } - Contador de respostas nulas consecutivas no checkOfflineTrains
 let EXTRA_TRAINS_CACHE = {}; // { [id]: extraTrainOutput }
 let DYNAMIC_EXTRA_SCHEDULE = {}; // { [id]: richInfo }
 
@@ -608,66 +607,85 @@ const checkOfflineTrains = async () => {
   }
 
   // CONFIRMAÇÃO INDIVIDUAL
+  // Cada comboio é verificado até 5 vezes consecutivas neste ciclo.
+  // Se todas as respostas forem nulas → SUPRIMIDO imediato.
+  // Se alguma responder com dados válidos → usar esse resultado.
+  // Isto resolve o estado num único ciclo de 15 min em vez de 75 min.
   for (const t of toIndividualCheck) {
     const trainId = String(t.id);
     const tag = t._stationPollSuppressed
       ? "[CROSS VALIDATE]"
       : "[NULL GUARD OFFLINE]";
 
-    try {
-      const dateStr = formatDateStr(t.startObj);
-      const details = await fetchDetails(trainId, dateStr);
+    const MAX_RETRIES = 5;
+    let resolved = false;
 
-      if (details && details._isAllNull) {
-        OFFLINE_NULL_COUNTS[trainId] = (OFFLINE_NULL_COUNTS[trainId] || 0) + 1;
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const dateStr = formatDateStr(t.startObj);
+        const details = await fetchDetails(trainId, dateStr);
 
-        if (OFFLINE_NULL_COUNTS[trainId] < 5) {
+        if (details && details._isAllNull) {
           console.log(
-            `${tag} Comboio ${trainId} resposta nula ${OFFLINE_NULL_COUNTS[trainId]}/5. A manter estado anterior.`,
+            `${tag} Comboio ${trainId} resposta nula ${attempt}/${MAX_RETRIES}. A aguardar confirmação.`,
           );
-          if (t._stationPollSuppressed) {
-            results[trainId] = FUTURE_TRAINS_CACHE[trainId] || "Programado";
-          } else {
-            results[trainId] = FUTURE_TRAINS_CACHE[trainId] || "Sem Informação";
+
+          if (attempt < MAX_RETRIES) {
+            await new Promise((resolve) => setTimeout(resolve, 1200));
+            continue; // tenta novamente
           }
-        } else {
+
+          // Chegou à 5ª tentativa nula → SUPRIMIDO
           console.log(
-            `${tag} Comboio ${trainId} confirmado SUPRIMIDO após ${OFFLINE_NULL_COUNTS[trainId]} respostas nulas.`,
+            `${tag} Comboio ${trainId} confirmado SUPRIMIDO após ${MAX_RETRIES} respostas nulas consecutivas.`,
           );
           results[trainId] = "SUPRIMIDO";
           GhostManager.GHOST_SUPPRESSED.add(trainId);
-        }
-      } else if (details && details.SituacaoComboio) {
-        OFFLINE_NULL_COUNTS[trainId] = 0;
+          resolved = true;
+          break;
+        } else if (details && details.SituacaoComboio) {
+          const situacao = details.SituacaoComboio.trim() || "Sem Informação";
+          const nodes = details.NodesPassagemComboio || [];
+          const hasStarted = nodes.some((n) => n.ComboioPassou === true);
 
-        const situacao = details.SituacaoComboio.trim() || "Sem Informação";
-        const nodes = details.NodesPassagemComboio || [];
-        const hasStarted = nodes.some((n) => n.ComboioPassou === true);
+          const impliesSpuriousLive =
+            !hasStarted &&
+            (/em circulação/i.test(situacao) || /a horas/i.test(situacao));
 
-        const impliesSpuriousLive =
-          !hasStarted &&
-          (/em circulação/i.test(situacao) || /a horas/i.test(situacao));
-
-        if (impliesSpuriousLive) {
-          results[trainId] = "Sem Informação";
-        } else {
-          results[trainId] = situacao;
-          if (t._stationPollSuppressed && !/SUPRIMIDO/i.test(situacao)) {
-            console.warn(
-              `${tag} Station-poll disse SUPRIMIDO para ${trainId} mas IP individual responde "${situacao}". Confiando no individual.`,
-            );
+          if (impliesSpuriousLive) {
+            results[trainId] = "Sem Informação";
+          } else {
+            results[trainId] = situacao;
+            if (t._stationPollSuppressed && !/SUPRIMIDO/i.test(situacao)) {
+              console.warn(
+                `${tag} Station-poll disse SUPRIMIDO para ${trainId} mas IP individual responde "${situacao}". Confiando no individual.`,
+              );
+            }
           }
+          resolved = true;
+          break;
+        } else {
+          // Resposta null/undefined (erro de rede ou estrutura inesperada)
+          results[trainId] = FUTURE_TRAINS_CACHE[trainId] || "Sem Informação";
+          resolved = true;
+          break;
         }
-      } else {
+      } catch (error) {
+        console.error(
+          `${tag} Erro isolado no comboio ${trainId} (tentativa ${attempt}):`,
+          error.message,
+        );
         results[trainId] = FUTURE_TRAINS_CACHE[trainId] || "Sem Informação";
+        resolved = true;
+        break;
       }
-    } catch (error) {
-      console.error(
-        `${tag} Erro isolado no comboio ${trainId}:`,
-        error.message,
-      );
+    }
+
+    if (!resolved) {
       results[trainId] = FUTURE_TRAINS_CACHE[trainId] || "Sem Informação";
     }
+
+    // Delay entre comboios diferentes (não entre tentativas do mesmo)
     await new Promise((resolve) => setTimeout(resolve, 1200));
   }
 
@@ -797,9 +815,6 @@ const checkOfflineTrains = async () => {
   }
 
   const candidateIds = new Set(candidates.map((t) => String(t.id)));
-  for (const id of Object.keys(OFFLINE_NULL_COUNTS)) {
-    if (!candidateIds.has(id)) delete OFFLINE_NULL_COUNTS[id];
-  }
 
   StationPoller.cleanupCache(now);
 
@@ -881,7 +896,7 @@ const processTrain = async (richInfo, originDateStr) => {
     console.log(
       `[NULL GUARD] Comboio ${trainId} confirmado SUPRIMIDO após ${mem.nullResponseCount} respostas nulas consecutivas.`,
     );
-    details.SituacaoComboio = "SUPRIMIDO";
+    FUTURE_TRAINS_CACHE[trainId] = "SUPRIMIDO";
     GhostManager.GHOST_SUPPRESSED.add(trainId);
     delete TRAIN_MEMORY[trainId];
     return null;
@@ -1792,7 +1807,7 @@ app.get("/avisos", (req, res) => {
 app.get("/", (req, res) =>
   res.json({
     status: "online",
-    version: "4.10.0",
+    version: "4.10.3",
     aviso:
       "Pedimos que não uses o nosso endpoint diretamente! Verifica toda as informações e código no github.",
     operational: getOperationalInfo(),
@@ -1811,7 +1826,7 @@ app.get("/", (req, res) =>
 );
 
 app.listen(PORT, () => {
-  console.log(`LiveTagus API v4.10.0 ativa na porta ${PORT}`);
+  console.log(`LiveTagus API v4.10.3 ativa na porta ${PORT}`);
   console.log(`Endpoint /fertagus protegido com API_KEY.`);
   checkOfflineTrains();
   updateCycle();
