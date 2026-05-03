@@ -852,9 +852,11 @@ const processTrain = async (richInfo, originDateStr) => {
     return mem.lastResult;
   }
 
-  const richKey = richInfo.roma_areeiro
-    ? richInfo.roma_areeiro.substring(0, 5)
-    : null;
+  const isExtraTrain = !!(richInfo._isExtra || richInfo._isDynamicExtra);
+  const richKey =
+    !isExtraTrain && richInfo.roma_areeiro
+      ? richInfo.roma_areeiro.substring(0, 5)
+      : null;
   let departureTrip = null;
   if (richKey) {
     departureTrip = DEPARTURE_SCHEDULE.find(
@@ -1019,6 +1021,17 @@ const processTrain = async (richInfo, originDateStr) => {
         n.NomeEstacao.toUpperCase() === "PENALVA" && n.ComboioPassou === true,
     ) || !!mem.history[penalvaNodeId];
 
+  // Paragem técnica de Coina: comboios Setúbal→Lisboa recuperam até 3 min de
+  // atraso enquanto aguardam a partida programada. A recuperação aplica-se às
+  // previsões de Coina e estações seguintes até o comboio efectivamente passar.
+  const isSetubalOrigin = direction === "lisboa" && !!richInfo.setubal;
+  const coinaNodeId = STATION_IDS_FIXED["COINA"];
+  let coinaPassed =
+    nodes.some(
+      (n) =>
+        n.NomeEstacao.toUpperCase() === "COINA" && n.ComboioPassou === true,
+    ) || !!mem.history[coinaNodeId];
+
   if (isLive) {
     const lastNode = nodes[nodes.length - 1];
     if (lastNode && lastNode.ComboioPassou) {
@@ -1159,6 +1172,16 @@ const processTrain = async (richInfo, originDateStr) => {
         penalvaPassed = true;
       }
 
+      // Paragem técnica de Coina: quando o comboio passa Coina, o atraso real
+      // é medido e passa a ser usado para as estações seguintes sem recuperação.
+      if (
+        isNewlyPassed &&
+        node.NomeEstacao.toUpperCase() === "COINA" &&
+        direction === "lisboa"
+      ) {
+        coinaPassed = true;
+      }
+
       if (isNewlyPassed && stationKey && dateChegadaProg) {
         AnalyticsManager.recordArrival(
           trainId,
@@ -1171,17 +1194,20 @@ const processTrain = async (richInfo, originDateStr) => {
     }
 
     const { isWeekendOrHoliday } = getOperationalInfo(nowObj);
-    let bridgeAdjustment = DelayManager.getStructuralDelay(
-      stationKey,
-      direction,
-      {
+    let bridgeAdjustment =
+      DelayManager.getStructuralDelay(stationKey, direction, {
         pragalPassed,
         corroiosPassed,
         penalvaPassed,
         now: nowObj,
         isWeekendOrHoliday,
-      },
-    );
+      }) +
+      DelayManager.getCoinaRecovery(
+        stationKey,
+        direction,
+        isSetubalOrigin,
+        coinaPassed,
+      );
     let horaPrevistaFinal = horaPartidaProgStr;
 
     if (!passed && !capturedNextDelay) {
@@ -1807,7 +1833,7 @@ app.get("/avisos", (req, res) => {
 app.get("/", (req, res) =>
   res.json({
     status: "online",
-    version: "4.10.3",
+    version: "4.10.5",
     aviso:
       "Pedimos que não uses o nosso endpoint diretamente! Verifica toda as informações e código no github.",
     operational: getOperationalInfo(),
@@ -1826,7 +1852,7 @@ app.get("/", (req, res) =>
 );
 
 app.listen(PORT, () => {
-  console.log(`LiveTagus API v4.10.3 ativa na porta ${PORT}`);
+  console.log(`LiveTagus API v4.10.5 ativa na porta ${PORT}`);
   console.log(`Endpoint /fertagus protegido com API_KEY.`);
   checkOfflineTrains();
   updateCycle();

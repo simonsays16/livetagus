@@ -42,12 +42,12 @@
 // ─── CONSTANTES DE ATRASO ─────────────────────────────────────────────────────
 
 /** Atraso de Ponte: Pragal (sentido Margem). */
-const BRIDGE_DELAY_BASE_S = 30; // 30 seg
-const BRIDGE_DELAY_PEAK_S = 1 * 60; // 1 min 00 seg
+const BRIDGE_DELAY_BASE_S = 60; // 30 seg
+const BRIDGE_DELAY_PEAK_S = 1 * 60 + 30; // 1 min 00 seg
 
 /** Troço 1 Pós-Pragal: Foros (sentido Margem). */
-const TROCO1_DELAY_BASE_S = 0; // 45 seg
-const TROCO1_DELAY_PEAK_S = 20; // 45 seg
+const TROCO1_DELAY_BASE_S = 30; // 45 seg
+const TROCO1_DELAY_PEAK_S = 60; // 45 seg
 
 /** Troço 2 Pós-Coina: Penalva (sentido Margem). */
 const TROCO2_DELAY_BASE_S = 2 * 60 + 15; // 2 min 30 seg
@@ -198,6 +198,36 @@ const getStructuralDelay = (
   );
 };
 
+// ─── RECUPERAÇÃO DA PARAGEM TÉCNICA DE COINA (SENTIDO LISBOA e Combios Setubal) ────────────────
+
+const COINA_RECOVERY_S = 3 * 60; // 3 minutos
+
+/** Coina e todas as estações posteriores no sentido Lisboa */
+const COINA_AND_AFTER_STATIONS_LISBOA = new Set([
+  "coina",
+  "fogueteiro",
+  "foros_de_amora",
+  "corroios",
+  "pragal",
+  "campolide",
+  "sete_rios",
+  "entrecampos",
+  "roma_areeiro",
+]);
+
+const getCoinaRecovery = (
+  stationKey,
+  direction,
+  isSetubalOrigin = false,
+  coinaPassed = false,
+) => {
+  if (direction !== "lisboa") return 0;
+  if (!isSetubalOrigin) return 0;
+  if (coinaPassed) return 0;
+  if (!COINA_AND_AFTER_STATIONS_LISBOA.has(stationKey)) return 0;
+  return -COINA_RECOVERY_S;
+};
+
 // ─── NUNCA CHEGAR ANTES ───────────────────────────────────────────────────────
 
 const clampToScheduled = (predictedMs, scheduledMs) => {
@@ -217,5 +247,6 @@ module.exports = {
   getTroco2Delay,
   getTroco3Delay,
   getStructuralDelay,
+  getCoinaRecovery,
   clampToScheduled,
 };
