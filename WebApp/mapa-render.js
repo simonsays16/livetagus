@@ -1,130 +1,328 @@
 /**
  * mapa-render.js
- * Renderização visual do mapa: linha da Fertagus, estações e comboios.
+ * Renderização visual do mapa: linha da Fertagus, estações, comboios e
+ * cartões de "trajeto restante" para o comboio focado.
  */
 
 (function () {
   "use strict";
 
+  // ─── ESTADO INTERNO ──────────────────────────────────────────────────
   const markers = new Map(); // trainId → entry
+  const routeCardMarkers = new Map(); // stationKey → entry
+  const routeEndMarkers = [];
   let clickHandler = null;
   let animationFrameId = null;
 
-  // ─── ANIMAÇÃO SUAVE (LERP) ───────────────────────────────────────────
-
-  // Variáveis para a Câmera
   let mainMap = null;
-  let trackedTrainId = null;
+  let routeFocusTrainId = null;
+  let routeFocusSignature = "";
+  let routeFocusUserDetached = false; // user fez drag/wheel manualmente
   let isFlying = false;
-  let flyToTimeout = null;
 
-  function getDynamicOffset() {
-    const isMobile = window.innerWidth < 768;
-    let isModalOpen = false;
+  // Estações em cluster denso (norte) — precisam de slot system.
+  const NORTH_CLUSTER = new Set([
+    "campolide",
+    "sete_rios",
+    "entrecampos",
+    "roma_areeiro",
+  ]);
 
-    if (window.MapaDetails && window.MapaDetails.isOpen()) isModalOpen = true;
-    if (window.MapaStation && window.MapaStation.isOpen()) isModalOpen = true;
+  const IMPORTANT_STATIONS = new Set([
+    "sete_rios",
+    "entrecampos",
+    "pragal",
+    "corroios",
+    "coina",
+    "pinhal_novo",
+    "palmela",
+  ]);
+  let lastZoomStateWasDetailed = false;
 
-    if (isMobile && isModalOpen) {
-      // Empurra o centro do mapa para baixo, fazendo o comboio subir (fuga ao modal)
-      return [0, window.innerHeight * 0.28];
-    }
-    if (!isMobile && isModalOpen) {
-      // Empurra o centro para a direita (fuga ao modal lateral)
-      return [220, 0];
-    }
-    return [0, 0];
+  let userOriginKey = null;
+  let userDestKey = null;
+
+  // Função para injetar o filtro que vem do link
+  function setUserRouteFilter(origin, dest) {
+    userOriginKey = origin;
+    userDestKey = dest;
   }
 
-  function animateMarkers(time) {
-    for (const entry of markers.values()) {
-      if (entry.startPos && entry.targetPos) {
-        let t = (time - entry.animationStartTime) / MAPA.POSITION_UPDATE_MS;
-        if (t > 1) t = 1;
-        const lng = lerp(entry.startPos.lng, entry.targetPos.lng, t);
-        const lat = lerp(entry.startPos.lat, entry.targetPos.lat, t);
-        entry.marker.setLngLat([lng, lat]);
-      }
-    }
+  // ─── HELPERS ─────────────────────────────────────────────────────────
 
-    // ─── TRACKING DA CÂMARA ───
-    if (trackedTrainId && !isFlying && mainMap) {
-      const entry = markers.get(trackedTrainId);
-      if (entry) {
-        const coords = entry.marker.getLngLat();
-        mainMap.jumpTo({
-          center: [coords.lng, coords.lat],
-          offset: getDynamicOffset(),
-        });
-      }
-    }
-    animationFrameId = requestAnimationFrame(animateMarkers);
-  }
-
-  function getDynamicOffset() {
-    const isMobile = window.innerWidth < 768;
-    const isModalOpen =
-      (window.MapaDetails && window.MapaDetails.isOpen()) ||
-      (window.MapaStation && window.MapaStation.isOpen());
-
-    if (isMobile && isModalOpen) {
-      // Telemóvel: comboio no topo (empurramos o centro do mapa para baixo)
-      return [0, window.innerHeight * 0.28];
-    }
-    if (!isMobile && isModalOpen) {
-      // PC: compensa a largura do painel lateral (440px)
-      return [180, 0];
-    }
-    return [0, 0];
-  }
-
-  function setMap(mapInstance) {
-    mainMap = mapInstance;
-    // Pára o tracking se o utilizador interagir manualmente com o mapa
-    const stopTrack = () => {
-      if (trackedTrainId) stopTracking();
-    };
-    mainMap.on("dragstart", stopTrack);
-    mainMap.on("wheel", stopTrack);
-    mainMap.on("touchstart", stopTrack);
-  }
-
-  function startTracking(id) {
-    trackedTrainId = id;
-    window.history.replaceState(null, null, "#" + id); // Atualiza URL
-    const entry = markers.get(id);
-    if (entry && mainMap) {
-      isFlying = true;
-      mainMap.flyTo({
-        center: entry.marker.getLngLat(),
-        zoom: Math.max(mainMap.getZoom(), 15),
-        offset: getDynamicOffset(),
-        speed: 1.2,
-      });
-      mainMap.once("moveend", () => {
-        isFlying = false;
-      });
-    }
-  }
-
-  function stopTracking() {
-    trackedTrainId = null;
-    window.history.replaceState(null, null, window.location.pathname); // Limpa URL
-  }
-
-  function recenterTracking() {
-    if (trackedTrainId && mainMap) {
-      isFlying = true;
-      mainMap.easeTo({ offset: [0, 0], duration: 400 });
-      mainMap.once("moveend", () => {
-        isFlying = false;
-      });
-    }
+  function escapeHtml(str) {
+    return String(str == null ? "" : str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
   }
 
   function lerp(a, b, t) {
     return a + (b - a) * t;
   }
+
+  function getModalState() {
+    if (
+      window.MapaDetails &&
+      typeof window.MapaDetails.getModalState === "function"
+    ) {
+      return window.MapaDetails.getModalState();
+    }
+    if (window.MapaDetails && window.MapaDetails.isOpen()) return "mini";
+    if (window.MapaStation && window.MapaStation.isOpen()) return "station";
+    return "closed";
+  }
+
+  // ─── CÂMERA: PADDING POR ESTADO DO MODAL ─────────────────────────────
+
+  function getRouteFocusPadding() {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const isMobile = w < 768;
+    const state = getModalState();
+
+    if (isMobile) {
+      // Aumentamos o padding do topo para compensar o menu global
+      // e a altura do próprio marcador quando fazemos zoom
+      const topPad = 130;
+
+      if (state === "expanded") {
+        const visibleTop = Math.max(topPad, h * 0.12);
+        return {
+          top: visibleTop,
+          bottom: Math.round(h * 0.85),
+          left: 40,
+          right: 40,
+        };
+      }
+
+      if (state === "mini" || state === "station") {
+        // Garantimos um mínimo de píxeis (350px ou 400px) para que
+        // a margem nunca seja menor do que a altura mínima do painel (320px)
+        const bottomPad =
+          state === "station"
+            ? Math.max(400, Math.round(h * 0.55))
+            : Math.max(350, Math.round(h * 0.45));
+
+        return {
+          top: topPad,
+          bottom: bottomPad,
+          left: 40,
+          right: 40,
+        };
+      }
+
+      return { top: topPad, bottom: 120, left: 40, right: 40 };
+    }
+
+    // Desktop
+    if (state === "mini" || state === "expanded" || state === "station") {
+      return { top: 120, bottom: 120, left: 100, right: 500 };
+    }
+    return { top: 120, bottom: 120, left: 100, right: 100 };
+  }
+
+  // ─── CÂMERA: FOCO NO TRAJECTO RESTANTE ───────────────────────────────
+
+  function trainById(id) {
+    const entry = markers.get(id);
+    return entry ? entry.train : null;
+  }
+
+  function remainingNodes(train) {
+    return (train && train.nodes ? train.nodes : []).filter(
+      (n) => !n.ComboioPassou,
+    );
+  }
+
+  function applyRouteFocus(train, opts) {
+    if (!train || !mainMap) return;
+    if (typeof maplibregl === "undefined") return;
+    const subtle = opts && opts.subtle;
+    const pos = window.MapaGeo
+      ? window.MapaGeo.computeTrainPosition(train, new Date())
+      : null;
+    if (!pos) return;
+    let remaining = remainingNodes(train);
+    if (remaining.length === 0) return;
+
+    // Quando há filtro de rota do utilizador, limita o enquadramento
+    // entre a posição actual do comboio e a estação de destino do user
+    // (não o destino final do comboio).
+    if (userDestKey) {
+      const destIdx = remaining.findIndex((n) => {
+        const st = MAPA.resolveStationByApiId(n.EstacaoID);
+        return st && st.key === userDestKey;
+      });
+      if (destIdx !== -1) {
+        remaining = remaining.slice(0, destIdx + 1);
+      }
+    }
+
+    const bounds = new maplibregl.LngLatBounds(
+      [pos.lng, pos.lat],
+      [pos.lng, pos.lat],
+    );
+    for (const node of remaining) {
+      const st = MAPA.resolveStationByApiId(node.EstacaoID);
+      if (st) bounds.extend([st.lng, st.lat]);
+    }
+
+    const padding = getRouteFocusPadding();
+    const duration = subtle ? 700 : MAPA.ROUTE_FOCUS_DURATION_MS;
+
+    isFlying = true;
+    try {
+      mainMap.fitBounds(bounds, {
+        padding,
+        duration,
+        maxZoom: MAPA.ROUTE_FOCUS_MAX_ZOOM,
+        essential: true,
+        linear: false,
+      });
+    } catch (e) {
+      console.warn("[MapaRender] fitBounds falhou:", e.message);
+    }
+    mainMap.once("moveend", () => {
+      isFlying = false;
+    });
+  }
+
+  function recomputeRouteFocusIfNeeded(train) {
+    if (!train || routeFocusTrainId !== train.id) return;
+    if (routeFocusUserDetached) return;
+    const remaining = remainingNodes(train);
+    const sig = remaining.map((n) => n.EstacaoID).join(",");
+    const changed = sig !== routeFocusSignature;
+    routeFocusSignature = sig;
+    if (remaining.length === 0) return;
+    // Mudou o conjunto de estações (passou uma) → reaplica com mais ênfase
+    applyRouteFocus(train, { subtle: !changed });
+  }
+
+  function updateFocusClasses() {
+    for (const entry of markers.values()) {
+      entry.el.classList.toggle(
+        "is-focused",
+        routeFocusTrainId === entry.train.id,
+      );
+    }
+  }
+
+  function startRouteFocus(train) {
+    if (!train || !mainMap) return;
+    routeFocusTrainId = train.id;
+    routeFocusSignature = "";
+    routeFocusUserDetached = false;
+    drawRouteStationCards(train);
+    applyRouteFocus(train, { subtle: false });
+    try {
+      window.history.replaceState(null, null, "#" + train.id);
+    } catch (_) {}
+    updateFocusClasses();
+  }
+
+  function endRouteFocus() {
+    routeFocusTrainId = null;
+    userOriginKey = null;
+    userDestKey = null;
+    routeFocusSignature = "";
+    routeFocusUserDetached = false;
+    clearRouteStationCards();
+    try {
+      window.history.replaceState(
+        null,
+        null,
+        window.location.pathname + window.location.search,
+      );
+    } catch (_) {}
+    updateFocusClasses();
+  }
+
+  function isRouteFocused() {
+    return routeFocusTrainId != null;
+  }
+
+  function recenterTracking() {
+    // Quando um modal fecha mas há um comboio focado, refaz o
+    // enquadramento com o novo padding (sem modal).
+    if (!mainMap) return;
+    if (routeFocusTrainId) {
+      const t = trainById(routeFocusTrainId);
+      if (t) {
+        applyRouteFocus(t, { subtle: true });
+      }
+    } else {
+      // Sem comboio focado → mostra toda a linha
+      showWholeLine({ duration: 500 });
+    }
+  }
+
+  function showWholeLine(opts) {
+    if (!mainMap || typeof maplibregl === "undefined") return;
+    const bounds = new maplibregl.LngLatBounds(
+      [MAPA.STATIONS[0].lng, MAPA.STATIONS[0].lat],
+      [MAPA.STATIONS[0].lng, MAPA.STATIONS[0].lat],
+    );
+    for (const s of MAPA.STATIONS) bounds.extend([s.lng, s.lat]);
+    try {
+      mainMap.fitBounds(bounds, {
+        padding: { top: 80, bottom: 80, left: 50, right: 50 },
+        duration: (opts && opts.duration) || 700,
+        maxZoom: 11.5,
+        essential: true,
+      });
+    } catch (_) {}
+  }
+
+  function focusStation(station) {
+    // Limpa qualquer focus em comboio para evitar conflitos visuais.
+    if (routeFocusTrainId) endRouteFocus();
+    if (!mainMap || !station) return;
+    isFlying = true;
+    mainMap.flyTo({
+      center: [station.lng, station.lat],
+      zoom: Math.max(mainMap.getZoom(), 14.5),
+      offset: getStationFocusOffset(),
+      speed: 1.1,
+      essential: true,
+    });
+    mainMap.once("moveend", () => {
+      isFlying = false;
+    });
+  }
+
+  function getStationFocusOffset() {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    if (w < 768) {
+      // Estação ligeiramente para cima do centro para deixar espaço ao modal
+      return [0, -h * 0.18];
+    }
+    return [-180, 0]; // empurra centro à esquerda do modal lateral
+  }
+
+  // ─── BACKWARD-COMPAT API ─────────────────────────────────────────────
+  //
+  // startTracking(id), startTrackingTrain(id), stopTracking() continuam
+  // a existir e mapeiam para o novo modelo.
+
+  function startTracking(id) {
+    const t = trainById(id);
+    if (t) startRouteFocus(t);
+  }
+
+  function startTrackingTrain(id) {
+    return startTracking(id);
+  }
+
+  function stopTracking() {
+    endRouteFocus();
+  }
+
+  // ─── ANIMAÇÃO SUAVE DOS MARKERS ──────────────────────────────────────
 
   function animateMarkers(time) {
     for (const entry of markers.values()) {
@@ -141,7 +339,6 @@
 
   // ─── HELPERS DE ESTILO ───────────────────────────────────────────────
 
-  /** Cor de preenchimento das carruagens (idêntica à app). */
   function carriageFillColor(train) {
     const c = MAPA.OCCUPANCY_COLORS;
     if (train.isOffline && train.occupancy == null) return c.offline;
@@ -161,18 +358,16 @@
     return MAPA.STATUS_COLORS[train.dotStatus] || MAPA.STATUS_COLORS.gray;
   }
 
-  /** True quando queremos pulse (atenção). */
   function isPulsing(train) {
     return train.dotStatus === "orange" || train.dotStatus === "red";
   }
 
-  /** True quando o comboio está parado numa estação. */
   function isAtRest(position) {
     if (!position) return true;
     return position.segment === "boarding" || position.segment === "before";
   }
 
-  // ─── DESENHAR A LINHA DA FERTAGUS ────────────────────────────────────
+  // ─── LINHA DA FERTAGUS ────────────────────────────────────────────────
 
   function drawLine(map, geojson) {
     if (!geojson) return;
@@ -207,7 +402,7 @@
     }
   }
 
-  // ─── DESENHAR AS ESTAÇÕES ────────────────────────────────────────────
+  // ─── ESTAÇÕES (pontos + labels) ──────────────────────────────────────
 
   function drawStations(map, stops) {
     if (!stops) return;
@@ -279,7 +474,6 @@
       });
     }
 
-    // Click → modal da estação (se registado). Hover muda cursor.
     map.on("click", "fertagus-stations-layer", (e) => {
       const f = e.features && e.features[0];
       if (!f) return;
@@ -298,18 +492,190 @@
     });
   }
 
-  // ─── CONSTRUÇÃO DO MARKER ────────────────────────────────────────────
-  //
-  // Estrutura do DOM de um marker:
-  //   .train-marker                (wrapper; recebe data-view/at-rest)
-  //     .train-view-icon           (zoom-out)
-  //       .train-ring + .train-front (disco + imagem direita)
-  //       .train-arrow              (seta play rotacionada)
-  //     .train-view-cars           (zoom-in)
-  //       .train-cars-body         (roda pelo bearing; contém WiFi + carruagens)
-  //         .train-wifi-badge      (na frente do comboio)
-  //         .train-cars-wrapper    (flex column: carruagens)
-  //           .train-carriage × N
+  // ─── CARTÕES DE ESTAÇÃO NO TRAJECTO ──────────────────────────────────
+
+  function computeNodeDelayMin(node) {
+    if (!node || !window.MapaGeo) return null;
+    const prog = window.MapaGeo.parseTimeHHMMSS(node.HoraProgramada);
+    const prev = window.MapaGeo.parseTimeHHMMSS(node.HoraPrevista);
+    if (!prog || !prev) return null;
+    return Math.floor((prev.getTime() - prog.getTime()) / 60000);
+  }
+
+  function nodeTimeString(node) {
+    if (!node) return "--:--";
+    const prev = (node.HoraPrevista || "").substring(0, 5);
+    const prog = (node.HoraProgramada || "").substring(0, 5);
+    if (prev && !prev.startsWith("HH")) return prev;
+    if (prog && !prog.startsWith("HH")) return prog;
+    return "--:--";
+  }
+
+  function offsetForCard(stationKey, idxInCluster, totalInCluster) {
+    // Estações distantes → posicionar acima da estação.
+    if (!NORTH_CLUSTER.has(stationKey)) return [0, -10];
+
+    // Cluster norte: spread em 4 quadrantes
+    const slot = idxInCluster % 4;
+    const offsets = [
+      [-58, -14],
+      [58, -14],
+      [-58, 30],
+      [58, 30],
+    ];
+    return offsets[slot];
+  }
+
+  // Resolver problema de cartões sobre estações futuras
+
+  function buildStationCardHtml(station, timeStr, delayMin, isDestination) {
+    const onTime = delayMin == null || delayMin < 1;
+    const ringHex = onTime ? "#10b981" : "#f59e0b";
+    const ringRgb = onTime ? "16,185,129" : "245,158,11";
+    const delayBadge = !onTime
+      ? `<span class="rsc-delay">+${delayMin}m</span>`
+      : `<span class="rsc-ontime">A horas</span>`;
+
+    const destTag = isDestination
+      ? `<span class="rsc-dest" aria-label="Destino"></span>`
+      : "";
+    return `
+      <div class="rsc-pill" data-station-key="${escapeHtml(station.key)}"
+           style="--rsc-ring:${ringHex}; --rsc-glow:rgba(${ringRgb},.35);">
+        ${destTag}
+        <div class="rsc-row1">
+          <span class="rsc-name">${escapeHtml(station.name)}</span>
+          <span class="rsc-time">${escapeHtml(timeStr)}</span>
+        </div>
+        <div class="rsc-row2">${delayBadge}</div>
+      </div>`;
+  }
+
+  function drawRouteStationCards(train) {
+    clearRouteStationCards();
+    if (!train || !mainMap || typeof maplibregl === "undefined") return;
+    const allRemaining = remainingNodes(train);
+    if (allRemaining.length === 0) return;
+    let remaining = [];
+
+    // 3. A LÓGICA DO FILTRO:
+    // Se o userOriginKey e userDestKey existirem (vieram do link),
+    // filtramos TODOS os nós do comboio (mesmo os que já passaram) para mostrar só estes dois.
+    if (userOriginKey && userDestKey) {
+      // PRIORIDADE 1: LINK (Mostra apenas as duas escolhidas)
+      remaining = train.nodes.filter((node) => {
+        const st = MAPA.resolveStationByApiId(node.EstacaoID);
+        return st && (st.key === userOriginKey || st.key === userDestKey);
+      });
+    } else {
+      // PRIORIDADE 2: NAVEGAÇÃO NORMAL (Respeita o Zoom)
+      const currentZoom = mainMap.getZoom();
+      lastZoomStateWasDetailed = currentZoom >= 10.8; // O nosso limite de zoom
+
+      remaining = allRemaining.filter((node, idx) => {
+        const isDestination = idx === allRemaining.length - 1;
+        // Mostra se: for o destino final OR houver zoom suficiente OR for estação importante
+        if (isDestination || lastZoomStateWasDetailed) return true;
+
+        const st = MAPA.resolveStationByApiId(node.EstacaoID);
+        return st && IMPORTANT_STATIONS.has(st.key);
+      });
+    }
+
+    if (remaining.length === 0) return;
+    let clusterIdx = 0;
+    const clusterCount = remaining.filter((n) => {
+      const st = MAPA.resolveStationByApiId(n.EstacaoID);
+      return st && NORTH_CLUSTER.has(st.key);
+    }).length;
+
+    const lastNode = remaining[remaining.length - 1];
+
+    remaining.forEach((node) => {
+      const st = MAPA.resolveStationByApiId(node.EstacaoID);
+      if (!st) return;
+      const inCluster = NORTH_CLUSTER.has(st.key);
+      const idx = inCluster ? clusterIdx++ : 0;
+
+      const delayMin = computeNodeDelayMin(node);
+      const timeStr = nodeTimeString(node);
+      const isDestination = node === lastNode;
+
+      const el = document.createElement("div");
+      el.className = ""; // estacao removida
+      el.innerHTML = buildStationCardHtml(st, timeStr, delayMin, isDestination);
+
+      const offset = offsetForCard(st.key, idx, clusterCount);
+      const m = new maplibregl.Marker({
+        element: el,
+        anchor: "bottom-right",
+        offset: [0, -10],
+      })
+        .setLngLat([st.lng, st.lat])
+        .addTo(mainMap);
+
+      routeCardMarkers.set(st.key, { marker: m, el, station: st, node });
+    });
+  }
+
+  function updateRouteStationCards(train) {
+    if (!train) return;
+
+    let remaining = [];
+    if (userOriginKey && userDestKey) {
+      remaining = train.nodes.filter((node) => {
+        const st = MAPA.resolveStationByApiId(node.EstacaoID);
+        return st && (st.key === userOriginKey || st.key === userDestKey);
+      });
+    } else {
+      const allRemaining = remainingNodes(train);
+      remaining = allRemaining.filter((node, idx) => {
+        const isDestination = idx === allRemaining.length - 1;
+        if (isDestination || lastZoomStateWasDetailed) return true;
+        const st = MAPA.resolveStationByApiId(node.EstacaoID);
+        return st && IMPORTANT_STATIONS.has(st.key);
+      });
+    }
+
+    const remainingKeys = new Set();
+    for (const node of remaining) {
+      const st = MAPA.resolveStationByApiId(node.EstacaoID);
+      if (!st) continue;
+      remainingKeys.add(st.key);
+      const entry = routeCardMarkers.get(st.key);
+      if (!entry) continue;
+      const delayMin = computeNodeDelayMin(node);
+      const timeStr = nodeTimeString(node);
+      const isDestination = node === remaining[remaining.length - 1];
+      entry.el.innerHTML = buildStationCardHtml(
+        entry.station,
+        timeStr,
+        delayMin,
+        isDestination,
+      );
+      entry.node = node;
+    }
+    // Remove cards de estações já passadas
+    for (const [key, entry] of Array.from(routeCardMarkers.entries())) {
+      if (!remainingKeys.has(key)) {
+        try {
+          entry.marker.remove();
+        } catch (_) {}
+        routeCardMarkers.delete(key);
+      }
+    }
+  }
+
+  function clearRouteStationCards() {
+    for (const e of routeCardMarkers.values()) {
+      try {
+        e.marker.remove();
+      } catch (_) {}
+    }
+    routeCardMarkers.clear();
+  }
+
+  // ─── MARKER DOS COMBOIOS ─────────────────────────────────────────────
 
   function buildMarkerHtml(train) {
     const carCount = train.carriages || 4;
@@ -317,7 +683,6 @@
     const fill = carriageFillColor(train);
     const ring = ringColor(train);
 
-    // ─── Carruagens (elementos individuais, flex-column) ─────────────
     const carriagesHtml = [];
     for (let i = 0; i < carCount; i++) {
       const active = i < filled;
@@ -329,7 +694,6 @@
       );
     }
 
-    // ─── WiFi badge (na frente da composição) ─────────────────────────
     const wifiHtml = `
       <svg class="train-wifi" viewBox="0 0 24 18" xmlns="http://www.w3.org/2000/svg"
            style="--wifi-color:${ring};">
@@ -339,15 +703,11 @@
         <circle class="wifi-dot" cx="12" cy="17" r="1.1" />
       </svg>`;
 
-    // ─── Frente do comboio (imagem; fallback para bloco simples) ─────
     const frontSvg = `
       <img src="./imagens/front_fertagus.svg" class="train-front-img" alt="" aria-hidden="true"
-           onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'train-front-fallback'}))" />
+           data-front-img="1" />
     `;
 
-    // ─── Seta "play" (lucide) para a direção ─────────────────────────
-    // Preenchida com a cor do ring, contorno ligeiramente mais escuro/claro
-    // para contraste com o mapa.
     const arrowSvg = `
       <svg class="train-arrow-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <polygon points="6,3 21,12 6,21" fill="${ring}"
@@ -378,9 +738,6 @@
     `;
   }
 
-  /**
-   * Atualiza cores/ocupação/pulse sem refazer todo o HTML.
-   */
   function updateMarkerStyle(entry, train) {
     const el = entry.el;
     const ring = ringColor(train);
@@ -404,8 +761,8 @@
     const carriageEls = el.querySelectorAll(".train-carriage");
     const carCount = train.carriages || 4;
     if (carriageEls.length !== carCount) {
-      // Refaz tudo se a composição mudou (raro)
       el.innerHTML = buildMarkerHtml(train);
+      ensureFrontFallback(el);
       return;
     }
     carriageEls.forEach((c, i) => {
@@ -420,15 +777,24 @@
   }
 
   /**
-   * Escala as carruagens para as dimensões reais (26 m × 3.2 m cada).
+   * Liga onerror em JS (em vez de inline) para cumprir CSP.
    */
+  function ensureFrontFallback(el) {
+    const img = el.querySelector('[data-front-img="1"]');
+    if (!img) return;
+    img.addEventListener("error", () => {
+      const span = document.createElement("span");
+      span.className = "train-front-fallback";
+      img.replaceWith(span);
+    });
+  }
+
   function scaleCarriagesToRealWorld(entry, zoom) {
     if (zoom < MAPA.ZOOM_DETAIL_CUTOFF || !entry.map) return;
 
     const train = entry.train;
     const carCount = train.carriages || 4;
 
-    // Cada carruagem: 26 m comprimento × 3.2 m largura
     const carLengthMeters = 50;
     const carWidthMeters = 10;
 
@@ -438,22 +804,18 @@
       Math.pow(2, zoom);
     const pixelsPerMeter = 1 / metersPerPixel;
 
-    // Individual dimensions per carriage
     let carLengthPx = carLengthMeters * pixelsPerMeter;
     let carWidthPx = carWidthMeters * pixelsPerMeter;
 
-    // Mínimos: cada carruagem nunca fica menor que 8px de comprimento
     carLengthPx = Math.max(carLengthPx, 8);
     carWidthPx = Math.max(carWidthPx, 6);
 
     const wrapper = entry.el.querySelector(".train-cars-wrapper");
     if (wrapper) {
-      // Ligeiro gap entre carruagens (representa a articulação, ~0.8m)
       const gapPx = Math.max(1, 0.8 * pixelsPerMeter);
       wrapper.style.gap = `${gapPx}px`;
       wrapper.style.padding = "0";
       wrapper.style.width = `${carWidthPx}px`;
-      // Height não é necessário no wrapper — é determinada pelas carruagens
     }
 
     const carriages = entry.el.querySelectorAll(".train-carriage");
@@ -464,18 +826,11 @@
     });
   }
 
-  // ─── ROTAÇÃO ─────────────────────────────────────────────────────────
-  //
-  // Zoom-out: só a seta gira (train front fica sempre direito).
-  // Zoom-in:  o corpo inteiro gira (carruagens + WiFi alinhados à linha).
-
   function applyRotation(entry, bearing) {
     const arrow = entry.el.querySelector(".train-arrow");
     const body = entry.el.querySelector(".train-cars-body");
 
     if (arrow) {
-      // Seta: 0° aponta para cima (norte). Bearing da geo: 0° = norte.
-      // maplibre rotationAlignment=map faz este cálculo automaticamente.
       arrow.style.transform = `translate(-50%, -50%) rotate(${bearing - 90}deg) translateX(30px)`;
     }
     if (body) {
@@ -483,10 +838,6 @@
     }
   }
 
-  /**
-   * Aplica a vista (ícone vs carruagens) e a flag de "at rest".
-   * Quando at-rest, a seta esmaece para indicar "parado".
-   */
   function applyViewState(entry, zoom, position) {
     const isDetail = zoom >= MAPA.ZOOM_DETAIL_CUTOFF;
     entry.el.dataset.view = isDetail ? "cars" : "icon";
@@ -496,7 +847,7 @@
     if (arrow) arrow.dataset.atRest = atRest ? "1" : "0";
   }
 
-  // ─── API PÚBLICA ─────────────────────────────────────────────────────
+  // ─── API PÚBLICA: MARKERS ────────────────────────────────────────────
 
   function upsertTrain(map, train, position, zoom) {
     if (!position) return;
@@ -507,26 +858,23 @@
       const el = document.createElement("div");
       el.className = "train-marker";
       el.innerHTML = buildMarkerHtml(train);
+      ensureFrontFallback(el);
 
-      // Click handler — usa pointer events para compatibilidade iOS/Android
       const onPress = (e) => {
         e.stopPropagation();
+        userOriginKey = null;
+        userDestKey = null;
         if (typeof clickHandler === "function") {
-          // Em vez de enviar o 'train' da closure antiga, vamos buscar o comboio
-          // mais recente ao nosso dicionário de marcadores!
           const currentEntry = markers.get(train.id);
           const freshTrain = currentEntry ? currentEntry.train : train;
-
           clickHandler(freshTrain);
         }
       };
       el.addEventListener("click", onPress);
-      // Também aceitar 'touchend' para iOS antigos que não disparam click
-      // fiavelmente sobre elementos absolutos.
 
       const marker = new maplibregl.Marker({
         element: el,
-        anchor: "center", // Âncora no centro do comboio
+        anchor: "center",
         rotationAlignment: "map",
         pitchAlignment: "map",
       })
@@ -552,10 +900,17 @@
       if (!animationFrameId) {
         animationFrameId = requestAnimationFrame(animateMarkers);
       }
+
+      // Se este é o comboio focado, atualiza cards e foco
+      if (routeFocusTrainId === train.id) {
+        drawRouteStationCards(train);
+        recomputeRouteFocusIfNeeded(train);
+      }
+
+      entry.el.classList.toggle("is-focused", routeFocusTrainId === train.id);
       return;
     }
 
-    // Update path ─────────────────────────────────────────────────────
     entry.map = map;
     const currentVisualPos = entry.marker.getLngLat();
     entry.startPos = { lng: currentVisualPos.lng, lat: currentVisualPos.lat };
@@ -581,12 +936,24 @@
 
     applyViewState(entry, zoom, position);
     scaleCarriagesToRealWorld(entry, zoom);
+
+    if (routeFocusTrainId === train.id) {
+      updateRouteStationCards(train);
+      recomputeRouteFocusIfNeeded(train);
+    }
   }
 
   function onZoomChange(zoom) {
     for (const entry of markers.values()) {
       applyViewState(entry, zoom, null);
       scaleCarriagesToRealWorld(entry, zoom);
+    }
+    const isDetailed = zoom >= 10.8;
+    // Só recalculamos os cartões se o utilizador cruzou a linha de zoom (para não sobrecarregar o browser)
+    if (routeFocusTrainId && isDetailed !== lastZoomStateWasDetailed) {
+      lastZoomStateWasDetailed = isDetailed;
+      const t = trainById(routeFocusTrainId);
+      if (t) drawRouteStationCards(t); // Redesenha magicamente as estações em falta!
     }
   }
 
@@ -618,78 +985,40 @@
     return markers;
   }
 
-  // ─── CONTROLO DE CÂMERA ──────────────────────────────────────────────
-
+  // ─── INTERAÇÃO MANUAL DO USER COM O MAPA ─────────────────────────────
   function setMap(mapInstance) {
     mainMap = mapInstance;
-
-    // Desliga o tracking se o utilizador interagir (arrastar ou fazer scroll no mapa)
-    const stopTrack = (e) => {
-      if (e.originalEvent && trackedTrainId) {
-        stopTracking();
+    const detachIfUser = (e) => {
+      if (!routeFocusTrainId) return;
+      if (isFlying) return; // movimento causado pelo nosso fitBounds
+      if (e && e.originalEvent) {
+        routeFocusUserDetached = true;
       }
     };
-    mainMap.on("dragstart", stopTrack);
-    mainMap.on("touchstart", stopTrack);
-    mainMap.on("wheel", stopTrack);
+    mainMap.on("dragstart", detachIfUser);
+    mainMap.on("touchstart", detachIfUser);
+    mainMap.on("wheel", detachIfUser);
   }
 
-  function startTrackingTrain(id) {
-    trackedTrainId = id;
-    window.history.replaceState(null, null, "#" + id); // Põe o ID no URL
-
-    const entry = markers.get(id);
-    if (entry && mainMap) {
-      isFlying = true;
-      mainMap.flyTo({
-        center: entry.marker.getLngLat(),
-        zoom: Math.max(mainMap.getZoom(), 14), // Zoom in mínimo
-        offset: getDynamicOffset(),
-        speed: 1.2,
-      });
-      mainMap.once("moveend", () => {
-        isFlying = false;
-      });
-    }
-  }
-
-  function focusStation(station) {
-    stopTracking(); // Estações não se movem, não precisam de tracking contínuo
-    if (mainMap) {
-      mainMap.flyTo({
-        center: [station.lng, station.lat],
-        zoom: Math.max(mainMap.getZoom(), 15),
-        offset: getDynamicOffset(),
-        speed: 1.2,
-      });
-    }
-  }
-
-  function stopTracking() {
-    trackedTrainId = null;
-    window.history.replaceState(
-      null,
-      null,
-      window.location.pathname + window.location.search,
-    ); // Limpa a hash do URL
-  }
-
-  // Usado quando os modais fecham, para que o mapa recentre suavemente
-  function recenterTracking() {
-    if (trackedTrainId && mainMap) {
-      isFlying = true;
-      mainMap.easeTo({ offset: [0, 0], duration: 400 });
-      mainMap.once("moveend", () => {
-        isFlying = false;
-      });
-    }
-  }
-
+  // ─── EXPORT ──────────────────────────────────────────────────────────
   window.MapaRender = {
     setMap,
+    // Novo modelo
+    startRouteFocus,
+    endRouteFocus,
+    isRouteFocused,
+    drawRouteStationCards,
+    updateRouteStationCards,
+    clearRouteStationCards,
+    showWholeLine,
+    setUserRouteFilter,
+    // Compat
     startTracking,
+    startTrackingTrain,
+    stopTracking,
     focusStation,
     recenterTracking,
+    // Render
     drawLine,
     drawStations,
     upsertTrain,

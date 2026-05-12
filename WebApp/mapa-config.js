@@ -13,19 +13,27 @@
     API_KEY: "KoKi30rVWuwkF9lqKL6j4mb0VMg3dIXWs6QDHZ3de0G8lC5qvu",
 
     // ─── INTERVALOS ────────────────────────────────────────────────────
-    API_REFRESH_MS: 30_000, // refresh aos dados da API
-    POSITION_UPDATE_MS: 5_000, // reposicionamento dos comboios
-    BOARDING_MS: 30_000, // 30 s de embarque em cada paragem
+    API_REFRESH_MS: 30_000,
+    POSITION_UPDATE_MS: 5_000,
+    BOARDING_MS: 30_000,
+    BOARDING_HEAD_MS: 30_000,
+    BOARDING_TAIL_MS: 20_000,
+
+    // Estações que NUNCA acumulam tempo de embarque inicial: são origens
+    // de linha (mesmo Coina, que serve como origem dos comboios curtos).
+    INITIAL_STATION_KEYS: new Set(["setubal", "coina", "roma_areeiro"]),
 
     // ─── MAPA ──────────────────────────────────────────────────────────
     CENTER: [-9.05, 38.65],
     ZOOM: 10,
     MIN_ZOOM: 8,
     MAX_ZOOM: 17,
-    ZOOM_DETAIL_CUTOFF: 15, // >= este zoom → vista de carruagens
+    ZOOM_DETAIL_CUTOFF: 15,
+    ROUTE_FOCUS_MAX_ZOOM: 13.5,
+    ROUTE_FOCUS_DURATION_MS: 900,
 
     MAX_BOUNDS: [
-      [-10.0, 38.2],
+      [-15.0, 38.2],
       [-8.3, 39.0],
     ],
 

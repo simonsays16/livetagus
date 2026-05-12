@@ -1,6 +1,13 @@
 /**
  * mapa-station.js
  * Modal de detalhes de uma ESTAÇÃO: mostra as próximas partidas.
+ *
+ * Versão 2 (refactor 2026-05):
+ *   - Drag-down para fechar a partir do handle/header
+ *   - Reset de scroll garantido em cada open()
+ *   - Botão "locate" passa a abrir o modal de detalhes do comboio
+ *     já com route-focus aplicado, em vez de só centrar a câmara
+ *   - close({silent: true}) suprime o recenter automático do mapa
  */
 
 (function () {
@@ -12,6 +19,12 @@
   let currentStation = null;
   let directionFilter = { lisboa: true, margem: true };
   let trainsSource = null; // callback () => Array
+
+  // Drag state
+  let dragActive = false;
+  let dragStartY = 0;
+  let dragLastY = 0;
+  let dragStartTs = 0;
 
   function ensureElements() {
     if (panel && backdrop) return;
@@ -36,9 +49,6 @@
   /**
    * Calcula o atraso em minutos NA ESTAÇÃO específica, comparando
    * HoraPrevista e HoraProgramada do nó correspondente.
-   * IGNORA deliberadamente o texto SituacaoComboio — esse refere-se ao
-   * próximo nó não passado e pode estar errado para a estação que o
-   * utilizador está a ver.
    */
   function stationDelayMinutes(train, stationApiId) {
     const nodes = train.nodes || [];
@@ -52,10 +62,6 @@
     return Math.floor((prev.getTime() - prog.getTime()) / 60000);
   }
 
-  /**
-   * Hora prevista de partida/passagem para a estação, em formato HH:MM.
-   * Devolve null se o nó não existir ou se não tivermos uma hora válida.
-   */
   function stationScheduledTime(train, stationApiId) {
     const nodes = train.nodes || [];
     const node = nodes.find(
@@ -64,7 +70,6 @@
     if (!node) return null;
     const prevStr = (node.HoraPrevista || "").substring(0, 5);
     const progStr = (node.HoraProgramada || "").substring(0, 5);
-    // Evita devolver "HH:MM" sentinela
     if (prevStr && !prevStr.startsWith("HH")) return prevStr;
     if (progStr && !progStr.startsWith("HH")) return progStr;
     return null;
@@ -82,33 +87,23 @@
     return d ? d.getTime() : Infinity;
   }
 
-  /**
-   * Filtro principal: trains que passam nesta estação e ainda não passaram.
-   * Aplica também o filtro de sentido activo.
-   */
   function filterTrainsForStation(allTrains, station) {
     if (!station || !Array.isArray(allTrains)) return [];
     const now = Date.now();
     return allTrains
       .filter((t) => {
-        // Filtro de direção
         if (!directionFilter.lisboa && t.direction === "lisboa") return false;
         if (!directionFilter.margem && t.direction === "margem") return false;
 
-        // Tem de passar nesta estação
         const node = (t.nodes || []).find(
           (n) => String(n.EstacaoID) === String(station.apiId),
         );
         if (!node) return false;
 
-        // Ainda não passou pela estação (ou passou há menos de 2 min,
-        // para dar tempo de atualização)
         if (node.ComboioPassou) {
           const pts = stationNodeTs(t, station.apiId);
           if (pts && Date.now() - pts > 2 * 60 * 1000) return false;
         }
-
-        // Se suprimido, ainda mostra enquanto a hora programada não passou +5 min
         if (t.isSuppressed) {
           const ts = stationNodeTs(t, station.apiId);
           if (ts !== Infinity && now > ts + 5 * 60 * 1000) return false;
@@ -139,7 +134,6 @@
       ? window.MapaRender._filledCarriages(train)
       : carCount;
 
-    // Mini-barra de carruagens (horizontal)
     const bars = [];
     for (let i = 0; i < carCount; i++) {
       const on = i < filled;
@@ -149,7 +143,6 @@
       );
     }
 
-    // Badge textual (direita): LIVE / OFFLINE / EXTRA / SUPRIMIDO
     let badge = "";
     if (train.isSuppressed) {
       badge = `<span class="text-[9px] font-bold tracking-[0.18em] uppercase text-red-500">Suprimido</span>`;
@@ -163,7 +156,6 @@
       badge = `<span class="text-[9px] font-bold tracking-[0.18em] uppercase text-zinc-500">${escapeHtml(train.statusText || "")}</span>`;
     }
 
-    // Bloco de atraso (se > 0 e não suprimido)
     let delayTag = "";
     if (!train.isSuppressed && delayMin != null) {
       if (delayMin >= 1) {
@@ -262,12 +254,18 @@
     const rows = trainsForStation.map((t) => trainRowHtml(t, station)).join("");
 
     return `
-      <div class="flex flex-col h-full max-h-[85dvh] md:max-h-[80dvh] bg-white dark:bg-[#09090b]">
+      <div class="flex flex-col h-full bg-white dark:bg-[#09090b]">
+
+        <!-- DRAG HANDLE (visível em mobile) -->
+        <div class="dp-handle md:hidden shrink-0" data-drag-area="1" aria-hidden="true">
+          <div class="dp-handle-pill"></div>
+        </div>
+
         <!-- HEADER -->
-        <div class="relative shrink-0 px-6 pt-safe-ios pt-5 pb-5 border-b border-zinc-100 dark:border-zinc-900">
+        <div class="dp-header relative shrink-0 px-6 pt-3 md:pt-safe-ios md:pt-5 pb-5 border-b border-zinc-100 dark:border-zinc-900" data-drag-area="1">
           <button
             data-details-action="close"
-            class="absolute right-4 top-5 w-10 h-10 flex items-center justify-center text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"
+            class="absolute right-4 top-3 md:top-5 w-10 h-10 flex items-center justify-center text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"
             aria-label="Fechar">
             <i data-lucide="x" class="w-5 h-5"></i>
           </button>
@@ -330,6 +328,101 @@
       </div>`;
   }
 
+  // ─── DRAG GESTURES (para fechar com swipe down) ──────────────────────
+
+  function pointerY(e) {
+    if (e.touches && e.touches.length) return e.touches[0].clientY;
+    if (e.changedTouches && e.changedTouches.length)
+      return e.changedTouches[0].clientY;
+    return e.clientY || 0;
+  }
+
+  function isDragAreaTarget(target) {
+    if (!target) return false;
+    let el = target;
+    while (el && el !== panel) {
+      if (el.dataset && el.dataset.dragArea === "1") return true;
+      // Bloqueia drag se estamos dentro do scroll-area
+      if (el.dataset && el.dataset.detailsScroll === "1") return false;
+      el = el.parentElement;
+    }
+    return false;
+  }
+
+  function onPointerDown(e) {
+    if (!currentStation) return;
+    if (!isDragAreaTarget(e.target)) return;
+    // Em desktop não arrastamos — só fechamos com X / ESC / backdrop
+    if (window.matchMedia("(min-width: 768px)").matches) return;
+
+    dragActive = true;
+    dragStartY = pointerY(e);
+    dragLastY = dragStartY;
+    dragStartTs = Date.now();
+    panel.style.transition = "none";
+  }
+
+  function onPointerMove(e) {
+    if (!dragActive) return;
+    const y = pointerY(e);
+    dragLastY = y;
+    const dy = Math.max(0, y - dragStartY); // só permite arrastar para baixo
+
+    // Aplica translação visual em tempo real
+    panel.style.transform = `translateY(${dy}px)`;
+
+    // Reduz opacidade do backdrop progressivamente (se estiver visível)
+    if (backdrop && !backdrop.classList.contains("hidden")) {
+      const op = Math.max(0, 1 - dy / 300);
+      backdrop.style.opacity = String(op);
+    }
+  }
+
+  function onPointerUp() {
+    if (!dragActive) return;
+    dragActive = false;
+
+    const dy = dragLastY - dragStartY;
+    const dt = Date.now() - dragStartTs;
+    const velocity = dt > 0 ? dy / dt : 0; // px/ms
+
+    // Restaurar transições
+    panel.style.transition = "";
+    panel.style.transform = "";
+    if (backdrop) backdrop.style.opacity = "";
+
+    // Fechar se: arrastou > 110px OU velocidade > 0.6 px/ms para baixo
+    if (dy > 110 || (velocity > 0.6 && dy > 40)) {
+      close();
+    }
+  }
+
+  function attachDragHandlers() {
+    if (!panel) return;
+    // Touch
+    panel.addEventListener("touchstart", onPointerDown, { passive: true });
+    panel.addEventListener("touchmove", onPointerMove, { passive: true });
+    panel.addEventListener("touchend", onPointerUp, { passive: true });
+    panel.addEventListener("touchcancel", onPointerUp, { passive: true });
+    // Pointer (desktop drag — não usado na prática mas suportado)
+    panel.addEventListener("pointerdown", onPointerDown);
+    panel.addEventListener("pointermove", onPointerMove);
+    panel.addEventListener("pointerup", onPointerUp);
+    panel.addEventListener("pointercancel", onPointerUp);
+  }
+
+  function detachDragHandlers() {
+    if (!panel) return;
+    panel.removeEventListener("touchstart", onPointerDown);
+    panel.removeEventListener("touchmove", onPointerMove);
+    panel.removeEventListener("touchend", onPointerUp);
+    panel.removeEventListener("touchcancel", onPointerUp);
+    panel.removeEventListener("pointerdown", onPointerDown);
+    panel.removeEventListener("pointermove", onPointerMove);
+    panel.removeEventListener("pointerup", onPointerUp);
+    panel.removeEventListener("pointercancel", onPointerUp);
+  }
+
   // ─── AÇÕES ───────────────────────────────────────────────────────────
 
   function render() {
@@ -338,14 +431,14 @@
     const trains = Array.isArray(source) ? source : [];
     const filtered = filterTrainsForStation(trains, currentStation);
 
-    // 1. Capturar o scroll atual
+    // 1. Capturar o scroll atual (para evitar saltos durante refresh)
     const scrollContainer = panel.querySelector('[data-details-scroll="1"]');
     const currentScrollTop = scrollContainer ? scrollContainer.scrollTop : 0;
 
     // 2. Substituir o HTML
     panel.innerHTML = buildContent(currentStation, filtered);
 
-    // 3. Restaurar o scroll no novo contentor
+    // 3. Restaurar o scroll
     const newScrollContainer = panel.querySelector('[data-details-scroll="1"]');
     if (newScrollContainer) newScrollContainer.scrollTop = currentScrollTop;
 
@@ -355,9 +448,9 @@
   }
 
   function attachListeners() {
-    // Fechar
+    // Fechar (X / botão "Fechar")
     panel.querySelectorAll("[data-details-action='close']").forEach((b) => {
-      b.addEventListener("click", close);
+      b.addEventListener("click", () => close());
     });
     // Toggle de direção
     panel.querySelectorAll("[data-station-dir]").forEach((b) => {
@@ -371,13 +464,12 @@
         render();
       });
     });
-    // Botão Locate (Mira)
+    // Botão Locate (Mira) — abre os detalhes do comboio + foca trajeto
     panel.querySelectorAll("[data-station-locate]").forEach((b) => {
       b.addEventListener("click", (e) => {
-        e.stopPropagation(); // Impede de abrir o modal de detalhes!
+        e.stopPropagation();
         const id = b.dataset.stationLocate;
-        close(); // Fecha o modal da estação
-        if (window.MapaRender) window.MapaRender.startTrackingTrain(id);
+        openDetailsFor(id);
       });
     });
     // Abrir detalhes (da row inteira OU do botão "Ver detalhes")
@@ -400,19 +492,32 @@
     if (!Array.isArray(source)) return;
     const train = source.find((t) => String(t.id) === String(trainId));
     if (train && window.MapaDetails) {
-      // Fecha o modal da estação antes de abrir o do comboio para não
-      // empilhar dois layers iguais.
-      close();
-      setTimeout(() => window.MapaDetails.open(train), 200);
+      // Fechar este modal em modo silencioso — o MapaDetails.open() vai
+      // aplicar o seu próprio route-focus, não queremos um recenter intermédio
+      close({ silent: true });
+      setTimeout(() => window.MapaDetails.open(train), 180);
     }
   }
 
   function open(station) {
     ensureElements();
     if (!panel || !backdrop || !station) return;
+
+    // Se o modal de detalhes estiver aberto, fecha-o sem disparar showWholeLine
+    if (window.MapaDetails && window.MapaDetails.isOpen()) {
+      window.MapaDetails.close();
+    }
+
     currentStation = station;
     if (window.MapaRender) window.MapaRender.focusStation(station);
     render();
+
+    // Reset do scroll (sempre, em cada open) — fix do bug do scroll herdado
+    const sc = panel.querySelector('[data-details-scroll="1"]');
+    if (sc) sc.scrollTop = 0;
+
+    // Marca o estado do painel para o CSS (height etc.)
+    panel.dataset.state = "station";
 
     panel.classList.remove("translate-y-full");
     panel.classList.add("translate-y-0");
@@ -421,27 +526,48 @@
 
     // ESC fecha, backdrop fecha
     document.addEventListener("keydown", onKey);
-    backdrop.addEventListener("click", close, { once: true });
+    backdrop.addEventListener("click", onBackdropClick);
+
+    // Drag-to-close
+    attachDragHandlers();
 
     if (window.lucide) window.lucide.createIcons();
   }
 
-  function close() {
+  function onBackdropClick() {
+    close();
+  }
+
+  function close(opts) {
     ensureElements();
     if (!panel || !backdrop) return;
+    const silent = !!(opts && opts.silent);
+
     panel.classList.add("translate-y-full");
     panel.classList.remove("translate-y-0");
+    panel.dataset.state = "closed";
     backdrop.classList.add("opacity-0", "pointer-events-none");
     backdrop.classList.remove("opacity-100");
+
+    backdrop.removeEventListener("click", onBackdropClick);
+    document.removeEventListener("keydown", onKey);
+    detachDragHandlers();
+
     setTimeout(() => {
       backdrop.classList.add("hidden");
       // Só limpa o painel se ele ainda for o nosso (não foi substituído
       // por mapa-details entretanto)
-      if (currentStation !== null) panel.innerHTML = "";
+      if (currentStation !== null && panel.dataset.state === "closed") {
+        panel.innerHTML = "";
+      }
     }, 320);
     currentStation = null;
-    if (window.MapaRender) window.MapaRender.recenterTracking();
-    document.removeEventListener("keydown", onKey);
+
+    // Em modo "silencioso" não fazemos recenter — quem chamou (ex: o botão
+    // locate antes de abrir o modal do comboio) vai aplicar o seu próprio foco.
+    if (!silent && window.MapaRender) {
+      window.MapaRender.showWholeLine();
+    }
   }
 
   function onKey(e) {

@@ -135,6 +135,11 @@
         background: #09090b;
       }
 
+      /* Fundo azul quando o comboio está selecionado */
+      .train-marker.is-focused .train-ring {
+        background-color: #3b82f6 !important;
+      }
+
       .train-view-icon.pulse .train-ring {
         animation: ring-pulse 1.6s ease-in-out infinite;
       }
@@ -196,7 +201,6 @@
       /* Seta de direção — posicionada à direita do disco, rodada pelo bearing */
       .train-arrow {
         position: absolute;
-        /* Coloca no centro exato do disco (que tem 40x40) */
         left: 20px;
         top: 20px;
         width: 22px;
@@ -214,7 +218,6 @@
       }
 
       .train-view-cars {
-        /* Âncora no centro exato — o corpo é que define o tamanho */
         width: 0;
         height: 0;
       }
@@ -233,7 +236,6 @@
       }
 
       .train-wifi-badge {
-        /* Fica sobre a primeira carruagem (frente) */
         display: flex;
         align-items: center;
         justify-content: center;
@@ -318,17 +320,13 @@
         }
       }
 
-      /* Wrapper das carruagens: flex-column empilha no eixo do movimento.
-         Largura/altura são geridas em JS (scaleCarriagesToRealWorld). */
       .train-cars-wrapper {
         display: flex;
         flex-direction: column;
         align-items: stretch;
         background: transparent;
-        /* width / gap / padding aplicados via JS */
       }
 
-      /* Cada carruagem — largura dinâmica em JS, aparência minimalista */
       .train-carriage {
         width: 100%;
         border: 1px solid var(--car-empty);
@@ -347,7 +345,6 @@
           0 1px 3px rgba(0, 0, 0, 0.5);
       }
 
-      /* Pulsação do corpo todo quando está em estado de alerta */
       .train-view-cars.pulse .train-cars-wrapper {
         animation: cars-pulse 1.6s ease-in-out infinite;
       }
@@ -361,14 +358,258 @@
         }
       }
 
+      /* ─── DETAILS / STATION PANEL ───────────────────────────────── */
+      /* Painel partilhado entre detalhes de comboio (modos mini/expanded)
+         e detalhes de estação. Em mobile é uma bottom-sheet com 2 estados;
+         em desktop é um painel lateral fixo de largura ~440px. */
+
       #details-panel {
-        transition: transform 0.36s cubic-bezier(0.22, 0.61, 0.36, 1);
-        /* overscroll-behavior evita que o scroll da sheet puxe a página */
+        transition:
+          transform 0.36s cubic-bezier(0.22, 0.61, 0.36, 1),
+          height 0.32s cubic-bezier(0.22, 0.61, 0.36, 1);
         overscroll-behavior: contain;
         -webkit-overflow-scrolling: touch;
+        will-change: transform, height;
       }
       #details-backdrop {
         transition: opacity 0.3s ease;
+      }
+
+      /* ── MOBILE: alturas por estado ──────────────────────────────── */
+      @media (max-width: 767.98px) {
+        #details-panel {
+          left: 0;
+          right: 0;
+          bottom: 0;
+          height: 50dvh;
+          max-height: 92dvh;
+          border-top: 1px solid rgb(228, 228, 231);
+          border-radius: 14px 14px 0 0;
+          box-shadow:
+            0 -8px 24px -8px rgba(0, 0, 0, 0.18),
+            0 -2px 8px -2px rgba(0, 0, 0, 0.08);
+        }
+        html.dark #details-panel {
+          border-top-color: rgb(39, 39, 42);
+          box-shadow:
+            0 -8px 28px -8px rgba(0, 0, 0, 0.55),
+            0 -2px 10px -2px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Estado MINI: ocupa ~36% do ecrã */
+        #details-panel[data-state="mini"] {
+          height: clamp(250px, 36dvh, 310px);
+        }
+        /* Estado EXPANDED: quase ecrã inteiro */
+        #details-panel[data-state="expanded"] {
+          height: 92dvh;
+        }
+        /* Modal da estação ocupa um pouco mais que o mini do comboio */
+        #details-panel[data-state="station"] {
+          height: 80dvh;
+        }
+        #details-panel[data-state="closed"] {
+          height: clamp(250px, 36dvh, 310px);
+        }
+
+        /* No estado mini, esconde o bloco expandido (timeline de paragens) */
+        #details-panel[data-state="mini"] .dp-expanded-content {
+          display: none;
+        }
+      }
+
+      /* ── DESKTOP: painel lateral, estado quase irrelevante ─────── */
+      @media (min-width: 768px) {
+        #details-panel {
+          left: auto;
+          right: 2rem;
+          bottom: 2rem;
+          top: auto;
+          width: 440px;
+          max-height: 80dvh;
+          height: auto;
+          border: 1px solid rgb(228, 228, 231);
+          border-radius: 4px;
+        }
+        html.dark #details-panel {
+          border-color: rgb(39, 39, 42);
+        }
+        #details-panel[data-state="mini"],
+        #details-panel[data-state="expanded"],
+        #details-panel[data-state="station"] {
+          /* Em desktop não há diferença de altura — o conteúdo decide */
+          height: auto;
+        }
+        /* Em desktop o conteúdo expandido é sempre mostrado */
+        #details-panel .dp-expanded-content {
+          display: block;
+        }
+        /* O botão toggle pode esconder-se em desktop */
+        #details-panel .dp-toggle-wrap {
+          display: none;
+        }
+        /* O drag handle só faz sentido em mobile */
+        #details-panel .dp-handle {
+          display: none;
+        }
+      }
+
+      /* ── DRAG HANDLE (pill no topo da bottom-sheet) ────────────── */
+      .dp-handle {
+        height: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: grab;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      .dp-handle:active {
+        cursor: grabbing;
+      }
+      .dp-handle-pill {
+        width: 38px;
+        height: 4px;
+        border-radius: 999px;
+        background: rgb(212, 212, 216);
+        transition: background 0.2s ease;
+      }
+      html.dark .dp-handle-pill {
+        background: rgb(63, 63, 70);
+      }
+      .dp-handle:hover .dp-handle-pill {
+        background: rgb(161, 161, 170);
+      }
+      html.dark .dp-handle:hover .dp-handle-pill {
+        background: rgb(113, 113, 122);
+      }
+
+      /* Header também é uma drag area, mas sem mudar de cursor */
+      .dp-header,
+      .dp-mini-content {
+        touch-action: none;
+      }
+
+      /* Chevron do botão expand: roda quando expandido */
+      .dp-toggle-chevron {
+        transition: transform 0.28s cubic-bezier(0.22, 0.61, 0.36, 1);
+        transform: rotate(0deg);
+      }
+
+      /* ── ROUTE STATION CARDS (cartões sobre o mapa) ─────────────── */
+      /* Pequenos cartões informativos que aparecem nas estações futuras
+         do trajeto do comboio focado, mostrando nome e hora prevista. */
+      .route-station-card {
+        position: relative;
+        pointer-events: none;
+        z-index: 5;
+        /* O slot quadrante é aplicado por JS via translate(-50%,-50%) + dx,dy */
+      }
+      .is-focused.train-marker {
+        z-index: 50 !important;
+      }
+      .rsc-pill {
+        display: inline-flex;
+        flex-direction: column;
+        gap: 1px;
+        padding: 5px 9px 6px;
+        background: rgba(255, 255, 255, 0.94);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        border: 1.5px solid var(--rsc-ring, rgb(212, 212, 216));
+        border-radius: 6px;
+        box-shadow:
+          0 1px 3px rgba(0, 0, 0, 0.12),
+          0 4px 12px -4px rgba(0, 0, 0, 0.16);
+        font-family:
+          "Inter",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        white-space: nowrap;
+        line-height: 1.1;
+      }
+      html.dark .rsc-pill {
+        background: rgba(9, 9, 11, 0.92);
+        box-shadow:
+          0 1px 3px rgba(0, 0, 0, 0.5),
+          0 4px 14px -4px rgba(0, 0, 0, 0.6);
+      }
+      .rsc-name {
+        font-size: 10px;
+        font-weight: 600;
+        color: rgb(24, 24, 27);
+        letter-spacing: -0.01em;
+      }
+      html.dark .rsc-name {
+        color: rgb(244, 244, 245);
+      }
+      .rsc-time {
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 11px;
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+        color: rgb(82, 82, 91);
+        letter-spacing: -0.02em;
+      }
+      html.dark .rsc-time {
+        color: rgb(161, 161, 170);
+      }
+      .rsc-delay {
+        font-size: 9px;
+        font-weight: 700;
+        color: rgb(217, 119, 6);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      html.dark .rsc-delay {
+        color: rgb(251, 191, 36);
+      }
+      .rsc-ontime {
+        font-size: 9px;
+        font-weight: 700;
+        color: rgb(5, 150, 105);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      html.dark .rsc-ontime {
+        color: rgb(52, 211, 153);
+      }
+      .rsc-dest {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 9px;
+        font-weight: 700;
+        color: rgb(37, 99, 235);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 1px;
+      }
+      html.dark .rsc-dest {
+        color: rgb(96, 165, 250);
+      }
+      .rsc-dest::before {
+        content: "";
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+
+      /* Linha-guia opcional (do centro da estação até ao cartão) */
+      .rsc-leader {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1px;
+        height: 14px;
+        background: rgba(113, 113, 122, 0.4);
+        transform-origin: top center;
+        pointer-events: none;
       }
 
       .maplibregl-ctrl-attrib {
@@ -394,8 +635,7 @@
         background: #18181b !important;
       }
 
-      /* IOS CRAZY */
-
+      /* IOS safe-areas */
       body.is-ios .pt-safe-ios {
         padding-top: env(safe-area-inset-top);
       }
@@ -403,7 +643,7 @@
         padding-bottom: env(safe-area-inset-bottom);
       }
 
-      /* Toast safe-area: empurra para cima em iOS com home bar */
+      /* Toast safe-area */
       body.is-ios #mapa-toast {
         margin-bottom: env(safe-area-inset-bottom);
       }
@@ -424,14 +664,11 @@
         border-radius: 2px;
       }
 
-      /* Evita que o mapa receba scroll da página em telemóveis */
       .mapa-container {
         overflow: hidden;
         touch-action: manipulation;
       }
 
-      /* Hover states só em dispositivos com ponteiro preciso (desktop).
-         Em touch, :hover pode ficar "colado" até próximo toque. */
       @media (hover: none) {
         .train-marker:hover .train-ring,
         .train-marker:hover .train-cars-wrapper {
@@ -447,24 +684,20 @@
         .train-wifi .wifi-dot,
         .train-arrow,
         .train-cars-body,
-        #details-panel {
+        #details-panel,
+        .dp-toggle-chevron {
           animation: none !important;
           transition: none !important;
         }
       }
 
       @media (display-mode: standalone), (display-mode: fullscreen) {
-        /* Levantar o botão da legenda (1.5rem = bottom-6 no Tailwind) */
         #btn-legend {
           bottom: calc(1.5rem + env(safe-area-inset-bottom, 16px)) !important;
         }
-
-        /* Levantar o painel da legenda aberto (5rem = bottom-20) */
         #legend-card {
           bottom: calc(5rem + env(safe-area-inset-bottom, 16px)) !important;
         }
-
-        /* Levantar as informações de direitos de autor e zoom do MapLibre */
         .maplibregl-ctrl-bottom-right,
         .maplibregl-ctrl-bottom-left {
           margin-bottom: env(safe-area-inset-bottom, 16px) !important;
@@ -606,14 +839,18 @@
           </div>
         </div>
 
-        <!-- ─── DETAILS / STATION PANEL (shared) ───────────────────── -->
+        <!-- ─── DETAILS / STATION PANEL (shared bottom-sheet) ──────── -->
+        <!-- Em mobile é uma bottom-sheet com 2 estados (mini/expanded
+             para o detalhe de comboio, e "station" para o de estação).
+             Em desktop é um painel fixo no canto inferior direito. -->
         <div
           id="details-backdrop"
           class="hidden fixed inset-0 z-40 bg-black/40 opacity-0 pointer-events-none"
         ></div>
         <div
           id="details-panel"
-          class="fixed left-0 right-0 bottom-0 z-50 translate-y-full h-[85dvh] max-h-[85dvh] md:h-auto md:max-h-[80dvh] md:left-auto md:right-8 md:bottom-8 md:top-auto md:w-[440px] md:rounded-sm border-t md:border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#09090b] shadow-2xl overflow-hidden"
+          class="fixed z-50 translate-y-full bg-white dark:bg-[#09090b] overflow-hidden"
+          data-state="closed"
           role="dialog"
           aria-modal="true"
         ></div>
@@ -621,7 +858,7 @@
     </main>
 
     <!-- SCRIPTS-->
-    <!-- Bibliotecas externas (link externos apra produção) -->
+    <!-- Bibliotecas externas (link externos para produção) -->
     <script
       src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"
       defer

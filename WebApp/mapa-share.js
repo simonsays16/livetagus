@@ -77,7 +77,7 @@
 
   function currentUrl() {
     try {
-      return window.location.href || MAPA.SHARE.urlFallback;
+      return "https://livetagus.pt/mapa";
     } catch (_) {
       return MAPA.SHARE.urlFallback;
     }

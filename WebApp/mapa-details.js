@@ -1,6 +1,8 @@
 /**
  * mapa-details.js
- * Painel de detalhes de um COMBOIO.
+ * Painel de detalhes de um comboio, em bottom sheet com 2 estados:
+ *   • "mini"      — mostra dados essenciais
+ *   • "expanded"  — mostra também a timeline das estações
  */
 
 (function () {
@@ -8,6 +10,13 @@
 
   let panel, backdrop;
   let currentTrainId = null;
+  let currentState = "closed"; // 'closed' | 'mini' | 'expanded'
+  let dragActive = false;
+  let dragStartY = 0;
+  let dragLastY = 0;
+  let dragStartState = null;
+  let dragStartHeightPx = 0;
+  let dragPointerId = null;
 
   function ensureElements() {
     if (panel && backdrop) return;
@@ -29,6 +38,21 @@
       .replace(/'/g, "&#39;");
   }
 
+  function isMobile() {
+    return window.innerWidth < 768;
+  }
+
+  function trainShareUrl(train) {
+    try {
+      const base = window.location.origin + window.location.pathname;
+      return `${base}#${encodeURIComponent(train.id)}`;
+    } catch (_) {
+      return `https://livetagus.pt/mapa#${train.id}`;
+    }
+  }
+
+  // ─── BUILDERS DE BLOCOS ──────────────────────────────────────────────
+
   function statusChipHtml(train) {
     const ring = MAPA.STATUS_COLORS[train.dotStatus] || MAPA.STATUS_COLORS.gray;
     const pulse = train.dotStatus === "orange" || train.dotStatus === "red";
@@ -39,29 +63,19 @@
       </div>`;
   }
 
-  function occupancyBlockHtml(train) {
-    if (train.occupancy == null) {
-      return `
-        <div class="flex flex-col">
-          <span class="text-[9px] uppercase tracking-[0.2em] text-zinc-400 mb-1.5">Ocupação</span>
-          <span class="text-[11px] text-zinc-500 italic">Apenas em horas de ponta</span>
-        </div>`;
+  function nextStationName(train) {
+    const nodes = train.nodes || [];
+    for (let i = 0; i < nodes.length; i++) {
+      if (!nodes[i].ComboioPassou) {
+        const station = MAPA.resolveStationByApiName(nodes[i].NomeEstacao);
+        return station ? station.name : nodes[i].NomeEstacao;
+      }
     }
-    const fill = window.MapaRender._carriageFillColor(train);
-    return `
-      <div class="flex flex-col">
-        <span class="text-[9px] uppercase tracking-[0.2em] text-zinc-400 mb-1.5">Ocupação</span>
-        <div class="flex items-baseline gap-1.5">
-          <span class="font-mono text-2xl font-light tracking-tighter text-zinc-900 dark:text-white leading-none">${train.occupancy}</span>
-          <span class="text-[10px] text-zinc-400 font-medium">%</span>
-        </div>
-        <div class="mt-2 h-[2px] bg-zinc-100 dark:bg-zinc-900 overflow-hidden">
-          <div style="width:${Math.min(100, train.occupancy)}%; background-color:${fill}; height:100%; transition:width .4s ease;"></div>
-        </div>
-      </div>`;
+    return null;
   }
 
-  function carriagesBlockHtml(train) {
+  /** Carruagens + ocupação compactados numa célula. */
+  function combinedCarriagesHtml(train) {
     const count = train.carriages || 4;
     const filled = window.MapaRender._filledCarriages(train);
     const fill = window.MapaRender._carriageFillColor(train);
@@ -72,21 +86,32 @@
         `<div class="h-1.5 flex-1" style="background-color:${on ? fill : "rgba(161,161,170,.25)"}"></div>`,
       );
     }
+    const occupancyPart =
+      train.occupancy != null
+        ? ` / <span style="color:${fill}">${train.occupancy}%</span>`
+        : "";
     return `
       <div class="flex flex-col">
         <span class="text-[9px] uppercase tracking-[0.2em] text-zinc-400 mb-1.5">Carruagens</span>
-        <div class="flex items-baseline gap-1.5">
-          <span class="font-mono text-2xl font-light tracking-tighter text-zinc-900 dark:text-white leading-none">${count}</span>
-          <span class="text-[10px] text-zinc-400 font-medium">unid.</span>
-        </div>
+        <span class="text-[11px] text-zinc-500 font-medium leading-none">${count} unid.${occupancyPart}</span>
         <div class="mt-2 flex gap-[2px]">${blocks.join("")}</div>
       </div>`;
   }
 
-  /**
-   * Timeline de estações. Calcula atraso POR NÓ (HoraPrevista vs HoraProgramada),
-   * não através do SituacaoComboio — consistente com o modal da estação.
-   */
+  /** Status chip, para a coluna direita do mini. */
+  function statusNextStationHtml(train) {
+    const ring = MAPA.STATUS_COLORS[train.dotStatus] || MAPA.STATUS_COLORS.gray;
+    const pulse = train.dotStatus === "orange" || train.dotStatus === "red";
+    return `
+      <div class="flex items-center">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-full bg-white/40 dark:bg-zinc-900/40 backdrop-blur">
+          <span class="block w-1.5 h-1.5 rounded-full ${pulse ? "animate-pulse" : ""}" style="background-color:${ring}; box-shadow:0 0 6px ${ring}"></span>
+          <span class="text-[9px] font-bold tracking-[0.2em] uppercase text-zinc-700 dark:text-zinc-300">${escapeHtml(train.statusText)}</span>
+        </div>
+      </div>`;
+  }
+
+  /** Timeline detalhada das estações (modo expanded). */
   function timelineHtml(train) {
     const nodes = train.nodes || [];
     if (!nodes.length) {
@@ -178,139 +203,411 @@
       "--:--";
 
     return `
-      <div class="flex flex-col h-full max-h-[85dvh] md:max-h-[80dvh] bg-white dark:bg-[#09090b]">
-        <!-- HEADER -->
-        <div class="relative shrink-0 px-6 pt-safe-ios pt-5 pb-6 border-b border-zinc-100 dark:border-zinc-900">
-          <button
-            data-details-action="close"
-            class="absolute right-4 top-5 w-10 h-10 flex items-center justify-center text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"
-            aria-label="Fechar">
-            <i data-lucide="x" class="w-5 h-5"></i>
-          </button>
+      <div class="flex flex-col h-full bg-white dark:bg-[#09090b]">
 
-          <div class="flex items-center gap-2 mb-4">
+        <!-- DRAG HANDLE (visível em mobile) -->
+        <div class="dp-handle md:hidden shrink-0" data-drag-area="1" aria-hidden="true">
+          <div class="dp-handle-pill"></div>
+        </div>
+
+        <!-- HEADER COMPACTO -->
+        <div class="dp-header relative shrink-0 px-6 pt-3 md:pt-safe-ios md:pt-5 pb-4 border-b border-zinc-100 dark:border-zinc-900" data-drag-area="1">
+          <div class="absolute right-3 flex items-center gap-1" style="top:35px">
+            <button
+              data-details-action="share"
+              class="w-9 h-9 flex items-center justify-center text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors rounded-full"
+              aria-label="Partilhar comboio">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                   viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                <polyline points="16 6 12 2 8 6"/>
+                <line x1="12" x2="12" y1="2" y2="15"/>
+              </svg>
+            </button>
+            <button
+              data-details-action="close"
+              class="w-9 h-9 flex items-center justify-center text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors rounded-full"
+              aria-label="Fechar">
+              <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2 mb-2 pr-24">
             <span class="text-[9px] font-bold tracking-[0.3em] uppercase text-blue-600 dark:text-blue-400">Fertagus</span>
             ${train.isExtra ? `<span class="text-[9px] font-bold tracking-[0.3em] uppercase text-blue-500 border border-blue-500/30 px-2 py-0.5">Extra</span>` : ""}
-            <span class="h-px flex-1 max-w-16 bg-zinc-200 dark:bg-zinc-800"></span>
+            <span class="h-px flex-1 max-w-12 bg-zinc-200 dark:bg-zinc-800"></span>
             <span class="text-[9px] font-mono tracking-wider text-zinc-400">#${escapeHtml(train.numero)}</span>
           </div>
 
-          <h2 class="text-3xl font-light tracking-tighter text-zinc-900 dark:text-white leading-[1.05]">
-            ${escapeHtml(train.destino)}
+          <h2 class="text-[22px] md:text-2xl font-light tracking-tighter text-zinc-900 dark:text-white leading-tight pr-24">
+            ${escapeHtml(train.destino)} <span class="font-mono text-base font-light text-zinc-400 tracking-tight">${arriveTime}</span>
           </h2>
-          <p class="text-[11px] uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-500 mt-2">
+          <p class="text-[10px] uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-500 mt-1.5">
             De <span class="text-zinc-700 dark:text-zinc-300">${escapeHtml(train.origem)}</span>
+            <span class="font-mono text-[10px] text-zinc-400 normal-case tracking-tight ml-1">${departTime}</span>
           </p>
+        </div>
 
-          <div class="mt-6 flex items-end justify-between gap-4 flex-wrap">
-            <div class="flex items-end gap-5">
-              <div class="flex flex-col">
-                <span class="text-[8px] uppercase tracking-[0.25em] text-zinc-400 mb-1">Partida</span>
-                <span class="font-mono text-2xl font-light tracking-tighter text-zinc-900 dark:text-white leading-none">${departTime}</span>
-              </div>
-              <div class="text-zinc-300 dark:text-zinc-700 text-sm font-light mb-0.5">→</div>
-              <div class="flex flex-col">
-                <span class="text-[8px] uppercase tracking-[0.25em] text-zinc-400 mb-1">Chegada</span>
-                <span class="font-mono text-2xl font-light tracking-tighter text-zinc-900 dark:text-white leading-none">${arriveTime}</span>
-              </div>
-            </div>
-            ${statusChipHtml(train)}
+        <!-- MINI CONTENT (sempre visível) -->
+        <div class="dp-mini-content shrink-0 px-6 pt-4 pb-3 border-b border-zinc-100 dark:border-zinc-900" data-drag-area="1">
+          <div class="grid grid-cols-2 gap-5">
+            ${combinedCarriagesHtml(train)}
+            ${statusNextStationHtml(train)}
           </div>
 
           ${
             train.isSuppressed
-              ? `<div class="mt-5 border-t border-zinc-100 dark:border-zinc-900 pt-4 flex items-start gap-3">
-                   <i data-lucide="ban" class="w-4 h-4 text-red-500 shrink-0 mt-0.5"></i>
-                   <p class="text-[11px] leading-relaxed text-zinc-600 dark:text-zinc-400">
-                     Este comboio foi <strong class="text-red-500">suprimido</strong>. Consulte alternativas junto da Fertagus.
+              ? `<div class="mt-4 flex items-start gap-2 p-3 rounded-sm bg-red-500/5 border border-red-500/20">
+                   <i data-lucide="ban" class="w-3.5 h-3.5 text-red-500 shrink-0 mt-0.5"></i>
+                   <p class="text-[10px] leading-relaxed text-zinc-600 dark:text-zinc-400">
+                     Comboio <strong class="text-red-500">suprimido</strong>. Consulte a Fertagus.
                    </p>
                  </div>`
               : ""
           }
           ${
             train.isOffline
-              ? `<div class="mt-5 border-t border-zinc-100 dark:border-zinc-900 pt-4 flex items-start gap-3">
-                   <i data-lucide="wifi-off" class="w-4 h-4 text-zinc-400 shrink-0 mt-0.5"></i>
-                   <p class="text-[11px] leading-relaxed text-zinc-500 dark:text-zinc-500">
-                     Dados em tempo real indisponíveis. A mostrar horário programado.
-                   </p>
-                 </div>`
-              : ""
-          }
-          ${
-            !train.isLive && !train.isOffline && !train.isSuppressed
-              ? `<div class="mt-5 border-t border-zinc-100 dark:border-zinc-900 pt-4 flex items-start gap-3">
-                   <i data-lucide="clock" class="w-4 h-4 text-zinc-400 shrink-0 mt-0.5"></i>
-                   <p class="text-[11px] leading-relaxed text-zinc-500 dark:text-zinc-500">
-                     Comboio ainda não iniciou o percurso em tempo real.
+              ? `<div class="mt-4 flex items-start gap-2 p-3 rounded-sm bg-zinc-500/5 border border-zinc-500/20">
+                   <i data-lucide="wifi-off" class="w-3.5 h-3.5 text-zinc-400 shrink-0 mt-0.5"></i>
+                   <p class="text-[10px] leading-relaxed text-zinc-500 dark:text-zinc-500">
+                     Dados ao vivo indisponíveis · horário programado.
                    </p>
                  </div>`
               : ""
           }
         </div>
 
-        <!-- MÉTRICAS -->
-        <div class="shrink-0 px-6 py-6 border-b border-zinc-100 dark:border-zinc-900 grid grid-cols-2 gap-6">
-          ${carriagesBlockHtml(train)}
-          ${occupancyBlockHtml(train)}
+        <!-- BOTÃO EXPANDIR / COLAPSAR -->
+        <div class="dp-toggle-wrap shrink-0">
+          <button
+            data-details-action="toggle-expand"
+            class="dp-toggle w-full py-3 flex items-center justify-center gap-2 text-[9px] font-bold uppercase tracking-[0.3em] text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors border-b border-zinc-100 dark:border-zinc-900"
+            aria-label="Mostrar todas as paragens">
+            <span data-toggle-text>Mais detalhes</span>
+            <svg class="dp-toggle-chevron" xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
         </div>
 
-        ${
-          train.occupancy != null
-            ? `<div class="shrink-0 px-6 pt-3 pb-4 border-b border-zinc-100 dark:border-zinc-900">
-                 <p class="text-[9px] leading-relaxed text-zinc-400 dark:text-zinc-500 tracking-wide">
-                   Estimativa de lotação baseada no histórico oficial da Fertagus, não em tempo real.
-                 </p>
-               </div>`
-            : ""
-        }
-
-        <!-- TIMELINE -->
-        <div class="flex-1 overflow-y-auto px-6 py-7" data-details-scroll="1">
-          <div class="flex items-center gap-3 mb-6">
+        <!-- EXPANDED CONTENT (só visível em state="expanded") -->
+        <div class="dp-expanded-content flex-1 overflow-y-auto px-6 py-6" data-details-scroll="1">
+          <div class="flex items-center gap-3 mb-5">
             <span class="text-[9px] uppercase tracking-[0.3em] font-bold text-zinc-900 dark:text-white">Percurso</span>
             <span class="h-px flex-1 bg-zinc-200 dark:bg-zinc-800"></span>
             <span class="text-[9px] uppercase tracking-[0.2em] text-zinc-400">${(train.nodes || []).length} paragens</span>
           </div>
           ${timelineHtml(train)}
-
-          <button
-            data-details-action="close"
-            class="w-full mt-10 py-4 flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-[0.25em] border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
-            Fechar
-          </button>
           <div class="h-4 pb-safe-ios"></div>
         </div>
       </div>`;
   }
 
-  // ─── ACÇÕES ──────────────────────────────────────────────────────────
+  // ─── DRAG GESTURES ───────────────────────────────────────────────────
 
-  function open(train) {
+  function pointerY(e) {
+    if (e.touches && e.touches.length) return e.touches[0].clientY;
+    if (e.changedTouches && e.changedTouches.length)
+      return e.changedTouches[0].clientY;
+    return e.clientY;
+  }
+
+  function isDragAreaTarget(target) {
+    let el = target;
+    while (el && el !== panel) {
+      if (el.matches && el.matches("button, a, input, [data-no-drag]"))
+        return false;
+      if (el.dataset && el.dataset.dragArea === "1") return true;
+      el = el.parentElement;
+    }
+    return false;
+  }
+
+  function onPointerDown(e) {
+    if (!isMobile()) return;
+    if (!panel || currentState === "closed") return;
+    if (!isDragAreaTarget(e.target)) return;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+
+    dragActive = true;
+    dragStartY = pointerY(e);
+    dragLastY = dragStartY;
+    dragStartState = currentState;
+    dragStartHeightPx = panel.getBoundingClientRect().height;
+    dragPointerId = e.pointerId != null ? e.pointerId : null;
+
+    panel.style.transition = "none";
+    if (dragPointerId != null && panel.setPointerCapture) {
+      try {
+        panel.setPointerCapture(dragPointerId);
+      } catch (_) {}
+    }
+  }
+
+  function onPointerMove(e) {
+    if (!dragActive) return;
+    const y = pointerY(e);
+    dragLastY = y;
+    const dy = y - dragStartY;
+    const vh = window.innerHeight;
+    const miniTarget = Math.min(vh * 0.36, 310);
+    const expandedTarget = vh * 0.92;
+
+    if (dragStartState === "mini") {
+      if (dy >= 0) {
+        // Drag down: translateY com leve amortecimento depois de 180px
+        const damp = dy < 180 ? dy : 180 + (dy - 180) * 0.4;
+        panel.style.transform = `translateY(${damp}px)`;
+        panel.style.height = `${dragStartHeightPx}px`;
+      } else {
+        // Drag up: aumenta altura até max ~expanded
+        const grow = Math.min(-dy, expandedTarget - dragStartHeightPx);
+        panel.style.transform = "";
+        panel.style.height = `${dragStartHeightPx + grow}px`;
+      }
+    } else {
+      // Started expanded
+      if (dy >= 0) {
+        // Drag down: encolhe altura até mini, depois translateY
+        const shrinkable = dragStartHeightPx - miniTarget;
+        if (dy <= shrinkable) {
+          panel.style.transform = "";
+          panel.style.height = `${dragStartHeightPx - dy}px`;
+        } else {
+          const extra = dy - shrinkable;
+          const damp = extra < 180 ? extra : 180 + (extra - 180) * 0.4;
+          panel.style.transform = `translateY(${damp}px)`;
+          panel.style.height = `${miniTarget}px`;
+        }
+      } else {
+        // Drag up em expanded — não faz sentido, ignora
+        panel.style.transform = "";
+        panel.style.height = `${dragStartHeightPx}px`;
+      }
+    }
+  }
+
+  function onPointerUp(e) {
+    if (!dragActive) return;
+    const dy = (e ? pointerY(e) : dragLastY) - dragStartY;
+    dragActive = false;
+    if (dragPointerId != null && panel.releasePointerCapture) {
+      try {
+        panel.releasePointerCapture(dragPointerId);
+      } catch (_) {}
+    }
+    dragPointerId = null;
+
+    // Limpa estilos inline para que CSS transitions tomem conta
+    panel.style.transition = "";
+    panel.style.transform = "";
+    panel.style.height = "";
+
+    const THRESH_TOGGLE = 70;
+    const THRESH_CLOSE = 110;
+
+    if (dragStartState === "mini") {
+      if (dy < -THRESH_TOGGLE) {
+        setState("expanded");
+      } else if (dy > THRESH_CLOSE) {
+        close();
+      } else {
+        setState("mini"); // snap back
+      }
+    } else if (dragStartState === "expanded") {
+      const vh = window.innerHeight;
+      const totalSwipeDown = dy;
+      if (totalSwipeDown > vh * 0.55) {
+        close();
+      } else if (totalSwipeDown > THRESH_TOGGLE) {
+        setState("mini");
+      } else {
+        setState("expanded");
+      }
+    }
+  }
+
+  function attachDragHandlers() {
+    if (!panel) return;
+    panel.addEventListener("pointerdown", onPointerDown);
+    panel.addEventListener("pointermove", onPointerMove);
+    panel.addEventListener("pointerup", onPointerUp);
+    panel.addEventListener("pointercancel", onPointerUp);
+  }
+
+  // ─── ACÇÕES / EVENT HANDLERS ─────────────────────────────────────────
+
+  function attachInteractions() {
+    panel.querySelectorAll("[data-details-action='close']").forEach((b) => {
+      b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        close();
+      });
+    });
+    panel.querySelectorAll("[data-details-action='share']").forEach((b) => {
+      b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        shareCurrent();
+      });
+    });
+    panel
+      .querySelectorAll("[data-details-action='toggle-expand']")
+      .forEach((b) => {
+        b.addEventListener("click", (e) => {
+          e.stopPropagation();
+          setState(currentState === "expanded" ? "mini" : "expanded");
+        });
+      });
+  }
+
+  function shareCurrent() {
+    const train = getCurrentTrain();
+    if (!train) return;
+    const url = trainShareUrl(train);
+    const payload = {
+      title: `Fertagus #${train.numero || train.id}`,
+      text: `Comboio Fertagus ${train.origem || ""} → ${train.destino || ""} (#${train.numero || train.id}) no LiveTagus`,
+      url,
+    };
+    if (navigator.share) {
+      navigator.share(payload).catch((err) => {
+        if (err && err.name === "AbortError") return;
+        fallbackCopy(url);
+      });
+    } else {
+      fallbackCopy(url);
+    }
+  }
+
+  function fallbackCopy(url) {
+    if (window.MapaShare && window.MapaShare._copyToClipboard) {
+      window.MapaShare._copyToClipboard(url).then((ok) => {
+        if (ok && window.MapaShare.showToast) {
+          window.MapaShare.showToast("Link Copiado!");
+        }
+      });
+    }
+  }
+
+  function getCurrentTrain() {
+    if (!currentTrainId) return null;
+    if (window.MapaRender && window.MapaRender.getMarkers) {
+      const m = window.MapaRender.getMarkers().get(currentTrainId);
+      if (m && m.train) return m.train;
+    }
+    return null;
+  }
+
+  function setState(newState) {
+    if (!panel) return;
+    if (newState !== "mini" && newState !== "expanded") return;
+    currentState = newState;
+    panel.dataset.state = newState;
+    panel.classList.remove("translate-y-full");
+    panel.classList.add("translate-y-0");
+
+    // Atualiza chevron / texto do toggle
+    const chev = panel.querySelector(".dp-toggle-chevron");
+    const text = panel.querySelector("[data-toggle-text]");
+    if (chev) {
+      chev.style.transform =
+        newState === "expanded" ? "rotate(180deg)" : "rotate(0deg)";
+    }
+    if (text) {
+      text.textContent =
+        newState === "expanded" ? "Menos detalhes" : "Mais detalhes";
+    }
+
+    // Reset do scroll da timeline ao entrar em expanded
+    if (newState === "expanded") {
+      const sc = panel.querySelector('[data-details-scroll="1"]');
+      if (sc) sc.scrollTop = 0;
+    }
+
+    // Pede ao MapaRender para refazer o foco com novo padding
+    if (window.MapaRender && window.MapaRender.isRouteFocused()) {
+      const t = getCurrentTrain();
+      if (t) window.MapaRender.startRouteFocus(t);
+    }
+  }
+
+  function open(train, opts) {
     ensureElements();
     if (!panel || !backdrop || !train) return;
-    // Se o station modal estiver aberto, fechamo-lo primeiro
     if (window.MapaStation && window.MapaStation.isOpen()) {
-      window.MapaStation.close();
+      window.MapaStation.close({ silent: true });
     }
     currentTrainId = train.id;
-    // Ativa o tracking da câmera (apenas se for live, para não focar offline no meio do nada)
-    if (window.MapaRender && train.isLive) {
-      window.MapaRender.startTracking(train.id);
-    }
+    const initialState = (opts && opts.state) || "mini";
     panel.innerHTML = buildContent(train);
-    panel.querySelectorAll("[data-details-action='close']").forEach((b) => {
-      b.addEventListener("click", close);
-    });
-    backdrop.addEventListener("click", close, { once: true });
-    document.addEventListener("keydown", onKey);
+    panel.dataset.state = initialState;
+    currentState = initialState;
+
+    attachInteractions();
+    attachDragHandlers();
+
+    // Reset do scroll
+    const sc = panel.querySelector('[data-details-scroll="1"]');
+    if (sc) sc.scrollTop = 0;
 
     panel.classList.remove("translate-y-full");
     panel.classList.add("translate-y-0");
-    backdrop.classList.remove("hidden", "opacity-0", "pointer-events-none");
-    backdrop.classList.add("opacity-100");
+
+    backdrop.classList.remove("hidden");
+    // Em mobile, no estado mini queremos backdrop SUBTIL (ou nenhum) para
+    // o mapa continuar legível atrás. Em expanded, escurece mais.
+    updateBackdropForState();
+
+    backdrop.addEventListener("click", onBackdropClick);
+    document.addEventListener("keydown", onKey);
+
+    // Iniciar route focus
+    if (window.MapaRender) {
+      window.MapaRender.startRouteFocus(train);
+    }
+
+    // Chevron / texto inicial
+    setStateInternal(initialState);
 
     if (window.lucide) window.lucide.createIcons();
+  }
+
+  function setStateInternal(s) {
+    // Aplica visualmente o estado SEM disparar novo route focus
+    // (já foi feito no open). Reutiliza apenas o lado visual de setState.
+    panel.dataset.state = s;
+    currentState = s;
+    const chev = panel.querySelector(".dp-toggle-chevron");
+    const text = panel.querySelector("[data-toggle-text]");
+    if (chev) {
+      chev.style.transform =
+        s === "expanded" ? "rotate(180deg)" : "rotate(0deg)";
+    }
+    if (text) {
+      text.textContent = s === "expanded" ? "Menos detalhes" : "Mais detalhes";
+    }
+    updateBackdropForState();
+  }
+
+  function updateBackdropForState() {
+    if (!backdrop) return;
+    if (currentState === "expanded") {
+      backdrop.classList.remove("opacity-0", "pointer-events-none");
+      backdrop.classList.add("opacity-100");
+      backdrop.dataset.intensity = "strong";
+    } else {
+      // mini → não escurece para deixar o mapa visível
+      backdrop.classList.add("opacity-0", "pointer-events-none");
+      backdrop.classList.remove("opacity-100");
+      backdrop.dataset.intensity = "soft";
+    }
+  }
+
+  function onBackdropClick() {
+    close();
   }
 
   function close() {
@@ -318,15 +615,26 @@
     if (!panel || !backdrop) return;
     panel.classList.add("translate-y-full");
     panel.classList.remove("translate-y-0");
+    panel.dataset.state = "closed";
+    currentState = "closed";
     backdrop.classList.add("opacity-0", "pointer-events-none");
     backdrop.classList.remove("opacity-100");
+
+    backdrop.removeEventListener("click", onBackdropClick);
+    document.removeEventListener("keydown", onKey);
+
     setTimeout(() => {
       backdrop.classList.add("hidden");
-      if (currentTrainId !== null) panel.innerHTML = "";
-    }, 320);
+      if (currentTrainId !== null && currentState === "closed") {
+        panel.innerHTML = "";
+      }
+    }, 360);
+
     currentTrainId = null;
-    if (window.MapaRender) window.MapaRender.recenterTracking();
-    document.removeEventListener("keydown", onKey);
+    if (window.MapaRender) {
+      window.MapaRender.endRouteFocus();
+      window.MapaRender.showWholeLine();
+    }
   }
 
   function onKey(e) {
@@ -337,24 +645,32 @@
     return !!currentTrainId;
   }
 
+  function getCurrentId() {
+    return currentTrainId;
+  }
+
+  function getModalState() {
+    return currentState;
+  }
+
   function refresh(train) {
     if (!isOpen() || !train || train.id !== currentTrainId) return;
+    // Captura scroll
+    const sc = panel.querySelector('[data-details-scroll="1"]');
+    const top = sc ? sc.scrollTop : 0;
 
-    // 1. Capturar o scroll atual
-    const scrollContainer = panel.querySelector('[data-details-scroll="1"]');
-    const currentScrollTop = scrollContainer ? scrollContainer.scrollTop : 0;
-
-    // 2. Substituir o HTML
+    // Recria o conteúdo mas preserva o estado actual
+    const prevState = currentState;
     panel.innerHTML = buildContent(train);
+    panel.dataset.state = prevState;
+    currentState = prevState;
 
-    // 3. Restaurar o scroll no novo contentor
-    const newScrollContainer = panel.querySelector('[data-details-scroll="1"]');
-    if (newScrollContainer) newScrollContainer.scrollTop = currentScrollTop;
+    attachInteractions();
+    attachDragHandlers();
+    setStateInternal(prevState);
 
-    // 4. Ligar eventos e ícones
-    panel.querySelectorAll("[data-details-action='close']").forEach((b) => {
-      b.addEventListener("click", close);
-    });
+    const newSc = panel.querySelector('[data-details-scroll="1"]');
+    if (newSc) newSc.scrollTop = top;
     if (window.lucide) window.lucide.createIcons();
   }
 
@@ -363,6 +679,8 @@
     close,
     isOpen,
     refresh,
-    getCurrentId: () => currentTrainId,
+    getCurrentId,
+    getModalState,
+    setState,
   };
 })();

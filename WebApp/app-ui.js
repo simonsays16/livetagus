@@ -93,6 +93,10 @@ function _cardInnerHTML(t) {
   const timeCls = t.isSuppressed ? "line-through text-zinc-500 opacity-70" : "";
   const arrHideCls = t.isSuppressed ? "opacity-0" : "";
   const colorText = "text-blue-500 dark:text-blue-400";
+  const isAlert = ["yellow", "orange", "red"].includes(t.dotStatus);
+  const containerCls = isAlert
+    ? "flex flex-col items-end gap-2.5"
+    : "flex flex-row items-center gap-3";
 
   return `
     <div class="flex justify-between items-start mb-2">
@@ -114,26 +118,25 @@ function _cardInnerHTML(t) {
         </div>
       </div>
     </div>
-    <div class="flex items-center justify-between gap-2 mb-1">
-      <div class="flex items-center gap-2">
+    <div class="flex items-start justify-between gap-2 mb-1">
+      <div class="flex items-center gap-2 mt-1">
         <div data-field="dot" class="w-1.5 h-1.5 rounded-full ${dotCls}" ${dotStyle}></div>
         <span data-field="status" class="text-[0.65rem] uppercase tracking-wide font-medium ${_statusCls(t)}">${t.status}</span>
       </div>
       
-      <div class="flex items-center gap-3">
+      <div data-field="btn-container" class="${containerCls}">
         <a
           data-field="map-btn"
           data-action="open-map"
-          href="/mapa#${t.id}"
-          class="${t.isLive ? "flex" : "hidden"} items-center gap-1 text-[10px] font-bold text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 transition-colors animate-pulse">
-          <i data-lucide="map" class="w-3 h-3"></i>
+          href="/mapa#${t.id}&${fertagusOrigin}&${fertagusDest}"
+          class="${t.isLive ? "block" : "hidden"} text-[10px] font-bold text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 transition-colors py-1">
           Ver no Mapa
         </a>
-        
+
         <button
           data-action="open-details"
           data-train-id="${t.id}"
-          class="text-[10px] font-medium text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 underline decoration-zinc-300 dark:decoration-zinc-700 underline-offset-2 transition-colors">
+          class="text-[10px] font-medium text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 underline decoration-zinc-300 dark:decoration-zinc-700 underline-offset-2 transition-colors py-1">
           Ver Detalhes
         </button>
       </div>
@@ -210,15 +213,22 @@ function _patchCard(el, t, isPassed) {
   if (arrWrap)
     arrWrap.className = `flex items-baseline mt-1 ${t.isSuppressed ? "opacity-0" : ""}`;
 
+  const btnContainer = el.querySelector("[data-field='btn-container']");
+  if (btnContainer) {
+    const isAlert = ["yellow", "orange", "red"].includes(t.dotStatus);
+    btnContainer.className = isAlert
+      ? "flex flex-col items-end gap-2.5"
+      : "flex flex-row items-center gap-3";
+  }
+
   const mapBtn = el.querySelector("[data-field='map-btn']");
   if (mapBtn) {
     if (t.isLive) {
       mapBtn.classList.remove("hidden");
-      mapBtn.classList.add("flex");
-      mapBtn.href = `/mapa#${t.id}`;
+      mapBtn.classList.add("block");
+      mapBtn.href = `/mapa#${t.id}&${fertagusOrigin}&${fertagusDest}`;
     } else {
       mapBtn.classList.add("hidden");
-      mapBtn.classList.remove("flex");
     }
   }
 
@@ -908,6 +918,7 @@ function openDetails(trainId) {
 
   const modal = document.getElementById("train-details-modal");
   const backdrop = document.getElementById("modal-backdrop");
+  modal.style.transform = "";
   modal.innerHTML = fullContent;
   modal.classList.remove("translate-y-full");
   backdrop.classList.remove("hidden");
@@ -918,6 +929,7 @@ function openDetails(trainId) {
 function closeDetails() {
   const modal = document.getElementById("train-details-modal");
   const backdrop = document.getElementById("modal-backdrop");
+  modal.style.transform = "";
   modal.classList.add("translate-y-full");
   backdrop.classList.add("opacity-0");
   setTimeout(() => backdrop.classList.add("hidden"), 300);
@@ -1086,6 +1098,81 @@ window.renderList = function (list) {
   // ── 8. Ícones Lucide ──────────────────────────────────────────────
   if (window.lucide) lucide.createIcons();
 };
+
+(function initModalDrag() {
+  const modal = document.getElementById("train-details-modal");
+  if (!modal) return;
+
+  let startY = 0;
+  let currentY = 0;
+  let isDragging = false;
+  let isScrollingList = false;
+
+  modal.addEventListener(
+    "touchstart",
+    (e) => {
+      startY = e.touches[0].clientY;
+      isDragging = false;
+      isScrollingList = false;
+    },
+    { passive: true },
+  );
+
+  modal.addEventListener(
+    "touchmove",
+    (e) => {
+      const touchY = e.touches[0].clientY;
+      const deltaY = touchY - startY;
+
+      const scrollArea = modal.querySelector(".overflow-y-auto");
+      const isTouchInScrollArea = scrollArea && scrollArea.contains(e.target);
+
+      // Avalia a intenção no primeiro movimento
+      if (!isDragging && !isScrollingList) {
+        if (isTouchInScrollArea && scrollArea.scrollTop > 0) {
+          // A lista tem scroll e não está no topo -> deixa fazer scroll na lista
+          isScrollingList = true;
+        } else if (isTouchInScrollArea && deltaY < 0) {
+          // Está no topo da lista, mas a tentar ver o que está abaixo (swipe para cima)
+          isScrollingList = true;
+        } else if (deltaY > 0) {
+          // Está no cabeçalho ou no topo da lista a fazer swipe para baixo -> arrastar o modal
+          isDragging = true;
+          modal.style.transition = "none"; // Desliga a animação CSS para seguir o dedo
+        }
+      }
+
+      // Se estiver no modo de arrastar o modal
+      if (isDragging) {
+        if (deltaY > 0) {
+          currentY = deltaY;
+          modal.style.transform = `translateY(${deltaY}px)`;
+        }
+
+        // Previne o scroll da página enquanto arrastamos o modal
+        if (e.cancelable) e.preventDefault();
+      }
+    },
+    { passive: false },
+  );
+
+  modal.addEventListener("touchend", () => {
+    if (!isDragging) return;
+    isDragging = false;
+
+    // Devolve o controlo das transições ao CSS (tailwind classes)
+    modal.style.transition = "";
+
+    // Se o utilizador arrastou mais de 120px para baixo, fecha o modal
+    if (currentY > 120) {
+      if (typeof closeDetails === "function") closeDetails();
+    } else {
+      // Caso contrário, faz "snap" de volta à posição original
+      modal.style.transform = "";
+    }
+    currentY = 0;
+  });
+})();
 
 window.loadMore = function () {
   displayLimit += 10;

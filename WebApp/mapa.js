@@ -150,7 +150,6 @@ document.addEventListener("DOMContentLoaded", () => {
     for (const train of latestResult.trainsForMap || []) {
       const pos = window.MapaGeo.computeTrainPosition(train, now);
       if (!pos) continue;
-      // Ignora chegadas (segment=done) para não manter markers no terminal
       if (pos.segment === "done") continue;
       window.MapaRender.upsertTrain(mapInstance, train, pos, zoom);
       visibleIds.push(train.id);
@@ -226,8 +225,6 @@ document.addEventListener("DOMContentLoaded", () => {
       maxZoom: MAPA.MAX_ZOOM,
       maxBounds: MAPA.MAX_BOUNDS,
       attributionControl: false,
-      // Touch defaults: pinch zoom + drag OK; double-tap zoom desactivado
-      // para evitar "double-tap & hold" indesejado em iOS sobre markers.
       dragRotate: false,
       pitchWithRotate: false,
       touchZoomRotate: true,
@@ -239,6 +236,7 @@ document.addEventListener("DOMContentLoaded", () => {
       new maplibregl.AttributionControl({ compact: true }),
       "bottom-right",
     );
+
     mapInstance.addControl(
       new maplibregl.NavigationControl({ showCompass: false }),
       "bottom-right",
@@ -281,6 +279,34 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ─── BOOT ────────────────────────────────────────────────────────────
+  function tryOpenFromHash() {
+    const hash = window.location.hash.replace("#", "").trim();
+    if (!hash) return false;
+
+    const parts = hash.split("&");
+    const trainId = parts[0];
+    const originKey = parts[1];
+    const destKey = parts[2];
+
+    // Limpeza imediata do URL para ficar bonito
+    if (parts.length > 1) {
+      window.history.replaceState(null, null, "#" + trainId);
+    }
+
+    const list = latestResult.trainsForList || [];
+    const train = list.find((t) => String(t.id) === trainId);
+    if (!train) return false;
+    if (originKey && destKey && window.MapaRender) {
+      window.MapaRender.setUserRouteFilter(originKey, destKey);
+    }
+
+    // Ao abrir, ele vai puxar o startRouteFocus que já vai ler o filtro acima!
+    if (window.MapaDetails) {
+      window.MapaDetails.open(train);
+    }
+
+    return true;
+  }
 
   async function boot() {
     requestAnimationFrame(() => injectMenuExtras());
@@ -320,7 +346,7 @@ document.addEventListener("DOMContentLoaded", () => {
       await initMap();
       await loadStaticData();
 
-      // Click num comboio → details
+      // Click num comboio → details (em estado mini, com route focus)
       window.MapaRender.setClickHandler((train) => {
         window.MapaDetails.open(train);
       });
@@ -329,13 +355,8 @@ document.addEventListener("DOMContentLoaded", () => {
       await fetchAndApply();
 
       // ─── VERIFICAR URL HASH (Autofocus de Comboios) ───
-      const hash = window.location.hash.replace("#", "");
-      if (hash && latestResult.trainsForList) {
-        const train = latestResult.trainsForList.find(
-          (t) => String(t.id) === hash,
-        );
-        if (train && train.isLive) window.MapaDetails.open(train);
-      }
+      // Funciona para qualquer comboio (live, programado, extra)
+      tryOpenFromHash();
 
       if (loadingEl) {
         loadingEl.classList.add("opacity-0", "pointer-events-none");
@@ -393,21 +414,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ─── VISIBILIDADE: PAUSA/RESUME + HARD RELOAD APÓS LONGA AUSÊNCIA ────
-  //
-  // Problema clássico: o utilizador deixa a app em background; ao voltar,
-  // o mapa e a posição dos comboios estão completamente desatualizados e,
-  // em alguns browsers (Safari iOS em particular), a tab fica "congelada"
-  // porque os intervalos foram parados pelo sistema e os WebSockets/fetches
-  // pendentes ficam suspensos.
-  //
-  // Estratégia (igual à app-init.js):
-  //   - Ao esconder, regista o timestamp e pára os loops.
-  //   - Ao reaparecer:
-  //       · Se esteve > 1 h em background → window.location.reload() para
-  //         garantir estado limpo (WebSockets reconectam, cache é invalidada).
-  //       · Caso contrário → força um fetch imediato e reinicia os loops.
+  // ─── HASH CHANGE: permite navegar/partilhar links em runtime ────────
+  window.addEventListener("hashchange", () => {
+    tryOpenFromHash();
+  });
 
+  // ─── VISIBILIDADE: PAUSA/RESUME + HARD RELOAD APÓS LONGA AUSÊNCIA ────
   function onVisible() {
     const bgDurationMs = lastBackgroundTime
       ? Date.now() - lastBackgroundTime
@@ -415,14 +427,12 @@ document.addEventListener("DOMContentLoaded", () => {
     lastBackgroundTime = 0;
 
     if (bgDurationMs > 60 * 60 * 1000) {
-      // Mais de 1 hora → reload completo
       try {
         window.location.reload();
       } catch (_) {}
       return;
     }
 
-    // Caso contrário: reanima rapidamente
     fetchAndApply();
     startLoops();
   }
@@ -437,26 +447,18 @@ document.addEventListener("DOMContentLoaded", () => {
     else onVisible();
   });
 
-  // Fallback para browsers antigos ou casos em que o visibilitychange não
-  // dispara (ex: switch entre apps no iOS com home gesture)
   window.addEventListener("pageshow", (e) => {
     if (e.persisted) {
-      // bfcache restore → re-hidrata
       fetchAndApply();
       startLoops();
     }
   });
   window.addEventListener("focus", () => {
-    // Se os loops estavam parados por algum motivo, reativa
     if (!apiIntervalId || !posIntervalId) {
       fetchAndApply();
       startLoops();
     }
   });
-
-  // Pequena melhoria mobile: em iOS Safari, tapar em margens do canvas
-  // pode fechar barras de UI. Nada a fazer aqui mas deixamos pointer:
-  // events relevantes no CSS.
 
   // ─── GO! ─────────────────────────────────────────────────────────────
   boot();

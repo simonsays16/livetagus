@@ -13,11 +13,17 @@
 
   // ─── HELPERS ─────────────────────────────────────────────────────────
 
-  /** Curva ease-in-out cúbica (suave arranque + suave travagem). */
+  /**
+   * Curva de aceleração mais marcada que o ease-in-out cúbico standard.
+   * Usa potência 4 (quartic) → arranque/travagem visivelmente mais lentos
+   * que o trajeto a meio. Aproxima melhor o comportamento real do comboio.
+   */
   function easeInOut(t) {
     if (t <= 0) return 0;
     if (t >= 1) return 1;
-    return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    return t < 0.5
+      ? 8 * t * t * t * t
+      : 1 - Math.pow(-2 * t + 2, 4) / 2;
   }
 
   function parseTimeHHMMSS(timeStr, now) {
@@ -58,9 +64,7 @@
         turf.point([from.lng, from.lat]),
         turf.point([to.lng, to.lat]),
       );
-      // turf.bearing devolve -180..180; normalizamos para 0..360
       return (b + 360) % 360;
-      // return 0;
     } catch (e) {
       return 0;
     }
@@ -157,7 +161,6 @@
           units: "kilometers",
         });
         const sliceLen = turf.length(slice, { units: "kilometers" });
-        // Direção pode estar invertida (A > B ao longo da linha)
         const reverse = posA.locationKm > posB.locationKm;
         const distKm =
           (reverse ? 1 - fractionClamped : fractionClamped) * sliceLen;
@@ -167,28 +170,24 @@
         let realBearing;
 
         if (!reverse) {
-          // Marcha A -> B (normal)
           if (distKm + lookAheadStep <= sliceLen) {
             ptAhead = turf.along(slice, distKm + lookAheadStep, {
               units: "kilometers",
             });
             realBearing = turf.bearing(pt, ptAhead);
           } else {
-            // Fim da linha: olha para trás e inverte a perspetiva
             ptAhead = turf.along(slice, distKm - lookAheadStep, {
               units: "kilometers",
             });
             realBearing = turf.bearing(ptAhead, pt);
           }
         } else {
-          // Marcha B -> A (invertida no GeoJSON)
           if (distKm - lookAheadStep >= 0) {
             ptAhead = turf.along(slice, distKm - lookAheadStep, {
               units: "kilometers",
             });
             realBearing = turf.bearing(pt, ptAhead);
           } else {
-            // Início da linha: olha para trás e inverte a perspetiva
             ptAhead = turf.along(slice, distKm + lookAheadStep, {
               units: "kilometers",
             });
@@ -199,7 +198,7 @@
         return {
           lng: pt.geometry.coordinates[0],
           lat: pt.geometry.coordinates[1],
-          bearing: (realBearing + 360) % 360, // Retornamos o ângulo real!
+          bearing: (realBearing + 360) % 360,
         };
       } catch (e) {
         // cai em fallback linear
@@ -238,12 +237,30 @@
         return { phase: "between", prevIdx: i, nextIdx: i + 1 };
       }
     }
-    // Estado estranho — todos passaram exceto o último? fallback
+    // Estado estranho — fallback
     return {
       phase: "between",
       prevIdx: nodes.length - 2,
       nextIdx: nodes.length - 1,
     };
+  }
+
+  /**
+   * Quanto tempo o comboio fica parado nesta estação ANTES de partir para
+   * o próximo segmento. Para estações iniciais (Setúbal, Coina,
+   * Roma-Areeiro) NA POSIÇÃO INICIAL do percurso o tempo é zero — o comboio
+   * arranca imediatamente à hora marcada.
+   */
+  function headBoardingMs(prevStation, prevIdx) {
+    if (
+      prevStation &&
+      prevIdx === 0 &&
+      MAPA.INITIAL_STATION_KEYS &&
+      MAPA.INITIAL_STATION_KEYS.has(prevStation.key)
+    ) {
+      return 0;
+    }
+    return MAPA.BOARDING_HEAD_MS;
   }
 
   function computeTrainPosition(train, now) {
@@ -266,7 +283,6 @@
       );
       if (!first) return null;
 
-      // Pede a posição a 0% (início) para obter o ângulo real da linha na estação
       const pos = second
         ? interpolateAlongLine(first, second, 0)
         : { ...pointForStation(first), bearing: 0 };
@@ -296,7 +312,6 @@
         nodes[nodes.length - 2] && nodes[nodes.length - 2].NomeEstacao,
       );
 
-      // Pede a posição a 100% (fim) para obter o ângulo real de chegada à linha
       const pos = prev
         ? interpolateAlongLine(prev, last, 1)
         : { ...pointForStation(last), bearing: 0 };
@@ -322,6 +337,7 @@
     const prevStation = MAPA.resolveStationByApiName(prevNode.NomeEstacao);
     const nextStation = MAPA.resolveStationByApiName(nextNode.NomeEstacao);
     if (!prevStation || !nextStation) return null;
+
     const prevRealStr =
       prevNode.HoraReal && !prevNode.HoraReal.startsWith("HH")
         ? prevNode.HoraReal
@@ -350,8 +366,12 @@
       };
     }
 
-    const departTs = prevReal.getTime() + MAPA.BOARDING_MS;
-    const arriveTs = nextPred.getTime() - MAPA.BOARDING_MS;
+    // Calcula os intervalos com timings assimétricos:
+    //   • departTs: hora real de chegada à estação A + tempo de embarque
+    //   • arriveTs: hora prevista de chegada a B − 20 s (tail boarding)
+    const head = headBoardingMs(prevStation, leg.prevIdx);
+    const departTs = prevReal.getTime() + head;
+    const arriveTs = nextPred.getTime() - MAPA.BOARDING_TAIL_MS;
 
     // Troço demasiado curto — devolve o ponto médio como aproximação.
     if (arriveTs <= departTs) {
@@ -401,7 +421,7 @@
       };
     }
 
-    // Em movimento — aplica ease-in-out ao progresso temporal
+    // Em movimento — aplica ease-in-out (quartic) ao progresso temporal
     const rawProgress = (nowTs - departTs) / (arriveTs - departTs);
     const easedProgress = easeInOut(rawProgress);
     const pos = interpolateAlongLine(prevStation, nextStation, easedProgress);
@@ -431,5 +451,6 @@
     _computeBearing: computeBearing,
     _findCurrentLeg: findCurrentLeg,
     _interpolateAlongLine: interpolateAlongLine,
+    _headBoardingMs: headBoardingMs,
   };
 })();

@@ -994,12 +994,13 @@ window.installPWA = async function () {
 // ─── modal de como instalar em ios ──────────────────────────────────────────────
 function showIOSInstallModal() {
   let modal = document.getElementById("ios-install-modal");
+  const backdrop = document.getElementById("modal-backdrop");
 
   if (!modal) {
     modal = document.createElement("div");
     modal.id = "ios-install-modal";
     modal.className =
-      "fixed inset-x-0 bottom-0 h-auto max-h-[85vh] bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-xl border-t border-black/5 dark:border-white/10 rounded-t-[2rem] z-50 transform translate-y-full transition-transform duration-300 flex flex-col shadow-2xl p-6 pb-10";
+      "fixed inset-x-0 bottom-0 h-auto max-h-[85vh] bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-xl border-t border-black/5 dark:border-white/10 rounded-t-[2rem] z-[100] transform translate-y-full transition-transform duration-300 flex flex-col shadow-2xl p-6 pb-10";
 
     modal.innerHTML = `
       <div class="relative w-full">
