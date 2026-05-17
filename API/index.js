@@ -1111,7 +1111,8 @@ const processTrain = async (richInfo, originDateStr) => {
       lastPassageRealTime = mem.history[node.NodeID] || Date.now();
     }
 
-    const stationKey = STATION_MAP_IP_TO_JSON[node.NomeEstacao.toUpperCase()];
+    const stationKey =
+      STATION_MAP_IP_TO_JSON[node.NomeEstacao.toUpperCase().replace(/-A$/, "")];
 
     let horaChegadaProgStr =
       stationKey && richInfo[stationKey]
@@ -1763,12 +1764,25 @@ app.get(`${ADMIN_ROUTE}/avisos`, adminAuth, (req, res) => {
 app.post(`${ADMIN_ROUTE}/avisos`, adminAuth, express.json(), (req, res) => {
   try {
     const newAvisos = req.body;
-    fs.writeFileSync(
-      path.join(__dirname, "avisos.json"),
-      JSON.stringify(newAvisos, null, 2),
-    );
+    if (
+      !newAvisos ||
+      typeof newAvisos !== "object" ||
+      Array.isArray(newAvisos)
+    ) {
+      return res
+        .status(400)
+        .json({ error: "Payload inválido: esperado objeto JSON." });
+    }
+    const target = path.join(__dirname, "avisos.json");
+    const tmp = path.join(__dirname, `.avisos.json.${process.pid}.tmp`);
+    fs.writeFileSync(tmp, JSON.stringify(newAvisos, null, 2), "utf8");
+    fs.renameSync(tmp, target);
+    if (typeof AvisosManager.reload === "function") {
+      AvisosManager.reload();
+    }
     res.json({ success: true, message: "Avisos atualizados com sucesso" });
   } catch (err) {
+    console.error("[ADMIN /avisos] Erro a gravar:", err.message);
     res.status(500).json({ error: "Erro ao gravar avisos.json" });
   }
 });
