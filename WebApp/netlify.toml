@@ -62,9 +62,30 @@
   status = 200
   force = true
 
+# 301 permanente: links antigos /estacoes/<slug> continuam a funcionar (SEO)
 [[redirects]]
   from = "/estacoes/*"
-  to = "/estacoes/estacao.html"
+  to = "/estacao/:splat"
+  status = 301
+  force = true
+ 
+# /estacao  → seletor de estações
+[[redirects]]
+  from = "/estacao"
+  to = "/estacao/index.html"
+  status = 200
+ 
+# /estacao/ → seletor de estações
+[[redirects]]
+  from = "/estacao/"
+  to = "/estacao/index.html"
+  status = 200
+ 
+# /estacao/<qualquer-coisa> → página da estação
+# (o JS valida o slug; se inválido, redireciona para /estacao/)
+[[redirects]]
+  from = "/estacao/*"
+  to = "/estacao/estacao.html"
   status = 200
 
 # Regra 404

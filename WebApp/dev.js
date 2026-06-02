@@ -1,7 +1,8 @@
 /* Filename: dev.js */
 
 const CLIENT_API_KEY = "KoKi30rVWuwkF9lqKL6j4mb0VMg3dIXWs6QDHZ3de0G8lC5qvu";
-const API_URL = "https://api.livetagus.pt/fertagus";
+const API_URL = "https://api.livetagus.pt/fertagus/";
+// const API_URL = "http://localhost:3000/fertagus/";
 
 document.addEventListener("DOMContentLoaded", () => {
   // 1. Ligar o botão de atualizar

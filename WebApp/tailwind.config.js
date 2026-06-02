@@ -30,6 +30,8 @@ module.exports = {
 
     // Cores Específicas da Timeline/Detalhes
     "bg-blue-500",
+    "bg-[#bbb]",
+    "bg-[#388344]",
     "text-blue-500",
     "text-blue-400",
     "border-blue-500",
@@ -40,6 +42,7 @@ module.exports = {
     "border-zinc-600",
     "text-[var(--text-primary)]",
     "text-[var(--text-secondary)]",
+    "text-[#388344]",
 
     // Animações e Utilitários dinâmicos
     "animate-pulse",
@@ -52,6 +55,7 @@ module.exports = {
     "dot-ping",
     "w-full",
     "w-1/2",
+    "z-55",
   ],
 
   theme: {

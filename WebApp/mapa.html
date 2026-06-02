@@ -370,6 +370,8 @@
         overscroll-behavior: contain;
         -webkit-overflow-scrolling: touch;
         will-change: transform, height;
+        overflow-y: auto !important;
+        overscroll-behavior: contain;
       }
       #details-backdrop {
         transition: opacity 0.3s ease;
@@ -507,7 +509,7 @@
         /* O slot quadrante é aplicado por JS via translate(-50%,-50%) + dx,dy */
       }
       .is-focused.train-marker {
-        z-index: 50 !important;
+        z-index: 20 !important;
       }
       .rsc-pill {
         display: inline-flex;
@@ -695,12 +697,558 @@
         #btn-legend {
           bottom: calc(1.5rem + env(safe-area-inset-bottom, 16px)) !important;
         }
+        #btn-alerts {
+          bottom: calc(4.5rem + env(safe-area-inset-bottom, 16px)) !important;
+        }
         #legend-card {
-          bottom: calc(5rem + env(safe-area-inset-bottom, 16px)) !important;
+          bottom: calc(8.25rem + env(safe-area-inset-bottom, 16px)) !important;
         }
         .maplibregl-ctrl-bottom-right,
         .maplibregl-ctrl-bottom-left {
           margin-bottom: env(safe-area-inset-bottom, 16px) !important;
+        }
+      }
+
+      /* FLOATING NAV: override da barra do mapa */
+      /* Remove o fundo/borda do header; os elementos têm o seu próprio vidro */
+      #global-nav header {
+        background: transparent !important;
+        border-bottom: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        box-shadow: none !important;
+      }
+
+      /* Pílula retangular do logo */
+      #map-logo-pill {
+        transition:
+          box-shadow 0.2s ease,
+          background 0.2s ease;
+      }
+      #map-logo-pill:hover {
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+      }
+      html.dark #map-logo-pill:hover {
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+      }
+
+      /* Hover dos círculos dos botões */
+      #menu-controls-wrapper button:hover {
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+      }
+      html.dark #menu-controls-wrapper button:hover {
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+      }
+
+      /* ════════════════════════════════════════════════════════════════
+         AVISOS DO MAPA (mapa-alerts.js)
+         Estilos próprios (.lt-*) para não dependerem do build do Tailwind.
+         ════════════════════════════════════════════════════════════════ */
+
+      /* Legenda elevada para não colidir com o botão de avisos */
+      #legend-card {
+        bottom: 8.5rem;
+      }
+
+      /* ── Botão flutuante de avisos (por cima da legenda) ───────────── */
+      .lt-alert-btn {
+        position: absolute;
+        left: 1rem;
+        bottom: 5rem;
+        z-index: 10;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        padding: 0;
+        border: 1px solid rgb(228 228 231);
+        background: rgba(255, 255, 255, 0.9);
+        -webkit-backdrop-filter: blur(4px);
+        backdrop-filter: blur(4px);
+        border-radius: 0.125rem;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        color: rgb(63 63 70);
+        cursor: pointer;
+        transition:
+          background 0.2s ease,
+          border-color 0.2s ease,
+          color 0.2s ease,
+          box-shadow 0.2s ease,
+          transform 0.15s ease;
+      }
+      html.dark .lt-alert-btn {
+        border-color: rgb(39 39 42);
+        background: rgba(9, 9, 11, 0.9);
+        color: rgb(212 212 216);
+      }
+      .lt-alert-btn:hover {
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+      }
+      html.dark .lt-alert-btn:hover {
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+      }
+      .lt-alert-btn:active {
+        transform: scale(0.94);
+      }
+      .lt-alert-btn svg {
+        width: 1.05rem;
+        height: 1.05rem;
+      }
+      .lt-alert-btn.lt-hidden {
+        display: none;
+      }
+      .lt-alert-btn.lt-state-aviso {
+        background: #f97316;
+        border-color: #f97316;
+        color: #fff;
+        animation: lt-btn-pulse 2.4s ease-in-out infinite;
+      }
+      html.dark .lt-alert-btn.lt-state-aviso {
+        background: #f97316;
+        border-color: #f97316;
+        color: #fff;
+      }
+      @keyframes lt-btn-pulse {
+        0%,
+        100% {
+          box-shadow: 0 2px 12px rgba(249, 115, 22, 0.45);
+        }
+        50% {
+          box-shadow: 0 2px 22px rgba(249, 115, 22, 0.75);
+        }
+      }
+      .lt-alert-badge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        min-width: 16px;
+        height: 16px;
+        padding: 0 4px;
+        border-radius: 999px;
+        background: #ef4444;
+        color: #fff;
+        font-size: 10px;
+        line-height: 16px;
+        font-weight: 700;
+        text-align: center;
+        box-shadow: 0 0 0 2px #fff;
+      }
+      html.dark .lt-alert-badge {
+        box-shadow: 0 0 0 2px #09090b;
+      }
+
+      /* ── Popup de avisos ───────────────────────────────────────────── */
+      .lt-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 60;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+        background: rgba(0, 0, 0, 0.45);
+        -webkit-backdrop-filter: blur(2px);
+        backdrop-filter: blur(2px);
+        opacity: 0;
+        transition: opacity 0.25s ease;
+      }
+      .lt-modal-backdrop.lt-open {
+        opacity: 1;
+      }
+      .lt-modal {
+        width: 100%;
+        max-width: 25rem;
+        max-height: min(80vh, 560px);
+        display: flex;
+        flex-direction: column;
+        background: #fff;
+        border: 1px solid rgb(228 228 231);
+        border-radius: 1rem;
+        box-shadow: 0 20px 60px -12px rgba(0, 0, 0, 0.4);
+        overflow: hidden;
+        opacity: 0;
+        transform: translateY(12px) scale(0.98);
+        transition:
+          transform 0.28s cubic-bezier(0.22, 0.61, 0.36, 1),
+          opacity 0.25s ease;
+      }
+      html.dark .lt-modal {
+        background: #09090b;
+        border-color: rgb(39 39 42);
+        box-shadow: 0 20px 60px -12px rgba(0, 0, 0, 0.7);
+      }
+      .lt-modal-backdrop.lt-open .lt-modal {
+        opacity: 1;
+        transform: none;
+      }
+      .lt-modal-head {
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+        padding: 1rem 1.125rem;
+        border-bottom: 1px solid rgb(244 244 245);
+      }
+      html.dark .lt-modal-head {
+        border-color: rgb(24 24 27);
+      }
+      .lt-modal-head-icon {
+        display: inline-flex;
+      }
+      .lt-modal-head-icon svg {
+        width: 1.05rem;
+        height: 1.05rem;
+      }
+      .lt-tone-aviso {
+        color: #f59e0b;
+      }
+      .lt-tone-info {
+        color: #3b82f6;
+      }
+      .lt-modal-title {
+        font-size: 0.6875rem;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: #18181b;
+      }
+      html.dark .lt-modal-title {
+        color: #fff;
+      }
+      .lt-modal-close {
+        margin-left: auto;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.75rem;
+        height: 1.75rem;
+        border: 0;
+        border-radius: 999px;
+        background: transparent;
+        color: #a1a1aa;
+        cursor: pointer;
+        transition:
+          background 0.15s ease,
+          color 0.15s ease;
+      }
+      .lt-modal-close svg {
+        width: 0.85rem;
+        height: 0.85rem;
+      }
+      .lt-modal-close:hover {
+        background: rgba(0, 0, 0, 0.05);
+        color: #18181b;
+      }
+      html.dark .lt-modal-close:hover {
+        background: rgba(255, 255, 255, 0.06);
+        color: #fff;
+      }
+      .lt-modal-body {
+        position: relative;
+        flex: 1;
+        overflow-y: auto;
+        padding: 0.875rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.625rem;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(161, 161, 170, 0.25) transparent;
+        overscroll-behavior: contain;
+      }
+      .lt-modal-body::-webkit-scrollbar {
+        width: 4px;
+      }
+      .lt-modal-body::-webkit-scrollbar-thumb {
+        background: rgba(161, 161, 170, 0.25);
+        border-radius: 2px;
+      }
+
+      .lt-item {
+        display: flex;
+        gap: 0.75rem;
+        padding: 0.875rem;
+        border-radius: 0.75rem;
+        border: 1px solid rgb(244 244 245);
+        background: #fff;
+      }
+      html.dark .lt-item {
+        border-color: rgb(39 39 42);
+        background: rgba(24, 24, 27, 0.4);
+      }
+      .lt-item--aviso {
+        border-color: rgba(245, 158, 11, 0.35);
+        background: rgba(245, 158, 11, 0.06);
+      }
+      html.dark .lt-item--aviso {
+        border-color: rgba(245, 158, 11, 0.3);
+        background: rgba(245, 158, 11, 0.05);
+      }
+      .lt-item-icon {
+        flex: none;
+        width: 1.25rem;
+        display: flex;
+        justify-content: center;
+        padding-top: 1px;
+      }
+      .lt-item-icon svg {
+        width: 1.125rem;
+        height: 1.125rem;
+      }
+      .lt-item--aviso .lt-item-icon {
+        color: #f59e0b;
+      }
+      .lt-item--info .lt-item-icon {
+        color: #3b82f6;
+      }
+      .lt-item-main {
+        flex: 1;
+        min-width: 0;
+      }
+      .lt-item-top {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.25rem;
+      }
+      .lt-item-title {
+        font-size: 0.8125rem;
+        font-weight: 700;
+        line-height: 1.2;
+        color: #27272a;
+      }
+      html.dark .lt-item-title {
+        color: #f4f4f5;
+      }
+      .lt-item-origem {
+        flex: none;
+        font-size: 0.5625rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #a1a1aa;
+        border: 1px solid currentColor;
+        border-radius: 999px;
+        padding: 1px 7px;
+        opacity: 0.85;
+      }
+      .lt-item-msg {
+        font-size: 0.75rem;
+        line-height: 1.45;
+        color: #52525b;
+        word-break: break-word;
+      }
+      html.dark .lt-item-msg {
+        color: #a1a1aa;
+      }
+      .lt-item-msg b {
+        font-weight: 700;
+        color: #3f3f46;
+      }
+      html.dark .lt-item-msg b {
+        color: #d4d4d8;
+      }
+      .lt-item-action {
+        margin-top: 0.625rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        width: 100%;
+        font-size: 0.625rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #3b82f6;
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        border-radius: 0.5rem;
+        padding: 0.4rem 0.7rem;
+        transition: background 0.15s ease;
+      }
+      .lt-item-action svg {
+        width: 0.75rem;
+        height: 0.75rem;
+      }
+      .lt-item-action:hover {
+        background: rgba(59, 130, 246, 0.08);
+      }
+      .lt-item--aviso .lt-item-action {
+        color: #fff;
+        background: #f59e0b;
+        border-color: #f59e0b;
+      }
+      .lt-item--aviso .lt-item-action:hover {
+        background: #d97706;
+      }
+
+      .lt-modal-foot {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.5rem;
+        border-top: 1px solid rgb(244 244 245);
+      }
+      html.dark .lt-modal-foot {
+        border-color: rgb(24 24 27);
+      }
+      .lt-modal.lt-scrollable .lt-modal-foot {
+        display: flex;
+      }
+      .lt-nav-btn {
+        width: 2rem;
+        height: 2rem;
+        border-radius: 999px;
+        border: 1px solid rgb(228 228 231);
+        background: #fff;
+        color: #52525b;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition:
+          background 0.15s ease,
+          opacity 0.15s ease;
+      }
+      .lt-nav-btn svg {
+        width: 0.95rem;
+        height: 0.95rem;
+      }
+      .lt-nav-btn:hover {
+        background: rgba(0, 0, 0, 0.04);
+      }
+      html.dark .lt-nav-btn {
+        border-color: rgb(39 39 42);
+        background: rgba(24, 24, 27, 0.6);
+        color: #a1a1aa;
+      }
+      html.dark .lt-nav-btn:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .lt-nav-btn:disabled {
+        opacity: 0.35;
+        cursor: default;
+      }
+
+      /* ── Overlay de manutenção ─────────────────────────────────────── */
+      .lt-maint {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        text-align: center;
+        background: #fff;
+        overscroll-behavior: none;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+      }
+      html.dark .lt-maint {
+        background: #09090b;
+      }
+      .lt-maint.lt-open {
+        opacity: 1;
+      }
+      .lt-maint-inner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        max-width: 24rem;
+        margin: 0 auto;
+      }
+      .lt-maint-icon {
+        margin-bottom: 2rem;
+        color: #18181b;
+      }
+      html.dark .lt-maint-icon {
+        color: #fff;
+      }
+      .lt-maint-icon svg {
+        width: 2.5rem;
+        height: 2.5rem;
+      }
+      .lt-maint-title {
+        font-size: 1.25rem;
+        font-weight: 300;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: #18181b;
+        margin-bottom: 1.5rem;
+      }
+      html.dark .lt-maint-title {
+        color: #fff;
+      }
+      .lt-maint-text {
+        font-size: 0.75rem;
+        font-weight: 300;
+        line-height: 1.7;
+        letter-spacing: 0.02em;
+        color: #71717a;
+        margin-bottom: 3rem;
+        text-align: left;
+      }
+      html.dark .lt-maint-text {
+        color: #a1a1aa;
+      }
+      .lt-maint-actions {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        gap: 0.75rem;
+      }
+      .lt-maint-btn {
+        display: block;
+        width: 100%;
+        padding: 1rem;
+        text-align: center;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        font-size: 0.625rem;
+        font-weight: 500;
+        cursor: pointer;
+        border: 0;
+        transition:
+          opacity 0.2s ease,
+          background 0.2s ease,
+          color 0.2s ease;
+      }
+      .lt-maint-btn--primary {
+        background: #18181b;
+        color: #fff;
+      }
+      html.dark .lt-maint-btn--primary {
+        background: #fff;
+        color: #18181b;
+      }
+      .lt-maint-btn--primary:hover {
+        opacity: 0.85;
+      }
+      .lt-maint-btn--ghost {
+        background: transparent;
+        border: 1px solid rgba(24, 24, 27, 0.2);
+        color: #18181b;
+      }
+      html.dark .lt-maint-btn--ghost {
+        border-color: rgba(255, 255, 255, 0.2);
+        color: #fff;
+      }
+      .lt-maint-btn--ghost:hover {
+        background: rgba(0, 0, 0, 0.03);
+      }
+      html.dark .lt-maint-btn--ghost:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .lt-alert-btn.lt-state-aviso {
+          animation: none !important;
+        }
+        .lt-modal,
+        .lt-modal-backdrop,
+        .lt-maint {
+          transition: none !important;
         }
       }
     </style>
@@ -718,10 +1266,20 @@
         <!-- Mapa -->
         <div id="map" class="absolute inset-0"></div>
 
+        <!-- ─── BOTÃO DE AVISOS (por cima da legenda) ───────────────── -->
+        <!-- Estado controlado por mapa-alerts.js:
+             laranja+aviso · preto/branco+"i" · escondido se não houver nada -->
+        <button
+          id="btn-alerts"
+          class="lt-alert-btn lt-hidden"
+          aria-hidden="true"
+          aria-label="Avisos"
+        ></button>
+
         <!-- ─── LEGENDA (canto inferior-esquerdo) ──────────────────── -->
         <button
           id="btn-legend"
-          class="absolute bottom-6 left-4 z-10 p-3 border border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-[#09090b]/90 backdrop-blur-sm rounded-sm shadow-sm hover:bg-white dark:hover:bg-[#09090b] transition-colors"
+          class="absolute bottom-8 left-4 z-10 p-3 border border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-[#09090b]/90 backdrop-blur-sm rounded-sm shadow-sm hover:bg-white dark:hover:bg-[#09090b] transition-colors"
           aria-label="Mostrar legenda"
         >
           <i
@@ -845,11 +1403,11 @@
              Em desktop é um painel fixo no canto inferior direito. -->
         <div
           id="details-backdrop"
-          class="hidden fixed inset-0 z-40 bg-black/40 opacity-0 pointer-events-none"
+          class="hidden fixed inset-0 z-30 bg-black/40 opacity-0 pointer-events-none"
         ></div>
         <div
           id="details-panel"
-          class="fixed z-50 translate-y-full bg-white dark:bg-[#09090b] overflow-hidden"
+          class="fixed z-30 translate-y-full bg-white dark:bg-[#09090b] overflow-hidden"
           data-state="closed"
           role="dialog"
           aria-modal="true"
@@ -879,6 +1437,7 @@
     <script src="./mapa-details.js" defer></script>
     <script src="./mapa-station.js" defer></script>
     <script src="./mapa-share.js" defer></script>
+    <script src="./mapa-alerts.js" defer></script>
     <script src="./mapa.js" defer></script>
   </body>
 </html>

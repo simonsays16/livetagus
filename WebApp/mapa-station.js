@@ -319,11 +319,12 @@
             </p>
           </div>
 
-          <button
-            data-details-action="close"
+          <a
+            href="/estacao/${escapeHtml(station.name).toLowerCase()}#ligacoes"
+            data-details-action="abri página dedicada à estação"
             class="w-[calc(100%-3rem)] mx-6 mb-6 py-4 flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-[0.25em] border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
-            Fechar
-          </button>
+            Ver Ligações na Estação
+          </a>
         </div>
       </div>`;
   }
@@ -424,7 +425,7 @@
   }
 
   // ─── AÇÕES ───────────────────────────────────────────────────────────
-
+  /* PROVISORIO
   function render() {
     if (!currentStation) return;
     const source = trainsSource && trainsSource();
@@ -443,6 +444,25 @@
     if (newScrollContainer) newScrollContainer.scrollTop = currentScrollTop;
 
     // 4. Ligar eventos e ícones
+    attachListeners();
+    if (window.lucide) window.lucide.createIcons();
+  }*/
+
+  function render() {
+    if (!currentStation) return;
+
+    // 1. Capturar o scroll atual
+    const scrollContainer = panel.querySelector('[data-details-scroll="1"]');
+    const currentScrollTop = scrollContainer ? scrollContainer.scrollTop : 0;
+
+    // 2. Substituir o HTML (forçar o painel de manutenção em vez do buildContent normal)
+    panel.innerHTML = buildMaintenanceContent(currentStation);
+
+    // 3. Restaurar o scroll
+    const newScrollContainer = panel.querySelector('[data-details-scroll="1"]');
+    if (newScrollContainer) newScrollContainer.scrollTop = currentScrollTop;
+
+    // 4. Ligar eventos e ícones (mantém os eventos de fechar ativos)
     attachListeners();
     if (window.lucide) window.lucide.createIcons();
   }
@@ -497,6 +517,70 @@
       close({ silent: true });
       setTimeout(() => window.MapaDetails.open(train), 180);
     }
+  }
+
+  // PROVISORIO
+  function buildMaintenanceContent(station) {
+    return `
+    <div class="flex flex-col h-full bg-white dark:bg-[#09090b]">
+
+      <!-- DRAG HANDLE (visível em mobile) -->
+      <div class="dp-handle md:hidden shrink-0" data-drag-area="1" aria-hidden="true">
+        <div class="dp-handle-pill"></div>
+      </div>
+
+      <!-- HEADER DA ESTAÇÃO -->
+      <div class="dp-header relative shrink-0 px-6 pt-3 md:pt-safe-ios md:pt-5 pb-5 border-b border-zinc-100 dark:border-zinc-900" data-drag-area="1">
+        <button
+          data-details-action="close"
+          class="absolute right-4 top-3 md:top-5 w-10 h-10 flex items-center justify-center text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"
+          aria-label="Fechar">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-[9px] font-bold tracking-[0.3em] uppercase text-orange-500">Aviso de Manutenção</span>
+          <span class="h-px flex-1 max-w-16 bg-zinc-200 dark:bg-zinc-800"></span>
+        </div>
+
+        <h2 class="text-3xl font-light tracking-tighter text-zinc-900 dark:text-white leading-[1.05]">
+          ${escapeHtml(station.name)}
+        </h2>
+      </div>
+
+      <!-- CONTEÚDO DO AVISO -->
+      <div class="flex-1 overflow-y-auto px-6 py-6" data-details-scroll="1">
+        
+        <div class="p-5 rounded-md border border-orange-200 dark:border-orange-900/40 bg-orange-50/50 dark:bg-orange-900/10">
+          <div class="flex items-center gap-3 mb-4">
+            <i data-lucide="wrench" class="w-5 h-5 text-orange-500"></i>
+            <h3 class="text-sm font-bold text-zinc-900 dark:text-white">Reestruturação do Sistema (Obras IP/Fertagus)</h3>
+          </div>
+          
+          <div class="space-y-4 text-[11px] leading-relaxed text-zinc-600 dark:text-zinc-400">
+            <p>
+              As páginas das estações já se encontravam em atualização para integrar as <strong>ligações intermodais</strong> (Transportes Nas Estações). Contudo, as recentes obras da IP/Fertagus forçaram uma adaptação de urgência no nosso sistema.
+            </p>
+            <p>
+              Esta sobreposição de trabalhos técnicos não foi totalmente concluída. Como resultado, a plataforma ficou a meio do processo e os detalhes em tempo real das estações encontram-se <strong>temporariamente bloqueados</strong>.
+            </p>
+            <p>
+              <strong>Previsão de resolução:</strong> 7 de junho. Nessa data, o serviço será normalizado e a nova funcionalidade de ligações nas estações ficará ativa.
+            </p>
+          </div>
+
+          <div class="mt-5 pt-4 border-t border-orange-200/50 dark:border-orange-900/30">
+            <p class="text-[9px] font-mono text-orange-600/80 dark:text-orange-400/80">AVISO: Atualizado Jun 2, 2026</p>
+          </div>
+        </div>
+
+        <button
+          data-details-action="close"
+          class="mt-6 w-full py-4 flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-[0.25em] border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
+          Fechar
+        </button>
+      </div>
+    </div>`;
   }
 
   function open(station) {

@@ -9,8 +9,13 @@
   const MAPA = {
     // ─── API ───────────────────────────────────────────────────────────
     API_URL: "https://api.livetagus.pt/fertagus",
-    // API_URL: "http://localhost:3000/fertagus",
+    //API_URL: "http://localhost:3000/fertagus",
     API_KEY: "KoKi30rVWuwkF9lqKL6j4mb0VMg3dIXWs6QDHZ3de0G8lC5qvu",
+
+    // ─── AVISOS / MANUTENÇÃO ───────────────────────────────────────────
+    ALERTS_URL: "https://api.livetagus.pt/avisos",
+    HORARIOS_URL: "./horarios",
+    ALERTS_REFRESH_MS: 90_000,
 
     // ─── INTERVALOS ────────────────────────────────────────────────────
     API_REFRESH_MS: 30_000,
@@ -21,7 +26,12 @@
 
     // Estações que NUNCA acumulam tempo de embarque inicial: são origens
     // de linha (mesmo Coina, que serve como origem dos comboios curtos).
-    INITIAL_STATION_KEYS: new Set(["setubal", "coina", "roma_areeiro"]),
+    INITIAL_STATION_KEYS: new Set([
+      "setubal",
+      "coina",
+      "roma_areeiro",
+      "corroios",
+    ]),
 
     // ─── MAPA ──────────────────────────────────────────────────────────
     CENTER: [-9.05, 38.65],

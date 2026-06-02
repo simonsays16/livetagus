@@ -17,6 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initShareButton(); // partilha nativa no footer
   checkApiStatus(); // verificar estado
   updateAppVersion(); // versao sw.js
+  initComingSoonPill(); // botão brevemnte
 });
 
 // --- BARRA DE NAVEGAÇÃO E MENU LATERAL ---
@@ -50,8 +51,8 @@ function injectNavigation() {
                 <a href="/" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Início</a>
                 <a href="/mapa" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Mapa</a>
                 <a href="/app" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-black dark:text-white transition-colors uppercase italic">Tempo Real</a>
+                <a id="btn-menu-estacoes" href="#" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase line-through">Estações</a>
                 <a href="/horarios" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Horários</a>
-                <a id="btn-menu-estado" href="https://status.livetagus.pt/pt-pt" target="_blank" rel="noopener noreferrer" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Estado</a>
                 <a id="btn-menu-sobre" href="/sobre" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Sobre</a>
             </nav>
 
@@ -510,7 +511,7 @@ async function updateAppVersion() {
     if (res.ok) {
       const text = await res.text();
       const match = text.match(
-        /CACHE_NAME\s*=\s*["']livetagus-(v\.[^"']+)["']/,
+        /GLOBAL_VERSION\s*=\s*["']livetagus-(v\.[^"']+)["']/,
       );
 
       if (match && match[1]) {
@@ -549,4 +550,58 @@ if (!shouldIgnoreAnalytics) {
     };
 } else {
   window.sa_event = function () {};
+}
+
+// PROVISÓRIO BOTÃO ESTAÇÕES BREVEMENTE
+function initComingSoonPill() {
+  const btnEstacoes = document.getElementById("btn-menu-estacoes");
+  if (!btnEstacoes) return;
+
+  let pill = document.getElementById("coming-soon-pill");
+  if (!pill) {
+    pill = document.createElement("div");
+    pill.id = "coming-soon-pill";
+    pill.setAttribute("role", "status");
+    pill.setAttribute("aria-live", "polite");
+    pill.textContent = "PARTIDAS E LIGAÇÕES POR ESTAÇÃO BREVEMENTE";
+    Object.assign(pill.style, {
+      position: "fixed",
+      bottom: "6rem",
+      left: "50%",
+      transform: "translateX(-50%) translateY(calc(100% + 2rem))",
+      background: "#18181b",
+      color: "#ffffff",
+      padding: "0.625rem 1.25rem",
+      borderRadius: "9999px",
+      fontSize: "0.7rem",
+      fontWeight: "700",
+      letterSpacing: "0.08em",
+      fontFamily: "ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace",
+      zIndex: "9999",
+      opacity: "0",
+      pointerEvents: "none",
+      whiteSpace: "nowrap",
+      boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+      border: "1px solid rgba(255,255,255,0.08)",
+      transition:
+        "transform 0.35s cubic-bezier(0.16,1,0.3,1), opacity 0.35s ease",
+      textTransform: "uppercase",
+    });
+    document.body.appendChild(pill);
+  }
+
+  let pillTimeout;
+  btnEstacoes.addEventListener("click", (e) => {
+    e.preventDefault();
+    clearTimeout(pillTimeout);
+    void pill.offsetWidth;
+
+    pill.style.transform = "translateX(-50%) translateY(0)";
+    pill.style.opacity = "1";
+
+    pillTimeout = setTimeout(() => {
+      pill.style.transform = "translateX(-50%) translateY(calc(100% + 2rem))";
+      pill.style.opacity = "0";
+    }, 3000);
+  });
 }

@@ -533,7 +533,7 @@
     const ringHex = onTime ? "#10b981" : "#f59e0b";
     const ringRgb = onTime ? "16,185,129" : "245,158,11";
     const delayBadge = !onTime
-      ? `<span class="rsc-delay">+${delayMin}m</span>`
+      ? `<span class="rsc-delay">+${delayMin} MIN</span>`
       : `<span class="rsc-ontime">A horas</span>`;
 
     const destTag = isDestination

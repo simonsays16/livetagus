@@ -21,9 +21,32 @@
   function easeInOut(t) {
     if (t <= 0) return 0;
     if (t >= 1) return 1;
-    return t < 0.5
-      ? 8 * t * t * t * t
-      : 1 - Math.pow(-2 * t + 2, 4) / 2;
+
+    // Valores reais baseados na UQE 3500:
+    // Demora ~43s a atingir 140km/h a 0.9m/s2.
+    // Numa viagem média, isso representa cerca de 25% do tempo total.
+    const accelPhase = 0.25;
+    const decelPhase = 0.75;
+
+    // Para a matemática bater certo (a distância total ser 1),
+    // a velocidade máxima atingida tem de ser um multiplicador constante.
+    const vMax = 1 / (1 - accelPhase); // 1.3333...
+
+    if (t < accelPhase) {
+      // Fase 1: Aceleração constante a 0.9 m/s²
+      // d = 0.5 * a * t^2
+      return 0.5 * (vMax / accelPhase) * t * t;
+    } else if (t < decelPhase) {
+      // Fase 2: Velocidade de cruzeiro constante a 140 km/h
+      // A distância já percorrida na Fase 1
+      const distPhase1 = 0.5 * vMax * accelPhase;
+      return distPhase1 + vMax * (t - accelPhase);
+    } else {
+      // Fase 3: Travagem constante a 0.9 m/s²
+      // Fazemos o inverso da fase de aceleração, vindo do fim (1) para trás
+      const tRemaining = 1 - t;
+      return 1 - 0.5 * (vMax / accelPhase) * tRemaining * tRemaining;
+    }
   }
 
   function parseTimeHHMMSS(timeStr, now) {
@@ -251,10 +274,9 @@
    * Roma-Areeiro) NA POSIÇÃO INICIAL do percurso o tempo é zero — o comboio
    * arranca imediatamente à hora marcada.
    */
-  function headBoardingMs(prevStation, prevIdx) {
+  function headBoardingMs(prevStation) {
     if (
       prevStation &&
-      prevIdx === 0 &&
       MAPA.INITIAL_STATION_KEYS &&
       MAPA.INITIAL_STATION_KEYS.has(prevStation.key)
     ) {
@@ -369,7 +391,7 @@
     // Calcula os intervalos com timings assimétricos:
     //   • departTs: hora real de chegada à estação A + tempo de embarque
     //   • arriveTs: hora prevista de chegada a B − 20 s (tail boarding)
-    const head = headBoardingMs(prevStation, leg.prevIdx);
+    const head = headBoardingMs(prevStation);
     const departTs = prevReal.getTime() + head;
     const arriveTs = nextPred.getTime() - MAPA.BOARDING_TAIL_MS;
 

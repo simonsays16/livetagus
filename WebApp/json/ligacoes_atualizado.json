@@ -1391,6 +1391,9 @@
                 {
                     "type": "bus",
                     "operator": "Rede Expresso"
+                },
+                {
+                    "line": "Terminal Rodoviário de Sete-Rios"
                 }
             ],
             "cm": [
@@ -2570,5 +2573,14 @@
                 }
             ]
         }
+    },
+    "operador": {
+        "cm": "https://carrismetropolitana.pt/",
+        "cp": "https://www.cp.pt/",
+        "carris": "https://carris.pt/",
+        "metro": "https://www.metrolisboa.pt/",
+        "re": "https://rede-expressos.pt/pt",
+        "tcb": "https://tcbarreiro.pt/",
+        "mts": "https://www.mts.pt/"
     }
 }

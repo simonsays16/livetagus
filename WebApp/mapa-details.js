@@ -123,7 +123,10 @@
       const passed = n.ComboioPassou;
       const isCurrent = !passed && (i === 0 || nodes[i - 1].ComboioPassou);
 
-      const scheduled = (n.HoraProgramada || "").substring(0, 5);
+      const scheduled = (n.HoraProgramada || n.HoraPrevista || "").substring(
+        0,
+        5,
+      );
       const predicted = (n.HoraPrevista || "").substring(0, 5);
       const hasDelay =
         scheduled &&

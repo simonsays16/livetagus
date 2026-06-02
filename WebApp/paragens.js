@@ -869,11 +869,10 @@ function injectCustomMenuElements() {
       "p-2 rounded-full transition-colors text-zinc-900 dark:text-white group relative";
     mobilityBtn.setAttribute("aria-label", "Ferramentas Inteligentes");
     mobilityBtn.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 transition-transform group-active:scale-90">
-        <path d="m10.586 5.414-5.172 5.172"/><path d="m18.586 13.414-5.172 5.172"/><path d="M6 12h12"/><circle cx="12" cy="20" r="2"/><circle cx="12" cy="4" r="2"/><circle cx="20" cy="12" r="2"/><circle cx="4" cy="12" r="2"/>
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layout-grid-icon lucide-layout-grid">
+        <rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/>
+        <rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>
       </svg>
-      <span id="mobility-badge-ping" class="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-500 rounded-full animate-ping"></span>
-      <span id="mobility-badge" class="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-500 rounded-full"></span>
     `;
     wrapper.appendChild(mobilityBtn);
     wrapper.appendChild(trigger);
@@ -881,10 +880,12 @@ function injectCustomMenuElements() {
     const popover = document.createElement("div");
     popover.id = "mobility-popover";
     popover.className =
-      "absolute top-16 right-4 w-64 bg-white dark:bg-[#09090b] border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl hidden origin-top-right transition-all duration-300 transform scale-95 opacity-0 z-50 overflow-hidden";
+      "fixed top-16 right-4 w-70 bg-white dark:bg-[#09090b] border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl hidden origin-top-right transition-all duration-300 transform scale-95 opacity-0 z-50 overflow-hidden";
     popover.innerHTML = `
-      <div class="px-4 py-3 bg-zinc-50 dark:bg-zinc-900/50 border-b border-zinc-100 dark:border-zinc-800">
-        <p class="text-[9px] font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">Funcionalidades</p>
+      <div class="px-4 py-3 bg-zinc-50 dark:bg-zinc-900/50 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+        <p class="text-[9px] font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">
+          Mobilidade & Smart
+        </p>
       </div>
       <div class="flex flex-col">
         <a href="./app" class="w-full flex items-center gap-4 px-4 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors text-left group/btn">
@@ -895,7 +896,20 @@ function injectCustomMenuElements() {
           </div>
           <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-zinc-300 dark:text-zinc-600 group-hover/btn:translate-x-1 transition-transform"></i>
         </a>
+
         <div class="h-px w-full bg-zinc-100 dark:bg-zinc-800"></div>
+
+        <a href="./mapa" data-action="topbtnapp_mapa" class="w-full flex items-center gap-4 px-4 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors text-left">
+          <i data-lucide="map" class="w-4 h-4 text-zinc-900 dark:text-white"></i>
+          <div class="flex-1">
+            <p class="text-sm font-medium text-zinc-900 dark:text-white leading-none">Mapa Tempo Real (BETA)</p>
+            <p class="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1.5 font-light tracking-wide">Estimativa de localização dos comboios</p>
+          </div>
+          <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-zinc-300 dark:text-zinc-600"></i>
+        </a>
+        
+        <div class="h-px w-full bg-zinc-100 dark:bg-zinc-800"></div>
+
         <a href="./sudoku" class="w-full flex items-center gap-4 px-4 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors text-left group/btn">
           <i data-lucide="gamepad-2" class="w-4 h-4 text-zinc-900 dark:text-white group-hover/btn:scale-110 transition-transform duration-300"></i>
           <div class="flex-1">

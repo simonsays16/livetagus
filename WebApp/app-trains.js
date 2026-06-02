@@ -51,6 +51,29 @@ const ChangesManager = {
   },
 };
 
+// Verifica se a rota é a padrão da Fertagus
+function isStandardRoute(origem, destino) {
+  if (!origem || !destino) return true; // Fallback de segurança
+
+  // Normaliza os nomes para remover acentos (ex: SETÚBAL -> SETUBAL)
+  const org = origem
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  const dst = destino
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  const isMargem = (val) => val === "COINA" || val === "SETUBAL";
+  const isLisboa = (val) => val === "ROMA-AREEIRO";
+
+  if (isLisboa(org) && isMargem(dst)) return true; // Lisboa -> Margem
+  if (isMargem(org) && isLisboa(dst)) return true; // Margem -> Lisboa
+
+  return false; // Se fugir disto (ex: Setúbal -> Pragal), é anormal
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 
 async function fetchFertagusNewAPI() {
@@ -90,6 +113,9 @@ async function fetchFertagusNewAPI() {
     }
 
     window.apiIsDown = false;
+
+    // [TRAJETO ANORMAL] Mapa de desvios devolvido pelo backend.
+    const abnormalRoutes = data.abnormalRoutes || {};
 
     const futureTrains = data.futureTrains || {};
     const apiTrains = Object.values(data).filter((v) => v && v["id-comboio"]);
@@ -133,13 +159,33 @@ async function fetchFertagusNewAPI() {
 
         let originNode = null;
         let destNode = null;
+        let finalTrainDest = dstInfo.name;
+        let reachesUserDest = true;
+
         if (apiTrain) {
           originNode = apiTrain.NodesPassagemComboio.find(
             (n) => n.EstacaoID == orgInfo.id,
           );
-          destNode = apiTrain.NodesPassagemComboio.find(
+
+          const realDestNode = apiTrain.NodesPassagemComboio.find(
             (n) => n.NomeEstacao.toUpperCase() === dstInfo.name.toUpperCase(),
           );
+
+          if (realDestNode) {
+            destNode = realDestNode;
+          } else if (apiTrain.NodesPassagemComboio.length > 0) {
+            reachesUserDest = false; // Não encontra o destino do utilizador
+
+            // O nó de destino passa a ser a última paragem que o comboio efetivamente faz
+            destNode =
+              apiTrain.NodesPassagemComboio[
+                apiTrain.NodesPassagemComboio.length - 1
+              ];
+            // Atualiza o nome do destino visual para não mentir ao utilizador
+            finalTrainDest =
+              destNode.NomeEstacao.charAt(0).toUpperCase() +
+              destNode.NomeEstacao.slice(1).toLowerCase();
+          }
         }
 
         let mainTime = scheduledTimeStr;
@@ -154,6 +200,9 @@ async function fetchFertagusNewAPI() {
         let originLabel = "FERTAGUS";
         if (dbTrain.setubal) originLabel = "SETUBAL";
         else if (dbTrain.coina) originLabel = "COINA";
+        if (apiTrain && apiTrain.Origem) {
+          originLabel = apiTrain.Origem.toUpperCase();
+        }
         let arrTime = scheduledDestStr;
 
         // FIX PROVISORIO
@@ -178,7 +227,23 @@ async function fetchFertagusNewAPI() {
             apiTrain.SituacaoComboio || "",
           );
 
-          if (isSuppressed) {
+          // NOVO: Validar se o percurso não serve para este utilizador
+          const orgIdx = apiTrain.NodesPassagemComboio.findIndex(
+            (n) => n.EstacaoID == orgInfo.id,
+          );
+          const dstIdx = apiTrain.NodesPassagemComboio.findIndex(
+            (n) => n.NomeEstacao.toUpperCase() === finalTrainDest.toUpperCase(),
+          );
+
+          // Se não chega ao destino final OU se a origem já é a última paragem do comboio
+          const isShortenedForUser = !reachesUserDest || orgIdx >= dstIdx;
+
+          if (isShortenedForUser) {
+            status = "Percurso Encurtado";
+            dotStatus = "red";
+            pulse = true;
+            isSuppressed = true;
+          } else if (isSuppressed) {
             status = "SUPRIMIDO";
             dotStatus = "red";
             pulse = true;
@@ -214,11 +279,10 @@ async function fetchFertagusNewAPI() {
               secondaryTime = progStr.substring(0, 5);
               isLive = true;
             } else {
-              if (isLive || prevStr) {
+              if (isLive && prevStr) {
                 status = "A Horas";
                 dotStatus = "green";
                 pulse = true;
-                isLive = true;
               } else {
                 status = "Programado";
                 dotStatus = "green";
@@ -267,6 +331,17 @@ async function fetchFertagusNewAPI() {
               };
             }
           }
+        } else if (
+          apiTrain &&
+          apiTrain.NodesPassagemComboio.length > 0 &&
+          !originNode
+        ) {
+          // NOVO: O comboio existe e tem paragens, mas não passa na estação onde o utilizador está.
+          // Logo, para este utilizador, a viagem foi suprimida/encurtada.
+          status = "Percurso Encurtado";
+          dotStatus = "red";
+          pulse = true;
+          isSuppressed = true;
         } else {
           // FutureTrains: para comboios sem dados detalhados na API.
           // Se ja esta em forceSuppressed, ignoramos completamente o estado
@@ -317,13 +392,78 @@ async function fetchFertagusNewAPI() {
         }
 
         const effectiveDate = window.parseTimeStr(mainTime);
+
+        // --------------------------------------------------------
+        // 1. Extrair as estações saltadas deste comboio
+        const abnormalData =
+          abnormalRoutes[lookupId] || abnormalRoutes[String(dbTrain.id)];
+        const skippedHere =
+          apiTrain && apiTrain._isAbnormalRoute
+            ? apiTrain._skippedStations || []
+            : abnormalData
+              ? abnormalData.skipped || []
+              : [];
+
+        // 2. Se a origem ou destino PESQUISADOS PELO UTILIZADOR foram saltados, o percurso está encurtado para ele!
+        if (
+          !isSuppressed &&
+          (skippedHere.some((s) => s.key === fertagusOrigin) ||
+            skippedHere.some((s) => s.key === fertagusDest))
+        ) {
+          status = "Percurso Encurtado";
+          dotStatus = "red";
+          pulse = true;
+          isSuppressed = true;
+        }
+
+        // 3. --- LÓGICA DE ORIGEM E DESTINO REAIS ---
+        let apiTrueOrigin = originLabel;
+        let apiTrueDest = finalTrainDest;
+
+        if (
+          apiTrain &&
+          apiTrain.NodesPassagemComboio &&
+          apiTrain.NodesPassagemComboio.length > 0
+        ) {
+          // Se temos dados live da marcha, confiamos cegamente no primeiro e último nó
+          apiTrueOrigin = apiTrain.NodesPassagemComboio[0].NomeEstacao;
+          apiTrueDest =
+            apiTrain.NodesPassagemComboio[
+              apiTrain.NodesPassagemComboio.length - 1
+            ].NomeEstacao;
+        } else {
+          // Se for FutureTrain (sem NodesPassagemComboio), deduzimos cruzando o horário programado com os cortes
+          const dirStations =
+            activeTab === "lisboa"
+              ? FERTAGUS_STATIONS
+              : [...FERTAGUS_STATIONS].reverse();
+          const validStations = dirStations.filter(
+            (s) =>
+              dbTrain[s.key] && !skippedHere.some((sk) => sk.key === s.key),
+          );
+
+          if (validStations.length > 0) {
+            apiTrueOrigin = validStations[0].name;
+            apiTrueDest = validStations[validStations.length - 1].name;
+          }
+        }
+
+        let customIsAbnormal = !isStandardRoute(apiTrueOrigin, apiTrueDest);
+        if (skippedHere.length > 0) {
+          customIsAbnormal = true;
+        }
+        // --------------------------------------------------------
+
         return {
           id: dbTrain.id,
           num: dbTrain.id,
           op: originLabel,
           time: mainTime,
           secTime: secondaryTime,
-          dest: dstInfo.name,
+          dest: finalTrainDest,
+          trueOrigin: apiTrueOrigin,
+          trueDest: apiTrueDest,
+          isAbnormalRoute: !isSuppressed && customIsAbnormal,
           status: status,
           arr: arrTime,
           dotStatus: dotStatus,
@@ -338,6 +478,7 @@ async function fetchFertagusNewAPI() {
           rawTime: scheduledDate,
           effectiveDate: effectiveDate,
           fullSchedule: apiTrain ? apiTrain.NodesPassagemComboio : null,
+          skippedStations: skippedHere,
           isOffline: false,
         };
       })
@@ -369,20 +510,50 @@ async function fetchFertagusNewAPI() {
       const extraId = String(extra["id-comboio"]);
       // Evitar duplicações caso algo venha repetido
       if (existingIds.has(extraId)) continue;
-      existingIds.add(extraId);
 
       const nodes = Array.isArray(extra.NodesPassagemComboio)
         ? extra.NodesPassagemComboio
         : [];
-      if (nodes.length === 0) continue;
+      if (nodes.length < 2) continue;
+
+      // --- NOVO: BLOQUEAR COMBOIOS FANTASMAS DO SENTIDO OPOSTO ---
+      // Impede que comboios normais da outra via sejam confundidos com Extras
+      const firstNode = FERTAGUS_STATIONS.find(
+        (s) =>
+          s.id == nodes[0].EstacaoID ||
+          s.name.toUpperCase() === (nodes[0].NomeEstacao || "").toUpperCase(),
+      );
+      const lastNode = FERTAGUS_STATIONS.find(
+        (s) =>
+          s.id == nodes[nodes.length - 1].EstacaoID ||
+          s.name.toUpperCase() ===
+            (nodes[nodes.length - 1].NomeEstacao || "").toUpperCase(),
+      );
+
+      if (firstNode && lastNode) {
+        const extraDir = calculateDirection(firstNode.key, lastNode.key);
+        // Se o comboio vai para o lado oposto ao que o utilizador está a pesquisar, descarta imediatamente!
+        if (extraDir !== activeTab) continue;
+      }
+      // -----------------------------------------------------------
+
+      existingIds.add(extraId);
 
       const orgIdx = nodes.findIndex((n) => n && n.EstacaoID == orgInfo.id);
-      const dstIdx = nodes.findIndex(
+      let dstIdx = nodes.findIndex(
         (n) =>
           n &&
           (n.NomeEstacao || "").toUpperCase() === dstInfo.name.toUpperCase(),
       );
 
+      let finalExtraDest = dstInfo.name;
+      // Se não encontrar o destino selecionado (porque a viagem foi cortada a meio)
+      if (dstIdx === -1 && nodes.length > 0) {
+        dstIdx = nodes.length - 1; // Assume a última paragem do comboio como destino
+        finalExtraDest =
+          nodes[dstIdx].NomeEstacao.charAt(0).toUpperCase() +
+          nodes[dstIdx].NomeEstacao.slice(1).toLowerCase();
+      }
       // Tem de passar por ambas as estações, e a origem antes do destino.
       if (orgIdx === -1 || dstIdx === -1 || orgIdx >= dstIdx) continue;
 
@@ -509,6 +680,27 @@ async function fetchFertagusNewAPI() {
       }
 
       const effectiveDate = window.parseTimeStr(mainTime);
+      // --- NOVA LÓGICA DE ORIGEM E DESTINO REAIS (EXTRA TRAINS) ---
+      let extraTrueOrigin = "FERTAGUS";
+      let extraTrueDest = finalExtraDest;
+
+      if (nodes && nodes.length > 0) {
+        extraTrueOrigin = nodes[0].NomeEstacao;
+        extraTrueDest = nodes[nodes.length - 1].NomeEstacao;
+      } else {
+        extraTrueOrigin = extra.Origem || "FERTAGUS";
+        extraTrueDest = extra.Destino || finalExtraDest;
+      }
+
+      let customIsAbnormalExtra = !isStandardRoute(
+        extraTrueOrigin,
+        extraTrueDest,
+      );
+
+      // Captura também interrupções a meio da via
+      if (extra._isAbnormalRoute || abnormalRoutes[extraId]) {
+        customIsAbnormalExtra = true;
+      }
 
       processed.push({
         id: extraId,
@@ -516,7 +708,10 @@ async function fetchFertagusNewAPI() {
         op: "EXTRA", // Label visual específica para comboios extra
         time: mainTime,
         secTime: secondaryTime,
-        dest: dstInfo.name,
+        dest: finalExtraDest,
+        trueOrigin: extraTrueOrigin,
+        trueDest: extraTrueDest,
+        isAbnormalRoute: !isSuppressed && customIsAbnormalExtra,
         status: status,
         arr: arrTime,
         dotStatus: dotStatus,
@@ -531,6 +726,15 @@ async function fetchFertagusNewAPI() {
         rawTime: window.parseTimeStr(scheduledTimeStr),
         effectiveDate: effectiveDate,
         fullSchedule: nodes,
+        // [TRAJETO ANORMAL]
+        skippedStations: extra._isAbnormalRoute
+          ? extra._skippedStations || []
+          : (abnormalRoutes[extraId] || {}).skipped || [],
+        isAbnormalRoute:
+          !isSuppressed &&
+          (extra._isAbnormalRoute
+            ? (extra._skippedStations || []).length > 0
+            : ((abnormalRoutes[extraId] || {}).skipped || []).length > 0),
         isOffline: false,
         isExtra: true,
       });

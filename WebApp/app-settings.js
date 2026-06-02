@@ -283,7 +283,6 @@ function _buildInfoHTML() {
     <div class="space-y-4">
       <div class="flex items-center justify-between">
         <span class="text-xs font-bold tracking-widest text-zinc-500 uppercase">Horário Inteligente</span>
-        <span class="text-[9px] bg-blue-500/10 text-blue-500 border border-blue-500/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Novo</span>
       </div>
 
       <div class="bg-zinc-100 dark:bg-zinc-800/50 rounded-xl p-4 border border-black/5 dark:border-white/5 space-y-3">
@@ -1075,6 +1074,8 @@ function showIOSInstallModal() {
 
 // ─── INJEÇÃO NO MENU ──────────────────────────────────────────────────────────
 
+const menuOverlay = document.getElementById("menu-overlay");
+
 if (menuOverlay) {
   const isIOS =
     /iPad|iPhone|iPod/.test(navigator.userAgent) ||
@@ -1091,7 +1092,7 @@ if (menuOverlay) {
 const settingsTemplate = document.getElementById("menu-settings-template");
 
 function injectCustomMenuElements() {
-  // injeta as Definições (Horário Inteligente) no menu principal
+  // 1. Injeta as Definições (Horário Inteligente) no menu principal
   const menuOverlay = document.getElementById("menu-overlay");
   const settingsTemplate = document.getElementById("menu-settings-template");
 
@@ -1105,68 +1106,102 @@ function injectCustomMenuElements() {
       if (smartContainer) {
         renderSmartSection(smartContainer);
       }
-
       settingsTemplate.remove();
     }
   }
 
-  // botões do header (intermodais e refresh)
+  // 2. Adiciona os botões adicionais ao Header sem alterar a estrutura da barra nativa
   const header = document.querySelector("#global-nav header");
   const trigger = document.getElementById("menu-trigger");
 
   if (header && trigger && !document.getElementById("menu-controls-wrapper")) {
+    // Criar o wrapper simples para organizar os botões à esquerda do hambúrguer
     const wrapper = document.createElement("div");
     wrapper.id = "menu-controls-wrapper";
     wrapper.className = "flex items-center gap-1";
     header.insertBefore(wrapper, trigger);
+
+    // Estilo integrado e discreto para os botões do cabeçalho da app
+    const btnClass =
+      "p-2 rounded-full transition-colors text-zinc-900 dark:text-white group relative";
+
+    // ── BOTÃO DE PARTILHA ──────────────────────────────────────────
+    const shareBtn = document.createElement("button");
+    shareBtn.id = "app-header-share-trigger";
+    shareBtn.className = btnClass;
+    shareBtn.setAttribute("aria-label", "Partilhar aplicação");
+    shareBtn.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+           viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+           class="w-5 h-5">
+        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+        <polyline points="16 6 12 2 8 6"/>
+        <line x1="12" x2="12" y1="2" y2="15"/>
+      </svg>
+    `;
+    wrapper.appendChild(shareBtn);
+
+    // Lógica do clique de partilha (com fallback automático para o clipboard do footer)
+    shareBtn.addEventListener("click", async () => {
+      if (typeof sa_event === "function") sa_event("header_share_button");
+      const shareData = {
+        title: "LiveTagus",
+        text: "Olha a nova aplicação web para ver a fertagus em tempo real! Gratuita e sem anúncios!",
+        url: "https://livetagus.pt",
+      };
+      if (
+        navigator.share &&
+        (!navigator.canShare || navigator.canShare(shareData))
+      ) {
+        try {
+          await navigator.share(shareData);
+          return;
+        } catch (err) {
+          if (err.name === "AbortError") return;
+        }
+      }
+      const footerShare = document.getElementById("footer-share-btn");
+      if (footerShare) footerShare.click();
+    });
+
+    // ── BOTÃO DE MOBILIDADE (Ferramentas Inteligentes) ─────────────
     const mobilityBtn = document.createElement("button");
     mobilityBtn.id = "mobility-trigger";
-    mobilityBtn.className =
-      "p-2 rounded-full transition-colors text-zinc-900 dark:text-white group relative";
+    mobilityBtn.className = btnClass;
     mobilityBtn.setAttribute("aria-label", "Ferramentas Inteligentes");
     mobilityBtn.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-waypoints-icon lucide-waypoints w-5 h-5 transition-transform group-active:scale-90">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layout-grid-icon lucide-layout-grid">
+        <rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
         <path d="m10.586 5.414-5.172 5.172"/><path d="m18.586 13.414-5.172 5.172"/><path d="M6 12h12"/><circle cx="12" cy="20" r="2"/><circle cx="12" cy="4" r="2"/><circle cx="20" cy="12" r="2"/><circle cx="4" cy="12" r="2"/>
       </svg>
-      <span id="mobility-badge-ping" class="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-500 rounded-full animate-ping"></span>
-      <span id="mobility-badge" class="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-500 rounded-full"></span>
     `;
     wrapper.appendChild(mobilityBtn);
-    const btn = document.createElement("button");
-    btn.addEventListener("click", manualRefresh);
-    btn.className =
-      "p-2 rounded-full transition-colors text-zinc-900 dark:text-white group";
-    btn.setAttribute("aria-label", "Atualizar");
-    btn.innerHTML = `<i data-lucide="refresh-cw" id="refresh-icon-menu" class="w-5 h-5 transition-transform group-active:scale-90"></i>`;
-    wrapper.appendChild(btn);
+
+    // Re-inserir o botão original do menu para manter o fluxo correto
     wrapper.appendChild(trigger);
+
+    // Popover Lateral das Ferramentas
     const popover = document.createElement("div");
     popover.id = "mobility-popover";
     popover.className =
       "absolute top-16 right-4 w-70 bg-white dark:bg-[#09090b] border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl hidden origin-top-right transition-all duration-300 transform scale-95 opacity-0 z-50 overflow-hidden";
-
     popover.innerHTML = `
       <div class="px-4 py-3 bg-zinc-50 dark:bg-zinc-900/50 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
         <p class="text-[9px] font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">
           Mobilidade & Smart
         </p>
       </div>
-      
       <div class="flex flex-col">
-        
         <button data-action="open-smart-menu" class="w-full flex items-center gap-4 px-4 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors text-left group/btn relative">
           <i data-lucide="zap" class="w-4 h-4 text-zinc-900 dark:text-white group-hover/btn:scale-110 transition-transform duration-300"></i>
-          
           <div class="flex-1">
             <p class="text-sm font-medium text-zinc-900 dark:text-white leading-none">Horário Inteligente</p>
             <p class="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1.5 font-light tracking-wide">A tua viagem diária</p>
           </div>
-          
           <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-zinc-300 dark:text-zinc-600 group-hover/btn:translate-x-1 transition-transform"></i>
         </button>
-        
         <div class="h-px w-full bg-zinc-100 dark:bg-zinc-800"></div>
-        
         <a href="./mapa" data-action="topbtnapp_mapa" class="w-full flex items-center gap-4 px-4 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors text-left">
           <i data-lucide="map" class="w-4 h-4 text-zinc-900 dark:text-white"></i>
           <div class="flex-1">
@@ -1175,9 +1210,6 @@ function injectCustomMenuElements() {
           </div>
           <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-zinc-300 dark:text-zinc-600"></i>
         </a>
-        
-        <div class="h-px w-full bg-zinc-100 dark:bg-zinc-800"></div>
-        
         <div class="h-px w-full bg-zinc-100 dark:bg-zinc-800"></div>
         <a href="./paragens" class="w-full flex items-center gap-4 px-4 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors text-left">
           <i data-lucide="bus" class="w-4 h-4 text-zinc-900 dark:text-white"></i>
@@ -1187,9 +1219,7 @@ function injectCustomMenuElements() {
           </div>
           <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-zinc-300 dark:text-zinc-600"></i>
         </a>
-
         <div class="h-px w-full bg-zinc-100 dark:bg-zinc-800"></div>
-        
         <a href="./sudoku" data-action="topbtnapp_sudoku" class="w-full flex items-center gap-4 px-4 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors text-left">
           <i data-lucide="train-track" class="w-4 h-4 text-zinc-900 dark:text-white"></i>
           <div class="flex-1">
@@ -1198,19 +1228,14 @@ function injectCustomMenuElements() {
           </div>
           <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-zinc-300 dark:text-zinc-600"></i>
         </a>
-
       </div>
     `;
 
     document.getElementById("global-nav").appendChild(popover);
+
     mobilityBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       const isHidden = popover.classList.contains("hidden");
-      const badgePing = document.getElementById("mobility-badge-ping");
-      const badgeSolid = document.getElementById("mobility-badge");
-      if (badgePing) badgePing.remove();
-      if (badgeSolid) badgeSolid.remove();
-
       if (isHidden) {
         popover.classList.remove("hidden");
         requestAnimationFrame(() => {
@@ -1224,7 +1249,6 @@ function injectCustomMenuElements() {
       }
     });
 
-    // Fechar modal ao clicar em qualquer sítio fora
     document.addEventListener("click", (e) => {
       if (
         !popover.classList.contains("hidden") &&
@@ -1236,14 +1260,28 @@ function injectCustomMenuElements() {
         setTimeout(() => popover.classList.add("hidden"), 200);
       }
     });
-
-    if (window.lucide) lucide.createIcons();
   }
 
-  // aviso no footer
+  // 3. Mover o Botão de Refresh para junto do status "Última Atualização"
+  const statusContainer = document.querySelector("#next-train-header .ml-auto");
+  if (statusContainer && !document.getElementById("btn-manual-refresh")) {
+    const refreshBtn = document.createElement("button");
+    refreshBtn.id = "btn-manual-refresh";
+    refreshBtn.className =
+      "ml-2 p-1.5 rounded-full bg-black/5 dark:bg-white/5 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors active:scale-90 group cursor-pointer outline-none";
+    refreshBtn.setAttribute("aria-label", "Atualizar estado");
+    refreshBtn.innerHTML = `<i data-lucide="refresh-cw" id="refresh-icon-menu" class="w-3 h-3 transition-transform group-active:scale-90"></i>`;
+    refreshBtn.addEventListener("click", manualRefresh);
+    statusContainer.appendChild(refreshBtn);
+  }
+
+  if (window.lucide) lucide.createIcons();
+
+  // 4. Aviso no footer
   const footer = document.getElementById("global-footer");
-  if (footer) {
+  if (footer && !document.getElementById("footer-warning-disclaimer")) {
     const p = document.createElement("p");
+    p.id = "footer-warning-disclaimer";
     p.className =
       "text-[0.6rem] text-center text-zinc-500 dark:text-zinc-400 mb-6 opacity-60 block w-full px-4";
     p.innerText =

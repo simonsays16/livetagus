@@ -84,6 +84,28 @@ function _ctxHtml(t) {
     </div>`;
 }
 
+/** [TRAJETO ANORMAL] Banner inferior do cartão para comboios desviados. */
+function _abnormalHtml(t) {
+  if (!t.isAbnormalRoute) return "";
+
+  // Usamos os trueOrigin/Dest calculados, com fallback para os nomes formatados antigos caso algo falhe
+  const org = t.trueOrigin || t.op;
+  const dst = t.trueDest || t.dest;
+
+  return `
+    <div class="mt-4 bg-amber-500/10 dark:bg-amber-500/5 backdrop-blur-sm border border-amber-500/30 rounded-xl px-4 py-3 flex items-center gap-3 shadow-sm">
+  <div class="shrink-0">
+    <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-500"></i>
+  </div>
+  <div class="flex-1 min-w-0 flex flex-col justify-center pr-2">
+    <h3 class="text-xs font-bold text-zinc-800 dark:text-zinc-200 leading-none truncate mb-1">Trajeto Anormal</h3>
+    <p class="text-[10px] text-zinc-500 dark:text-zinc-400 leading-tight truncate">
+      ${org} <span class="mx-0.5">&rarr;</span> ${dst}
+    </p>
+  </div>
+</div>`;
+}
+
 /**
  * Gera o innerHTML completo de um cartão.
  * Cada campo dinâmico tem data-field para permitir _patchCard sem re-render.
@@ -102,7 +124,7 @@ function _cardInnerHTML(t) {
     <div class="flex justify-between items-start mb-2">
       <div class="flex flex-col">
         <div class="flex items-center gap-2 mb-1">
-          <span data-field="op" class="text-[9px] font-bold px-2 py-0.5 rounded-full border border-black/5 dark:border-white/5 bg-black/5 dark:bg-white/5 text-zinc-500 dark:text-zinc-400 tracking-wider uppercase">${t.op}</span>
+          <span data-field="op" class="text-[9px] font-bold px-2 py-0.5 rounded-full border border-black/5 dark:border-white/5 bg-black/5 dark:bg-white/5 text-zinc-500 dark:text-zinc-400 tracking-wider uppercase">${t.dest}</span>
           <span class="text-[9px] font-mono text-zinc-400 dark:text-zinc-500">#${t.num}</span>
         </div>
         <div class="flex items-baseline gap-2">
@@ -143,6 +165,7 @@ function _cardInnerHTML(t) {
     </div>
     <div data-field="cars">${_carsHtml(t)}</div>
     <div data-field="ctx">${_ctxHtml(t)}</div>
+    <div data-field="abnormal">${_abnormalHtml(t)}</div>
   `;
 }
 
@@ -237,6 +260,10 @@ function _patchCard(el, t, isPassed) {
 
   const ctxEl = el.querySelector("[data-field='ctx']");
   if (ctxEl) ctxEl.innerHTML = _ctxHtml(t);
+
+  // [TRAJETO ANORMAL]
+  const abEl = el.querySelector("[data-field='abnormal']");
+  if (abEl) abEl.innerHTML = _abnormalHtml(t);
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -444,6 +471,8 @@ window.buildOfflineTrainList = function () {
         rawTime: scheduledDate,
         effectiveDate: scheduledDate,
         fullSchedule: null,
+        isAbnormalRoute: false, // [TRAJETO ANORMAL]
+        skippedStations: [], //    [TRAJETO ANORMAL]
         isOffline: true,
       };
     })
@@ -757,7 +786,59 @@ function openDetails(trainId) {
 
   if (t.fullSchedule && t.fullSchedule.length > 0) {
     // Modo online: dados reais da API
+
+    // [TRAJETO ANORMAL] Estações saltadas (do trajeto normal, omitidas pela
+    // IP), ordenadas pela ordem física da linha no sentido ativo, para
+    // intercalar na timeline na posição correta.
+    const dirOrder =
+      activeTab === "margem"
+        ? [...FERTAGUS_STATIONS].reverse()
+        : FERTAGUS_STATIONS;
+
+    const orderIdxOf = (name) => {
+      const up = (name || "").toUpperCase().replace(/-A$/, "");
+      return dirOrder.findIndex((s) => s.name.toUpperCase() === up);
+    };
+
+    const skips = (Array.isArray(t.skippedStations) ? t.skippedStations : [])
+      .map((sk) => {
+        const info = FERTAGUS_STATIONS.find((s) => s.key === sk.key);
+        return {
+          name: info ? info.name : sk.nome || sk.key,
+          hora: sk.hora,
+          order: dirOrder.findIndex((s) => s.key === sk.key),
+        };
+      })
+      .filter((s) => s.order >= 0)
+      .sort((a, b) => a.order - b.order);
+
+    let skipPtr = 0;
+    const renderSkip = (s) => {
+      timelineHtml += `
+        <div class="relative z-10 flex items-center mb-8 last:mb-0 opacity-80">
+          <div class="w-14 text-right mr-6 flex-shrink-0 flex flex-col items-end">
+            <span class="font-mono text-sm text-zinc-500 line-through decoration-orange-500/60 leading-none">${s.hora || "--:--"}</span>
+          </div>
+          <div class="w-3 h-3 rounded-full border-2 border-orange-500/60 bg-transparent flex-shrink-0 z-20 relative"></div>
+          <div class="ml-6 flex-1">
+            <h4 class="text-sm text-zinc-500 line-through decoration-orange-500/40">${s.name}</h4>
+            <span class="text-[9px] text-orange-500 uppercase tracking-wider font-bold block mt-0.5">Não Passa Nesta Estação</span>
+          </div>
+        </div>`;
+    };
+
     t.fullSchedule.forEach((node, i) => {
+      // [TRAJETO ANORMAL] Intercalar estações saltadas ANTES desta servida.
+      const servedOrder = orderIdxOf(node.NomeEstacao);
+      while (
+        skipPtr < skips.length &&
+        servedOrder >= 0 &&
+        skips[skipPtr].order < servedOrder
+      ) {
+        renderSkip(skips[skipPtr]);
+        skipPtr++;
+      }
+
       const passed = node.ComboioPassou;
       const isNext =
         !passed && (i === 0 || t.fullSchedule[i - 1].ComboioPassou);
@@ -776,7 +857,8 @@ function openDetails(trainId) {
         : isNext
           ? "text-blue-400 font-bold"
           : "text-zinc-500";
-      const sched = node.HoraProgramada.substring(0, 5);
+      const rawSched = node.HoraProgramada || node.HoraPrevista || "--:--";
+      const sched = rawSched.substring(0, 5);
       const pred = node.HoraPrevista
         ? node.HoraPrevista.substring(0, 5)
         : sched;
@@ -795,8 +877,14 @@ function openDetails(trainId) {
           </div>
         </div>`;
     });
+
+    // [TRAJETO ANORMAL] Estações saltadas no FIM (trajeto cortado no destino).
+    while (skipPtr < skips.length) {
+      renderSkip(skips[skipPtr]);
+      skipPtr++;
+    }
   } else {
-    // Modo offline: usa JSON local para a timeline
+    // Modo offline/Futuro: usa JSON local para a timeline
     if (t.isOffline) {
       timelineHtml += `
         <div class="flex items-center gap-2 mb-6 px-3 py-2.5 rounded-xl bg-zinc-800/60 border border-white/5">
@@ -812,9 +900,33 @@ function openDetails(trainId) {
       const stations = FERTAGUS_STATIONS.filter((st) => dbTrain[st.key]);
       const ordered =
         activeTab === "margem" ? [...stations].reverse() : stations;
+
+      // [TRAJETO ANORMAL] Criar um mapa rápido das estações saltadas para pesquisa fácil
+      const skipsMap = new Map();
+      if (Array.isArray(t.skippedStations)) {
+        t.skippedStations.forEach((sk) => skipsMap.set(sk.key, sk));
+      }
+
       ordered.forEach((st) => {
         const time = dbTrain[st.key];
         if (!time) return;
+
+        // [TRAJETO ANORMAL] Intercetar se a estação foi cortada
+        if (skipsMap.has(st.key)) {
+          timelineHtml += `
+            <div class="relative z-10 flex items-center mb-8 last:mb-0 opacity-80">
+              <div class="w-14 text-right mr-6 flex-shrink-0 flex flex-col items-end">
+                <span class="font-mono text-sm text-zinc-500 line-through decoration-orange-500/60 leading-none">${time}</span>
+              </div>
+              <div class="w-3 h-3 rounded-full border-2 border-orange-500/60 bg-transparent flex-shrink-0 z-20 relative"></div>
+              <div class="ml-6 flex-1">
+                <h4 class="text-sm text-zinc-500 line-through decoration-orange-500/40">${st.name}</h4>
+                <span class="text-[9px] text-orange-500 uppercase tracking-wider font-bold block mt-0.5">Não Passa Nesta Estação</span>
+              </div>
+            </div>`;
+          return; // Salta o render normal desta estação
+        }
+
         const isOrigin = st.key === fertagusOrigin;
         const isDest = st.key === fertagusDest;
         const hlCls =
@@ -823,6 +935,7 @@ function openDetails(trainId) {
           isOrigin || isDest
             ? "bg-blue-500/30 border-blue-500/50"
             : "bg-zinc-800 border-zinc-600";
+
         timelineHtml += `
           <div class="relative z-10 flex items-center mb-8 last:mb-0">
             <div class="w-14 text-right mr-6 flex-shrink-0">

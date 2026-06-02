@@ -13,6 +13,16 @@
   let holidays = null;
   let changesCache = null;
 
+  // Modo offline forçado: enquanto ativo, NUNCA se contacta o /fertagus.
+  // Usado durante a manutenção (a API ao vivo alucina nesse período).
+  let forcedOffline = false;
+  function setOfflineMode(v) {
+    forcedOffline = !!v;
+  }
+  function isOfflineMode() {
+    return forcedOffline;
+  }
+
   // ─── CHANGES MANAGER ─────────────────────────────────────────────────
   async function loadChanges() {
     if (changesCache !== null) return changesCache;
@@ -310,6 +320,21 @@
   // ─── PUBLIC: FETCH LIVE TRAINS ───────────────────────────────────────
   async function fetchLiveTrains() {
     await loadOfflineData();
+
+    // ── MODO OFFLINE FORÇADO (manutenção) ──────────────────────────────
+    // Não há qualquer pedido ao /fertagus. O mapa funciona só com os
+    // horários (posições estimadas a partir da tabela).
+    if (forcedOffline) {
+      return {
+        trainsForMap: buildOfflineTrains({ allForToday: false }),
+        trainsForList: buildOfflineTrains({ allForToday: true }),
+        futureTrains: {},
+        apiDown: false,
+        offline: true,
+        error: null,
+      };
+    }
+
     const activeChange = await getActiveChange();
     const isSpecialDay = isWeekendOrHoliday(new Date());
 
@@ -410,6 +435,8 @@
     buildOfflineTrains,
     isWeekendOrHoliday,
     getActiveChange,
+    setOfflineMode,
+    isOfflineMode,
     _findDbTrip: findDbTrip,
     _processApiTrain: processApiTrain,
     _inferDirection: inferDirection,

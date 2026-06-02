@@ -1,7 +1,7 @@
 /* sudoku-train.js - Gestão da barra de tempo real do Sudoku */
 
 const FERTAGUS_STATIONS_SUDOKU = [
-  { id: "9468122", key: "setubal", name: "Setúbal" },
+  { id: "9468122", key: "setúbal", name: "Setúbal" },
   { id: "9468098", key: "palmela", name: "Palmela" },
   { id: "9468049", key: "venda_do_alcaide", name: "Venda do Alcaide" },
   { id: "9468007", key: "pinhal_novo", name: "Pinhal Novo" },
@@ -68,10 +68,10 @@ async function fetchNextTrainAndSetupBanner() {
       if (!t.NodesPassagemComboio) continue;
 
       const orgNodeIdx = t.NodesPassagemComboio.findIndex(
-        (n) => n.EstacaoID == orgInfo.id,
+        (n) => String(n.EstacaoID) === String(orgInfo.id),
       );
       const dstNodeIdx = t.NodesPassagemComboio.findIndex(
-        (n) => n.NomeEstacao.toUpperCase() === dstInfo.name.toUpperCase(),
+        (n) => String(n.EstacaoID) === String(dstInfo.id),
       );
 
       if (orgNodeIdx !== -1 && dstNodeIdx !== -1 && orgNodeIdx < dstNodeIdx) {
