@@ -17,6 +17,13 @@
  *   3. COMBOIOS EXTRA — Novos comboios que não existem no horário base
  *      (ex: comboios especiais para eventos). São processados via processTrain
  *      exatamente como um comboio normal, com os dados reais da IP.
+ *
+ *   4. [TRAJETO ANORMAL] DESVIOS DECLARADOS — Comboios que, por obras, não
+ *      cumprem o trajeto normal (saltam estações intermédias ou não chegam
+ *      ao terminus habitual). Permite sinalizar o desvio ANTES de o comboio
+ *      circular, mesmo quando ainda não há nós reais da IP para comparar.
+ *      Formato em changes.json:  "abnormal": { "14285": ["palmela","pinhal_novo"] }
+ *      Extras podem ainda injetar o trajeto previsto via "expectedRoute".
  */
 
 "use strict";
@@ -66,7 +73,8 @@ const getChangesForDate = (dateStr) => {
   const result = {
     suppressed: new Set(), // Set de IDs suprimidos
     replacements: {}, // { originalId: newId }
-    extras: [], // [ { id, origin, departure } ]
+    extras: [], // [ { id, origin, departure, expectedRoute? } ]
+    abnormal: {}, // [TRAJETO ANORMAL] { trainId: ["palmela","pinhal_novo", ...] }
   };
 
   for (const block of CHANGES) {
@@ -85,6 +93,15 @@ const getChangesForDate = (dateStr) => {
     if (Array.isArray(block.extras)) {
       block.extras.forEach((e) => result.extras.push(e));
     }
+
+    // [TRAJETO ANORMAL] Desvios declarados manualmente (obras planeadas).
+    if (block.abnormal && typeof block.abnormal === "object") {
+      for (const [id, stations] of Object.entries(block.abnormal)) {
+        if (Array.isArray(stations)) {
+          result.abnormal[String(id)] = stations.map(String);
+        }
+      }
+    }
   }
 
   return result;
@@ -100,6 +117,14 @@ const isSuppressed = (trainId, dateStr) => {
 const getReplacementId = (trainId, dateStr) => {
   const changes = getChangesForDate(dateStr);
   return changes.replacements[String(trainId)] || null;
+};
+
+// [TRAJETO ANORMAL] Estações saltadas declaradas no changes.json para um comboio.
+// Usado pelo future-train-check para sinalizar desvios ANTES de o comboio andar
+// (quando ainda não há nós reais da IP para comparar).
+const getAbnormalStations = (trainId, dateStr) => {
+  const changes = getChangesForDate(dateStr);
+  return changes.abnormal[String(trainId)] || null;
 };
 
 const buildReplacementRichInfoList = (dateStr, RICH_SCHEDULE) => {
@@ -179,6 +204,15 @@ const buildExtraRichInfoList = (dateStr) => {
         departure.length === 5 ? departure + ":00" : departure;
       richInfo[origin] = departureWithSeconds;
 
+      // [TRAJETO ANORMAL] Trajeto previsto injetado para extras: permite ao
+      // detector saber quais estações o extra DEVERIA servir.
+      if (
+        Array.isArray(extra.expectedRoute) &&
+        extra.expectedRoute.length > 0
+      ) {
+        richInfo._expectedRoute = extra.expectedRoute.map(String);
+      }
+
       return richInfo;
     })
     .filter(Boolean);
@@ -193,4 +227,5 @@ module.exports = {
   getReplacementId,
   buildReplacementRichInfoList,
   buildExtraRichInfoList,
+  getAbnormalStations,
 };

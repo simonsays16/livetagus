@@ -192,6 +192,7 @@ let FUTURE_TRAINS_CACHE = {};
 let IS_CYCLE_RUNNING = false;
 let EXTRA_TRAINS_CACHE = {}; // { [id]: extraTrainOutput }
 let DYNAMIC_EXTRA_SCHEDULE = {}; // { [id]: richInfo }
+let ABNORMAL_ROUTES_CACHE = {}; // [TRAJETO ANORMAL] { [id]: { skipped: [...] } }
 
 // --- DATE & SCHEDULE HELPERS ---
 
@@ -228,22 +229,19 @@ const parseSmartTime = (timeStr, now = new Date()) => {
   const s = parts[2] ? parseInt(parts[2]) : 0;
 
   const d = new Date(now);
-  d.setHours(h, m, s, 0);
-
   const nowH = now.getHours();
 
-  // FIX #2: madrugada (ex: 01h) e o comboio é da noite anterior (ex: 23h).
-  if (nowH < 5 && h >= 18) {
+  // Fix: Basear sempre no dia operacional (05h00 às 02h30)
+  // Se ainda não são 05h00, o dia operacional começou "ontem"
+  if (nowH < 5) {
     d.setDate(d.getDate() - 1);
   }
-  // FIX #3: noite (ex: 23h) e o comboio é de madrugada (ex: 00h-04h) → dia seguinte.
-  else if (nowH >= 20 && h < 5) {
+  // Se a hora do comboio for de madrugada (00h-04h),
+  // ele pertence ao dia civil seguinte do atual dia operacional.
+  if (h < 5) {
     d.setDate(d.getDate() + 1);
   }
-  // noite (ex: 22h) e o comboio é da manhã/tarde (ex: 06h-15h), é no dia seguinte.
-  else if (nowH >= 18 && h < 16) {
-    d.setDate(d.getDate() + 1);
-  }
+  d.setHours(h, m, s, 0);
 
   return d;
 };
@@ -417,6 +415,8 @@ const buildSyntheticRichInfoFromDetails = (trainId, details, stationEntry) =>
     STATION_MAP_IP_TO_JSON,
   );
 const startDateFromStationEntry = ExtrasHelpers.startDateFromStationEntry;
+const detectAbnormalRoute = ExtrasHelpers.detectAbnormalRoute; // [TRAJETO ANORMAL]
+const detectAbnormalFromTerminus = ExtrasHelpers.detectAbnormalFromTerminus; // [TRAJETO ANORMAL]
 
 // --- FUTURE TRAIN CHECK (v2: PROCURA DINÂMICA) ──────────────────────────────────
 //
@@ -446,7 +446,9 @@ const checkOfflineTrains = async () => {
 
   const now = new Date();
   const nowMs = now.getTime();
-  const todayDateStr = formatDateStr(now);
+  // Usar a data operacional garante que os ficheiros JSON das 00h às 02h30 são lidos corretamente
+  const opInfo = getOperationalInfo(now);
+  const opDateStr = opInfo.operationalDateStr;
 
   // POLL À ESTAÇÃO DE CORROIOS
   let stationMap;
@@ -465,7 +467,8 @@ const checkOfflineTrains = async () => {
 
   // CANDIDATOS DO HORÁRIO BASE + SUBSTITUIÇÕES + EXTRAS MANUAIS
   const activeIds = Object.keys(OUTPUT_CACHE).filter(
-    (k) => k !== "futureTrains" && k !== "extratrains",
+    (k) =>
+      k !== "futureTrains" && k !== "extratrains" && k !== "abnormalRoutes",
   );
 
   const baseCandidates = RICH_SCHEDULE.map((t) => {
@@ -497,7 +500,7 @@ const checkOfflineTrains = async () => {
   });
 
   const replacementCandidates = VerifyManager.buildReplacementRichInfoList(
-    todayDateStr,
+    opDateStr,
     RICH_SCHEDULE,
   )
     .map((t) => {
@@ -519,9 +522,7 @@ const checkOfflineTrains = async () => {
       return true;
     });
 
-  const manualExtraCandidates = VerifyManager.buildExtraRichInfoList(
-    todayDateStr,
-  )
+  const manualExtraCandidates = VerifyManager.buildExtraRichInfoList(opDateStr)
     .map((t) => {
       const startStr =
         t.direction === "lisboa" ? t.setubal || t.coina : t.roma_areeiro;
@@ -603,6 +604,24 @@ const checkOfflineTrains = async () => {
       toIndividualCheck.push({ ...t, _stationPollSuppressed: true });
       continue;
     }
+    // [TRAJETO ANORMAL] Deteção por terminus a partir do station-poll, ANTES
+    // de o comboio circular. Apanha percursos cortados nos extremos (ex:
+    // termina no Pragal/Coina, ou arranca a meio) sem fetch individual.
+    if (!t._isExtra) {
+      const abnTerm = detectAbnormalFromTerminus(
+        t,
+        stationEntry.origem,
+        stationEntry.destino,
+        STATION_MAP_IP_TO_JSON,
+        STATION_MAP_JSON_TO_IP,
+      );
+      if (abnTerm.isAbnormal) {
+        ABNORMAL_ROUTES_CACHE[trainId] = { skipped: abnTerm.skipped };
+      } else {
+        delete ABNORMAL_ROUTES_CACHE[trainId];
+      }
+    }
+
     results[trainId] = "Programado";
   }
 
@@ -662,6 +681,22 @@ const checkOfflineTrains = async () => {
               );
             }
           }
+
+          // [TRAJETO ANORMAL] Deteção a partir dos nós reais da IP (pré-live).
+          if (nodes.length > 0 && !/SUPRIMIDO/i.test(situacao)) {
+            const abn = detectAbnormalRoute(
+              t,
+              nodes,
+              STATION_MAP_IP_TO_JSON,
+              STATION_MAP_JSON_TO_IP,
+            );
+            if (abn.isAbnormal) {
+              ABNORMAL_ROUTES_CACHE[trainId] = { skipped: abn.skipped };
+            } else {
+              delete ABNORMAL_ROUTES_CACHE[trainId];
+            }
+          }
+
           resolved = true;
           break;
         } else {
@@ -807,12 +842,51 @@ const checkOfflineTrains = async () => {
     }
   }
 
+  // [TRAJETO ANORMAL] Desvios DECLARADOS no changes.json (obras planeadas).
+  // Cobre os comboios resolvidos via station-poll, para os quais não há nós da
+  // IP — a app fica informada do desvio mesmo antes de o comboio circular.
+  for (const t of candidates) {
+    const trainId = String(t.id);
+    const trainDateStr = formatDateStr(t.startObj);
+    const declared = VerifyManager.getAbnormalStations(trainId, trainDateStr);
+    if (declared && declared.length > 0) {
+      ABNORMAL_ROUTES_CACHE[trainId] = {
+        skipped: declared.map((key) => ({
+          key,
+          nome: STATION_MAP_JSON_TO_IP[key] || key,
+          hora: t[key] != null ? String(t[key]).substring(0, 5) : null,
+        })),
+      };
+    }
+  }
+
   // ATUALIZAÇÃO SEGURA DA MEMÓRIA GLOBAL
   FUTURE_TRAINS_CACHE = results;
+
+  // [TRAJETO ANORMAL] GC: remover desvios de comboios já realizados/inexistentes.
+  for (const id of Object.keys(ABNORMAL_ROUTES_CACHE)) {
+    const status = FUTURE_TRAINS_CACHE[id];
+    const stillLive = !!OUTPUT_CACHE[id];
+    const stillExtra = !!EXTRA_TRAINS_CACHE[id];
+    if (
+      !stillLive &&
+      !stillExtra &&
+      (status === "Realizado" || status === "SUPRIMIDO")
+    ) {
+      delete ABNORMAL_ROUTES_CACHE[id];
+    }
+  }
 
   for (const ghostId of GhostManager.GHOST_SUPPRESSED) {
     FUTURE_TRAINS_CACHE[ghostId] = "SUPRIMIDO";
   }
+
+  // FIX: Sincronizar a cache global servida pela API imediatamente, para que
+  // o /fertagus nunca responda vazio mesmo que o updateCycle ainda não tenha
+  // corrido (ou não haja comboios ativos a preencher o bloco `finally`).
+  OUTPUT_CACHE.futureTrains = FUTURE_TRAINS_CACHE;
+  OUTPUT_CACHE.extratrains = EXTRA_TRAINS_CACHE;
+  OUTPUT_CACHE.abnormalRoutes = ABNORMAL_ROUTES_CACHE;
 
   const candidateIds = new Set(candidates.map((t) => String(t.id)));
 
@@ -1352,6 +1426,33 @@ const processTrain = async (richInfo, originDateStr) => {
     }
   }
 
+  // ─── [TRAJETO ANORMAL] DETEÇÃO DE DESVIOS ───────────────────────────────
+  // Compara os nós REAIS da IP com o trajeto normal previsto (JSON base ou
+  // _expectedRoute para extras). Usa details.NodesPassagemComboio (e não o
+  // array sintético construído a partir do richInfo quando a IP não devolve
+  // nós) para nunca gerar falsos positivos. Estações em falta = saltadas.
+  const ipNodesForRoute =
+    details && Array.isArray(details.NodesPassagemComboio)
+      ? details.NodesPassagemComboio
+      : null;
+
+  if (ipNodesForRoute && !situacao.toUpperCase().includes("SUPRIMIDO")) {
+    const abnormal = detectAbnormalRoute(
+      richInfo,
+      ipNodesForRoute,
+      STATION_MAP_IP_TO_JSON,
+      STATION_MAP_JSON_TO_IP,
+    );
+    if (abnormal.isAbnormal) {
+      trainOutput._isAbnormalRoute = true;
+      trainOutput._skippedStations = abnormal.skipped;
+      ABNORMAL_ROUTES_CACHE[trainId] = { skipped: abnormal.skipped };
+    } else {
+      delete ABNORMAL_ROUTES_CACHE[trainId];
+    }
+  }
+  // ─── [/TRAJETO ANORMAL] ─────────────────────────────────────────────────
+
   trainOutput.AtrasoCalculado = currentDelay;
   mem.lastDelay = currentDelay;
   mem.lastResult = trainOutput;
@@ -1362,7 +1463,8 @@ const processTrain = async (richInfo, originDateStr) => {
 // --- LOOP PRINCIPAL ---
 const updateCycle = async () => {
   const now = new Date();
-  const todayDateStr = formatDateStr(now);
+  const opInfo = getOperationalInfo(now);
+  const opDateStr = opInfo.operationalDateStr;
   if (IP_IS_DOWN) {
     const nowMs = Date.now();
     if (nowMs - LAST_RECOVERY_PING > 120000) {
@@ -1375,6 +1477,13 @@ const updateCycle = async () => {
     // abortar, ip continua em baixo
     return;
   }
+
+  // FIX: Injetar as chaves base no início do ciclo, garantindo que a estrutura
+  // servida pela API existe mesmo que activeRichTrains fique vazio (o bloco
+  // `finally` do loop não corre nesse caso).
+  OUTPUT_CACHE.futureTrains = FUTURE_TRAINS_CACHE;
+  OUTPUT_CACHE.extratrains = EXTRA_TRAINS_CACHE;
+  OUTPUT_CACHE.abnormalRoutes = ABNORMAL_ROUTES_CACHE;
 
   // 1. Filtrar os comboios que nos interessam agora (horário base)
   const activeRichTrains = RICH_SCHEDULE.map((t) => {
@@ -1444,7 +1553,7 @@ const updateCycle = async () => {
 
   // Adicionar comboios de substituição ao ciclo ativo
   const replacements = VerifyManager.buildReplacementRichInfoList(
-    todayDateStr,
+    opDateStr,
     RICH_SCHEDULE,
   );
   for (const r of replacements) {
@@ -1484,7 +1593,7 @@ const updateCycle = async () => {
   }
 
   // Adicionar comboios extra ao ciclo ativo
-  const extras = VerifyManager.buildExtraRichInfoList(todayDateStr);
+  const extras = VerifyManager.buildExtraRichInfoList(opDateStr);
   for (const e of extras) {
     const startStr =
       e.direction === "lisboa" ? e.setubal || e.coina : e.roma_areeiro;
@@ -1612,6 +1721,7 @@ const updateCycle = async () => {
         }
         OUTPUT_CACHE.futureTrains = FUTURE_TRAINS_CACHE;
         OUTPUT_CACHE.extratrains = EXTRA_TRAINS_CACHE;
+        OUTPUT_CACHE.abnormalRoutes = ABNORMAL_ROUTES_CACHE; // [TRAJETO ANORMAL]
       }
     }, index * staggerMs);
   });
@@ -1702,6 +1812,7 @@ const scheduleNextTick = () => {
       OUTPUT_CACHE = {
         futureTrains: FUTURE_TRAINS_CACHE,
         extratrains: EXTRA_TRAINS_CACHE,
+        abnormalRoutes: ABNORMAL_ROUTES_CACHE, // [TRAJETO ANORMAL]
       };
       scheduleNextTick();
       return;
@@ -1847,7 +1958,7 @@ app.get("/avisos", (req, res) => {
 app.get("/", (req, res) =>
   res.json({
     status: "online",
-    version: "4.10.5",
+    version: "4.11.3",
     aviso:
       "Pedimos que não uses o nosso endpoint diretamente! Verifica toda as informações e código no github.",
     operational: getOperationalInfo(),
@@ -1866,8 +1977,13 @@ app.get("/", (req, res) =>
 );
 
 app.listen(PORT, () => {
-  console.log(`LiveTagus API v4.10.5 ativa na porta ${PORT}`);
+  console.log(`LiveTagus API v4.11.3 ativa na porta ${PORT}`);
   console.log(`Endpoint /fertagus protegido com API_KEY.`);
+
+  // NÃO usar await aqui: checkOfflineTrains() faz station-poll com timeouts
+  // longos e, se a IP estiver lenta/inacessível, bloquearia o arranque do
+  // motor (updateCycle/scheduleNextTick) → /fertagus serviria {} para sempre.
+  // Disparamos em paralelo, tal como na versão estável.
   checkOfflineTrains();
   updateCycle();
   scheduleNextTick();
