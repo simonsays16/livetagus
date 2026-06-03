@@ -597,11 +597,19 @@ const checkOfflineTrains = async () => {
     }
 
     if (/SUPRIMIDO/i.test(stationEntry.observacoes)) {
-      if (FUTURE_TRAINS_CACHE[trainId] === "SUPRIMIDO") {
-        results[trainId] = "SUPRIMIDO";
-        continue;
-      }
-      toIndividualCheck.push({ ...t, _stationPollSuppressed: true });
+      // O station-poll (campo Observacoes da estação de Corroios) é a fonte
+      // AUTORITATIVA para SUPRIMIDO — o parseStationResponse já o trata como
+      // tal em todo o módulo. Confiamos diretamente, em vez de exigir uma
+      // confirmação individual por comboio. Isto:
+      //   (a) poupa um fetch individual por cada suprimido (recursos servidor);
+      //   (b) evita o sink permanente em "Sem Informação" quando o endpoint
+      //       individual está indisponível (ex: dia de greve), caso em que o
+      //       fallback caía sempre no valor obsoleto da cache.
+      // O GHOST_SUPPRESSED.add garante que o estado sobrevive ao auto-heal e
+      // que o comboio sai do ciclo live (mesma convenção do caminho 5-nulls).
+      // É auto-limpo ~4h após o fim do comboio via cleanupExpiredGhosts.
+      results[trainId] = "SUPRIMIDO";
+      GhostManager.GHOST_SUPPRESSED.add(trainId);
       continue;
     }
     // [TRAJETO ANORMAL] Deteção por terminus a partir do station-poll, ANTES
@@ -644,7 +652,11 @@ const checkOfflineTrains = async () => {
         const dateStr = formatDateStr(t.startObj);
         const details = await fetchDetails(trainId, dateStr);
 
-        if (details && details._isAllNull) {
+        // Tratamos tanto o objeto "all-null" como uma resposta null/undefined
+        // (response: null, HTTP não-200, ou erro de estrutura) como resposta
+        // NULA. Antes, o response: null fazia curto-circuito para o fallback da
+        // cache e nunca chegava à lógica "5 nulls → SUPRIMIDO".
+        if (!details || details._isAllNull) {
           console.log(
             `${tag} Comboio ${trainId} resposta nula ${attempt}/${MAX_RETRIES}. A aguardar confirmação.`,
           );
@@ -1958,7 +1970,7 @@ app.get("/avisos", (req, res) => {
 app.get("/", (req, res) =>
   res.json({
     status: "online",
-    version: "4.11.3",
+    version: "4.11.4",
     aviso:
       "Pedimos que não uses o nosso endpoint diretamente! Verifica toda as informações e código no github.",
     operational: getOperationalInfo(),
@@ -1977,7 +1989,7 @@ app.get("/", (req, res) =>
 );
 
 app.listen(PORT, () => {
-  console.log(`LiveTagus API v4.11.3 ativa na porta ${PORT}`);
+  console.log(`LiveTagus API v4.11.4 ativa na porta ${PORT}`);
   console.log(`Endpoint /fertagus protegido com API_KEY.`);
 
   // NÃO usar await aqui: checkOfflineTrains() faz station-poll com timeouts
