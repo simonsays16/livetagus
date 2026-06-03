@@ -506,7 +506,7 @@ window.updateNextCountdown = function () {
   const min = Math.floor(diff / 60);
   const sec = Math.floor((diff % 60) / 10) * 10;
   display.innerText =
-    min > 100 ? "AMANHÃ" : `${min} min ${sec.toString().padStart(2, "0")} s`;
+    min > 60 ? "+ 1h" : `${min} min ${sec.toString().padStart(2, "0")} s`;
 
   header.classList.remove("opacity-0");
 };
