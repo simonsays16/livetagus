@@ -13,6 +13,8 @@ const GhostManager = require("./ghosts.js");
 const VerifyManager = require("./verify.js");
 const StationPoller = require("./station-poller.js");
 const ExtrasHelpers = require("./extras-helpers.js");
+const EstacaoEndpoint = require("./estacao-endpoint.js");
+const GetLocation = require("./get-location.js");
 
 const app = express();
 app.use(cors());
@@ -194,6 +196,16 @@ let EXTRA_TRAINS_CACHE = {}; // { [id]: extraTrainOutput }
 let DYNAMIC_EXTRA_SCHEDULE = {}; // { [id]: richInfo }
 let ABNORMAL_ROUTES_CACHE = {}; // [TRAJETO ANORMAL] { [id]: { skipped: [...] } }
 
+// --- SUPRESSÃO ATIVA (poupança de pedidos) ---
+// Comboios suprimidos DURANTE a janela ativa. Distinto de GHOST_SUPPRESSED
+// (que fica reservado ao ghost Stage 3 — comboios imobilizados sem anúncio).
+// Enquanto suprimido e dentro da janela: NÃO entra no OUTPUT_CACHE; aparece
+// apenas no FUTURE_TRAINS_CACHE como "SUPRIMIDO"; é re-verificado de 10 em 10
+// min em vez de 15s. Se recuperar → volta ao fluxo normal (output + 15s).
+// Extras suprimidos são removidos por completo da API.
+let SUPPRESSED_ACTIVE = new Set();
+const SUPPRESSED_RECHECK_MS = 10 * 60 * 1000;
+
 // --- DATE & SCHEDULE HELPERS ---
 
 const formatDateStr = (d) => {
@@ -273,16 +285,15 @@ const fetchDetails = async (tid, dateStr) => {
   const url = `${API_BASE}/horarios-ncombio/${tid}/${dateStr}`;
   try {
     const r = await fetch(url, { headers: FETCH_HEADERS, timeout: 10000 });
-    if (!r.ok) return null;
+    if (!r.ok) {
+      throw new Error(`HTTP Error ${r.status}`);
+    }
+
     const j = await r.json();
     IP_CONSECUTIVE_ERRORS = 0;
     IP_IS_DOWN = false;
 
     const response = j.response;
-
-    // FIX: Deteção de resposta totalmente nula da IP (bug intermitente)
-    // Em vez de marcar imediatamente como SUPRIMIDO, sinalizamos para que
-    // processTrain e checkOfflineTrains decidam com base no contexto.
     if (response) {
       const isAllNull =
         response.DataHoraDestino === null &&
@@ -295,11 +306,8 @@ const fetchDetails = async (tid, dateStr) => {
         response.SituacaoComboio === null &&
         response.TipoServico === null;
 
-      if (isAllNull) {
-        response._isAllNull = true;
-      }
+      if (isAllNull) response._isAllNull = true;
     }
-
     return response;
   } catch (e) {
     IP_CONSECUTIVE_ERRORS++;
@@ -486,6 +494,7 @@ const checkOfflineTrains = async () => {
   }).filter((t) => {
     if (!t) return false;
     if (activeIds.includes(String(t.id))) return false;
+    if (SUPPRESSED_ACTIVE.has(String(t.id))) return false;
     if (GhostManager.GHOST_SUPPRESSED.has(String(t.id))) return false;
     if (GhostManager.GHOST_TRAINS[String(t.id)]) return false;
 
@@ -517,6 +526,7 @@ const checkOfflineTrains = async () => {
     .filter(Boolean)
     .filter((t) => {
       if (activeIds.includes(String(t.id))) return false;
+      if (SUPPRESSED_ACTIVE.has(String(t.id))) return false;
       if (GhostManager.GHOST_SUPPRESSED.has(String(t.id))) return false;
       if (GhostManager.GHOST_TRAINS[String(t.id)]) return false;
       return true;
@@ -535,6 +545,7 @@ const checkOfflineTrains = async () => {
     .filter(Boolean)
     .filter((t) => {
       if (activeIds.includes(String(t.id))) return false;
+      if (SUPPRESSED_ACTIVE.has(String(t.id))) return false;
       if (GhostManager.GHOST_SUPPRESSED.has(String(t.id))) return false;
       if (GhostManager.GHOST_TRAINS[String(t.id)]) return false;
       return true;
@@ -600,16 +611,22 @@ const checkOfflineTrains = async () => {
       // O station-poll (campo Observacoes da estação de Corroios) é a fonte
       // AUTORITATIVA para SUPRIMIDO — o parseStationResponse já o trata como
       // tal em todo o módulo. Confiamos diretamente, em vez de exigir uma
-      // confirmação individual por comboio. Isto:
-      //   (a) poupa um fetch individual por cada suprimido (recursos servidor);
-      //   (b) evita o sink permanente em "Sem Informação" quando o endpoint
-      //       individual está indisponível (ex: dia de greve), caso em que o
-      //       fallback caía sempre no valor obsoleto da cache.
-      // O GHOST_SUPPRESSED.add garante que o estado sobrevive ao auto-heal e
-      // que o comboio sai do ciclo live (mesma convenção do caminho 5-nulls).
-      // É auto-limpo ~4h após o fim do comboio via cleanupExpiredGhosts.
+      // confirmação individual por comboio. Isto poupa um fetch individual por
+      // cada suprimido.
+      if (t._isExtra) {
+        // Extra suprimido → sai por completo da API (não aparece na app sem
+        // entrada; o utilizador já não o esperava). Basta removê-lo.
+        delete EXTRA_TRAINS_CACHE[trainId];
+        delete DYNAMIC_EXTRA_SCHEDULE[trainId];
+        delete OUTPUT_CACHE[trainId];
+        SUPPRESSED_ACTIVE.delete(trainId);
+        continue;
+      }
+      // Comboio base → entra em supressão ativa (10 min entre verificações).
+      // Fica visível no FUTURE como SUPRIMIDO; o updateCycle/processTrain trata
+      // do re-check espaçado e da eventual recuperação.
       results[trainId] = "SUPRIMIDO";
-      GhostManager.GHOST_SUPPRESSED.add(trainId);
+      SUPPRESSED_ACTIVE.add(trainId);
       continue;
     }
     // [TRAJETO ANORMAL] Deteção por terminus a partir do station-poll, ANTES
@@ -639,6 +656,13 @@ const checkOfflineTrains = async () => {
   // Se alguma responder com dados válidos → usar esse resultado.
   // Isto resolve o estado num único ciclo de 15 min em vez de 75 min.
   for (const t of toIndividualCheck) {
+    // FIX: Se a IP caiu durante os pedidos anteriores deste loop, pára o mini-DDoS!
+    if (IP_IS_DOWN) {
+      console.log(
+        `[CIRCUIT BREAKER] IP em baixo. A abortar as ${toIndividualCheck.length} verificações individuais.`,
+      );
+      break;
+    }
     const trainId = String(t.id);
     const tag = t._stationPollSuppressed
       ? "[CROSS VALIDATE]"
@@ -657,6 +681,15 @@ const checkOfflineTrains = async () => {
         // NULA. Antes, o response: null fazia curto-circuito para o fallback da
         // cache e nunca chegava à lógica "5 nulls → SUPRIMIDO".
         if (!details || details._isAllNull) {
+          if (IP_IS_DOWN) {
+            console.log(
+              `${tag} Comboio ${trainId} abortado. IP caiu no processo.`,
+            );
+            results[trainId] = FUTURE_TRAINS_CACHE[trainId] || "Sem Informação";
+            resolved = true;
+            break;
+          }
+
           console.log(
             `${tag} Comboio ${trainId} resposta nula ${attempt}/${MAX_RETRIES}. A aguardar confirmação.`,
           );
@@ -670,8 +703,15 @@ const checkOfflineTrains = async () => {
           console.log(
             `${tag} Comboio ${trainId} confirmado SUPRIMIDO após ${MAX_RETRIES} respostas nulas consecutivas.`,
           );
-          results[trainId] = "SUPRIMIDO";
-          GhostManager.GHOST_SUPPRESSED.add(trainId);
+          if (t._isExtra) {
+            delete EXTRA_TRAINS_CACHE[trainId];
+            delete DYNAMIC_EXTRA_SCHEDULE[trainId];
+            delete OUTPUT_CACHE[trainId];
+            SUPPRESSED_ACTIVE.delete(trainId);
+          } else {
+            results[trainId] = "SUPRIMIDO";
+            SUPPRESSED_ACTIVE.add(trainId);
+          }
           resolved = true;
           break;
         } else if (details && details.SituacaoComboio) {
@@ -685,6 +725,17 @@ const checkOfflineTrains = async () => {
 
           if (impliesSpuriousLive) {
             results[trainId] = "Sem Informação";
+          } else if (/SUPRIMIDO/i.test(situacao)) {
+            // IP confirma supressão no check individual.
+            if (t._isExtra) {
+              delete EXTRA_TRAINS_CACHE[trainId];
+              delete DYNAMIC_EXTRA_SCHEDULE[trainId];
+              delete OUTPUT_CACHE[trainId];
+              SUPPRESSED_ACTIVE.delete(trainId);
+            } else {
+              results[trainId] = "SUPRIMIDO";
+              SUPPRESSED_ACTIVE.add(trainId);
+            }
           } else {
             results[trainId] = situacao;
             if (t._stationPollSuppressed && !/SUPRIMIDO/i.test(situacao)) {
@@ -756,8 +807,19 @@ const checkOfflineTrains = async () => {
   for (const [trainId, stationEntry] of stationMap) {
     if (knownIds.has(trainId)) continue;
     if (activeIds.includes(trainId)) continue;
+    if (SUPPRESSED_ACTIVE.has(trainId)) continue;
     if (GhostManager.GHOST_SUPPRESSED.has(trainId)) continue;
     if (GhostManager.GHOST_TRAINS[trainId]) continue;
+
+    // Extra suprimido → não cria entrada nenhuma (e remove qualquer resíduo).
+    // Sem entrada na API, o extra não aparece na app; como o utilizador já não
+    // o esperava, basta deixá-lo de fora.
+    if (/SUPRIMIDO/i.test(stationEntry.observacoes)) {
+      delete EXTRA_TRAINS_CACHE[trainId];
+      delete DYNAMIC_EXTRA_SCHEDULE[trainId];
+      delete OUTPUT_CACHE[trainId];
+      continue;
+    }
 
     const existing = EXTRA_TRAINS_CACHE[trainId];
     const REFRESH_THRESHOLD_MS = 5 * 60 * 1000;
@@ -893,6 +955,13 @@ const checkOfflineTrains = async () => {
     FUTURE_TRAINS_CACHE[ghostId] = "SUPRIMIDO";
   }
 
+  // Suprimidos ativos: garantir que continuam marcados no FUTURE mesmo tendo
+  // sido excluídos dos candidatos (poupança). A recuperação é decidida pelo
+  // gate de 10 min em processTrain, que remove o id deste Set ao retomar.
+  for (const supId of SUPPRESSED_ACTIVE) {
+    FUTURE_TRAINS_CACHE[supId] = "SUPRIMIDO";
+  }
+
   // FIX: Sincronizar a cache global servida pela API imediatamente, para que
   // o /fertagus nunca responda vazio mesmo que o updateCycle ainda não tenha
   // corrido (ou não haja comboios ativos a preencher o bloco `finally`).
@@ -912,6 +981,37 @@ const checkOfflineTrains = async () => {
       `Extras ativos: ${Object.keys(EXTRA_TRAINS_CACHE).length} ` +
       `(+${newExtrasDiscovered} novos, ${extrasRefreshed} refresh)`,
   );
+};
+
+// --- SUPRESSÃO ATIVA ---
+// Coloca um comboio em modo "suprimido ativo": fora do OUTPUT_CACHE, marcado
+// no FUTURE_TRAINS_CACHE (só comboios base; extras são removidos por completo),
+// e re-verificado de 10 em 10 min. Devolve sempre null (não há output a servir).
+const enterActiveSuppression = (richInfo, mem, isExtra) => {
+  const trainId = String(richInfo.id);
+  const nowTime = Date.now();
+
+  delete OUTPUT_CACHE[trainId];
+
+  if (isExtra) {
+    // Extra suprimido → desaparece por completo da API (sem entrada nenhuma).
+    delete EXTRA_TRAINS_CACHE[trainId];
+    delete DYNAMIC_EXTRA_SCHEDULE[trainId];
+    delete FUTURE_TRAINS_CACHE[trainId];
+    SUPPRESSED_ACTIVE.delete(trainId);
+  } else {
+    // Comboio base → fica visível no FUTURE como SUPRIMIDO.
+    FUTURE_TRAINS_CACHE[trainId] = "SUPRIMIDO";
+    SUPPRESSED_ACTIVE.add(trainId);
+  }
+
+  mem.suppressedUntil = nowTime + SUPPRESSED_RECHECK_MS;
+  mem.suppressedEndMs = richInfo.endObj ? richInfo.endObj.getTime() : nowTime;
+  mem.suppressedIsExtra = !!isExtra;
+  mem.lastResult = null;
+  mem.lastDelay = 0;
+  mem.nullResponseCount = 0;
+  return null;
 };
 
 // --- PROCESSAMENTO ---
@@ -934,11 +1034,37 @@ const processTrain = async (richInfo, originDateStr) => {
   }
   const mem = TRAIN_MEMORY[trainId];
 
+  const isExtraTrain = !!(richInfo._isExtra || richInfo._isDynamicExtra);
+
+  // ─── SUPRESSÃO ATIVA: re-verificação espaçada (10 min, não 15s) ───
+  // Se o station-poll/checkOfflineTrains marcou este comboio como suprimido,
+  // sincronizamos o gate aqui (primeira passagem por processTrain).
+  if (SUPPRESSED_ACTIVE.has(trainId) && !mem.suppressedUntil) {
+    mem.suppressedUntil = nowTime + SUPPRESSED_RECHECK_MS;
+    mem.suppressedEndMs = richInfo.endObj ? richInfo.endObj.getTime() : nowTime;
+    mem.suppressedIsExtra = isExtraTrain;
+    delete OUTPUT_CACHE[trainId];
+  }
+  if (mem.suppressedUntil) {
+    // Janela ativa terminou → larga tudo e limpa memória.
+    if (nowTime > (mem.suppressedEndMs || 0)) {
+      SUPPRESSED_ACTIVE.delete(trainId);
+      delete OUTPUT_CACHE[trainId];
+      delete TRAIN_MEMORY[trainId];
+      return null;
+    }
+    // Ainda dentro do intervalo de 10 min → não faz fetch nenhum.
+    if (nowTime < mem.suppressedUntil) {
+      delete OUTPUT_CACHE[trainId];
+      return null;
+    }
+    // Intervalo expirou → segue para o fetch e reavaliação (bloco SUPRESSÃO A).
+  }
+
   if (nowTime < mem.nextWakeUp && mem.lastResult) {
     return mem.lastResult;
   }
 
-  const isExtraTrain = !!(richInfo._isExtra || richInfo._isDynamicExtra);
   const richKey =
     !isExtraTrain && richInfo.roma_areeiro
       ? richInfo.roma_areeiro.substring(0, 5)
@@ -954,6 +1080,41 @@ const processTrain = async (richInfo, originDateStr) => {
   }
 
   const details = await fetchDetails(trainId, originDateStr);
+
+  // ─── SUPRESSÃO ATIVA (A): reavaliação após o intervalo de 10 min ───
+  // Só corre quando o gate de supressão expirou (mem.suppressedUntil definido e
+  // já passámos o crivo do gate no topo). Decide se continua suprimido ou se
+  // recuperou. Tem de vir ANTES da null-guard: caso contrário uma resposta nula
+  // entraria na contagem 1/5 e reativaria a verificação de 15s.
+  if (mem.suppressedUntil) {
+    const valid =
+      details &&
+      !details._isAllNull &&
+      Array.isArray(details.NodesPassagemComboio) &&
+      details.NodesPassagemComboio.length > 0;
+    const stillSuppressed =
+      !valid || /SUPRIMIDO/i.test(details?.SituacaoComboio || "");
+
+    if (stillSuppressed) {
+      // Continua suprimido → renova o gate de 10 min, sem servir output.
+      return enterActiveSuppression(richInfo, mem, mem.suppressedIsExtra);
+    }
+
+    // Recuperou → limpa o estado de supressão e volta ao fluxo normal (15s).
+    console.log(
+      `[SUPRESSÃO] Comboio ${trainId} retomou circulação. De volta ao fluxo normal (output + 15s).`,
+    );
+    mem.suppressedUntil = null;
+    mem.suppressedEndMs = null;
+    mem.suppressedIsExtra = false;
+    SUPPRESSED_ACTIVE.delete(trainId);
+    mem.nullResponseCount = 0;
+    if (FUTURE_TRAINS_CACHE[trainId] === "SUPRIMIDO") {
+      FUTURE_TRAINS_CACHE[trainId] = "Sem Informação";
+    }
+    // Segue para o processamento normal abaixo.
+  }
+
   // NULL GUARD: Proteção contra respostas totalmente nulas da IP
   // A IP devolve por vezes tudo null mesmo com o comboio em circulação (bug).
   if (details && details._isAllNull) {
@@ -980,17 +1141,32 @@ const processTrain = async (richInfo, originDateStr) => {
       return null;
     }
 
-    // CASO 3: 5 respostas nulas consecutivas → confirmar SUPRIMIDO
+    // CASO 3: 5 respostas nulas consecutivas → confirmar SUPRIMIDO.
+    // Em vez de o atirar para GHOST_SUPPRESSED (reservado a imobilizados), entra
+    // em modo de supressão ativa: re-verificação espaçada de 10 em 10 min.
     console.log(
-      `[NULL GUARD] Comboio ${trainId} confirmado SUPRIMIDO após ${mem.nullResponseCount} respostas nulas consecutivas.`,
+      `[NULL GUARD] Comboio ${trainId} confirmado SUPRIMIDO após ${mem.nullResponseCount} respostas nulas consecutivas. A espaçar verificações para 10 min.`,
     );
-    FUTURE_TRAINS_CACHE[trainId] = "SUPRIMIDO";
-    GhostManager.GHOST_SUPPRESSED.add(trainId);
-    delete TRAIN_MEMORY[trainId];
-    return null;
+    return enterActiveSuppression(richInfo, mem, isExtraTrain);
   } else if (details && !details._isAllNull) {
     // Resposta válida → resetar contador de nulos
     mem.nullResponseCount = 0;
+  }
+
+  // ─── SUPRESSÃO ATIVA (C): primeira deteção via SituacaoComboio ───
+  // A IP devolve nós mas marca o comboio como SUPRIMIDO. Antes, o código
+  // construía output normal e re-verificava de 15 em 15s — pedidos inúteis
+  // durante toda a janela ativa. Agora entra logo em modo supressão (10 min).
+  if (
+    !mem.suppressedUntil &&
+    details &&
+    details.SituacaoComboio &&
+    /SUPRIMIDO/i.test(details.SituacaoComboio)
+  ) {
+    console.log(
+      `[SUPRESSÃO] Comboio ${trainId} marcado SUPRIMIDO pela IP. A espaçar verificações para 10 min.`,
+    );
+    return enterActiveSuppression(richInfo, mem, isExtraTrain);
   }
 
   let isLive = false;
@@ -1162,6 +1338,7 @@ const processTrain = async (richInfo, originDateStr) => {
 
   const trainOutput = {
     "id-comboio": trainId,
+    direction: direction,
     DataHoraDestino: `${displayDate} ${headerDestino?.substring(0, 5) ?? "--:--"}`,
     DataHoraOrigem: `${displayDate} ${headerOrigem?.substring(0, 5) ?? "--:--"}`,
     Destino: destinoIp,
@@ -1703,6 +1880,8 @@ const updateCycle = async () => {
         nullResponseCount: 0,
       };
     }
+    TRAIN_MEMORY[trainId].opDateStr = opDateStr;
+    TRAIN_MEMORY[trainId].activeEndMs = t.endObj.getTime() + 120 * 60000;
 
     if (TRAIN_MEMORY[trainId].isFetching) return;
 
@@ -1746,6 +1925,27 @@ const updateCycle = async () => {
 
   // Limpar Ghost Suppressed expirados (delegado ao GhostManager)
   GhostManager.cleanupExpiredGhosts(now, RICH_SCHEDULE, parseSmartTime);
+  for (const id of Object.keys(TRAIN_MEMORY)) {
+    const m = TRAIN_MEMORY[id];
+    if (m.isFetching) continue;
+    const staleDay = m.opDateStr && m.opDateStr !== opDateStr;
+    const windowEnded = m.activeEndMs && nowMs > m.activeEndMs;
+    if (staleDay || windowEnded) {
+      delete TRAIN_MEMORY[id];
+      delete OUTPUT_CACHE[id];
+      SUPPRESSED_ACTIVE.delete(id);
+    }
+  }
+
+  // Remover órfãos do OUTPUT_CACHE: entradas de comboios que já não têm memória
+  // ativa nem estão entre os extras (e não são as chaves reservadas da API).
+  const RESERVED_KEYS = ["futureTrains", "extratrains", "abnormalRoutes"];
+  for (const id of Object.keys(OUTPUT_CACHE)) {
+    if (RESERVED_KEYS.includes(id)) continue;
+    if (!TRAIN_MEMORY[id] && !EXTRA_TRAINS_CACHE[id]) {
+      delete OUTPUT_CACHE[id];
+    }
+  }
 
   // Auto-heal: limpar estados obsoletos da FUTURE_TRAINS_CACHE
   for (const [trainId, cachedStatus] of Object.entries(FUTURE_TRAINS_CACHE)) {
@@ -1775,7 +1975,8 @@ const updateCycle = async () => {
     ) {
       if (
         cachedStatus === "SUPRIMIDO" &&
-        GhostManager.GHOST_SUPPRESSED.has(trainId)
+        (GhostManager.GHOST_SUPPRESSED.has(trainId) ||
+          SUPPRESSED_ACTIVE.has(trainId))
       ) {
         continue;
       }
@@ -1959,6 +2160,50 @@ app.get("/fertagus", protectRoute, (req, res) => {
   res.json(OUTPUT_CACHE);
 });
 
+app.get("/estacao/:id", (req, res) => {
+  if (IP_IS_DOWN) {
+    return res.status(503).json({
+      error: "IP_DOWN",
+      status: "offline",
+      message: "Infraestruturas de Portugal Incontactável",
+    });
+  }
+
+  const station = EstacaoEndpoint.resolveStation(req.params.id);
+  if (!station) {
+    return res.status(404).json({
+      error: "ESTACAO_DESCONHECIDA",
+      message:
+        "ID inválido. Usa o EstacaoID numérico da IP (ex: 9417236 = Coina).",
+      estacoes: EstacaoEndpoint.listStations(),
+    });
+  }
+
+  const payload = EstacaoEndpoint.buildStationPayload(station, {
+    OUTPUT_CACHE,
+    EXTRA_TRAINS_CACHE,
+    FUTURE_TRAINS_CACHE,
+    ABNORMAL_ROUTES_CACHE,
+    RICH_SCHEDULE,
+    DYNAMIC_EXTRA_SCHEDULE,
+    parseSmartTime,
+    now: new Date(),
+    ipDown: IP_IS_DOWN,
+    operationalDate: getOperationalInfo().operationalDateStr,
+    limit: req.query.limit ? parseInt(req.query.limit, 10) : undefined,
+  });
+
+  res.json(payload);
+});
+
+app.get("/estacoes", protectRoute, (req, res) => {
+  res.json({ estacoes: EstacaoEndpoint.listStations() });
+});
+
+app.get("/mapa", protectRoute, (req, res) => {
+  res.json(GetLocation.getMapData());
+});
+
 app.get("/stats", (req, res) => {
   res.json(AnalyticsManager.getStats());
 });
@@ -1970,7 +2215,7 @@ app.get("/avisos", (req, res) => {
 app.get("/", (req, res) =>
   res.json({
     status: "online",
-    version: "4.11.4",
+    version: "5.0.0",
     aviso:
       "Pedimos que não uses o nosso endpoint diretamente! Verifica toda as informações e código no github.",
     operational: getOperationalInfo(),
@@ -1978,6 +2223,7 @@ app.get("/", (req, res) =>
       monitoring: Object.keys(GhostManager.GHOST_TRAINS).length,
       suppressed: GhostManager.GHOST_SUPPRESSED.size,
     },
+    suppressed_active: SUPPRESSED_ACTIVE.size,
     extras: {
       active: Object.keys(EXTRA_TRAINS_CACHE).length,
       tracked: Object.keys(DYNAMIC_EXTRA_SCHEDULE).length,
@@ -1989,7 +2235,7 @@ app.get("/", (req, res) =>
 );
 
 app.listen(PORT, () => {
-  console.log(`LiveTagus API v4.11.4 ativa na porta ${PORT}`);
+  console.log(`LiveTagus API v5.0.0 ativa na porta ${PORT}`);
   console.log(`Endpoint /fertagus protegido com API_KEY.`);
 
   // NÃO usar await aqui: checkOfflineTrains() faz station-poll com timeouts
@@ -1999,6 +2245,7 @@ app.listen(PORT, () => {
   checkOfflineTrains();
   updateCycle();
   scheduleNextTick();
+  GetLocation.init();
 
   setInterval(checkOfflineTrains, 15 * 60 * 1000); // considerar troca para 20 -> poupados cerca de 2000 pedidos por dia
 });
