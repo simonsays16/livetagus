@@ -35,167 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return latestResult.trainsForList || [];
   }
 
-  // ─── MENU GLOBAL: BOTÃO DE FERRAMENTAS + PARTILHA ────────────────────
-
-  function injectMenuExtras() {
-    const header = document.querySelector("#global-nav header");
-    const trigger = document.getElementById("menu-trigger");
-    if (!header || !trigger || document.getElementById("menu-controls-wrapper"))
-      return;
-    const barClasses = [
-      "bg-white/80",
-      "dark:bg-[#09090b]/80",
-      "backdrop-blur-md",
-      "border-b",
-      "border-zinc-200/50",
-      "dark:border-white/5",
-      "supports-[backdrop-filter]:bg-white/60",
-      "dark:supports-[backdrop-filter]:bg-[#09090b]/60",
-    ];
-    barClasses.forEach((cls) => header.classList.remove(cls));
-    header.classList.remove("px-6");
-    header.classList.add("px-3");
-    const logoEl = header.firstElementChild;
-    if (logoEl && !document.getElementById("map-logo-pill")) {
-      const logoPill = document.createElement("div");
-      logoPill.id = "map-logo-pill";
-      logoPill.className = [
-        "flex items-center",
-        "px-3 py-2",
-        "rounded-xl",
-        "bg-white/80 dark:bg-[#09090b]/80",
-        "backdrop-blur-md",
-        "border border-zinc-200/50 dark:border-white/5",
-        "shadow-sm",
-      ].join(" ");
-      logoEl.parentNode.insertBefore(logoPill, logoEl);
-      logoPill.appendChild(logoEl);
-    }
-    const circleClass = [
-      "p-2 rounded-full",
-      "bg-white/80 dark:bg-[#09090b]/80",
-      "backdrop-blur-md",
-      "border border-zinc-200/50 dark:border-white/5",
-      "shadow-sm",
-      "transition-colors",
-      "text-zinc-900 dark:text-white",
-    ].join(" ");
-
-    // wraper dos botões
-    const wrapper = document.createElement("div");
-    wrapper.id = "menu-controls-wrapper";
-    wrapper.className = "flex items-center gap-2";
-    header.insertBefore(wrapper, trigger);
-
-    // ── BOTÃO DE PARTILHA ──────────────────────────────────────────
-    const shareBtn = document.createElement("button");
-    shareBtn.id = "mapa-share-trigger";
-    shareBtn.className = circleClass;
-    shareBtn.setAttribute("aria-label", "Partilhar mapa");
-    shareBtn.innerHTML = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-         viewBox="0 0 24 24" fill="none" stroke="currentColor"
-         stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-         class="w-5 h-5">
-      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
-      <polyline points="16 6 12 2 8 6"/>
-      <line x1="12" x2="12" y1="2" y2="15"/>
-    </svg>`;
-    wrapper.appendChild(shareBtn);
-    if (window.MapaShare) window.MapaShare.attachToButton(shareBtn);
-
-    // ── BOTÃO DE FERRAMENTAS INTELIGENTES ──────────────────────────
-    const btn = document.createElement("button");
-    btn.id = "mobility-trigger";
-    btn.className = circleClass + " group relative";
-    btn.setAttribute("aria-label", "Ferramentas Inteligentes");
-    btn.innerHTML = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layout-grid-icon lucide-layout-grid">
-        <rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
-        <path d="m10.586 5.414-5.172 5.172"/><path d="m18.586 13.414-5.172 5.172"/><path d="M6 12h12"/><circle cx="12" cy="20" r="2"/><circle cx="12" cy="4" r="2"/><circle cx="20" cy="12" r="2"/><circle cx="4" cy="12" r="2"/>
-    </svg>`;
-    wrapper.appendChild(btn);
-    // menu - adicionar círculo background
-    trigger.classList.add(
-      "bg-white/80",
-      "dark:bg-[#09090b]/80",
-      "backdrop-blur-md",
-      "border",
-      "border-zinc-200/50",
-      "dark:border-white/5",
-      "shadow-sm",
-      "rounded-full",
-      "py-3.5",
-    );
-    wrapper.appendChild(trigger);
-
-    const popover = document.createElement("div");
-    popover.id = "mobility-popover";
-    popover.className =
-      "absolute top-16 right-4 w-70 bg-white dark:bg-[#09090b] border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl hidden origin-top-right transition-all duration-300 transform scale-95 opacity-0 z-50 overflow-hidden";
-    popover.innerHTML = `
-      <div class="px-4 py-3 bg-zinc-50 dark:bg-zinc-900/50 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
-        <p class="text-[9px] font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">
-          Mobilidade & Smart
-        </p>
-      </div>
-      <div class="flex flex-col">
-        <a href="./app" class="w-full flex items-center gap-4 px-4 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors text-left">
-          <i data-lucide="train-track" class="w-4 h-4 text-zinc-900 dark:text-white"></i>
-          <div class="flex-1">
-            <p class="text-sm font-medium text-zinc-900 dark:text-white leading-none">Fertagus tempo real</p>
-            <p class="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1.5 font-light tracking-wide">Lista e próximas partidas</p>
-          </div>
-          <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-zinc-300 dark:text-zinc-600"></i>
-        </a>
-
-        <div class="h-px w-full bg-zinc-100 dark:bg-zinc-800"></div>
-
-        <a href="./paragens" class="w-full flex items-center gap-4 px-4 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors text-left">
-          <i data-lucide="bus" class="w-4 h-4 text-zinc-900 dark:text-white"></i>
-          <div class="flex-1">
-            <p class="text-sm font-medium text-zinc-900 dark:text-white leading-none">A Minha Paragem (BETA)</p>
-            <p class="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1.5 font-light tracking-wide">Autocarros para a estação</p>
-          </div>
-          <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-zinc-300 dark:text-zinc-600"></i>
-        </a>
-        
-        <div class="h-px w-full bg-zinc-100 dark:bg-zinc-800"></div>
-
-        <a href="./sudoku" class="w-full flex items-center gap-4 px-4 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors text-left group/btn">
-          <i data-lucide="gamepad-2" class="w-4 h-4 text-zinc-900 dark:text-white group-hover/btn:scale-110 transition-transform duration-300"></i>
-          <div class="flex-1">
-            <p class="text-sm font-medium text-zinc-900 dark:text-white leading-none">Jogo de Sudoku</p>
-            <p class="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1.5 font-light tracking-wide">Tempo extra? Joga Sudoku</p>
-          </div>
-          <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-zinc-300 dark:text-zinc-600 group-hover/btn:translate-x-1 transition-transform"></i>
-        </a>
-      </div>`;
-    document.getElementById("global-nav").appendChild(popover);
-
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const isHidden = popover.classList.contains("hidden");
-      if (isHidden) {
-        popover.classList.remove("hidden");
-        requestAnimationFrame(() => {
-          popover.classList.remove("scale-95", "opacity-0");
-          popover.classList.add("scale-100", "opacity-100");
-        });
-      } else {
-        popover.classList.add("scale-95", "opacity-0");
-        popover.classList.remove("scale-100", "opacity-100");
-        setTimeout(() => popover.classList.add("hidden"), 300);
-      }
-    });
-    document.addEventListener("click", (e) => {
-      if (!popover.classList.contains("hidden") && !btn.contains(e.target)) {
-        popover.classList.add("scale-95", "opacity-0");
-        popover.classList.remove("scale-100", "opacity-100");
-        setTimeout(() => popover.classList.add("hidden"), 300);
-      }
-    });
-  }
+  // ─── MENU GLOBAL: BOTÃO DE FERRAMENTAS + PARTILHA passa para nav-tools.js
 
   // ─── LOOP DE POSIÇÃO ─────────────────────────────────────────────────
 
@@ -207,9 +47,66 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const visibleIds = [];
     for (const train of latestResult.trainsForMap || []) {
-      const pos = window.MapaGeo.computeTrainPosition(train, now);
+      // A estimativa do /fertagus define SEMPRE o ciclo de vida do comboio
+      // (quando aparece e quando termina). Calculamo-la primeiro.
+      const est = window.MapaGeo.computeTrainPosition(train, now);
+
+      // FIM DE VIAGEM = decidido pelo /fertagus (todos os nós com ComboioPassou).
+      // Removemos o comboio mesmo que a TML ainda reporte a unidade parada no
+      // terminus — é isto que evita o ponto "preso" no fim da viagem.
+      if (est && est.segment === "done") continue;
+
+      // Posição REAL (TML via /mapa) tem prioridade nas COORDENADAS enquanto a
+      // viagem decorre; a estimativa é o fallback.
+      // Passamos o nº de estações já passadas no /fertagus para o cross-check
+      // que deteta GPS congelado (ver mapa-live.js).
+      const passedCount = Array.isArray(train.nodes)
+        ? train.nodes.reduce(
+            (acc, n) => acc + (n && n.ComboioPassou ? 1 : 0),
+            0,
+          )
+        : 0;
+      const live =
+        window.MapaLive && typeof window.MapaLive.getPosition === "function"
+          ? window.MapaLive.getPosition(train.id, passedCount)
+          : null;
+
+      let pos;
+      if (live) {
+        // Força a posição GPS para CIMA da linha e orienta SEMPRE pela linha
+        // (sentido de viagem) — evita coordenadas fora dos carris e setas
+        // "lixadas" nas estações por causa do ruído do GPS.
+        const snapped =
+          typeof window.MapaGeo.snapToLine === "function"
+            ? window.MapaGeo.snapToLine(live.lng, live.lat, train.direction)
+            : null;
+
+        const lng = snapped ? snapped.lng : live.lng;
+        const lat = snapped ? snapped.lat : live.lat;
+        const bearing = snapped
+          ? snapped.bearing
+          : est
+            ? est.bearing
+            : live.bearing != null
+              ? live.bearing
+              : 0;
+
+        // segment "moving" garante render + animação suave: o mapa-render
+        // faz lerp de startPos→targetPos ao longo de POSITION_UPDATE_MS.
+        pos = {
+          lng,
+          lat,
+          bearing,
+          segment: "moving",
+          progress: 0.5,
+          isReal: true,
+        };
+      } else {
+        pos = est;
+        if (pos) pos.isReal = false;
+      }
+
       if (!pos) continue;
-      if (pos.segment === "done") continue;
       window.MapaRender.upsertTrain(mapInstance, train, pos, zoom);
       visibleIds.push(train.id);
     }
@@ -247,6 +144,29 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 500);
       }
     }
+  }
+
+  // ─── LOOP DE POSIÇÕES REAIS (TML via /mapa) ──────────────────────────
+  // Atualiza o cache de localizações reais (mapa-live.js). O updateAllPositions
+  // lê esse cache de forma síncrona: havendo posição real usa-a, senão cai na
+  // estimativa. Em manutenção (modo offline forçado) não há posições reais.
+
+  async function refreshLivePositions() {
+    if (!window.MapaLive) return;
+    if (window.MapaApi.isOfflineMode && window.MapaApi.isOfflineMode()) return;
+    try {
+      await window.MapaLive.refresh();
+    } catch (e) {
+      console.warn("[Mapa] refresh posições reais falhou:", e.message);
+    }
+  }
+
+  // Tick único (5 s): primeiro refresca o GPS, SÓ DEPOIS retargeta os pontos.
+  // Assim cada novo alvo da animação usa sempre dados frescos — evita ciclos
+  // "alvo igual → ponto para → salto" e mantém o movimento contínuo.
+  async function liveTick() {
+    await refreshLivePositions();
+    updateAllPositions();
   }
 
   // ─── INICIALIZAÇÃO DO MAPA ───────────────────────────────────────────
@@ -368,8 +288,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function boot() {
-    requestAnimationFrame(() => injectMenuExtras());
-
     if (!mapEl) {
       console.error("[Mapa] #map não encontrado");
       return;
@@ -441,6 +359,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Primeiro fetch (saltado em manutenção — só após "Mapa Offline")
       if (!maintenanceActive) {
+        await refreshLivePositions(); // NOVO: posições reais TML antes do 1º paint
         await fetchAndApply();
 
         // ─── VERIFICAR URL HASH (Autofocus de Comboios) ───
@@ -472,8 +391,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!apiIntervalId) {
       apiIntervalId = setInterval(fetchAndApply, MAPA.API_REFRESH_MS);
     }
+    // Um só loop: refresca GPS e retargeta no mesmo tick (ver liveTick).
     if (!posIntervalId) {
-      posIntervalId = setInterval(updateAllPositions, MAPA.POSITION_UPDATE_MS);
+      posIntervalId = setInterval(liveTick, MAPA.POSITION_UPDATE_MS);
     }
   }
 
@@ -523,6 +443,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    refreshLivePositions();
     fetchAndApply();
     startLoops();
   }
@@ -549,7 +470,5 @@ document.addEventListener("DOMContentLoaded", () => {
       startLoops();
     }
   });
-
-  // ─── GO! ─────────────────────────────────────────────────────────────
   boot();
 });

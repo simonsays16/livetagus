@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initShareButton(); // partilha nativa no footer
   checkApiStatus(); // verificar estado
   updateAppVersion(); // versao sw.js
-  initComingSoonPill(); // botão brevemnte
+  //initComingSoonPill();  botão brevemnte
 });
 
 // --- BARRA DE NAVEGAÇÃO E MENU LATERAL ---
@@ -51,7 +51,7 @@ function injectNavigation() {
                 <a href="/" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Início</a>
                 <a href="/mapa" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Mapa</a>
                 <a href="/app" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-black dark:text-white transition-colors uppercase italic">Tempo Real</a>
-                <a id="btn-menu-estacoes" href="#" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase line-through">Estações</a>
+                <a href="/estacoes/" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Estações</a>
                 <a href="/horarios" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Horários</a>
                 <a id="btn-menu-sobre" href="/sobre" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Sobre</a>
             </nav>
@@ -527,7 +527,7 @@ async function updateAppVersion() {
   if (roadmapVersionEl) roadmapVersionEl.textContent = `Versão: ${version}`;
 }
 // ignorar certas páginas
-const ignorePaths = ["/stats", "/estacao", "/estacoes", "/404"];
+const ignorePaths = ["/stats", "/404"];
 const currentPath = window.location.pathname.toLowerCase();
 const shouldIgnoreAnalytics = ignorePaths.some((path) =>
   currentPath.includes(path),
@@ -552,7 +552,7 @@ if (!shouldIgnoreAnalytics) {
   window.sa_event = function () {};
 }
 
-// PROVISÓRIO BOTÃO ESTAÇÕES BREVEMENTE
+/* PROVISÓRIO BOTÃO ESTAÇÕES BREVEMENTE
 function initComingSoonPill() {
   const btnEstacoes = document.getElementById("btn-menu-estacoes");
   if (!btnEstacoes) return;
@@ -604,4 +604,4 @@ function initComingSoonPill() {
       pill.style.opacity = "0";
     }, 3000);
   });
-}
+}*/

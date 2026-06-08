@@ -94,15 +94,28 @@
                 </span>
                 <span class="text-xs font-mono text-zinc-400">6 Fev 2026</span>
               </div>
-              <h3 class="text-lg font-bold text-zinc-900 dark:text-white mb-1">
-                Integração Fins de Semana
-              </h3>
+              <button
+                type="button"
+                data-acc-trigger="acc-fds"
+                aria-expanded="false"
+                class="w-full flex items-center justify-between gap-3 text-left mb-1"
+              >
+                <h3 class="text-lg font-bold text-zinc-900 dark:text-white">
+                  Integração Fins de Semana
+                </h3>
+                <i
+                  data-lucide="chevron-down"
+                  class="w-4 h-4 text-zinc-400 shrink-0 transition-transform duration-300"
+                ></i>
+              </button>
               <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-6">
                 Suporte completo para horários de Sábados, Domingos e Feriados.
                 O sistema deixará de entrar em modo de suspensão nestes dias.
               </p>
               <div
-                class="relative border-l border-zinc-200/50 dark:border-zinc-700/50 ml-2 space-y-8 pl-8 py-2"
+                id="acc-fds"
+                data-acc-panel
+                class="hidden relative border-l border-zinc-200/50 dark:border-zinc-700/50 ml-2 space-y-8 pl-8 py-2"
               >
                 <div class="relative">
                   <span
@@ -217,16 +230,29 @@
                 </span>
                 <span class="text-xs font-mono text-zinc-400">7 Abr 2026</span>
               </div>
-              <h3 class="text-lg font-bold text-zinc-900 dark:text-white mb-1">
-                A Minha Paragem
-              </h3>
+              <button
+                type="button"
+                data-acc-trigger="acc-paragem"
+                aria-expanded="false"
+                class="w-full flex items-center justify-between gap-3 text-left mb-1"
+              >
+                <h3 class="text-lg font-bold text-zinc-900 dark:text-white">
+                  A Minha Paragem
+                </h3>
+                <i
+                  data-lucide="chevron-down"
+                  class="w-4 h-4 text-zinc-400 shrink-0 transition-transform duration-300"
+                ></i>
+              </button>
               <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-6">
                 Nova funcionalidade dedicada à gestão de paragens da Carris
                 Metropolitana, com mapa interativo, motor de pesquisa e tempos
                 de espera em tempo real.
               </p>
               <div
-                class="relative border-l border-zinc-200/50 dark:border-zinc-700/50 ml-2 space-y-8 pl-8 py-2"
+                id="acc-paragem"
+                data-acc-panel
+                class="hidden relative border-l border-zinc-200/50 dark:border-zinc-700/50 ml-2 space-y-8 pl-8 py-2"
               >
                 <div class="relative">
                   <span
@@ -303,6 +329,188 @@
               </div>
             </div>
 
+            <!-- NOVO: Mapa em Tempo Real -->
+            <div class="relative pl-8">
+              <span
+                class="absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-white dark:ring-[#09090b]"
+              ></span>
+              <div class="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                <span
+                  class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-500 border border-blue-500/20 uppercase tracking-wider w-fit"
+                >
+                  Concluído
+                </span>
+                <span class="text-xs font-mono text-zinc-400">20 Abr 2026</span>
+              </div>
+              <button
+                type="button"
+                data-acc-trigger="acc-mapa"
+                aria-expanded="false"
+                class="w-full flex items-center justify-between gap-3 text-left mb-1"
+              >
+                <h3 class="text-lg font-bold text-zinc-900 dark:text-white">
+                  Mapa em Tempo Real
+                </h3>
+                <i
+                  data-lucide="chevron-down"
+                  class="w-4 h-4 text-zinc-400 shrink-0 transition-transform duration-300"
+                ></i>
+              </button>
+              <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-6">
+                Mapa interativo com a localização estimada dos comboios Fertagus
+                ao longo da linha, atualizada em tempo real.
+              </p>
+              <div
+                id="acc-mapa"
+                data-acc-panel
+                class="hidden relative border-l border-zinc-200/50 dark:border-zinc-700/50 ml-2 space-y-8 pl-8 py-2"
+              >
+                <div class="relative">
+                  <span
+                    class="absolute -left-[37px] top-1.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-white dark:ring-[#09090b]"
+                  ></span>
+                  <h4 class="text-sm font-bold text-emerald-500 mb-1">
+                    Fase 0: Publicação do Mapa
+                    <span
+                      class="text-xs font-mono text-zinc-400 opacity-80 tracking-wider"
+                    >
+                      (20 Abr 2026)
+                    </span>
+                  </h4>
+                  <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                    Lançamento do mapa interativo (MapLibre GL) com a posição
+                    estimada de cada comboio e a rota completa da linha.
+                  </p>
+                </div>
+                <div class="relative">
+                  <span
+                    class="absolute -left-[37px] top-1.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-white dark:ring-[#09090b]"
+                  ></span>
+                  <h4 class="text-sm font-bold text-emerald-500 mb-1">
+                    Fase 1: Localização dos Comboios Real
+                    <span
+                      class="text-xs font-mono text-zinc-400 opacity-80 tracking-wider"
+                    >
+                      (7 Jun 2026)
+                    </span>
+                  </h4>
+                  <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                    Integração dos dados disponibilizados por parte da TML e
+                    Fertagus da localização dos comboios em tempo real.
+                  </p>
+                </div>
+                <div class="relative">
+                  <span
+                    class="absolute -left-[37px] top-1.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-white dark:ring-[#09090b]"
+                  ></span>
+                  <h4 class="text-sm font-bold text-emerald-500 mb-1">
+                    Fase 2: Partidas por Estação no Mapa
+                    <span
+                      class="text-xs font-mono text-zinc-400 opacity-80 tracking-wider"
+                    >
+                      (7 Jun 2026)
+                    </span>
+                  </h4>
+                  <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                    Ao tocar numa estação, ver as próximas partidas separadas
+                    por sentido diretamente no mapa, sem sair do ecrã.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- NOVO: Partidas & Ligações por Estação -->
+            <div class="relative pl-8">
+              <span
+                class="absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-white dark:ring-[#09090b]"
+              ></span>
+              <div class="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                <span
+                  class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-500 border border-blue-500/20 uppercase tracking-wider w-fit"
+                >
+                  Concluído
+                </span>
+                <span class="text-xs font-mono text-zinc-400">7 Jun 2026</span>
+              </div>
+              <button
+                type="button"
+                data-acc-trigger="acc-estacoes"
+                aria-expanded="false"
+                class="w-full flex items-center justify-between gap-3 text-left mb-1"
+              >
+                <h3 class="text-lg font-bold text-zinc-900 dark:text-white">
+                  Partidas &amp; Ligações por Estação
+                </h3>
+                <i
+                  data-lucide="chevron-down"
+                  class="w-4 h-4 text-zinc-400 shrink-0 transition-transform duration-300"
+                ></i>
+              </button>
+              <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-6">
+                Página dedicada a cada estação da linha, com as próximas
+                partidas em tempo real e as ligações intermodais disponíveis.
+              </p>
+              <div
+                id="acc-estacoes"
+                data-acc-panel
+                class="hidden relative border-l border-zinc-200/50 dark:border-zinc-700/50 ml-2 space-y-8 pl-8 py-2"
+              >
+                <div class="relative">
+                  <span
+                    class="absolute -left-[37px] top-1.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-white dark:ring-[#09090b]"
+                  ></span>
+                  <h4 class="text-sm font-bold text-emerald-500 mb-1">
+                    Fase 0: Página de Estação
+                  </h4>
+                  <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                    Estrutura, design e navegação dedicada a cada estação da
+                    linha Fertagus.
+                  </p>
+                </div>
+                <div class="relative">
+                  <span
+                    class="absolute -left-[37px] top-1.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-white dark:ring-[#09090b]"
+                  ></span>
+                  <h4 class="text-sm font-bold text-emerald-500 mb-1">
+                    Fase 1: Partidas em Tempo Real
+                  </h4>
+                  <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                    Próximas partidas por estação, ordenadas por hora, com
+                    atrasos, supressões e trajetos anormais assinalados.
+                  </p>
+                </div>
+                <div class="relative">
+                  <span
+                    class="absolute -left-[37px] top-1.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-white dark:ring-[#09090b]"
+                  ></span>
+                  <h4 class="text-sm font-bold text-emerald-500 mb-1">
+                    Fase 2: Ligações Intermodais
+                  </h4>
+                  <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                    Ligações de cada estação com tempos reais da Carris
+                    Metropolitana e atalhos para CP.
+                  </p>
+                </div>
+                <div class="relative">
+                  <span
+                    class="absolute -left-[37px] top-1.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-white dark:ring-[#09090b]"
+                  ></span>
+                  <h4 class="text-sm font-bold text-emerald-500 mb-1">
+                    Fase 3: Conclusão
+                    <span
+                      class="text-xs font-mono text-zinc-400 opacity-80 tracking-wider"
+                    >
+                      (7 Jun 2026)
+                    </span>
+                  </h4>
+                  <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                    Disponibilização pública das partidas e ligações em todas as
+                    estações.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div class="relative pl-8 pb-4">
               <span
                 class="absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full animate-pulse bg-blue-500 ring-4 ring-white dark:ring-[#09090b]"
@@ -314,9 +522,20 @@
                   Planeado (Q2 2026)
                 </span>
               </div>
-              <h3 class="text-xl font-bold text-zinc-900 dark:text-white mb-2">
-                Ligações Intermodais
-              </h3>
+              <button
+                type="button"
+                data-acc-trigger="acc-intermodais"
+                aria-expanded="false"
+                class="w-full flex items-center justify-between gap-3 text-left mb-2"
+              >
+                <h3 class="text-xl font-bold text-zinc-900 dark:text-white">
+                  Ligações Intermodais
+                </h3>
+                <i
+                  data-lucide="chevron-down"
+                  class="w-4 h-4 text-zinc-400 shrink-0 transition-transform duration-300"
+                ></i>
+              </button>
               <p
                 class="text-sm text-zinc-600 dark:text-zinc-400 mb-6 max-w-2xl"
               >
@@ -326,7 +545,9 @@
               </p>
 
               <div
-                class="relative border-l border-zinc-200/50 dark:border-zinc-700/50 ml-2 space-y-8 pl-8 py-2"
+                id="acc-intermodais"
+                data-acc-panel
+                class="hidden relative border-l border-zinc-200/50 dark:border-zinc-700/50 ml-2 space-y-8 pl-8 py-2"
               >
                 <div class="relative">
                   <span

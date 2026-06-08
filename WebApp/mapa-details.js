@@ -188,6 +188,13 @@
   // ─── PAINEL COMPLETO ─────────────────────────────────────────────────
 
   function buildContent(train) {
+    const isFollow =
+      window.MapaRender &&
+      window.MapaRender.isFollowModeActive &&
+      window.MapaRender.isFollowModeActive(train.id);
+    const followColor = isFollow
+      ? "text-blue-500 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10"
+      : "text-zinc-400 hover:text-zinc-900 dark:hover:text-white";
     const firstNode = train.nodes && train.nodes[0];
     const lastNode = train.nodes && train.nodes[train.nodes.length - 1];
     const departTime =
@@ -205,6 +212,13 @@
         )) ||
       "--:--";
 
+    // Localização REAL (TML via /mapa) vs ESTIMADA (cálculo do mapa-geo).
+    const hasRealPosition = !!(
+      window.MapaRender &&
+      typeof window.MapaRender.isRealPosition === "function" &&
+      window.MapaRender.isRealPosition(train.id)
+    );
+
     return `
       <div class="flex flex-col h-full bg-white dark:bg-[#09090b]">
 
@@ -216,6 +230,12 @@
         <!-- HEADER COMPACTO -->
         <div class="dp-header relative shrink-0 px-6 pt-3 md:pt-safe-ios md:pt-5 pb-4 border-b border-zinc-100 dark:border-zinc-900" data-drag-area="1">
           <div class="absolute right-3 flex items-center gap-1" style="top:35px">
+            <!--<button
+              data-details-action="follow"
+              class="w-9 h-9 flex items-center justify-center transition-colors rounded-full ${followColor}"
+              aria-label="Seguir condução">
+              <i data-lucide="locate-fixed" class="w-[18px] h-[18px]"></i>
+            </button>-->
             <button
               data-details-action="share"
               class="w-9 h-9 flex items-center justify-center text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors rounded-full"
@@ -257,6 +277,15 @@
           <div class="grid grid-cols-2 gap-5">
             ${combinedCarriagesHtml(train)}
             ${statusNextStationHtml(train)}
+          </div>
+
+          <!-- ORIGEM DA LOCALIZAÇÃO (real TML vs estimada) -->
+          <div class="mt-3 flex items-center gap-1.5">
+            <i data-lucide="${hasRealPosition ? "satellite-dish" : "route"}"
+               class="w-3 h-3 ${hasRealPosition ? "text-emerald-500" : "text-zinc-400"} shrink-0"></i>
+            <span class="text-[9px] font-medium uppercase tracking-[0.2em] ${hasRealPosition ? "text-emerald-600 dark:text-emerald-400" : "text-zinc-400 dark:text-zinc-500"}">
+              ${hasRealPosition ? "Localização Real do Comboio <b>(NOVO)</b>" : "Localização do Comboio Estimada"}
+            </span>
           </div>
 
           ${
@@ -456,6 +485,44 @@
         shareCurrent();
       });
     });
+
+    // NOVO: Ação de follow mode
+    panel.querySelectorAll("[data-details-action='follow']").forEach((b) => {
+      b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const train = getCurrentTrain();
+        if (train && window.MapaRender) {
+          const isActive = window.MapaRender.toggleFollowMode(train);
+          if (isActive) {
+            b.classList.remove(
+              "text-zinc-400",
+              "hover:text-zinc-900",
+              "dark:hover:text-white",
+            );
+            b.classList.add(
+              "text-blue-500",
+              "dark:text-blue-400",
+              "bg-blue-50",
+              "dark:bg-blue-500/10",
+            );
+            setState("mini"); // Força o painel a ficar reduzido
+          } else {
+            b.classList.add(
+              "text-zinc-400",
+              "hover:text-zinc-900",
+              "dark:hover:text-white",
+            );
+            b.classList.remove(
+              "text-blue-500",
+              "dark:text-blue-400",
+              "bg-blue-50",
+              "dark:bg-blue-500/10",
+            );
+          }
+        }
+      });
+    });
+
     panel
       .querySelectorAll("[data-details-action='toggle-expand']")
       .forEach((b) => {
@@ -507,12 +574,36 @@
   function setState(newState) {
     if (!panel) return;
     if (newState !== "mini" && newState !== "expanded") return;
+
+    // NOVO: Se o utilizador expandir manualmente a sheet, paramos de o obrigar a "conduzir"
+    if (
+      newState === "expanded" &&
+      window.MapaRender &&
+      window.MapaRender.isFollowModeActive &&
+      window.MapaRender.isFollowModeActive(currentTrainId)
+    ) {
+      window.MapaRender.toggleFollowMode(getCurrentTrain());
+      const b = panel.querySelector('[data-details-action="follow"]');
+      if (b) {
+        b.classList.add(
+          "text-zinc-400",
+          "hover:text-zinc-900",
+          "dark:hover:text-white",
+        );
+        b.classList.remove(
+          "text-blue-500",
+          "dark:text-blue-400",
+          "bg-blue-50",
+          "dark:bg-blue-500/10",
+        );
+      }
+    }
+
     currentState = newState;
     panel.dataset.state = newState;
     panel.classList.remove("translate-y-full");
     panel.classList.add("translate-y-0");
 
-    // Atualiza chevron / texto do toggle
     const chev = panel.querySelector(".dp-toggle-chevron");
     const text = panel.querySelector("[data-toggle-text]");
     if (chev) {
@@ -524,13 +615,11 @@
         newState === "expanded" ? "Menos detalhes" : "Mais detalhes";
     }
 
-    // Reset do scroll da timeline ao entrar em expanded
     if (newState === "expanded") {
       const sc = panel.querySelector('[data-details-scroll="1"]');
       if (sc) sc.scrollTop = 0;
     }
 
-    // Pede ao MapaRender para refazer o foco com novo padding
     if (window.MapaRender && window.MapaRender.isRouteFocused()) {
       const t = getCurrentTrain();
       if (t) window.MapaRender.startRouteFocus(t);

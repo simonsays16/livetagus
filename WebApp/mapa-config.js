@@ -12,6 +12,10 @@
     //API_URL: "http://localhost:3000/fertagus",
     API_KEY: "KoKi30rVWuwkF9lqKL6j4mb0VMg3dIXWs6QDHZ3de0G8lC5qvu",
 
+    // ─── POSIÇÕES REAIS (TML via /mapa) ────────────────────────────────
+    MAP_URL: "https://api.livetagus.pt/mapa",
+    //MAP_URL: "http://localhost:3000/mapa",
+
     // ─── AVISOS / MANUTENÇÃO ───────────────────────────────────────────
     ALERTS_URL: "https://api.livetagus.pt/avisos",
     HORARIOS_URL: "./horarios",
@@ -20,6 +24,11 @@
     // ─── INTERVALOS ────────────────────────────────────────────────────
     API_REFRESH_MS: 30_000,
     POSITION_UPDATE_MS: 5_000,
+    LIVE_REFRESH_MS: 5_000, // poll das posições reais (/mapa)
+    // Duração da animação do ponto. Propositadamente MAIOR que POSITION_UPDATE_MS
+    // para o comboio estar sempre em movimento (nunca chega ao alvo e "para"
+    // à espera do próximo). Trade-off: ligeiro atraso visual (~2 s), invisível.
+    TRAIN_GLIDE_MS: 7_500,
     BOARDING_MS: 30_000,
     BOARDING_HEAD_MS: 30_000,
     BOARDING_TAIL_MS: 20_000,

@@ -16,6 +16,7 @@
 
   let mainMap = null;
   let routeFocusTrainId = null;
+  let followModeTrainId = null;
   let routeFocusSignature = "";
   let routeFocusUserDetached = false; // user fez drag/wheel manualmente
   let isFlying = false;
@@ -193,6 +194,7 @@
   function recomputeRouteFocusIfNeeded(train) {
     if (!train || routeFocusTrainId !== train.id) return;
     if (routeFocusUserDetached) return;
+    if (followModeTrainId === train.id) return;
     const remaining = remainingNodes(train);
     const sig = remaining.map((n) => n.EstacaoID).join(",");
     const changed = sig !== routeFocusSignature;
@@ -226,6 +228,7 @@
 
   function endRouteFocus() {
     routeFocusTrainId = null;
+    followModeTrainId = null;
     userOriginKey = null;
     userDestKey = null;
     routeFocusSignature = "";
@@ -325,13 +328,49 @@
   // ─── ANIMAÇÃO SUAVE DOS MARKERS ──────────────────────────────────────
 
   function animateMarkers(time) {
+    const glideMs = MAPA.TRAIN_GLIDE_MS || MAPA.POSITION_UPDATE_MS;
     for (const entry of markers.values()) {
       if (entry.startPos && entry.targetPos) {
-        let t = (time - entry.animationStartTime) / MAPA.POSITION_UPDATE_MS;
+        let t = (time - entry.animationStartTime) / glideMs;
         if (t > 1) t = 1;
         const lng = lerp(entry.startPos.lng, entry.targetPos.lng, t);
         const lat = lerp(entry.startPos.lat, entry.targetPos.lat, t);
         entry.marker.setLngLat([lng, lat]);
+
+        // NOVO: Interpolar Rotação em vez de "Snap" a cada 5 segundos
+        if (
+          entry.startBearing !== undefined &&
+          entry.targetBearing !== undefined
+        ) {
+          const currentBearing = lerp(
+            entry.startBearing,
+            entry.targetBearing,
+            t,
+          );
+          if (Math.abs((entry.bearing || 0) - currentBearing) > 0.1) {
+            applyRotation(entry, currentBearing);
+            entry.bearing = currentBearing;
+          }
+        }
+
+        // NOVO: Prender a Câmara Frame-a-Frame ao Comboio
+        if (
+          followModeTrainId === entry.train.id &&
+          !routeFocusUserDetached &&
+          !isFlying &&
+          mainMap
+        ) {
+          mainMap.jumpTo({
+            center: [lng, lat],
+            bearing: entry.bearing,
+            padding: {
+              top: 0,
+              bottom: Math.max(300, window.innerHeight * 0.42),
+              left: 0,
+              right: 0,
+            },
+          });
+        }
       }
     }
     animationFrameId = requestAnimationFrame(animateMarkers);
@@ -886,10 +925,13 @@
         el,
         train,
         bearing: position.bearing || 0,
+        startBearing: position.bearing || 0,
+        targetBearing: position.bearing || 0,
         map,
         startPos: { lng: position.lng, lat: position.lat },
         targetPos: { lng: position.lng, lat: position.lat },
         animationStartTime: now,
+        isRealPosition: !!position.isReal,
       };
       markers.set(train.id, entry);
 
@@ -918,10 +960,18 @@
     entry.animationStartTime = now;
 
     const newBearing = position.bearing || 0;
-    const delta = Math.abs(((newBearing - entry.bearing + 540) % 360) - 180);
-    if (delta > 3) {
-      applyRotation(entry, newBearing);
-      entry.bearing = newBearing;
+    let delta = newBearing - (entry.bearing || 0);
+
+    // Contornar bloqueios de 360º para girar sempre pelo caminho mais curto
+    if (delta > 180) delta -= 360;
+    if (delta < -180) delta += 360;
+
+    if (Math.abs(delta) > 0.5) {
+      entry.startBearing = entry.bearing || 0;
+      entry.targetBearing = entry.startBearing + delta;
+    } else {
+      entry.startBearing = entry.bearing || 0;
+      entry.targetBearing = entry.bearing || 0;
     }
 
     if (
@@ -933,6 +983,7 @@
       updateMarkerStyle(entry, train);
     }
     entry.train = train;
+    entry.isRealPosition = !!position.isReal;
 
     applyViewState(entry, zoom, position);
     scaleCarriagesToRealWorld(entry, zoom);
@@ -966,6 +1017,13 @@
     markers.delete(trainId);
   }
 
+  // Indica se o marcador deste comboio está a usar posição REAL (TML) ou
+  // a estimativa do mapa-geo. Usado pelo modal de detalhes para o rótulo.
+  function isRealPosition(trainId) {
+    const entry = markers.get(trainId);
+    return !!(entry && entry.isRealPosition);
+  }
+
   function removeMissingTrains(currentIds) {
     const keep = new Set(currentIds);
     for (const id of Array.from(markers.keys())) {
@@ -993,16 +1051,87 @@
       if (isFlying) return; // movimento causado pelo nosso fitBounds
       if (e && e.originalEvent) {
         routeFocusUserDetached = true;
+        // NOVO: Desativar followMode e repor botão se houver interação mecânica do utilizador (pan, scroll, pitch)
+        if (followModeTrainId) {
+          followModeTrainId = null;
+          const b = document.querySelector('[data-details-action="follow"]');
+          if (b) {
+            b.classList.remove(
+              "text-blue-500",
+              "dark:text-blue-400",
+              "bg-blue-50",
+              "dark:bg-blue-500/10",
+            );
+            b.classList.add(
+              "text-zinc-400",
+              "hover:text-zinc-900",
+              "dark:hover:text-white",
+            );
+          }
+        }
       }
     };
     mainMap.on("dragstart", detachIfUser);
     mainMap.on("touchstart", detachIfUser);
     mainMap.on("wheel", detachIfUser);
+    mainMap.on("rotatestart", detachIfUser);
+    mainMap.on("pitchstart", detachIfUser);
+  }
+
+  function isFollowModeActive(trainId) {
+    return followModeTrainId === trainId;
+  }
+
+  function toggleFollowMode(train) {
+    if (!mainMap || !train) return false;
+    if (followModeTrainId === train.id) {
+      // Desativar: Levantar a câmara e restaurar foco 2D.
+      followModeTrainId = null;
+      mainMap.easeTo({ pitch: 0, duration: 600 });
+      applyRouteFocus(train, { subtle: false });
+      return false;
+    } else {
+      // Ativar: Mudar a câmara com inércia para dentro do comboio.
+      followModeTrainId = train.id;
+      routeFocusTrainId = train.id;
+      routeFocusUserDetached = false;
+      isFlying = true;
+
+      const entry = markers.get(train.id);
+      const pos = entry
+        ? { lng: entry.targetPos.lng, lat: entry.targetPos.lat }
+        : window.MapaGeo.computeTrainPosition(train, new Date());
+      const bearing = entry
+        ? entry.targetBearing || entry.bearing || 0
+        : pos.bearing || 0;
+
+      mainMap.easeTo({
+        center: [pos.lng, pos.lat],
+        zoom: 16.8, // Zoom alto e suficiente para as carruagens
+        pitch: 65, // Tilted como a visão de um pára-brisas
+        bearing: bearing,
+        padding: {
+          top: 0,
+          bottom: Math.max(300, window.innerHeight * 0.42),
+          left: 0,
+          right: 0,
+        },
+        duration: 1200,
+      });
+
+      mainMap.once("moveend", () => {
+        isFlying = false; // liberta a flag e passa a ser atualizado frame-a-frame no jumpTo()
+      });
+      return true;
+    }
   }
 
   // ─── EXPORT ──────────────────────────────────────────────────────────
   window.MapaRender = {
     setMap,
+    // Focus
+    toggleFollowMode,
+    isFollowModeActive,
     // Novo modelo
     startRouteFocus,
     endRouteFocus,
@@ -1028,6 +1157,7 @@
     onZoomChange,
     setClickHandler,
     getMarkers,
+    isRealPosition,
     _ringColor: ringColor,
     _carriageFillColor: carriageFillColor,
     _filledCarriages: filledCarriages,

@@ -23,6 +23,7 @@ window.lucide = {
       "git-commit-horizontal":
         '<circle cx="12" cy="12" r="3"/><line x1="3" x2="9" y1="12" y2="12"/><line x1="15" x2="21" y1="12" y2="12"/>',
       menu: '<line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/>',
+      "chevron-down": '<path d="m6 9 6 6 6-6"/>',
       info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
       "train-front":
         '<path d="M8 31V7a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v24"/><rect width="12" height="10" x="6" y="11" rx="1"/><path d="M9 15h6"/><path d="M9 19h6"/><path d="m5 26 3-2"/><path d="m19 26-3-2"/>',
@@ -124,8 +125,31 @@ async function loadGitHubCommits() {
   }
 }
 
-// 3. Inicializar tudo quando a página carrega
+// 3. Accordion: cada título com fases é um dropdown que mostra as fases.
+function initAccordions() {
+  document.querySelectorAll("[data-acc-trigger]").forEach((btn) => {
+    const id = btn.getAttribute("data-acc-trigger");
+    const panel = document.getElementById(id);
+    if (!panel) return;
+    btn.addEventListener("click", () => {
+      const isHidden = panel.classList.toggle("hidden");
+      const open = !isHidden;
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+      const chev = btn.querySelector("svg");
+      if (chev) chev.style.transform = open ? "rotate(180deg)" : "";
+      if (open) {
+        panel.classList.remove("animate-fade-in");
+        // reinicia a animação de entrada
+        void panel.offsetWidth;
+        panel.classList.add("animate-fade-in");
+      }
+    });
+  });
+}
+
+// 4. Inicializar tudo quando a página carrega
 document.addEventListener("DOMContentLoaded", () => {
   window.lucide.createIcons();
+  initAccordions();
   loadGitHubCommits();
 });

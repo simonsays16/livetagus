@@ -717,6 +717,12 @@
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
         box-shadow: none !important;
+        pointer-events: none !important; /* Deixa os cliques passarem para o mapa */
+      }
+
+      /* Reativa os cliques APENAS nos elementos visíveis (Logótipo e Grupo de Botões) */
+      #global-nav header > * {
+        pointer-events: auto !important;
       }
 
       /* Pílula retangular do logo */
@@ -1427,6 +1433,7 @@
 
     <!-- Menu global -->
     <script src="./menu.js" defer></script>
+    <script src="/nav-tools.js" defer></script>
 
     <!-- App do mapa (ordem de dependências) -->
     <script src="./lucide-icons.js" defer></script>
@@ -1434,7 +1441,9 @@
     <script src="./mapa-geo.js" defer></script>
     <script src="./mapa-api.js" defer></script>
     <script src="./mapa-render.js" defer></script>
+    <script src="./mapa-live.js" defer></script>
     <script src="./mapa-details.js" defer></script>
+    <script src="./partidas.js" defer></script>
     <script src="./mapa-station.js" defer></script>
     <script src="./mapa-share.js" defer></script>
     <script src="./mapa-alerts.js" defer></script>

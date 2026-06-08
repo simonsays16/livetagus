@@ -10,6 +10,7 @@
   let lineFeatures = null; // Array<turf.LineString>
   let stationPositions = null; // { [stationKey]: { featureIdx, locationKm, lng, lat } }
   let initialized = false;
+  let featureForwardIsLisboa = {}; // { [featureIdx]: bool | null } — km crescente = sul→norte?
 
   // ─── HELPERS ─────────────────────────────────────────────────────────
 
@@ -100,6 +101,7 @@
       console.warn("[MapaGeo] GeoJSON inválido, a usar fallback linear");
       lineFeatures = [];
       stationPositions = {};
+      featureForwardIsLisboa = {};
       initialized = true;
       return;
     }
@@ -122,6 +124,7 @@
     if (typeof turf === "undefined") {
       console.error("[MapaGeo] Turf.js não carregado, impossível inicializar");
       stationPositions = {};
+      featureForwardIsLisboa = {};
       initialized = true;
       return;
     }
@@ -157,6 +160,39 @@
         lng: station.lng,
         lat: station.lat,
       };
+    }
+
+    // Para cada feature, determina se o sentido de km CRESCENTE corresponde à
+    // viagem "lisboa" (sul→norte). Usado para orientar o comboio na linha
+    // independentemente do bearing (ruidoso) do GPS.
+    featureForwardIsLisboa = {};
+    const orderIndex = {};
+    (MAPA.STATION_ORDER || []).forEach((key, i) => {
+      orderIndex[key] = i; // 0 = mais a sul ... N = mais a norte
+    });
+    const byFeature = {};
+    for (const key in stationPositions) {
+      const sp = stationPositions[key];
+      if (!sp || sp.featureIdx < 0 || orderIndex[key] == null) continue;
+      (byFeature[sp.featureIdx] = byFeature[sp.featureIdx] || []).push({
+        km: sp.locationKm,
+        oi: orderIndex[key],
+      });
+    }
+    for (const idx in byFeature) {
+      const arr = byFeature[idx];
+      if (arr.length < 2) {
+        featureForwardIsLisboa[idx] = null; // indeterminado → fallback latitude
+        continue;
+      }
+      let lo = arr[0];
+      let hi = arr[0];
+      for (const s of arr) {
+        if (s.km < lo.km) lo = s;
+        if (s.km > hi.km) hi = s;
+      }
+      // km cresce de lo→hi; é "lisboa" se a estação de maior km for mais a norte.
+      featureForwardIsLisboa[idx] = hi.oi > lo.oi;
     }
 
     initialized = true;
@@ -234,6 +270,77 @@
       lat: stationA.lat + (stationB.lat - stationA.lat) * fractionClamped,
       bearing: computeBearing(stationA, stationB),
     };
+  }
+
+  /**
+   * Projeta uma coordenada GPS para o ponto mais próximo SOBRE a linha e
+   * devolve o rumo da própria linha nesse ponto, orientado pela direção de
+   * viagem ("lisboa" = sul→norte; "margem" = norte→sul). Garante que o comboio
+   * fica sempre nos carris e sempre orientado pela linha (estável nas estações).
+   * Devolve null se a geometria não estiver pronta.
+   */
+  function snapToLine(lng, lat, direction) {
+    if (!initialized || !lineFeatures || lineFeatures.length === 0) return null;
+    if (typeof turf === "undefined") return null;
+    if (typeof lng !== "number" || typeof lat !== "number") return null;
+
+    const pt = turf.point([lng, lat]);
+    let best = null;
+    lineFeatures.forEach((feature, idx) => {
+      try {
+        const np = turf.nearestPointOnLine(feature, pt, {
+          units: "kilometers",
+        });
+        if (!best || np.properties.dist < best.dist) {
+          best = {
+            idx,
+            dist: np.properties.dist,
+            locationKm: np.properties.location,
+            lng: np.geometry.coordinates[0],
+            lat: np.geometry.coordinates[1],
+          };
+        }
+      } catch (_) {}
+    });
+    if (!best) return null;
+
+    let bearing = 0;
+    try {
+      const feature = lineFeatures[best.idx];
+      const featLen = turf.length(feature, { units: "kilometers" });
+      const step = 0.02; // ~20 m de cada lado para a tangente
+
+      let kmA = best.locationKm - step;
+      let kmB = best.locationKm + step;
+      if (kmA < 0) {
+        kmA = 0;
+        kmB = Math.min(featLen, 2 * step);
+      }
+      if (kmB > featLen) {
+        kmB = featLen;
+        kmA = Math.max(0, featLen - 2 * step);
+      }
+
+      const pA = turf.along(feature, kmA, { units: "kilometers" });
+      const pB = turf.along(feature, kmB, { units: "kilometers" });
+      // Tangente no sentido de km CRESCENTE.
+      const tangentInc = turf.bearing(pA, pB);
+
+      let forwardIsLisboa = featureForwardIsLisboa[best.idx];
+      if (forwardIsLisboa == null) {
+        // Fallback grosseiro: assume norte = lisboa pela latitude da tangente.
+        forwardIsLisboa =
+          pB.geometry.coordinates[1] >= pA.geometry.coordinates[1];
+      }
+
+      const goingLisboa = direction !== "margem"; // default: lisboa
+      bearing = goingLisboa === forwardIsLisboa ? tangentInc : tangentInc + 180;
+      bearing = (bearing + 360) % 360;
+    } catch (_) {
+      bearing = 0;
+    }
+
+    return { lng: best.lng, lat: best.lat, bearing };
   }
 
   /**
@@ -466,6 +573,7 @@
     parseTimeHHMMSS,
     initLineGeometry,
     computeTrainPosition,
+    snapToLine,
     getStationPositions: () => stationPositions,
     getLineFeatures: () => lineFeatures,
     isInitialized: () => initialized,

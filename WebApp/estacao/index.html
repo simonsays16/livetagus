@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="pt-PT" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <link
+      rel="shortcut icon"
+      href="/imagens/favicon-96x96.png"
+      type="image/x-icon"
+    />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#09090b" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta
+      name="description"
+      content="Escolhe uma estação da Fertagus para veres as próximas partidas em tempo real e as ligações intermodais — autocarros, metro e CP."
+    />
+    <meta name="robots" content="index, follow" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://livetagus.pt/estacao/" />
+    <meta property="og:title" content="Estações Fertagus | LiveTagus" />
+    <meta
+      property="og:description"
+      content="Próximas partidas em tempo real e ligações intermodais para cada estação da Fertagus."
+    />
+    <meta
+      property="og:image"
+      content="https://livetagus.pt/imagens/opengraph-livetagus.png"
+    />
+
+    <title>Estações | LiveTagus</title>
+
+    <link rel="stylesheet" href="/output.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      body {
+        font-family:
+          "Inter",
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+        font-feature-settings: "ss01", "cv11";
+      }
+
+      html.dark .cm-light {
+        display: none !important;
+      }
+      html:not(.dark) .cm-dark {
+        display: none !important;
+      }
+
+      /* List row: typographic, Zara/Massimo Dutti vibe */
+      .stn-row {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.5rem 0;
+        border-bottom: 1px solid rgb(244, 244, 245);
+        transition: padding 0.3s cubic-bezier(0.22, 0.61, 0.36, 1);
+        cursor: pointer;
+        text-decoration: none;
+      }
+      html.dark .stn-row {
+        border-bottom-color: rgb(24, 24, 27);
+      }
+      .stn-row:hover {
+        padding-left: 0.75rem;
+      }
+      .stn-row::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        bottom: -1px;
+        width: 0;
+        height: 1px;
+        background: currentColor;
+        transition: width 0.45s cubic-bezier(0.22, 0.61, 0.36, 1);
+      }
+      .stn-row:hover::after {
+        width: 100%;
+      }
+
+      .stn-row .stn-name {
+        font-size: 1.5rem;
+        font-weight: 300;
+        letter-spacing: -0.025em;
+        line-height: 1;
+        color: rgb(24, 24, 27);
+        transition: color 0.3s ease;
+      }
+      html.dark .stn-row .stn-name {
+        color: rgb(244, 244, 245);
+      }
+      .stn-row:hover .stn-name {
+        font-weight: 500;
+      }
+
+      @media (min-width: 768px) {
+        .stn-row .stn-name {
+          font-size: 2rem;
+        }
+      }
+
+      .stn-arrow {
+        opacity: 0;
+        transform: translateX(-8px);
+        transition: all 0.35s cubic-bezier(0.22, 0.61, 0.36, 1);
+      }
+      .stn-row:hover .stn-arrow {
+        opacity: 1;
+        transform: translateX(0);
+      }
+
+      .zone-tag {
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        color: rgb(161, 161, 170);
+      }
+
+      .search-input {
+        background: transparent;
+        border: none;
+        border-bottom: 1px solid rgb(228, 228, 231);
+        outline: none;
+        font-size: 1rem;
+        font-weight: 300;
+        letter-spacing: -0.01em;
+        padding: 0.875rem 0 0.875rem 1.875rem;
+        width: 100%;
+        transition: border-color 0.3s ease;
+        color: inherit;
+      }
+      html.dark .search-input {
+        border-bottom-color: rgb(39, 39, 42);
+      }
+      .search-input:focus {
+        border-bottom-color: rgb(24, 24, 27);
+      }
+      html.dark .search-input:focus {
+        border-bottom-color: rgb(244, 244, 245);
+      }
+      .search-input::placeholder {
+        color: rgb(161, 161, 170);
+      }
+
+      @keyframes stn-fade-in {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .stn-row {
+        animation: stn-fade-in 0.4s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+      }
+
+      body.is-ios .pt-safe-ios {
+        padding-top: env(safe-area-inset-top);
+      }
+    </style>
+  </head>
+  <body
+    class="bg-white dark:bg-[#09090b] text-zinc-900 dark:text-white min-h-screen flex flex-col antialiased"
+  >
+    <div class="pt-safe-ios" id="global-nav"></div>
+
+    <main class="flex-grow w-full max-w-3xl mx-auto pt-28 pb-20 px-6 md:px-10">
+      <!-- HEADER -->
+      <header class="mb-12 md:mb-16">
+        <p
+          class="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400 dark:text-zinc-500 mb-3"
+        >
+          Rede Fertagus
+        </p>
+        <h1
+          class="text-5xl md:text-7xl font-light tracking-tighter leading-[0.92] mb-5"
+        >
+          <span class="font-bold">ESTAÇÕES</span>
+        </h1>
+        <div class="w-12 h-[2px] bg-zinc-900 dark:bg-white"></div>
+        <p
+          class="mt-6 text-[13px] md:text-sm leading-relaxed text-zinc-500 dark:text-zinc-400 max-w-lg font-light"
+        >
+          Escolhe uma estação para veres as próximas partidas em tempo real e as
+          ligações intermodais — autocarros, metro e CP.
+        </p>
+      </header>
+
+      <!-- SEARCH -->
+      <div class="relative mb-12">
+        <i
+          data-lucide="search"
+          class="w-4 h-4 absolute left-0 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
+        ></i>
+        <input
+          id="stn-search"
+          type="text"
+          inputmode="search"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="Procurar estação"
+          class="search-input"
+          aria-label="Procurar estação"
+        />
+      </div>
+
+      <!-- LIST -->
+      <div id="stn-list"></div>
+
+      <!-- FOOTER NOTE -->
+      <p
+        class="mt-16 text-[10px] uppercase tracking-[0.3em] text-zinc-400 dark:text-zinc-500 text-center font-bold"
+      >
+        14 estações ·
+        <span class="text-zinc-900 dark:text-white">Setúbal</span>
+        ↔
+        <span class="text-zinc-900 dark:text-white">Roma-Areeiro</span>
+      </p>
+    </main>
+
+    <div id="global-footer"></div>
+
+    <script src="/lucide-icons.js" defer></script>
+    <script src="/menu.js" defer></script>
+    <script src="/nav-tools.js" defer></script>
+    <script src="/estacao/index.js" defer></script>
+  </body>
+</html>
