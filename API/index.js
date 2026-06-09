@@ -2215,7 +2215,7 @@ app.get("/avisos", (req, res) => {
 app.get("/", (req, res) =>
   res.json({
     status: "online",
-    version: "5.0.0",
+    version: "5.0.1",
     aviso:
       "Pedimos que não uses o nosso endpoint diretamente! Verifica toda as informações e código no github.",
     operational: getOperationalInfo(),
@@ -2235,7 +2235,7 @@ app.get("/", (req, res) =>
 );
 
 app.listen(PORT, () => {
-  console.log(`LiveTagus API v5.0.0 ativa na porta ${PORT}`);
+  console.log(`LiveTagus API v5.0.1 ativa na porta ${PORT}`);
   console.log(`Endpoint /fertagus protegido com API_KEY.`);
 
   // NÃO usar await aqui: checkOfflineTrains() faz station-poll com timeouts

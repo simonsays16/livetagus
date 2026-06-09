@@ -20,8 +20,8 @@ const fetch = require("node-fetch");
 
 const TML_URL = process.env.API_LOCATION;
 const AGENCY_ID = "15"; // Fertagus
-const POLL_INTERVAL_MS = 5000; // refresh de 5s pedido
-const FETCH_TIMEOUT_MS = 4500; // < intervalo, para não acumular pedidos pendurados
+const POLL_INTERVAL_MS = 3000; // refresh de 5s pedido
+const FETCH_TIMEOUT_MS = 2500; // < intervalo, para não acumular pedidos pendurados
 
 // Mantém o estilo do FETCH_HEADERS do index.js: força resposta fresca.
 const TML_HEADERS = {

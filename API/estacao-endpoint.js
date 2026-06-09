@@ -55,18 +55,48 @@
 const STATIONS = [
   { key: "setubal", nome: "Setúbal", apiName: "SETÚBAL", apiId: 9468122 },
   { key: "palmela", nome: "Palmela", apiName: "PALMELA", apiId: 9468098 },
-  { key: "venda_do_alcaide", nome: "Venda do Alcaide", apiName: "VENDA DO ALCAIDE", apiId: 9468049 },
-  { key: "pinhal_novo", nome: "Pinhal Novo", apiName: "PINHAL NOVO", apiId: 9468007 },
+  {
+    key: "venda_do_alcaide",
+    nome: "Venda do Alcaide",
+    apiName: "VENDA DO ALCAIDE",
+    apiId: 9468049,
+  },
+  {
+    key: "pinhal_novo",
+    nome: "Pinhal Novo",
+    apiName: "PINHAL NOVO",
+    apiId: 9468007,
+  },
   { key: "penalva", nome: "Penalva", apiName: "PENALVA", apiId: 9417095 },
   { key: "coina", nome: "Coina", apiName: "COINA", apiId: 9417236 },
-  { key: "fogueteiro", nome: "Fogueteiro", apiName: "FOGUETEIRO", apiId: 9417186 },
-  { key: "foros_de_amora", nome: "Foros de Amora", apiName: "FOROS DE AMORA", apiId: 9417152 },
+  {
+    key: "fogueteiro",
+    nome: "Fogueteiro",
+    apiName: "FOGUETEIRO",
+    apiId: 9417186,
+  },
+  {
+    key: "foros_de_amora",
+    nome: "Foros de Amora",
+    apiName: "FOROS DE AMORA",
+    apiId: 9417152,
+  },
   { key: "corroios", nome: "Corroios", apiName: "CORROIOS", apiId: 9417137 },
   { key: "pragal", nome: "Pragal", apiName: "PRAGAL", apiId: 9417087 },
   { key: "campolide", nome: "Campolide", apiName: "CAMPOLIDE", apiId: 9467033 },
   { key: "sete_rios", nome: "Sete Rios", apiName: "SETE RIOS", apiId: 9466076 },
-  { key: "entrecampos", nome: "Entrecampos", apiName: "ENTRECAMPOS", apiId: 9466050 },
-  { key: "roma_areeiro", nome: "Roma-Areeiro", apiName: "ROMA-AREEIRO", apiId: 9466035 },
+  {
+    key: "entrecampos",
+    nome: "Entrecampos",
+    apiName: "ENTRECAMPOS",
+    apiId: 9466050,
+  },
+  {
+    key: "roma_areeiro",
+    nome: "Roma-Areeiro",
+    apiName: "ROMA-AREEIRO",
+    apiId: 9466035,
+  },
 ];
 
 // Índice da estação na ordem física da linha (sentido Lisboa). Usado para
@@ -83,14 +113,22 @@ const STATION_BY_API_ID = STATIONS.reduce((acc, s) => {
 }, {});
 
 // Chaves reservadas do OUTPUT_CACHE que NÃO são comboios.
-const RESERVED_KEYS = new Set(["futureTrains", "extratrains", "abnormalRoutes"]);
+const RESERVED_KEYS = new Set([
+  "futureTrains",
+  "extratrains",
+  "abnormalRoutes",
+]);
 
 // Limites e tolerâncias
-const DEFAULT_LIMIT = 30; // partidas por sentido (limite generoso de segurança)
+const DEFAULT_LIMIT = 30; // partidas por sentido
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 
-const stripA = (s) => String(s == null ? "" : s).toUpperCase().replace(/-A$/, "").trim();
+const stripA = (s) =>
+  String(s == null ? "" : s)
+    .toUpperCase()
+    .replace(/-A$/, "")
+    .trim();
 
 /** Resolve a estação a partir do EstacaoID numérico (string ou número). */
 function resolveStation(id) {
@@ -165,7 +203,8 @@ function normalizeNode(node) {
 
 /** Encontra o nó de uma estação dentro do array de nós de um comboio. */
 function findStationNode(train, apiId) {
-  const nodes = train && train.NodesPassagemComboio ? train.NodesPassagemComboio : [];
+  const nodes =
+    train && train.NodesPassagemComboio ? train.NodesPassagemComboio : [];
   return nodes.find((n) => n && String(n.EstacaoID) === String(apiId)) || null;
 }
 
@@ -208,7 +247,9 @@ function resolveDirection(train) {
 function buildLiveTrain(train, node, direction, parseSmartTime, now) {
   const n = normalizeNode(node);
   const out = {
-    "id-comboio": String(train["id-comboio"] != null ? train["id-comboio"] : train.id),
+    "id-comboio": String(
+      train["id-comboio"] != null ? train["id-comboio"] : train.id,
+    ),
     DataHoraDestino: train.DataHoraDestino || null,
     DataHoraOrigem: train.DataHoraOrigem || null,
     Destino: train.Destino || null,
@@ -284,7 +325,9 @@ function buildStationPayload(station, ctx) {
   }
 
   for (const train of sources) {
-    const id = String(train["id-comboio"] != null ? train["id-comboio"] : train.id);
+    const id = String(
+      train["id-comboio"] != null ? train["id-comboio"] : train.id,
+    );
     if (!id || liveIds.has(id)) continue;
 
     // SUPRIMIDO nunca entra nas listas ao vivo (vai só ao futureTrains).
@@ -297,7 +340,13 @@ function buildStationPayload(station, ctx) {
     if (node.ComboioPassou) continue;
 
     const direction = resolveDirection(train);
-    const liveTrain = buildLiveTrain(train, node, direction, parseSmartTime, now);
+    const liveTrain = buildLiveTrain(
+      train,
+      node,
+      direction,
+      parseSmartTime,
+      now,
+    );
 
     if (direction === "margem") margem.push(liveTrain);
     else lisboa.push(liveTrain);
@@ -350,31 +399,35 @@ function buildStationPayload(station, ctx) {
     if (RESERVED_KEYS.has(id)) continue;
     if (estado === "Realizado") continue; // já terminou — não interessa
 
-    const serve = servesStation(id);
+    if (!servesStation(id)) continue; // não pertence ao trajeto normal daqui
 
-    // Trajeto anormal que CORTA esta estação: o comboio existe mas hoje não
-    // para aqui. Mostra-se em abnormalRoutes (não em futureTrains/listas).
-    if (serve && skipsThisStation(id)) {
+    // Trajeto anormal: expõe SEMPRE em abnormalRoutes — em TODAS as estações
+    // que o comboio normalmente serve, quer ele salte ESTA estação quer salte
+    // apenas OUTRAS. Assim o cliente pode sinalizar o aviso em qualquer
+    // estação e não só nas que ficam cortadas.
+    if (skippedByTrain.has(String(id))) {
       abnormalRoutes[id] = {
         estado,
-        skipped: (ABNORMAL_ROUTES_CACHE[id] &&
-          ABNORMAL_ROUTES_CACHE[id].skipped) || [],
+        skipped:
+          (ABNORMAL_ROUTES_CACHE[id] && ABNORMAL_ROUTES_CACHE[id].skipped) ||
+          [],
       };
-      continue;
+      // Se CORTA esta estação não há partida aqui → fora do futureTrains.
+      if (skipsThisStation(id)) continue;
     }
 
-    if (!serve) continue; // não serve esta estação → fora do futureTrains
     futureTrains[id] = estado;
   }
 
-  // Também expõe trajetos anormais de comboios já LIVE (em OUTPUT_CACHE) que
-  // estejam a saltar esta estação, para o cliente poder sinalizar.
+  // Também expõe trajetos anormais de comboios já LIVE (em OUTPUT_CACHE) ainda
+  // não cobertos acima — em TODAS as estações do trajeto normal (servidas ou
+  // cortadas), não apenas nas cortadas.
   for (const [id, info] of Object.entries(ABNORMAL_ROUTES_CACHE)) {
     if (abnormalRoutes[id]) continue;
-    if (!skipsThisStation(id)) continue;
     if (!servesStation(id)) continue;
     abnormalRoutes[id] = {
-      estado: FUTURE_TRAINS_CACHE[id] || (OUTPUT_CACHE[id] ? "Em circulação" : null),
+      estado:
+        FUTURE_TRAINS_CACHE[id] || (OUTPUT_CACHE[id] ? "Em circulação" : null),
       skipped: (info && info.skipped) || [],
     };
   }
