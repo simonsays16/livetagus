@@ -284,7 +284,8 @@
       occupancy = apiTrain.Ocupacao != null ? apiTrain.Ocupacao : null;
     }
 
-    const direction = inferDirection({ nodes, Origem: apiTrain.Origem });
+    const direction =
+      apiTrain.direction || inferDirection({ nodes, Origem: apiTrain.Origem });
 
     return {
       id,

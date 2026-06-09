@@ -505,17 +505,20 @@
       }
     }
 
-    // TRAJETO ANORMAL — nunca esconder. abnormalRoutes lista comboios que
-    // SALTAM esta estação → marcar "Não para aqui" (mantém no horário).
+    // TRAJETO ANORMAL — nunca esconder. abnormalRoutes lista comboios desviados.
+    //   • Se SALTA esta estação        → "Não para aqui" (shortened).
+    //   • Se passa aqui mas salta OUTRAS → "Trajeto anormal" (abnormal).
+    // Aplica-se a comboios live E não-vivos (programados/futuros), para que o
+    // aviso apareça mesmo fora da janela ao vivo, tal como na app.
     for (const [id, info] of Object.entries(model.abnormalRoutes || {})) {
       const dep = base.get(String(id));
-      const skipsHere = Array.isArray(info && info.skipped)
-        ? info.skipped.some((s) => s && s.key === station.key)
-        : true;
-      if (dep && skipsHere) {
+      if (!dep) continue;
+      const skipped = Array.isArray(info && info.skipped) ? info.skipped : [];
+      dep.abnormal = true;
+      dep.skipped = skipped;
+      const skipsHere = skipped.some((s) => s && s.key === station.key);
+      if (skipsHere) {
         dep.shortened = true;
-        dep.abnormal = true;
-        dep.skipped = info.skipped || [];
         dep.dotStatus = "red";
         dep.statusText = "Não para aqui";
       }
@@ -704,6 +707,10 @@ html.dark .ltp-stop.past .ltp-stop-name,html.dark .ltp-stop.past .ltp-stop-time{
 .ltp-stop.cur .ltp-stop-dot{background:#10b981;border-color:#10b981;box-shadow:0 0 0 4px rgba(16,185,129,.18)}
 .ltp-stop.cur .ltp-stop-name{color:rgb(24,24,27);font-weight:700}
 html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
+.ltp-stop.skip{opacity:.85}
+.ltp-stop.skip .ltp-stop-time,.ltp-stop.skip .ltp-stop-name{color:rgb(161,161,170);text-decoration:line-through;text-decoration-color:rgba(245,158,11,.6)}
+.ltp-stop.skip .ltp-stop-dot{background:transparent;border-color:rgba(245,158,11,.6)}
+.ltp-stop-skip{font-size:8px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#f59e0b;white-space:nowrap}
 @media(prefers-reduced-motion:reduce){.ltp-live-dot.pulse,.ltp-skel{animation:none!important}}
 `;
     const tag = document.createElement("style");
@@ -1012,28 +1019,87 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
     const noNet = !navigator.onLine;
     const { bars, n, occ } = carBars(dep, noNet);
     const stationApiId = station ? String(station.apiId) : null;
-    const stops = (nodes || [])
-      .map((nd) => {
-        const time = nodeTimeStr(nd) || "--:--";
-        const past = !!nd.ComboioPassou;
-        const cur =
-          stationApiId && String(nd.EstacaoID) === stationApiId && !past;
-        const dly = nodeDelayMin(nd);
-        let dh = "";
-        if (!dep.suppressed && dly != null && dly >= 1)
-          dh = `<span class="ltp-stop-delay" style="color:#d97706">+${dly}</span>`;
-        else if (!dep.suppressed && dly != null && dly <= -1)
-          dh = `<span class="ltp-stop-delay" style="color:#059669">${dly}</span>`;
-        const st = resolveStationByApiName(nd.NomeEstacao);
-        const nm = st ? st.name : (nd.NomeEstacao || "").replace(/-A$/, "");
-        return `<div class="ltp-stop ${past ? "past" : ""} ${cur ? "cur" : ""}">
+
+    // [TRAJETO ANORMAL] estações saltadas → intercalar na posição física da
+    // linha, riscadas (tal como na app). Funciona quer venham nos nodes (do
+    // horário) quer os nodes reais já as omitam (IP).
+    const dirOrder =
+      dep.direction === "margem"
+        ? ORDER_KEYS.slice().reverse()
+        : ORDER_KEYS.slice();
+    const orderIdx = (key) => dirOrder.indexOf(key);
+    const skips = (Array.isArray(dep.skipped) ? dep.skipped : [])
+      .map((sk) => {
+        const st =
+          sk && sk.key
+            ? BY_KEY[sk.key]
+            : resolveStationByApiName(sk && sk.nome);
+        const key = st ? st.key : sk && sk.key;
+        return {
+          key,
+          name: st ? st.name : (sk && (sk.nome || sk.key)) || "",
+          hora: (sk && sk.hora) || "--:--",
+          order: orderIdx(key),
+        };
+      })
+      .filter((s) => s.order >= 0)
+      .sort((a, b) => a.order - b.order);
+    const skipKeys = new Set(skips.map((s) => s.key));
+
+    const renderSkip = (s) =>
+      `<div class="ltp-stop skip">
+          <span class="ltp-stop-time">${esc(s.hora || "--:--")}</span>
+          <span class="ltp-stop-dot"></span>
+          <span class="ltp-stop-name">${esc(s.name)}</span>
+          <span class="ltp-stop-skip">Não passa</span>
+        </div>`;
+
+    let skipPtr = 0;
+    let stops = "";
+    (nodes || []).forEach((nd) => {
+      const st = resolveStationByApiName(nd.NomeEstacao);
+      const servedOrder = st ? orderIdx(st.key) : -1;
+      // Intercalar saltadas (que não vêm nos nodes) ANTES desta servida.
+      while (
+        skipPtr < skips.length &&
+        servedOrder >= 0 &&
+        skips[skipPtr].order < servedOrder
+      ) {
+        stops += renderSkip(skips[skipPtr]);
+        skipPtr++;
+      }
+      // Se o próprio nó é uma estação saltada (veio do horário) → riscar.
+      if (st && skipKeys.has(st.key)) {
+        stops += renderSkip({
+          name: st.name,
+          hora: nodeTimeStr(nd) || "--:--",
+        });
+        if (skipPtr < skips.length && skips[skipPtr].key === st.key) skipPtr++;
+        return;
+      }
+      const time = nodeTimeStr(nd) || "--:--";
+      const past = !!nd.ComboioPassou;
+      const cur =
+        stationApiId && String(nd.EstacaoID) === stationApiId && !past;
+      const dly = nodeDelayMin(nd);
+      let dh = "";
+      if (!dep.suppressed && dly != null && dly >= 1)
+        dh = `<span class="ltp-stop-delay" style="color:#d97706">+${dly}</span>`;
+      else if (!dep.suppressed && dly != null && dly <= -1)
+        dh = `<span class="ltp-stop-delay" style="color:#059669">${dly}</span>`;
+      const nm = st ? st.name : (nd.NomeEstacao || "").replace(/-A$/, "");
+      stops += `<div class="ltp-stop ${past ? "past" : ""} ${cur ? "cur" : ""}">
           <span class="ltp-stop-time">${esc(time)}</span>
           <span class="ltp-stop-dot"></span>
           <span class="ltp-stop-name">${esc(nm)}</span>
           ${dh}
         </div>`;
-      })
-      .join("");
+    });
+    // Saltadas que sobram (cortadas no fim do trajeto).
+    while (skipPtr < skips.length) {
+      stops += renderSkip(skips[skipPtr]);
+      skipPtr++;
+    }
 
     let bCls = "prog",
       bTxt = "Programado";
