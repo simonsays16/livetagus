@@ -244,7 +244,7 @@ function resolveDirection(train) {
  *                               do estacao.js, que procura o nó por EstacaoID);
  *   • AtrasoEstacao           → atraso em segundos, lido do nó (conveniência).
  */
-function buildLiveTrain(train, node, direction, parseSmartTime, now) {
+function buildLiveTrain(train, node, direction, parseSmartTime, now, gtfsCtx) {
   const n = normalizeNode(node);
   const out = {
     "id-comboio": String(
@@ -264,7 +264,29 @@ function buildLiveTrain(train, node, direction, parseSmartTime, now) {
     AtrasoEstacao: stationDelaySeconds(parseSmartTime, n, now),
     NodePassagem: n,
     NodesPassagemComboio: [n],
+    ...(node.stop_id ? { stop_id: node.stop_id } : {}),
+    ...(node.arrival ? { arrival: node.arrival } : {}),
+    ...(node.departure ? { departure: node.departure } : {}),
   };
+  // [GTFS-RT] Propaga o bloco realtime do comboio decorado.
+  if (train.gtfs_realtime) out.gtfs_realtime = train.gtfs_realtime;
+  // [GTFS-RT] Atraso EM ROTA dinâmico (cinemática UQE 3500 + proporcional)
+  // substitui o atraso estático "da última paragem" quando há GPS fresco.
+  // null → mantém o valor legado (fallback transparente).
+  if (gtfsCtx && gtfsCtx.GtfsOutput && !n.ComboioPassou) {
+    const dyn = gtfsCtx.GtfsOutput.dynamicStationDelayS(
+      out["id-comboio"],
+      gtfsCtx.stationKey,
+      now instanceof Date ? now.getTime() : Date.now(),
+    );
+    if (dyn != null) {
+      out.AtrasoEstacao = dyn;
+      out.AtrasoDinamico = true; // sinaliza fonte cinemática à app
+      if (n.arrival) n.arrival.delay = dyn;
+      if (n.departure) n.departure.delay = dyn;
+    }
+  }
+
   // Propaga sinalização de trajeto anormal se o comboio a tiver.
   if (train._isAbnormalRoute) {
     out._isAbnormalRoute = true;
@@ -332,20 +354,30 @@ function buildStationPayload(station, ctx) {
 
     // SUPRIMIDO nunca entra nas listas ao vivo (vai só ao futureTrains).
     if (/SUPRIMIDO/i.test(train.SituacaoComboio || "")) continue;
+    // [GTFS-RT] Decora o comboio-fonte (não-destrutivo) para que o nó desta
+    // estação já traga stop_id + arrival/departure.
+    const srcTrain =
+      ctx && ctx.GtfsOutput
+        ? ctx.GtfsOutput.decorateTrain(train, { now })
+        : train;
 
-    const node = findStationNode(train, apiId);
-    if (!node) continue; // não serve esta estação (ou trajeto truncado)
+    const node = findStationNode(srcTrain, apiId);
+    if (!node) continue;
 
     // SÓ FUTUROS: se já passou nesta estação, não é uma partida futura.
     if (node.ComboioPassou) continue;
 
-    const direction = resolveDirection(train);
+    const direction = resolveDirection(srcTrain);
     const liveTrain = buildLiveTrain(
-      train,
+      srcTrain,
       node,
       direction,
       parseSmartTime,
       now,
+      {
+        GtfsOutput: ctx && ctx.GtfsOutput,
+        stationKey,
+      },
     );
 
     if (direction === "margem") margem.push(liveTrain);

@@ -68,7 +68,7 @@ const CACHE_TTL_MS = 10 * 60 * 1000;
 const WINDOW_SIZE_MS = 2 * 60 * 60 * 1000;
 const LOOKBACK_MS = 30 * 60 * 1000;
 const MAX_PAST_WINDOW_MS = 60 * 60 * 1000;
-const INTER_REQUEST_DELAY_MS = 1200;
+const INTER_REQUEST_DELAY_MS = 1200; // 1.2 segundos
 
 // ─── CACHE EM MEMÓRIA ────────────────────────────────────────────────────────
 
@@ -278,6 +278,150 @@ const cleanupCache = (now = new Date()) => {
   }
 };
 
+// ═══ [FUTURE POLL] VARRIMENTO DE DIAS FUTUROS (D+1..D+7) ═════════════════════
+// A IP aceita janelas de tempo ARBITRÁRIAS no endpoint de partidas/chegadas —
+// incluindo datas futuras. Isto permite descobrir supressões e extras com dias
+// de antecedência fazendo o mesmo varrimento de Corroios, mas com as datas
+// alvo injetadas no URL. Tudo abaixo é ADITIVO: o motor live de hoje
+// (pollAllWindows/buildPollWindows) fica intocado.
+
+const FUTURE_INTER_REQUEST_DELAY_MS = 1000; // ~1s entre janelas (spec)
+const FUTURE_CACHE_TTL_MS = 60 * 60 * 1000; // janelas futuras mudam pouco: 1h
+
+/** Valida "YYYY-MM-DD". */
+const isValidDateStr = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || "");
+
+/**
+ * Gera as janelas de 2h do DIA OPERACIONAL Fertagus de uma data futura:
+ * das 05:00 do dia pedido até às 02:30 do dia seguinte (última janela
+ * clampada às 02:30). Ex: 05-07, 07-09, ..., 23-01, 01-02:30.
+ */
+const buildDayWindows = (dateStr) => {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const opStart = new Date(y, m - 1, d, 5, 0, 0, 0);
+  const opEnd = new Date(y, m - 1, d, 2, 30, 0, 0);
+  opEnd.setDate(opEnd.getDate() + 1); // 02:30 do dia SEGUINTE
+
+  const windows = [];
+  let cursor = new Date(opStart);
+  while (cursor < opEnd) {
+    const winStart = new Date(cursor);
+    let winEnd = new Date(cursor.getTime() + WINDOW_SIZE_MS);
+    if (winEnd > opEnd) winEnd = new Date(opEnd); // clamp à fronteira 02:30
+
+    windows.push({
+      startStr: formatDateTimeForApi(winStart),
+      endStr: formatDateTimeForApi(winEnd),
+      startDate: winStart,
+      endDate: winEnd,
+    });
+    cursor = new Date(cursor.getTime() + WINDOW_SIZE_MS);
+  }
+  return windows;
+};
+
+/**
+ * Fetch de uma janela FUTURA, com contrato estrito: devolve { ok, trains }.
+ * Distinto do fetchWindow live (que degrada silenciosamente para []) porque
+ * o cruzamento futuro PRECISA de saber se a cobertura foi total — a ausência
+ * de um comboio só significa "suprimido" se TODAS as janelas responderam.
+ */
+const fetchFutureWindow = async (startDateTimeStr, endDateTimeStr) => {
+  const cacheKey = `${startDateTimeStr}|${endDateTimeStr}`;
+  const cached = WINDOW_CACHE[cacheKey];
+  if (cached && Date.now() - cached.ts < FUTURE_CACHE_TTL_MS) {
+    return { ok: true, trains: cached.trains };
+  }
+
+  try {
+    const r = await fetch(buildUrl(startDateTimeStr, endDateTimeStr), {
+      headers: FETCH_HEADERS,
+      timeout: 10000,
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const j = await r.json();
+    const trains = parseStationResponse(j);
+    WINDOW_CACHE[cacheKey] = { ts: Date.now(), trains };
+    return { ok: true, trains };
+  } catch (e) {
+    console.warn(
+      `[STATION POLLER][FUTURO] Janela ${startDateTimeStr} → ${endDateTimeStr} falhou: ${e.message}`,
+    );
+    // Cache stale ainda conta como cobertura (melhor que rebentar o dia).
+    if (cached) return { ok: true, trains: cached.trains };
+    return { ok: false, trains: [] };
+  }
+};
+
+/**
+ * Varre o dia operacional COMPLETO de uma data futura na estação de Corroios
+ * (todos os comboios Fertagus passam lá) e devolve Map<id, stationEntry> com
+ * o campo `observacoes` (deteção de "SUPRIMIDO") e origem/destino reais.
+ *
+ * CONTRATO DE COBERTURA TOTAL:
+ *   Se QUALQUER janela falhar sem cache, faz THROW. Razão: o cruzamento no
+ *   serviceDayManager marca como "Suprimido" os comboios AUSENTES da resposta
+ *   da IP — com cobertura parcial isso geraria supressões falsas em massa.
+ *   O caller (serviceDayManager) apanha o throw e cai no fallback estático.
+ *
+ * @param {string} dateStr "YYYY-MM-DD"
+ * @returns {Promise<Map<string, object>>}
+ */
+const pollFutureDay = async (dateStr) => {
+  if (!isValidDateStr(dateStr)) {
+    throw new Error(`pollFutureDay: data inválida "${dateStr}"`);
+  }
+
+  const windows = buildDayWindows(dateStr);
+  const allTrains = new Map();
+
+  for (let i = 0; i < windows.length; i++) {
+    const w = windows[i];
+    const { ok, trains } = await fetchFutureWindow(w.startStr, w.endStr);
+
+    if (!ok) {
+      throw new Error(
+        `Cobertura incompleta de ${dateStr}: janela ${w.startStr} → ${w.endStr} sem resposta.`,
+      );
+    }
+
+    // Merge idêntico ao pollAllWindows (SUPRIMIDO em qualquer row prevalece).
+    for (const t of trains) {
+      const existing = allTrains.get(t.id);
+      if (!existing) {
+        allTrains.set(t.id, t);
+      } else {
+        if (
+          /SUPRIMIDO/i.test(t.observacoes) &&
+          !/SUPRIMIDO/i.test(existing.observacoes)
+        ) {
+          existing.observacoes = "SUPRIMIDO";
+        }
+        if (t.comboioPassou) existing.comboioPassou = true;
+      }
+    }
+
+    // Delay suave entre janelas — varrer 1 dia inteiro são ~11 pedidos.
+    if (i < windows.length - 1) {
+      await new Promise((r) => setTimeout(r, FUTURE_INTER_REQUEST_DELAY_MS));
+    }
+  }
+
+  console.log(
+    `[STATION POLLER][FUTURO] ${dateStr}: ${windows.length} janelas OK, ` +
+      `${allTrains.size} comboios FERTAGUS descobertos.`,
+  );
+  return allTrains;
+};
+
+/** Limpa da cache as janelas futuras de uma data específica (pós warm-up). */
+const cleanupFutureCache = (dateStr) => {
+  for (const key of Object.keys(WINDOW_CACHE)) {
+    if (key.startsWith(dateStr)) delete WINDOW_CACHE[key];
+  }
+};
+// ═══ [/FUTURE POLL] ══════════════════════════════════════════════════════════
+
 // ─── EXPORTS ─────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -286,6 +430,10 @@ module.exports = {
   fetchWindow,
   parseStationResponse,
   cleanupCache,
+  // [FUTURE POLL]
+  pollFutureDay,
+  buildDayWindows,
+  cleanupFutureCache,
   CORROIOS_NODE_ID,
   _WINDOW_CACHE: WINDOW_CACHE, // testes
 };

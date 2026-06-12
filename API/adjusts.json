@@ -33,9 +33,8 @@
         "ajuste_partida": 0,
         "recuperacao_chegada": -20,
         "0": {
-            "add_normal": 120,
-            "add_ponta_manha": 140,
-            "add_ponta_tarde": 180
+            "add_4_carr": 120,
+            "add_8_carr": 140
         }
       },
       "CORROIOS": {

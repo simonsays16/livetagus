@@ -37,6 +37,7 @@ let LOCATION_CACHE = {};
 let IS_DOWN = true; // arranca "down" até existir a 1ª resposta válida
 let pollTimer = null;
 let isFetching = false; // evita sobreposição se a TML demorar a responder
+let onPayloadCb = null;
 
 // Remove o prefixo de agência: "[15]14297" -> "14297"
 const stripAgencyPrefix = (vehicleId) =>
@@ -80,6 +81,14 @@ const pollPositions = async () => {
     // viaturas que desapareceram do feed deixam de constar).
     LOCATION_CACHE = next;
     IS_DOWN = false;
+
+    if (onPayloadCb) {
+      try {
+        onPayloadCb(json.data, Date.now());
+      } catch (e) {
+        console.error("[MAPA/TML] Callback GTFS falhou:", e.message);
+      }
+    }
   } catch (e) {
     IS_DOWN = true;
     console.error("[MAPA/TML] Erro ao obter posições:", e.message);
@@ -89,8 +98,9 @@ const pollPositions = async () => {
 };
 
 // Arranca o poller de fundo (chamado uma vez no boot do index.js).
-const init = () => {
-  if (pollTimer) return; // idempotente
+const init = (onPayload) => {
+  if (typeof onPayload === "function") onPayloadCb = onPayload;
+  if (pollTimer) return;
   pollPositions(); // primeira recolha imediata
   pollTimer = setInterval(pollPositions, POLL_INTERVAL_MS);
   console.log(

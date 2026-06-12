@@ -15,6 +15,11 @@ const StationPoller = require("./station-poller.js");
 const ExtrasHelpers = require("./extras-helpers.js");
 const EstacaoEndpoint = require("./estacao-endpoint.js");
 const GetLocation = require("./get-location.js");
+const Geo = require("./gtfs-geo.js");
+const DelaysRT = require("./delays-rt.js");
+const GtfsOutput = require("./gtfs-output.js");
+const ServiceDayManager = require("./serviceDayManager.js");
+Geo.init("./fertagus_line_detailed.json", "./ft_stations_detailed.json");
 
 const app = express();
 app.use(cors());
@@ -29,14 +34,88 @@ const protectRoute = (req, res, next) => {
   const userKey = req.headers["x-api-key"];
 
   if (!userKey || userKey !== API_KEY) {
-    return res.status(403).json({
-      error: "Acesso negado",
-      message:
-        "API de uso exclusivo da livetagus.pt. o acesso não autorizado é restrito e monitorizado.",
-      documentation_url:
-        "https://github.com/simonsays16/livetagus?tab=readme-ov-file#important-note-about-the-api",
-    });
+    const htmlResponse = `
+<!doctype html>
+<html lang="pt-PT">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>403 | Acesso Restrito - LiveTagus</title>
+    <link rel="shortcut icon" href="https://livetagus.pt/imagens/favicon-96x96.png" type="image/x-icon" />
+    <meta name="robots" content="noindex, nofollow" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <script>
+      tailwind.config = {
+        darkMode: 'media', // Adapta-se automaticamente ao tema do sistema do utilizador
+        theme: {
+          extend: {
+            fontFamily: { sans: ['Inter', 'sans-serif'] }
+          }
+        }
+      }
+    </script>
+    <style>
+      @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+      }
+      .animate-float {
+        animation: float 6s ease-in-out infinite;
+      }
+    </style>
+  </head>
+
+  <body class="bg-white text-zinc-900 dark:bg-[#09090b] dark:text-white overflow-hidden transition-colors duration-500 flex flex-col min-h-screen selection:bg-red-500/30">
+    <main class="flex-grow flex flex-col items-center justify-center px-6 relative">
+      
+      <div class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vh] bg-red-500/5 dark:bg-red-900/10 rounded-full blur-[120px] pointer-events-none z-0"></div>
+
+      <div class="relative z-10 text-center max-w-2xl w-full">
+        <h1 class="text-[120px] md:text-[180px] font-thin leading-none tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-zinc-300 to-transparent dark:from-zinc-700 dark:to-transparent select-none animate-float">
+          403
+        </h1>
+
+        <h2 class="text-2xl md:text-4xl font-light tracking-tight mb-4 mt-[-20px]">
+          Acesso Restrito.
+        </h2>
+
+        <p class="text-zinc-500 dark:text-zinc-400 font-light mb-10 text-lg leading-relaxed">
+          A API é de uso exclusivo da <span class="font-medium text-zinc-900 dark:text-zinc-200">livetagus.pt</span>.
+          <br />
+          O acesso não autorizado é bloqueado e monitorizado.
+        </p>
+
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <a href="https://github.com/simonsays16/livetagus?tab=readme-ov-file#important-note-about-the-api"
+             target="_blank" 
+             rel="noopener noreferrer"
+             class="inline-flex items-center w-72 sm:w-auto justify-center px-8 py-4 border border-zinc-200 dark:border-white/20 text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-white/5 font-medium text-sm uppercase tracking-widest transition-all rounded-sm group">
+            Ver Código
+            <span class="ml-2 group-hover:translate-x-1 transition-transform">
+              →
+            </span>
+          </a>
+          
+          <a href="https://livetagus.pt/"
+             class="inline-flex items-center w-72 sm:w-auto justify-center px-8 py-4 border border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white font-medium text-sm uppercase tracking-widest transition-all rounded-sm group">
+            <span class="mr-2 group-hover:-translate-x-1 transition-transform">
+              ←
+            </span>
+            Voltar à LiveTagus
+          </a>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>
+    `;
+
+    return res.status(403).send(htmlResponse);
   }
+
   next();
 };
 
@@ -334,6 +413,7 @@ GhostManager.init(
   (id, value) => {
     FUTURE_TRAINS_CACHE[id] = value;
   },
+  Geo,
 );
 
 // --- TURNAROUND PREDICTION ---
@@ -1014,6 +1094,134 @@ const enterActiveSuppression = (richInfo, mem, isExtra) => {
   return null;
 };
 
+// ─── [GPS AUTONOMY] MODO AUTÓNOMO DA IP ─────────────────────────────────────
+// Qualquer comboio com GPS fresco na TML é FORÇADO a Live:true e as
+// HoraPrevista dos nós futuros são recalculadas pelo motor cinemático
+// (posição real na linha), ignorando os atrasos da IP.
+const GPS_AUTONOMOUS_MODE = true; // ← desligar quando a IP normalizar
+
+const applyGpsAutonomy = (trainOutput, trainId, richInfo, nowObj) => {
+  if (!GPS_AUTONOMOUS_MODE) return;
+  try {
+    if (!Geo.isGpsFresh(String(trainId))) return; // sem GPS → fluxo IP normal
+
+    // ── [GPS AUTONOMY] PASSAGENS POR POSIÇÃO ──────────────────────────────
+    // A IP não está a marcar ComboioPassou; inferimos pela posição snapped:
+    // toda a estação que ficou PARA TRÁS no sentido de marcha está passada.
+    // Cobre também reinícios do servidor a meio da viagem.
+    const veh = Geo.getVehicle(String(trainId));
+    const stationsProj = Geo._stations();
+    if (veh && veh.lastPing && stationsProj) {
+      // Sentido de marcha em termos de km da linha: compara a projeção da
+      // primeira e da última estação do trajeto deste comboio.
+      const routeKeys = (trainOutput.NodesPassagemComboio || [])
+        .map((n) => {
+          const nm = (n.NomeEstacao || "").toUpperCase().replace(/-A$/, "");
+          return STATION_MAP_IP_TO_JSON[nm];
+        })
+        .filter((k) => k && stationsProj[k] && stationsProj[k].proj);
+
+      if (routeKeys.length >= 2) {
+        const kmFirst = stationsProj[routeKeys[0]].proj.km;
+        const kmLast = stationsProj[routeKeys[routeKeys.length - 1]].proj.km;
+        const dirSign = kmLast >= kmFirst ? 1 : -1;
+        const PASSED_MARGIN_KM = 0.1; // 100 m depois da estação = passou
+
+        for (const node of trainOutput.NodesPassagemComboio || []) {
+          if (node.ComboioPassou) continue; // já marcado pela IP — não tocar
+          const nm = (node.NomeEstacao || "").toUpperCase().replace(/-A$/, "");
+          const key = STATION_MAP_IP_TO_JSON[nm];
+          const st = key && stationsProj[key];
+          if (!st || !st.proj) continue;
+          if (st.proj.featureIdx !== veh.lastPing.featureIdx) continue;
+
+          // Estação atrás do comboio (no sentido de marcha) com folga de 100 m.
+          const aheadKm = (st.proj.km - veh.lastPing.km) * dirSign;
+          if (aheadKm < -PASSED_MARGIN_KM) {
+            node.ComboioPassou = true;
+          }
+        }
+      }
+    }
+
+    trainOutput.Live = true;
+    trainOutput.AtrasoDinamico = true;
+
+    const now = nowObj.getTime();
+    let maxDelayMins = 0;
+
+    for (const node of trainOutput.NodesPassagemComboio || []) {
+      if (node.ComboioPassou) continue; // passados ficam como a IP os deixou
+
+      const nomeUpper = (node.NomeEstacao || "")
+        .toUpperCase()
+        .replace(/-A$/, "");
+      const key = STATION_MAP_IP_TO_JSON[nomeUpper];
+      if (!key || richInfo[key] == null) continue;
+
+      const delayS = GtfsOutput.dynamicStationDelayS(String(trainId), key, now);
+      if (delayS == null) continue; // cinemático indisponível p/ esta estação
+
+      // HoraPrevista = HoraProgramada (richInfo) + atraso cinemático
+      const prog = parseSmartTime(
+        String(richInfo[key]).substring(0, 5),
+        nowObj,
+      );
+      if (!prog) continue;
+      const prev = new Date(prog.getTime() + delayS * 1000);
+      const hh = String(prev.getHours()).padStart(2, "0");
+      const mm = String(prev.getMinutes()).padStart(2, "0");
+      const ss = String(prev.getSeconds()).padStart(2, "0");
+      node.HoraPrevista = `${hh}:${mm}:${ss}`;
+
+      maxDelayMins = Math.max(maxDelayMins, Math.round(delayS / 60));
+    }
+
+    // SituacaoComboio coerente com o atraso cinemático (não o da IP),
+    // sem pisar estados fortes (SUPRIMIDO etc.).
+    const sit = (trainOutput.SituacaoComboio || "").toUpperCase();
+    if (!sit.includes("SUPRIMIDO")) {
+      trainOutput.SituacaoComboio =
+        maxDelayMins >= 1
+          ? `Circula com atraso de ${maxDelayMins} min.`
+          : "Em circulação";
+    }
+  } catch (e) {
+    console.error(`[GPS-AUTONOMY] ${trainId}:`, e.message);
+  }
+};
+
+// ─── [GPS AUTONOMY] FILTRO DO /fertagus ─────────────────────────────────────
+// Em modo autónomo, o endpoint serve APENAS os comboios que existem na TML
+// com GPS fresco — a verdade é o GPS, não o estado herdado da IP.
+// Chaves reservadas (futureTrains/extratrains/abnormalRoutes) passam sempre.
+const RESERVED_OUTPUT_KEYS = new Set([
+  "futureTrains",
+  "extratrains",
+  "abnormalRoutes",
+]);
+
+const filterGpsOnlyCache = (cache) => {
+  try {
+    // Feed TML vazio/em baixo → não filtrar (senão a API ficava vazia
+    // por culpa da TML, não dos comboios).
+    if (Geo.liveVehicleCount() === 0) return cache;
+
+    const out = {};
+    for (const [key, value] of Object.entries(cache)) {
+      if (RESERVED_OUTPUT_KEYS.has(key)) {
+        out[key] = value;
+        continue;
+      }
+      if (Geo.isGpsFresh(String(key))) out[key] = value;
+    }
+    return out;
+  } catch (e) {
+    console.error("[GPS-AUTONOMY] filterGpsOnlyCache:", e.message);
+    return cache; // fail-safe: nunca degradar o endpoint por causa do filtro
+  }
+};
+
 // --- PROCESSAMENTO ---
 const processTrain = async (richInfo, originDateStr) => {
   const trainId = String(richInfo.id);
@@ -1319,6 +1527,7 @@ const processTrain = async (richInfo, originDateStr) => {
         }
         AnalyticsManager.cleanupTrain(trainId);
         FUTURE_TRAINS_CACHE[trainId] = "Realizado";
+        GhostManager.notifyProgress(trainId);
         delete TRAIN_MEMORY[trainId];
         return null;
       }
@@ -1586,30 +1795,45 @@ const processTrain = async (richInfo, originDateStr) => {
       if (nextExpectedDate) {
         const minutesLate = (nowTime - nextExpectedDate.getTime()) / 60000;
 
-        if (minutesLate >= 15) {
-          console.log(
-            `[GHOST] Stage 2: Comboio ${trainId} a ${minutesLate.toFixed(1)} min ` +
-              `sem chegar a "${nextUnvisited.NomeEstacao}". A remover da API pública.`,
-          );
-          const passedCount = trainOutput.NodesPassagemComboio.filter(
-            (n) => n.ComboioPassou,
-          ).length;
-          GhostManager.initiateGhostMonitoring(
-            trainId,
-            richInfo,
-            originDateStr,
-            nextExpectedDate,
-            passedCount,
-          );
-          delete OUTPUT_CACHE[trainId];
-          mem.lastResult = null;
-          return null;
-        } else if (minutesLate >= 5) {
-          console.log(
-            `[GHOST] Stage 1: Comboio ${trainId} com possível perturbação ` +
-              `(${minutesLate.toFixed(1)} min sem progressão em "${nextUnvisited.NomeEstacao}").`,
-          );
-          trainOutput.SituacaoComboio = "Possível Perturbação";
+        if (minutesLate >= 5) {
+          const verdict = GhostManager.gpsVerdict(trainId);
+
+          if (verdict === "moving") {
+            // GHOST FALSO: a IP parou de marcar passagens, mas a TML mostra o
+            // comboio a andar. Protege-o (watchlist) e a API passa a servi-lo
+            // com base no GPS — atrasos cinemáticos via decorate/AtrasoDinamico.
+            GhostManager.protect(trainId);
+            trainOutput.SituacaoComboio = "Em circulação";
+            trainOutput.AtrasoDinamico = true;
+          } else if (minutesLate >= 15 || verdict === "absent") {
+            // Stage 2: ou pelos 15 min clássicos, ou ESCALADA IMEDIATA —
+            // o feed TML está vivo e este comboio NÃO existe lá (se o feed
+            // estiver vazio, verdict é "unknown" e não escala).
+            console.log(
+              `[GHOST] Stage 2: Comboio ${trainId} (${minutesLate.toFixed(1)} min ` +
+                `sem progressão${verdict === "absent" ? ", ausente da TML com feed vivo — escalada imediata" : ""}). ` +
+                `A remover da API pública.`,
+            );
+            const passedCount = trainOutput.NodesPassagemComboio.filter(
+              (n) => n.ComboioPassou,
+            ).length;
+            GhostManager.initiateGhostMonitoring(
+              trainId,
+              richInfo,
+              originDateStr,
+              nextExpectedDate,
+              passedCount,
+            );
+            delete OUTPUT_CACHE[trainId];
+            mem.lastResult = null;
+            return null;
+          } else {
+            console.log(
+              `[GHOST] Stage 1: Comboio ${trainId} com possível perturbação ` +
+                `(${minutesLate.toFixed(1)} min sem progressão em "${nextUnvisited.NomeEstacao}").`,
+            );
+            trainOutput.SituacaoComboio = "Possível Perturbação";
+          }
         }
       }
     }
@@ -1646,6 +1870,8 @@ const processTrain = async (richInfo, originDateStr) => {
   mem.lastDelay = currentDelay;
   mem.lastResult = trainOutput;
 
+  applyGpsAutonomy(trainOutput, trainId, richInfo, nowObj);
+
   return trainOutput;
 };
 
@@ -1664,7 +1890,9 @@ const updateCycle = async () => {
       fetchDetails(String(14205), formatDateStr(new Date())).catch(() => {});
     }
     // abortar, ip continua em baixo
-    return;
+    if (!GPS_AUTONOMOUS_MODE) {
+      return;
+    }
   }
 
   // FIX: Injetar as chaves base no início do ciclo, garantindo que a estrutura
@@ -1988,6 +2216,7 @@ const updateCycle = async () => {
 
     if (endDate && nowMs > endDate.getTime()) {
       FUTURE_TRAINS_CACHE[trainId] = "Realizado";
+      GhostManager.notifyProgress(trainId);
     }
   }
 };
@@ -2148,8 +2377,10 @@ app.post(`${ADMIN_ROUTE}/pm2-action`, adminAuth, express.json(), (req, res) => {
 
 // --- ROUTES ---
 
+// keeping old support while app gets adjusted
+// ENPOINT WITH DEPRECATED WARNING
 app.get("/fertagus", protectRoute, (req, res) => {
-  if (IP_IS_DOWN) {
+  if (IP_IS_DOWN && !GPS_AUTONOMOUS_MODE) {
     return res.status(503).json({
       error: "IP_DOWN",
       status: "offline",
@@ -2157,10 +2388,14 @@ app.get("/fertagus", protectRoute, (req, res) => {
     });
   }
 
+  if (GPS_AUTONOMOUS_MODE) {
+    return res.json(filterGpsOnlyCache(OUTPUT_CACHE));
+  }
+
   res.json(OUTPUT_CACHE);
 });
 
-app.get("/estacao/:id", (req, res) => {
+app.get("/estacao/:id", protectRoute, (req, res) => {
   if (IP_IS_DOWN) {
     return res.status(503).json({
       error: "IP_DOWN",
@@ -2182,6 +2417,7 @@ app.get("/estacao/:id", (req, res) => {
   const payload = EstacaoEndpoint.buildStationPayload(station, {
     OUTPUT_CACHE,
     EXTRA_TRAINS_CACHE,
+    GtfsOutput,
     FUTURE_TRAINS_CACHE,
     ABNORMAL_ROUTES_CACHE,
     RICH_SCHEDULE,
@@ -2212,10 +2448,152 @@ app.get("/avisos", (req, res) => {
   res.json(AvisosManager.getAvisos());
 });
 
+// --- VERSION 2 | GTFS-RT COMPLIANT ---
+
+// Ainda precisa de protectRoute!!
+
+const LIVETAGUS_ENDPOINTS_BASE = "/v2/fertagus/";
+
+app.get(`${LIVETAGUS_ENDPOINTS_BASE}feed`, (req, res) => {
+  if (IP_IS_DOWN) {
+    return res.status(503).json({
+      error: "IP_DOWN",
+      status: "offline",
+      message: "Infraestruturas de Portugal Incontactável",
+    });
+  }
+  res.json(GtfsOutput.decorateOutputCache(OUTPUT_CACHE));
+});
+
+app.get(`${LIVETAGUS_ENDPOINTS_BASE}service-day/:date`, (req, res) => {
+  const { status, body } = ServiceDayManager.resolveServiceDay(
+    req.params.date,
+    new Date(),
+  );
+  res.status(status).json(body);
+});
+
+app.get(`${LIVETAGUS_ENDPOINTS_BASE}trips/:id`, (req, res) => {
+  if (IP_IS_DOWN) {
+    return res.status(503).json({
+      error: "IP_DOWN",
+      status: "offline",
+      message: "Infraestruturas de Portugal Incontactável",
+    });
+  }
+
+  const tripId = req.params.id;
+
+  // 1. Evitar que o cliente aceda às chaves reservadas da cache global
+  const RESERVED_KEYS = ["futureTrains", "extratrains", "abnormalRoutes"];
+  if (RESERVED_KEYS.includes(tripId)) {
+    return res.status(404).json({ error: "TRIP_NOT_LIVE_OR_UNKNOWN" });
+  }
+
+  // 2. Procurar o comboio no OUTPUT_CACHE ou nos Extras (caso ainda não esteja Live)
+  let train = OUTPUT_CACHE[tripId];
+  if (!train && EXTRA_TRAINS_CACHE && EXTRA_TRAINS_CACHE[tripId]) {
+    train = EXTRA_TRAINS_CACHE[tripId];
+  }
+
+  // 3. Se não existir, devolver 404
+  if (!train) {
+    return res.status(404).json({
+      error: "TRIP_NOT_LIVE_OR_UNKNOWN",
+      message: "O serviço não está ativo de momento ou o ID é inválido.",
+    });
+  }
+
+  // 4. Se existir, decora APENAS este comboio com os dados GTFS-RT e envia
+  const decoratedTrip = GtfsOutput.decorateTrain(train);
+  res.json(decoratedTrip);
+});
+
+app.get(`${LIVETAGUS_ENDPOINTS_BASE}stops/:id`, (req, res) => {
+  if (IP_IS_DOWN) {
+    return res.status(503).json({
+      error: "IP_DOWN",
+      status: "offline",
+      message: "Infraestruturas de Portugal Incontactável",
+    });
+  }
+
+  const station = EstacaoEndpoint.resolveStation(req.params.id);
+  if (!station) {
+    return res.status(404).json({
+      error: "STOP_UNKNOWN",
+      message:
+        "ID inválido. Usa o EstacaoID numérico da IP (ex: 9417236 = Coina).",
+      estacoes: EstacaoEndpoint.listStations(),
+    });
+  }
+
+  const payload = EstacaoEndpoint.buildStationPayload(station, {
+    OUTPUT_CACHE,
+    EXTRA_TRAINS_CACHE,
+    GtfsOutput,
+    FUTURE_TRAINS_CACHE,
+    ABNORMAL_ROUTES_CACHE,
+    RICH_SCHEDULE,
+    DYNAMIC_EXTRA_SCHEDULE,
+    parseSmartTime,
+    now: new Date(),
+    ipDown: IP_IS_DOWN,
+    operationalDate: getOperationalInfo().operationalDateStr,
+    limit: req.query.limit ? parseInt(req.query.limit, 10) : undefined,
+  });
+
+  res.json(payload);
+});
+
+// todas as estações
+app.get(`${LIVETAGUS_ENDPOINTS_BASE}stops`, (req, res) => {
+  res.json({ estacoes: EstacaoEndpoint.listStations() });
+});
+
+// apenas localização e bearing dos comboios para poupar recursos
+app.get(`${LIVETAGUS_ENDPOINTS_BASE}vehicle-positions`, (req, res) => {
+  if (IP_IS_DOWN) {
+    return res.status(503).json({
+      error: "IP_DOWN",
+      status: "offline",
+    });
+  }
+
+  const mapPayload = {};
+  const RESERVED_KEYS = ["futureTrains", "extratrains", "abnormalRoutes"];
+
+  for (const [id, train] of Object.entries(OUTPUT_CACHE)) {
+    if (RESERVED_KEYS.includes(id)) continue;
+
+    const dec = GtfsOutput.decorateTrain(train);
+
+    // Filtra apenas comboios com GPS fresco e projetado na linha
+    if (dec.gtfs_realtime?.position?.is_snapped) {
+      mapPayload[id] = {
+        lat: dec.gtfs_realtime.position.latitude,
+        lng: dec.gtfs_realtime.position.longitude,
+        bearing: dec.gtfs_realtime.position.bearing,
+        // Velocidade em metros por segundo (standard GTFS)
+        // speed: dec.gtfs_realtime.position.speed, (NOT PROD READY)
+      };
+    }
+  }
+
+  res.json(mapPayload);
+});
+
+// avisos ativos na linha. OLD "/avisos"
+app.get(`${LIVETAGUS_ENDPOINTS_BASE}alerts`, (req, res) => {
+  res.json(AvisosManager.getAvisos());
+});
+
+// --- GENEREAL ---
+
 app.get("/", (req, res) =>
   res.json({
     status: "online",
-    version: "5.0.1",
+    version: "b6.0.0",
     aviso:
       "Pedimos que não uses o nosso endpoint diretamente! Verifica toda as informações e código no github.",
     operational: getOperationalInfo(),
@@ -2235,7 +2613,7 @@ app.get("/", (req, res) =>
 );
 
 app.listen(PORT, () => {
-  console.log(`LiveTagus API v5.0.1 ativa na porta ${PORT}`);
+  console.log(`LiveTagus API vb6.0.0 ativa na porta ${PORT}`);
   console.log(`Endpoint /fertagus protegido com API_KEY.`);
 
   // NÃO usar await aqui: checkOfflineTrains() faz station-poll com timeouts
@@ -2245,7 +2623,75 @@ app.listen(PORT, () => {
   checkOfflineTrains();
   updateCycle();
   scheduleNextTick();
-  GetLocation.init();
+  try {
+    Geo.init(
+      path.join(__dirname, "fertagus_line_detailed.json"),
+      path.join(__dirname, "ft_stations_detailed.json"),
+    );
+    GtfsOutput.init({
+      Geo,
+      DelaysRT,
+      parseSmartTime,
+      stationsDetailed: JSON.parse(
+        fs.readFileSync(
+          path.join(__dirname, "ft_stations_detailed.json"),
+          "utf8",
+        ),
+      ),
+      getRichById: (id) =>
+        RICH_SCHEDULE.find((t) => String(t.id) === String(id)) ||
+        DYNAMIC_EXTRA_SCHEDULE[String(id)] ||
+        null,
+      getDepartureById: (id) =>
+        DEPARTURE_SCHEDULE.find((t) => String(t.id) === String(id)) || null,
+    });
+  } catch (e) {
+    // GTFS-RT é camada opcional: sem geometria, a API serve só o legado.
+    console.error(
+      "[GTFS-RT] Init falhou — a servir apenas pipeline legada:",
+      e.message,
+    );
+  }
+  GetLocation.init((data) => {
+    // Ingestão TML → snap/bearing/estados/atrasos. resolveTmlVehicle loga
+    // claramente trip_id/vehicle_id sem correspondência (ping descartado,
+    // comboio fica em fallback estático).
+    Geo.ingestTmlPayload(data, (veh) => {
+      const meta = GtfsOutput.resolveTmlVehicle(veh);
+      if (meta) GtfsOutput.rememberTmlMeta(meta.trainId, meta.tml);
+      return meta;
+    });
+  });
+
+  // ServiceDayManager: restaura cache do disco, faz warm-up imediato e
+  // agenda o cron diário das 04:00. RICH_SCHEDULE/HOLIDAYS via getters
+  // (sobrevivem a reloads do loadDataFiles).
+  ServiceDayManager.init({
+    getRichSchedule: () => RICH_SCHEDULE,
+    getHolidays: () => HOLIDAYS,
+    VerifyManager,
+    StationPoller,
+    ExtrasHelpers,
+    STATION_MAP_IP_TO_JSON,
+    stationsDetailed: JSON.parse(
+      fs.readFileSync(
+        path.join(__dirname, "ft_stations_detailed.json"),
+        "utf8",
+      ),
+    ),
+
+    // Snapshot do Motor Live para a fusão do dia de hoje (getters: as caches
+    // globais são reassigned, nunca passar referências diretas).
+    getLiveState: () => ({
+      FUTURE_TRAINS_CACHE,
+      OUTPUT_CACHE,
+      EXTRA_TRAINS_CACHE,
+      DYNAMIC_EXTRA_SCHEDULE,
+      ABNORMAL_ROUTES_CACHE,
+    }),
+    STATION_MAP_JSON_TO_IP,
+    dir: __dirname,
+  });
 
   setInterval(checkOfflineTrains, 15 * 60 * 1000); // considerar troca para 20 -> poupados cerca de 2000 pedidos por dia
 });
