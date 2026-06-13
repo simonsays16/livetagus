@@ -1062,27 +1062,36 @@ function showIpDownPopup() {
     "fixed inset-0 z-[100] flex items-center justify-center bg-black/40 dark:bg-black/60 backdrop-blur-sm animate-fade-in px-6";
 
   overlay.innerHTML = `
-    <div class="bg-white dark:bg-zinc-900 border border-red-500/70 shadow-2xl rounded-3xl p-6 md:p-8 max-w-sm w-full text-center flex flex-col items-center">
-      <div class="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-5">
-        <i data-lucide="server-crash" class="w-8 h-8 text-red-500 animate-pulse"></i>
+    <div class="bg-white dark:bg-zinc-900 border border-black/5 dark:border-white/10 shadow-2xl rounded-3xl p-6 md:p-8 max-w-sm w-full max-h-[85vh] overflow-y-auto flex flex-col items-center text-center">
+      <div class="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-5 shrink-0">
+        <i data-lucide="wifi-off" class="w-8 h-8 text-zinc-700 dark:text-zinc-300"></i>
       </div>
-      <h2 class="text-xl font-bold text-zinc-900 dark:text-white mb-2 leading-tight">Falha na Infraestruturas de Portugal</h2>
-      <p class="text-xs text-zinc-500 dark:text-zinc-400 mb-6 leading-relaxed">
-        Os servidores com informações de circulação da <b>IP</b> foram abaixo. A infraestrutura da LiveTagus encontra-se 100% operacional, mas sem a fonte oficial não conseguimos obter a localização dos comboios. Isto <b>não</b> significa que os comboios estejam com perturbações na circulação!
-      </p>
-      <button data-action="dismiss-ip-popup" class="w-full py-3.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold tracking-widest uppercase transition-all active:scale-95 shadow-lg shadow-red-500/20 mb-3">
-        Entendido
-      </button>
-      <a data-action="go-offline" href="./horarios" class="w-full py-3.5 rounded-xl border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-sm font-bold tracking-widest uppercase transition-all active:scale-95 text-center">
+      <h2 class="text-xl font-bold text-zinc-900 dark:text-white mb-4 leading-tight">Comunicado LiveTagus</h2>
+
+      <div class="text-xs text-zinc-500 dark:text-zinc-400 mb-5 leading-relaxed space-y-2 text-left">
+        <p>A app encontra-se bloqueada em modo offline. Infelizmente, a LiveTagus deixou de ter acesso às informações em tempo real dos comboios. Apenas mantem o sinal de GPS que, por si só, não é suficiente para garantir o funcionamento fiável da app e das estações.</p>
+        <p>Lamento profundamente ter de limitar a app e as estações, mas não consigo assegurar a fiabilidade da informação aqui partilhada.</p>
+        <p><b>A página do Mapa continua disponível</b>, onde estou a trabalhar para melhorar a informação apresentada. Vou continuar a trabalhar de forma proativa para resolver e ultrapassar esta limitação.</p>
+      </div>
+
+      <div class="w-full text-left mb-6 bg-zinc-50 dark:bg-zinc-800/40 rounded-xl p-4">
+        <p class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-2.5">A LiveTagus deixou de conseguir:</p>
+        <ul class="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed space-y-1.5">
+          <li class="flex gap-2"><span class="text-zinc-300 dark:text-zinc-600 shrink-0">—</span> Mostrar comboios suprimidos</li>
+          <li class="flex gap-2"><span class="text-zinc-300 dark:text-zinc-600 shrink-0">—</span> Detetar comboios extra e indicar na app que irão circular</li>
+          <li class="flex gap-2"><span class="text-zinc-300 dark:text-zinc-600 shrink-0">—</span> Detetar trajetos anormais e avisar o utilizador</li>
+          <li class="flex gap-2"><span class="text-zinc-300 dark:text-zinc-600 shrink-0">—</span> Mostrar o estado dos comboios futuros do dia atual</li>
+          <li class="flex gap-2"><span class="text-zinc-300 dark:text-zinc-600 shrink-0">—</span> Confirmar as informações do GPS</li>
+        </ul>
+      </div>
+
+      
+      <a href="/mapa" class="w-full py-3.5 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-bold tracking-widest uppercase transition-all active:scale-95 mb-3">
+        Abrir Mapa
+      </a>
+      <button data-action="dismiss-ip-popup" class="w-full py-3.5 rounded-xl border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-sm font-bold tracking-widest uppercase transition-all active:scale-95 text-center">
         Ver Horários Offline
-      </a>
-      <a data-action="sudoku-offline" href="./sudoku" class="mt-3 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 underline underline-offset-2 transition-colors">
-        Aproveitar e Jogar Sudoku
-      </a>
-      <div class="flex items-center gap-2 mt-5 text-[10px] text-zinc-400">
-        <span class="w-1.5 h-1.5 rounded-full bg-zinc-400 animate-ping"></span>
-        A tentar religar automaticamente...
-      </div>
+      </button>
     </div>
   `;
 

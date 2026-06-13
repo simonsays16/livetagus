@@ -750,5 +750,13 @@ async function fetchFertagusNewAPI() {
 }
 
 async function getTrains() {
+  // ── MODO OFFLINE FORÇADO ───────────────────────────────────────────
+  // A API deixou de fornecer dados em tempo real (exceto GPS). Tratamos
+  // sempre como "IP em baixo": loadData() renderiza os horários offline
+  // e mostra o aviso dispensável. A app continua utilizável offline.
+  // PARA REATIVAR O TEMPO REAL: remover estas duas linhas.
+  window.apiIsDown = true;
+  return [];
+
   return await fetchFertagusNewAPI();
 }

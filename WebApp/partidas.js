@@ -1291,7 +1291,7 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
       if (m && m.offline)
         html = `<div class="ltp-bar">${SVG_WIFI}<span>Sem ligação · Horário programado</span></div>`;
       else if (m && m.ipDown)
-        html = `<div class="ltp-bar">${SVG_SERVER}<span>Servidores IP indisponíveis</span></div>`;
+        html = `<div class="ltp-bar">${SVG_SERVER}<span>Informação em Tempo Real Indisponível - Visite o Mapa</span></div>`;
       if (stateEl.innerHTML !== html) stateEl.innerHTML = html;
     }
     function updateFilterPressed() {

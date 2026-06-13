@@ -18,6 +18,7 @@
 
     // ─── AVISOS / MANUTENÇÃO ───────────────────────────────────────────
     ALERTS_URL: "https://api.livetagus.pt/avisos",
+    //ALERTS_URL: "http://localhost:3000/avisos",
     HORARIOS_URL: "./horarios",
     ALERTS_REFRESH_MS: 90_000,
 
