@@ -1066,11 +1066,20 @@ function showIpDownPopup() {
       <div class="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-5 shrink-0">
         <i data-lucide="wifi-off" class="w-8 h-8 text-zinc-700 dark:text-zinc-300"></i>
       </div>
-      <h2 class="text-xl font-bold text-zinc-900 dark:text-white mb-4 leading-tight">Comunicado LiveTagus</h2>
 
       <div class="text-xs text-zinc-500 dark:text-zinc-400 mb-5 leading-relaxed space-y-2 text-left">
-        <p>A app encontra-se bloqueada em modo offline. Infelizmente, a LiveTagus deixou de ter acesso às informações em tempo real dos comboios. Apenas mantem o sinal de GPS que, por si só, não é suficiente para garantir o funcionamento fiável da app e das estações.</p>
-        <p>Lamento profundamente ter de limitar a app e as estações, mas não consigo assegurar a fiabilidade da informação aqui partilhada.</p>
+        <p>Esta página encontra-se bloqueada em modo offline sem prespetiva de regresso online.<b> O mapa continua com os GPS em Tempo Real.</b></p>
+      </div>
+
+        <a href="/mapa" class="w-full py-3.5 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-bold tracking-widest uppercase transition-all active:scale-95 mb-3">
+          Abrir Mapa
+        </a>
+
+      <h2 class="text-xl font-bold text-zinc-900 dark:text-white mb-4 mt-4 leading-tight">Comunicado LiveTagus</h2>
+
+      <div class="text-xs text-zinc-500 dark:text-zinc-400 mb-5 leading-relaxed space-y-2 text-left">
+        <p>Infelizmente, a LiveTagus deixou de ter acesso às informações em tempo real dos comboios. Apenas mantem o sinal de GPS que, por si só, não é suficiente para garantir o funcionamento fiável da app e das estações.</p>
+        <p>Lamento profundamente ter de limitar estas páginas, mas não é possível assegurar a fiabilidade da informação aqui partilhada.</p>
         <p><b>A página do Mapa continua disponível</b>, onde estou a trabalhar para melhorar a informação apresentada. Vou continuar a trabalhar de forma proativa para resolver e ultrapassar esta limitação.</p>
       </div>
 
@@ -1085,10 +1094,6 @@ function showIpDownPopup() {
         </ul>
       </div>
 
-      
-      <a href="/mapa" class="w-full py-3.5 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-bold tracking-widest uppercase transition-all active:scale-95 mb-3">
-        Abrir Mapa
-      </a>
       <button data-action="dismiss-ip-popup" class="w-full py-3.5 rounded-xl border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-sm font-bold tracking-widest uppercase transition-all active:scale-95 text-center">
         Ver Horários Offline
       </button>
