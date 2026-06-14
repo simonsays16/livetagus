@@ -1,5 +1,5 @@
 // --- BEGIN VERSIONS ---
-const GLOBAL_VERSION = "livetagus-v.rc20.14062026";
+const GLOBAL_VERSION = "livetagus-v.rc24.14062026";
 const ASSETS_VERSIONS = {
   "./": "v.rc1.24052026",
   "./index.html": "v.rc4.24052026",
@@ -10,7 +10,7 @@ const ASSETS_VERSIONS = {
   "./app-init.js": "v.rc2.13062026",
   "./app-settings.js": "v.rc3.07062026",
   "./app-trains.js": "v.rc1.14062026",
-  "./app-ui.js": "v.rc19.14062026",
+  "./app-ui.js": "v.rc23.14062026",
   "./lucide-icons.js": "v.rc1.08062026",
   "./sudoku.html": "v.rc2.07062026",
   "./sudoku.js": "v.rc1.24052026",

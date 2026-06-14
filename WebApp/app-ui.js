@@ -1060,7 +1060,7 @@ function showIpDownPopup() {
   overlay.id = "ip-down-popup";
 
   overlay.className =
-    "fixed inset-0 z-40 bg-zinc-50 dark:bg-[#09090b] w-full h-[100dvh] overflow-y-auto animate-fade-in supports-[height:100svh]:h-[100svh]";
+    "fixed inset-0 z-30 bg-zinc-50 dark:bg-[#09090b] w-full h-[100dvh] overflow-y-auto animate-fade-in supports-[height:100svh]:h-[100svh]";
 
   overlay.innerHTML = `
     <div class="relative w-full max-w-3xl mx-auto flex flex-col px-6 pb-12" style="padding-top: calc(6rem + env(safe-area-inset-top)); min-h: 100%;">
@@ -1086,9 +1086,9 @@ function showIpDownPopup() {
         <h2 class="text-2xl font-bold text-zinc-900 dark:text-white mb-6 mt-2 leading-tight">Comunicado LiveTagus</h2>
 
         <div class="text-sm text-zinc-500 dark:text-zinc-400 mb-6 leading-relaxed space-y-4 text-left w-full">
-          <p>Infelizmente, a LiveTagus (projeto independente) perdeu o acesso aos dados operacionais da Infraestruturas de Portugal (IP) devido a restrições implementadas desde sexta-feira, dia 12 de junho.</p>
+          <p>Infelizmente, a LiveTagus (projeto independente) perdeu o acesso aos dados que alimentam os estados de circulação em tempo real desde sexta-feira, dia 12 de junho.</p>
           
-          <p>Acredito que estas restrições não foram direcionadas especificamente à LiveTagus, mas sim o resultado de atualizações de segurança nos sistemas da IP. Compreendo a necessidade técnica destas medidas e já estou a procurar as vias oficiais para tentar restabelecer o serviço.</p>
+          <p>A causa é uma alteração técnica do lado da fonte de dados. Mesmo sem certezas, acredito que se trata de uma medida de segurança abrangente, e não algo direcionado à LiveTagus.</p>
           
           <p>Neste momento, a aplicação mantém apenas acesso ao sinal de GPS dos comboios. Esse sinal, por si só, não é suficiente para garantir o funcionamento fiável das páginas da App e das partidas por estações da LiveTagus.</p>
           
