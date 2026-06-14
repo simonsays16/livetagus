@@ -1058,54 +1058,68 @@ function showIpDownPopup() {
 
   const overlay = document.createElement("div");
   overlay.id = "ip-down-popup";
+
   overlay.className =
-    "fixed inset-0 z-[100] flex items-center justify-center bg-black/40 dark:bg-black/60 backdrop-blur-sm animate-fade-in px-6";
+    "fixed inset-0 z-40 bg-zinc-50 dark:bg-[#09090b] w-full h-[100dvh] overflow-y-auto animate-fade-in supports-[height:100svh]:h-[100svh]";
 
   overlay.innerHTML = `
-    <div class="bg-white dark:bg-zinc-900 border border-black/5 dark:border-white/10 shadow-2xl rounded-3xl p-6 md:p-8 max-w-sm w-full max-h-[85vh] overflow-y-auto flex flex-col items-center text-center">
-      <div class="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-5 shrink-0">
-        <i data-lucide="wifi-off" class="w-8 h-8 text-zinc-700 dark:text-zinc-300"></i>
-      </div>
+    <div class="relative w-full max-w-3xl mx-auto flex flex-col px-6 pb-12" style="padding-top: calc(6rem + env(safe-area-inset-top)); min-h: 100%;">
+      
+      <div class="relative bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/5 shadow-xl rounded-3xl p-6 md:p-10 w-full flex flex-col items-center text-center">
+        
+        <button data-action="dismiss-ip-popup" class="absolute top-4 right-4 md:top-6 md:right-6 p-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-full text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white transition-all active:scale-95" aria-label="Fechar comunicado">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
 
-      <div class="text-xs text-zinc-500 dark:text-zinc-400 mb-5 leading-relaxed space-y-2 text-left">
-        <p>Esta página encontra-se bloqueada em modo offline sem prespetiva de regresso online.<b> O mapa continua com os GPS em Tempo Real.</b></p>
-      </div>
+        <div class="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-6 shrink-0 mt-2">
+          <i data-lucide="wifi-off" class="w-8 h-8 text-zinc-700 dark:text-zinc-300"></i>
+        </div>
 
-        <a href="/mapa" class="w-full py-3.5 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-bold tracking-widest uppercase transition-all active:scale-95 mb-3">
+        <div class="text-sm md:text-base text-zinc-500 dark:text-zinc-400 mb-6 leading-relaxed space-y-2 text-left w-full">
+          <p>Esta página encontra-se bloqueada em modo offline sem perspetiva de regresso a curto prazo. <b class="text-zinc-800 dark:text-zinc-200">O mapa continua com os GPS em Tempo Real.</b></p>
+        </div>
+
+        <a href="/mapa" class="w-full py-4 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-bold tracking-widest uppercase transition-all active:scale-95 mb-6 flex justify-center items-center shadow-lg">
           Abrir Mapa
         </a>
 
-      <h2 class="text-xl font-bold text-zinc-900 dark:text-white mb-4 mt-4 leading-tight">Comunicado LiveTagus</h2>
+        <h2 class="text-2xl font-bold text-zinc-900 dark:text-white mb-6 mt-2 leading-tight">Comunicado LiveTagus</h2>
 
-      <div class="text-xs text-zinc-500 dark:text-zinc-400 mb-5 leading-relaxed space-y-2 text-left">
-        <p>Infelizmente, a LiveTagus deixou de ter acesso às informações em tempo real dos comboios. Apenas mantem o sinal de GPS que, por si só, não é suficiente para garantir o funcionamento fiável da app e das estações.</p>
-        <p>Lamento profundamente ter de limitar estas páginas, mas não é possível assegurar a fiabilidade da informação aqui partilhada.</p>
-        <p><b>A página do Mapa continua disponível</b>, onde estou a trabalhar para melhorar a informação apresentada. Vou continuar a trabalhar de forma proativa para resolver e ultrapassar esta limitação.</p>
+        <div class="text-sm text-zinc-500 dark:text-zinc-400 mb-6 leading-relaxed space-y-4 text-left w-full">
+          <p>Infelizmente, a LiveTagus (projeto independente) perdeu o acesso aos dados operacionais da Infraestruturas de Portugal (IP) devido a restrições implementadas desde sexta-feira, dia 12 de junho.</p>
+          
+          <p>Acredito que estas restrições não foram direcionadas especificamente à LiveTagus, mas sim o resultado de atualizações de segurança nos sistemas da IP. Compreendo a necessidade técnica destas medidas e já estou a procurar as vias oficiais para tentar restabelecer o serviço.</p>
+          
+          <p>Neste momento, a aplicação mantém apenas acesso ao sinal de GPS dos comboios. Esse sinal, por si só, não é suficiente para garantir o funcionamento fiável das páginas da App e das partidas por estações da LiveTagus.</p>
+          
+          <p class="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400 italic bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-xl border border-zinc-100 dark:border-zinc-700/50 my-4">
+            <span class="font-bold text-zinc-700 dark:text-zinc-300">Nota:</span> Esta situação é totalmente independente dos painéis físicos nas estações da Fertagus.
+          </p>
+
+          <p>Lamento profundamente ter de limitar estas páginas, mas não é possível assegurar a fiabilidade da informação aqui partilhada.</p>
+          
+          <p><b class="text-zinc-800 dark:text-zinc-200">A página do Mapa continua disponível</b>, e estou a focar os meus esforços para melhorar a informação lá apresentada. Vou continuar a trabalhar de forma proativa para resolver e ultrapassar esta limitação.</p>
+        </div>
+
+        <div class="w-full text-left mb-8 bg-zinc-50 dark:bg-zinc-800/40 rounded-xl p-5 border border-zinc-100 dark:border-zinc-800/50">
+          <p class="text-[11px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-4">Neste momento, a LiveTagus não consegue:</p>
+          <ul class="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed space-y-3">
+            <li class="flex gap-3"><span class="text-zinc-300 dark:text-zinc-600 shrink-0 mt-0.5">—</span> Mostrar comboios suprimidos;</li>
+            <li class="flex gap-3"><span class="text-zinc-300 dark:text-zinc-600 shrink-0 mt-0.5">—</span> Detetar comboios extra e indicar corretamente a sua circulação;</li>
+            <li class="flex gap-3"><span class="text-zinc-300 dark:text-zinc-600 shrink-0 mt-0.5">—</span> Identificar trajetos anormais ou alterações operacionais;</li>
+            <li class="flex gap-3"><span class="text-zinc-300 dark:text-zinc-600 shrink-0 mt-0.5">—</span> Mostrar o estado atualizado dos comboios futuros do dia;</li>
+            <li class="flex gap-3"><span class="text-zinc-300 dark:text-zinc-600 shrink-0 mt-0.5">—</span> Validar a informação obtida por GPS.</li>
+          </ul>
+        </div>
+
+        <button data-action="dismiss-ip-popup" class="w-full py-4 rounded-xl border-2 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-sm font-bold tracking-widest uppercase transition-all active:scale-95 text-center">
+          Ver Horários Offline
+        </button>
       </div>
-
-      <div class="w-full text-left mb-6 bg-zinc-50 dark:bg-zinc-800/40 rounded-xl p-4">
-        <p class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-2.5">A LiveTagus deixou de conseguir:</p>
-        <ul class="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed space-y-1.5">
-          <li class="flex gap-2"><span class="text-zinc-300 dark:text-zinc-600 shrink-0">—</span> Mostrar comboios suprimidos</li>
-          <li class="flex gap-2"><span class="text-zinc-300 dark:text-zinc-600 shrink-0">—</span> Detetar comboios extra e indicar na app que irão circular</li>
-          <li class="flex gap-2"><span class="text-zinc-300 dark:text-zinc-600 shrink-0">—</span> Detetar trajetos anormais e avisar o utilizador</li>
-          <li class="flex gap-2"><span class="text-zinc-300 dark:text-zinc-600 shrink-0">—</span> Mostrar o estado dos comboios futuros do dia atual</li>
-          <li class="flex gap-2"><span class="text-zinc-300 dark:text-zinc-600 shrink-0">—</span> Confirmar as informações do GPS</li>
-        </ul>
-      </div>
-
-      <button data-action="dismiss-ip-popup" class="w-full py-3.5 rounded-xl border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-sm font-bold tracking-widest uppercase transition-all active:scale-95 text-center">
-        Ver Horários Offline
-      </button>
     </div>
   `;
 
-  overlay.addEventListener("click", function (e) {
-    if (e.target === overlay) dismissIpDownPopup();
-  });
-
   document.body.appendChild(overlay);
-  if (window.lucide) lucide.createIcons();
 }
 
 window.dismissIpDownPopup = function () {
