@@ -1090,11 +1090,7 @@ function showIpDownPopup() {
           
           <p>A causa é uma alteração técnica do lado da fonte de dados. Mesmo sem certezas, acredito que se trata de uma medida de segurança abrangente, e não algo direcionado à LiveTagus.</p>
           
-          <p>Neste momento, a aplicação mantém apenas acesso ao sinal de GPS dos comboios. Esse sinal, por si só, não é suficiente para garantir o funcionamento fiável das páginas da App e das partidas por estações da LiveTagus.</p>
-          
-          <p class="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400 italic bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-xl border border-zinc-100 dark:border-zinc-700/50 my-4">
-            <span class="font-bold text-zinc-700 dark:text-zinc-300">Nota:</span> Esta situação é totalmente independente dos painéis físicos nas estações da Fertagus.
-          </p>
+          <p>Neste momento, a aplicação mantém apenas acesso ao sinal de GPS dos comboios. Estes sinais, por si só, não são suficiente para garantir o funcionamento fiável das páginas da App e das partidas por estações da LiveTagus.</p>
 
           <p>Lamento profundamente ter de limitar estas páginas, mas não é possível assegurar a fiabilidade da informação aqui partilhada.</p>
           
@@ -1110,6 +1106,13 @@ function showIpDownPopup() {
             <li class="flex gap-3"><span class="text-zinc-300 dark:text-zinc-600 shrink-0 mt-0.5">—</span> Mostrar o estado atualizado dos comboios futuros do dia;</li>
             <li class="flex gap-3"><span class="text-zinc-300 dark:text-zinc-600 shrink-0 mt-0.5">—</span> Validar a informação obtida por GPS.</li>
           </ul>
+        </div>
+        
+        <div class="text-sm text-zinc-500 dark:text-zinc-400 mb-6 leading-relaxed space-y-4 text-left w-full">
+          <p class="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400 italic bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-xl border border-zinc-100 dark:border-zinc-700/50 my-4">
+            <span class="font-bold text-zinc-700 dark:text-zinc-300">Nota Adicional:</span> A decoração visual do Mundial já estava programada antes deste problema técnico surgir.
+            Deu trabalho a fazer e seria um desperdício deitar o código ao lixo. Força Portugal!
+          </p>
         </div>
 
         <button data-action="dismiss-ip-popup" class="w-full py-4 rounded-xl border-2 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-sm font-bold tracking-widest uppercase transition-all active:scale-95 text-center">

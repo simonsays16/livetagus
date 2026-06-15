@@ -11,6 +11,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const browserBtn = document.getElementById("browser-btn");
   const webHint = document.getElementById("web-hint");
 
+  // === FLAG TEMPORÁRIA: App bloqueada (fonte de dados em baixo desde 12/jun) ===
+  // Reverter tudo ao normal = APP_OFFLINE = false
+  const APP_OFFLINE = true;
+
+  // App em baixo → esconde "Abrir App" em TODOS os estados (inclui iOS sem prompt)
+  if (APP_OFFLINE && browserBtn) browserBtn.style.display = "none";
+
   browserBtn.addEventListener("click", () => sa_event("app_on_browser"));
 
   // 1. Deteção Inicial
@@ -49,7 +56,9 @@ document.addEventListener("DOMContentLoaded", () => {
         'Ver Tempo Real&nbsp;&nbsp;<span id="status-dot-hero" class="w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-700"></span>';
 
       mainBtn.addEventListener("click", () => {
-        window.location.href = "./app.html";
+        // PROVISORIO
+        // window.location.href = "./app.html";
+        window.location.href = "./mapa";
       });
     }
 
