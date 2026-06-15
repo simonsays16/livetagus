@@ -42,20 +42,20 @@
 // ─── CONSTANTES DE ATRASO ─────────────────────────────────────────────────────
 
 /** Atraso de Ponte: Pragal (sentido Margem). */
-const BRIDGE_DELAY_BASE_S = 60; // 60 seg
-const BRIDGE_DELAY_PEAK_S = 1 * 60 + 30; // 1 min 30 seg
+const BRIDGE_DELAY_BASE_S = 0; //60; // 60 seg
+const BRIDGE_DELAY_PEAK_S = 0; //1 * 60 + 30; // 1 min 30 seg
 
 /** Troço 1 Pós-Pragal: Foros (sentido Margem). */
-const TROCO1_DELAY_BASE_S = 30; // 30 seg
-const TROCO1_DELAY_PEAK_S = 60; // 60 seg
+const TROCO1_DELAY_BASE_S = 0; //30; // 30 seg
+const TROCO1_DELAY_PEAK_S = 0; //60; // 60 seg
 
 /** Troço 2 Pós-Coina: Penalva (sentido Margem). */
-const TROCO2_DELAY_BASE_S = 2 * 60 + 15; // 2 min 15 seg
-const TROCO2_DELAY_PEAK_S = 2 * 60 + 30; // 2 min 30 seg
+const TROCO2_DELAY_BASE_S = 0; //1 * 60; //2 * 60 + 15; // 2 min 15 seg
+const TROCO2_DELAY_PEAK_S = 0; //1 * 60; //2 * 60 + 30; // 2 min 30 seg
 
 /** Troço 2 Pós-Coina: Penalva e restantes até Setúbal (sentido Margem). */
-const TROCO3_DELAY_BASE_S = 1 * 60 + 30; // 1 min 30 seg
-const TROCO3_DELAY_PEAK_S = 1 * 60 + 45; // 1 min 45 seg
+const TROCO3_DELAY_BASE_S = 0; //1 * 60 + 30; // 1 min 30 seg
+const TROCO3_DELAY_PEAK_S = 0; //1 * 60 + 45; // 1 min 45 seg
 
 // ─── GRUPO DE ESTAÇÕES ───────────────────────────────────────────────────────
 

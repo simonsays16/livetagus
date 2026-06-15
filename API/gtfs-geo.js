@@ -37,6 +37,14 @@ const AGENCY_ID = "15"; // Fertagus — tudo o resto é ignorado.
 
 const VMAX_MPS = 140 / 3.6; // 38.89 m/s — teto físico UQE 3500
 const OUTLIER_SPEED_MPS = VMAX_MPS * 1.5; // salto implica >210 km/h → lixo
+
+// [MODO GPS-ÚNICO] Com a IP bloqueada, a TML é a única fonte. Com o filtro
+// LIGADO (true), um salto impossível é descartado e só após 3 consecutivos se
+// re-ancora (comportamento normal, evita teleportes por jitter). Com o filtro
+// DESLIGADO (false), qualquer salto é aceite como re-seed imediato: a posição
+// nova aparece já no mapa, mas NÃO contamina velocidade/cinemática (history
+// limpo, v=0 até ao próximo ping). Religar quando a IP voltar.
+const OUTLIER_FILTER_ENABLED = true;
 const MAX_SNAP_DIST_KM = 0.5; // ping a >500 m da via → não é um comboio na linha
 const BEARING_MIN_MOVE_M = 5; // filtro de jitter: só roda se andou >5 m
 const TANGENT_STEP_KM = 0.02; // ±20 m para a tangente da linha
@@ -67,6 +75,7 @@ const STATION_ORDER = [
 let lineFeatures = []; // Array<Feature<LineString>>
 let featureLenKm = []; // comprimento de cada feature
 let featureForwardIsLisboa = {}; // { idx: bool|null } km crescente = sul→norte?
+let STATION_ORDER_IDX = {}; // { key: posição na STATION_ORDER (sul→norte) }
 let stations = {}; // { key: { key,nome,center:{lng,lat}, proj, entrances } }
 let initialized = false;
 
@@ -231,8 +240,9 @@ const init = (lineSrc, stationsSrc) => {
 
   // Orientação de cada feature (km crescente = lisboa?), via ordem das estações.
   featureForwardIsLisboa = {};
-  const orderIdx = {};
-  STATION_ORDER.forEach((k, i) => (orderIdx[k] = i));
+  STATION_ORDER_IDX = {};
+  STATION_ORDER.forEach((k, i) => (STATION_ORDER_IDX[k] = i));
+  const orderIdx = STATION_ORDER_IDX;
   const byFeature = {};
   for (const key of Object.keys(stations)) {
     const p = stations[key].proj;
@@ -302,19 +312,6 @@ const processPing = (p) => {
     // [EXCEÇÃO] Telemetria duplicada: mesmo timestamp (ou retrocesso no tempo).
     if (v.lastPing && receivedAt <= v.lastPing.ts) return null;
 
-    // [EXCEÇÃO] FIX REPETIDO: a TML reenvia o último fix quando não há
-    // atualização nesse tick (coordenadas BRUTAS idênticas, received_at novo).
-    // Ignorar SEM consumir o relógio (lastPing.ts fica no fix anterior): assim
-    // o dt do próximo fix REAL é o tempo verdadeiro decorrido e a velocidade
-    // sai correta — antes, isto gerava velocidades 2-3× reais e outliers.
-    if (
-      v.lastPing &&
-      latitude === v.lastPing.rawLat &&
-      longitude === v.lastPing.rawLng
-    ) {
-      return null;
-    }
-
     const snap = projectOnLine(longitude, latitude);
 
     // [EXCEÇÃO] Ping ausente/degenerado ou demasiado longe da via.
@@ -346,37 +343,48 @@ const processPing = (p) => {
 
       // [EXCEÇÃO] Salto abrupto de coordenadas: fisicamente impossível.
       if (impliedMps > OUTLIER_SPEED_MPS) {
-        v.outlierStreak = (v.outlierStreak || 0) + 1;
-
-        // RE-SEED: 3 fixes consecutivos "impossíveis" face ao último ponto
-        // aceite = o comboio ESTÁ mesmo na posição nova (re-aquisição de GPS
-        // à saída de túnel — Pragal/Campolide — ou gap longo do feed).
-        // Re-ancorar sem velocidade em vez de bloquear o tracking até o dt
-        // diluir (era a causa das caudas 3486→1905→...→210 km/h nos logs).
-        if (v.outlierStreak >= 3) {
-          console.warn(
-            `[GTFS-GEO] Re-seed (${trainId}): 3 outliers consecutivos — ` +
-              `a re-ancorar posição (${(impliedMps * 3.6).toFixed(0)} km/h implícitos).`,
-          );
+        if (!OUTLIER_FILTER_ENABLED) {
+          // Filtro desligado: aceitar o ping como re-seed imediato — a posição
+          // nova é mostrada já, mas o salto NÃO contamina a velocidade nem os
+          // cálculos cinemáticos (history limpo, v=0 até ao próximo ping).
           isReseed = true;
           v.outlierStreak = 0;
-          v.history = []; // velocidade efetiva recomeça do zero
+          v.history = [];
           v.speedMps = 0;
         } else {
-          // Log só na 1ª rejeição da streak (evita spam nos logs).
-          if (v.outlierStreak === 1) {
+          v.outlierStreak = (v.outlierStreak || 0) + 1;
+
+          // RE-SEED: 3 fixes consecutivos "impossíveis" face ao último ponto
+          // aceite = o comboio ESTÁ mesmo na posição nova (re-aquisição de GPS
+          // à saída de túnel — Pragal/Campolide — ou gap longo do feed).
+          // Re-ancorar sem velocidade em vez de bloquear o tracking até o dt
+          // diluir (era a causa das caudas 3486→1905→...→210 km/h nos logs).
+          if (v.outlierStreak >= 3) {
             console.warn(
-              `[GTFS-GEO] Outlier descartado (${trainId}): ` +
-                `${(impliedMps * 3.6).toFixed(0)} km/h implícitos.`,
+              `[GTFS-GEO] Re-seed (${trainId}): 3 outliers consecutivos — ` +
+                `a re-ancorar posição (${(impliedMps * 3.6).toFixed(0)} km/h implícitos).`,
             );
+            isReseed = true;
+            v.outlierStreak = 0;
+            v.history = []; // velocidade efetiva recomeça do zero
+            v.speedMps = 0;
+          } else {
+            // Log só na 1ª rejeição da streak (evita spam nos logs).
+            if (v.outlierStreak === 1) {
+              console.warn(
+                `[GTFS-GEO] Outlier descartado (${trainId}): ` +
+                  `${(impliedMps * 3.6).toFixed(0)} km/h implícitos.`,
+              );
+            }
+            return null;
           }
-          return null;
         }
       } else {
         v.outlierStreak = 0;
       }
 
-      // Velocidade instantânea capada ao teto físico da UQE 3500.
+      // Velocidade instantânea capada ao teto físico (exceto em re-seed, que
+      // recomeça parado para não herdar o salto como velocidade real).
       if (!isReseed) v.speedMps = Math.min(impliedMps, VMAX_MPS);
     }
 
@@ -395,12 +403,13 @@ const processPing = (p) => {
     });
     if (v.history.length > HISTORY_MAX) v.history.shift();
 
-    v.lastPing = {
-      ts: receivedAt,
-      rawLat: latitude,
-      rawLng: longitude,
-      ...snap,
-    };
+    v.lastPing = { ts: receivedAt, ...snap };
+
+    // [SENTIDO POR ESTAÇÕES] Regista a estação MAIS PRÓXIMA da posição atual
+    // se estiver dentro do raio de passagem. Guarda a SEQUÊNCIA ordenada de
+    // estações distintas por onde passou (não o km bruto) — imune ao re-seed
+    // do GPS no túnel da ponte, que só afeta o km instantâneo.
+    recordStationPass(v, snap);
 
     // Máquina de estados GTFS-RT (gera eventos de chegada/partida).
     const events = VehicleStatus.update(v.status, {
@@ -458,16 +467,7 @@ const ingestTmlPayload = (tmlData, resolveTrain, receivedAt = Date.now()) => {
         trainId: String(meta.trainId),
         latitude: veh.latitude,
         longitude: veh.longitude,
-        // TIMESTAMP REAL da telemetria: received_at (ms) da TML. O Date.now()
-        // do poll dava dt errado — fixes repetidos (TML sem atualização nesse
-        // tick) consumiam relógio e o movimento acumulado de 6s era dividido
-        // por 3s → velocidades 2-3× reais → outliers em catadupa.
-        receivedAt:
-          typeof veh.received_at === "number" && veh.received_at > 0
-            ? veh.received_at
-            : veh.timestamp
-              ? veh.timestamp * 1000
-              : receivedAt,
+        receivedAt: veh.timestamp ? veh.timestamp * 1000 : receivedAt,
         direction: meta.direction,
         route: meta.route,
       });
@@ -505,6 +505,68 @@ const effectiveSpeedMps = (trainId, now = Date.now()) => {
   return Math.min(mps, VMAX_MPS);
 };
 
+// ─── [SENTIDO REAL] Direção de marcha observada no GPS ───────────────────────
+// "lisboa" | "margem" | null (parado / dados insuficientes / feature de
+// orientação desconhecida). Usa o sinal do avanço em km na linha cruzado com a
+// Raio (m) para considerar que o veículo está/passou NUMA estação. A estação
+// mais próxima dentro deste raio é registada na sequência de passagens.
+const STATION_PASS_RADIUS_M = 250;
+
+// Atualiza v.passSeq com a estação mais próxima da posição atual (se dentro do
+// raio e diferente da última registada). passSeq = lista ordenada no tempo das
+// chaves de estação por onde o comboio realmente passou.
+const recordStationPass = (v, snap) => {
+  if (!snap || snap.featureIdx == null) return;
+  let bestKey = null;
+  let bestDistKm = Infinity;
+  for (const key of Object.keys(stations)) {
+    const p = stations[key].proj;
+    if (!p || p.featureIdx !== snap.featureIdx) continue;
+    const dKm = Math.abs(p.km - snap.km);
+    if (dKm < bestDistKm) {
+      bestDistKm = dKm;
+      bestKey = key;
+    }
+  }
+  if (bestKey == null) return;
+  if (bestDistKm * 1000 > STATION_PASS_RADIUS_M) return; // ainda não chegou
+
+  v.passSeq = v.passSeq || [];
+  // Só regista quando MUDA de estação (evita repetir a mesma enquanto parado).
+  if (v.passSeq[v.passSeq.length - 1] !== bestKey) {
+    v.passSeq.push(bestKey);
+    if (v.passSeq.length > 6) v.passSeq.shift(); // só precisamos do recente
+  }
+};
+
+// [SENTIDO POR ESTAÇÕES] Declara o sentido SÓ quando o comboio passou por DUAS
+// estações consecutivas distintas — e decide pela ordem dessas estações na
+// linha (STATION_ORDER, sul→norte). Subir no índice = lisboa; descer = margem.
+// Não usa Δkm instantâneo, por isso o re-seed do GPS no túnel da ponte (salto
+// de posição) NÃO provoca falsa inversão. Devolve "lisboa" | "margem" | null.
+const observedDirection = (trainId, now = Date.now()) => {
+  const v = VEHICLES[trainId];
+  if (!v || !Array.isArray(v.passSeq) || v.passSeq.length < 2) return null;
+
+  // Usa as duas ÚLTIMAS estações distintas confirmadas.
+  const last = v.passSeq[v.passSeq.length - 1];
+  const prev = v.passSeq[v.passSeq.length - 2];
+  const iLast = STATION_ORDER_IDX[last];
+  const iPrev = STATION_ORDER_IDX[prev];
+  if (iLast == null || iPrev == null || iLast === iPrev) return null;
+
+  // Índice sobe (sul→norte) = lisboa; desce = margem.
+  return iLast > iPrev ? "lisboa" : "margem";
+};
+
+// Nº de veículos com GPS fresco — 0 = feed TML vazio/em baixo.
+const liveVehicleCount = (now = Date.now()) =>
+  Object.keys(VEHICLES).filter((id) => isGpsFresh(id, now)).length;
+
+// IDs de todos os veículos com GPS fresco na TML neste momento.
+const liveVehicleIds = (now = Date.now()) =>
+  Object.keys(VEHICLES).filter((id) => isGpsFresh(id, now));
+
 /** Distância restante (m) ao longo da via até à estação dada. */
 const remainingDistanceM = (trainId, stationKey) => {
   const v = VEHICLES[trainId];
@@ -530,19 +592,18 @@ const removeVehicle = (trainId) => {
   delete VEHICLES[trainId];
 };
 
-const liveVehicleCount = (now = Date.now()) =>
-  Object.keys(VEHICLES).filter((id) => isGpsFresh(id, now)).length;
-
 module.exports = {
   init,
   processPing,
   ingestTmlPayload,
   isGpsFresh,
   effectiveSpeedMps,
+  observedDirection,
+  liveVehicleCount,
+  liveVehicleIds,
   remainingDistanceM,
   getVehicle,
   removeVehicle,
-  liveVehicleCount,
   // expostos para testes
   _projectOnLine: projectOnLine,
   _tangentBearing: tangentBearing,

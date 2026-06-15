@@ -1,6 +1,6 @@
 {
   "name": "livetagus-api",
-  "version": "5.0.1",
+  "version": "6.1.0",
   "description": "API Backend para o LiveTagus",
   "main": "index.js",
   "scripts": {

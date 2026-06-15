@@ -1098,9 +1098,16 @@ const enterActiveSuppression = (richInfo, mem, isExtra) => {
 // Qualquer comboio com GPS fresco na TML é FORÇADO a Live:true e as
 // HoraPrevista dos nós futuros são recalculadas pelo motor cinemático
 // (posição real na linha), ignorando os atrasos da IP.
+// [ENVIO URGENTE] Cálculos por GPS DESLIGADOS — demasiado instáveis. O GPS
+// fica APENAS a alimentar a posição no mapa (ingestTmlPayload no poller).
+// Não recalcula atrasos, não infere passagens, não reatribui números por
+// sentido. Religar gradualmente quando estabilizar.
+const GPS_CALCULATIONS_ENABLED = false;
+
 const GPS_AUTONOMOUS_MODE = true; // ← desligar quando a IP normalizar
 
 const applyGpsAutonomy = (trainOutput, trainId, richInfo, nowObj) => {
+  if (!GPS_CALCULATIONS_ENABLED) return; // [ENVIO URGENTE] só posição no mapa
   if (!GPS_AUTONOMOUS_MODE) return;
   try {
     if (!Geo.isGpsFresh(String(trainId))) return; // sem GPS → fluxo IP normal
@@ -1201,28 +1208,210 @@ const RESERVED_OUTPUT_KEYS = new Set([
   "abnormalRoutes",
 ]);
 
-const filterGpsOnlyCache = (cache) => {
+// [GPS-ÚNICO] A TML é a fonte de verdade: QUALQUER comboio com GPS fresco
+// aparece SEMPRE e nunca é removido por lógica de supressão/ghost a montante.
+// A única transformação permitida é a troca de número por sentido invertido
+// (ID fantasma 99xxx). Construímos a resposta A PARTIR da lista de veículos
+// vivos da TML, não filtrando o OUTPUT_CACHE — assim, qualquer "delete" feito
+// no pipeline deixa de afetar o que é servido (o comboio continua na TML e
+// reaparece de imediato). O cache só ENRIQUECE (nós, atrasos) quando existe.
+const buildGpsLiveResponse = (cache) => {
   try {
-    // Feed TML vazio/em baixo → não filtrar (senão a API ficava vazia
-    // por culpa da TML, não dos comboios).
-    if (Geo.liveVehicleCount() === 0) return cache;
+    const liveIds = Geo.liveVehicleIds();
+    // Feed TML vazio/em baixo → devolve o cache tal como está (não inventamos
+    // nem escondemos nada por culpa da TML).
+    if (liveIds.length === 0) return cache;
 
     const out = {};
-    for (const [key, value] of Object.entries(cache)) {
-      if (RESERVED_OUTPUT_KEYS.has(key)) {
-        out[key] = value;
-        continue;
-      }
-      if (Geo.isGpsFresh(String(key))) out[key] = value;
+    // 1) Chaves reservadas (futureTrains/extratrains/abnormalRoutes) passam.
+    for (const k of RESERVED_OUTPUT_KEYS) {
+      if (cache[k] !== undefined) out[k] = cache[k];
     }
+
+    // 2) Um comboio cujo número foi reatribuído por sentido invertido aparece
+    //    SÓ com o ID fantasma — o número original (errado) é omitido. Mapa
+    //    inverso fantasma→original para sabermos quais omitir.
+    const rerouted = new Set(); // IDs originais que viraram fantasma
+    for (const origId of REVERSED_ID_MAP.keys()) rerouted.add(String(origId));
+
+    // 3) Todo o veículo vivo na TML entra. Se já está no cache, usa-se esse
+    //    objeto (rico). Se não, constrói-se um placeholder mínimo (o comboio
+    //    existe fisicamente; mais vale mostrá-lo sem nós do que escondê-lo).
+    for (const id of liveIds) {
+      const idStr = String(id);
+      if (RESERVED_OUTPUT_KEYS.has(idStr)) continue;
+      if (rerouted.has(idStr)) continue; // número errado: só entra o fantasma
+
+      if (cache[idStr] !== undefined) {
+        out[idStr] = cache[idStr];
+      } else if (GHOST_TRAIN_REGISTRY.has(idStr)) {
+        // Fantasma sem entrada no cache ainda → gera o output agora.
+        const g = buildGhostTrainOutput(idStr, new Date());
+        if (g) out[idStr] = g;
+      } else {
+        // Veículo vivo sem qualquer dado: placeholder mínimo, mas visível.
+        out[idStr] = {
+          "id-comboio": idStr,
+          Live: true,
+          SemDados: true,
+          Operador: "FERTAGUS",
+          SituacaoComboio: "Em circulação",
+          NodesPassagemComboio: [],
+        };
+      }
+    }
+
     return out;
   } catch (e) {
-    console.error("[GPS-AUTONOMY] filterGpsOnlyCache:", e.message);
-    return cache; // fail-safe: nunca degradar o endpoint por causa do filtro
+    console.error("[GPS-AUTONOMY] buildGpsLiveResponse:", e.message);
+    return cache; // fail-safe: nunca degradar o endpoint
   }
 };
 
 // --- PROCESSAMENTO ---
+// ─── [SENTIDO INVERTIDO] REATRIBUIÇÃO DE ID FANTASMA ────────────────────────
+// Quando o número de comboio do feed TML indica um sentido mas o GPS viaja no
+// oposto, o número está corrompido (dado errado da TML). Não confiamos no
+// horário desse número: atribuímos um ID sintético >= 99001 que NÃO existe na
+// base, e o comboio passa a viver SEM horário — só posição + horas reais
+// registadas à passagem; previsões sempre "a horas" (nunca afirmamos atraso,
+// porque o horário real é desconhecido).
+
+let GHOST_ID_SEQ = 99001;
+const REVERSED_ID_MAP = new Map(); // idTML → idFantasma (estável durante a viagem)
+const GHOST_TRAIN_REGISTRY = new Map(); // idFantasma → { direction, observedTimes, createdAt, sourceTmlId }
+
+// Ordem física das estações (sul→norte). As chaves de STATION_MAP_JSON_TO_IP
+// já estão por esta ordem; o sentido "margem" usa-a invertida.
+const STATION_ORDER_KEYS = Object.keys(STATION_MAP_JSON_TO_IP);
+
+// Resolve (e memoiza) o ID a usar para um comboio. Se o sentido real observado
+// pelo GPS contradiz o sentido declarado pelo número, devolve um ID fantasma.
+const resolveDirectionalId = (trainId, richInfo, nowObj) => {
+  const idStr = String(trainId);
+  if (!GPS_CALCULATIONS_ENABLED) return idStr; // [ENVIO URGENTE] sem reatribuição
+  // Já reatribuído nesta viagem → mantém o mesmo fantasma (sem oscilação).
+  if (REVERSED_ID_MAP.has(idStr)) return REVERSED_ID_MAP.get(idStr);
+  if (!richInfo || !richInfo.direction) return idStr;
+
+  const obs = Geo.observedDirection(idStr);
+  if (!obs) return idStr; // parado/insuficiente → confia no número
+
+  const declared = richInfo.direction === "margem" ? "margem" : "lisboa";
+  if (obs === declared) return idStr; // coerente → normal
+
+  // ── DIVERGÊNCIA CONFIRMADA: criar fantasma ──
+  const ghostId = String(GHOST_ID_SEQ++);
+  REVERSED_ID_MAP.set(idStr, ghostId);
+  GHOST_TRAIN_REGISTRY.set(ghostId, {
+    direction: obs, // sentido REAL observado
+    observedTimes: {}, // key → "HH:MM:SS" reais (preenchido à passagem)
+    createdAt: nowObj.getTime(),
+    sourceTmlId: idStr,
+  });
+  console.warn(
+    `[SENTIDO INVERTIDO] Comboio TML ${idStr} declara "${declared}" mas o GPS ` +
+      `viaja "${obs}". Reatribuído ao fantasma ${ghostId} (sem horário associado).`,
+  );
+  return ghostId;
+};
+
+// Constrói/atualiza o trainOutput de um fantasma (99xxx): sem horário, posição
+// via GPS, horas reais registadas à passagem, previsão "a horas" (HoraPrevista
+// null) para o resto. Não inventa atrasos.
+const buildGhostTrainOutput = (ghostId, nowObj) => {
+  const reg = GHOST_TRAIN_REGISTRY.get(ghostId);
+  if (!reg) return null;
+
+  const dirKeys =
+    reg.direction === "margem"
+      ? [...STATION_ORDER_KEYS].reverse()
+      : STATION_ORDER_KEYS;
+
+  const veh = Geo.getVehicle(ghostId);
+  const stationsProj = Geo._stations();
+
+  // Marca de presença: enquanto houver GPS fresco, o fantasma está vivo.
+  if (veh && veh.lastPing && Geo.isGpsFresh(ghostId)) {
+    reg.lastSeenTs = veh.lastPing.ts;
+  }
+
+  let dirSign = 1;
+  if (stationsProj) {
+    const first = stationsProj[dirKeys[0]] && stationsProj[dirKeys[0]].proj;
+    const last =
+      stationsProj[dirKeys[dirKeys.length - 1]] &&
+      stationsProj[dirKeys[dirKeys.length - 1]].proj;
+    if (first && last) dirSign = last.km >= first.km ? 1 : -1;
+  }
+
+  const nodes = dirKeys.map((key) => {
+    const nomeIP = STATION_MAP_JSON_TO_IP[key] || key;
+    let passou = false;
+
+    if (
+      veh &&
+      veh.lastPing &&
+      stationsProj &&
+      stationsProj[key] &&
+      stationsProj[key].proj &&
+      stationsProj[key].proj.featureIdx === veh.lastPing.featureIdx
+    ) {
+      const aheadKm = (stationsProj[key].proj.km - veh.lastPing.km) * dirSign;
+      if (aheadKm < -0.1) passou = true; // 100 m para trás = passou
+    }
+
+    if (passou && !reg.observedTimes[key]) {
+      const hh = String(nowObj.getHours()).padStart(2, "0");
+      const mm = String(nowObj.getMinutes()).padStart(2, "0");
+      const ss = String(nowObj.getSeconds()).padStart(2, "0");
+      reg.observedTimes[key] = `${hh}:${mm}:${ss}`;
+    }
+
+    return {
+      NomeEstacao: nomeIP,
+      ComboioPassou: passou,
+      HoraPrevista: reg.observedTimes[key] || null, // null = horário desconhecido
+      Atraso: 0,
+    };
+  });
+
+  return {
+    "id-comboio": ghostId,
+    Origem: STATION_MAP_JSON_TO_IP[dirKeys[0]] || dirKeys[0],
+    Destino:
+      STATION_MAP_JSON_TO_IP[dirKeys[dirKeys.length - 1]] ||
+      dirKeys[dirKeys.length - 1],
+    Operador: "FERTAGUS",
+    TipoServico: "URB|SUBUR",
+    Live: true,
+    AtrasoDinamico: false, // sem horário → não afirmamos atraso
+    SemHorario: true, // flag p/ a app: comboio sem número/horário fiável
+    Ocupacao: null,
+    SituacaoComboio: "Em circulação",
+    NodesPassagemComboio: nodes,
+  };
+};
+
+// Limpeza de fantasmas: SÓ liberta memória de comboios que já não estão na TML
+// há muito tempo (terminaram a viagem). Nunca remove um fantasma que ainda
+// tenha GPS — e mantém o mapeamento de número ESTÁVEL durante uma janela larga
+// para que, se o comboio reaparecer (paragem longa, túnel), recupere o MESMO
+// ID fantasma em vez de receber um número novo.
+const GHOST_STALE_MS = 30 * 60 * 1000; // 30 min sem qualquer ping → terminou
+const cleanupGhostTrains = (now = Date.now()) => {
+  for (const [ghostId, reg] of GHOST_TRAIN_REGISTRY) {
+    if (Geo.isGpsFresh(ghostId, now)) continue; // vivo → nunca mexer
+    const lastSeen = reg.lastSeenTs || reg.createdAt || 0;
+    if (now - lastSeen > GHOST_STALE_MS) {
+      GHOST_TRAIN_REGISTRY.delete(ghostId);
+      REVERSED_ID_MAP.delete(reg.sourceTmlId);
+      delete OUTPUT_CACHE[ghostId];
+      Geo.removeVehicle(ghostId);
+    }
+  }
+};
+
 const processTrain = async (richInfo, originDateStr) => {
   const trainId = String(richInfo.id);
   const nowTime = Date.now();
@@ -1241,6 +1430,20 @@ const processTrain = async (richInfo, originDateStr) => {
     };
   }
   const mem = TRAIN_MEMORY[trainId];
+
+  // [SENTIDO INVERTIDO] Antes de tudo: o número do comboio bate com o sentido
+  // real do GPS? Se não, este número está corrompido — trata como fantasma
+  // sem horário e não o processes pelo horário (errado) deste ID.
+  const effectiveId = resolveDirectionalId(trainId, richInfo, nowObj);
+  if (effectiveId !== trainId) {
+    const ghostOut = buildGhostTrainOutput(effectiveId, nowObj);
+    if (ghostOut) {
+      OUTPUT_CACHE[effectiveId] = ghostOut;
+      delete OUTPUT_CACHE[trainId]; // o número errado não deve aparecer
+      mem.lastResult = null;
+      return ghostOut;
+    }
+  }
 
   const isExtraTrain = !!(richInfo._isExtra || richInfo._isDynamicExtra);
 
@@ -2153,6 +2356,7 @@ const updateCycle = async () => {
 
   // Limpar Ghost Suppressed expirados (delegado ao GhostManager)
   GhostManager.cleanupExpiredGhosts(now, RICH_SCHEDULE, parseSmartTime);
+  cleanupGhostTrains(nowMs); // [SENTIDO INVERTIDO] fantasmas 99xxx terminados
   for (const id of Object.keys(TRAIN_MEMORY)) {
     const m = TRAIN_MEMORY[id];
     if (m.isFetching) continue;
@@ -2389,7 +2593,7 @@ app.get("/fertagus", protectRoute, (req, res) => {
   }
 
   if (GPS_AUTONOMOUS_MODE) {
-    return res.json(filterGpsOnlyCache(OUTPUT_CACHE));
+    return res.json(buildGpsLiveResponse(OUTPUT_CACHE));
   }
 
   res.json(OUTPUT_CACHE);
@@ -2455,7 +2659,7 @@ app.get("/avisos", (req, res) => {
 const LIVETAGUS_ENDPOINTS_BASE = "/v2/fertagus/";
 
 app.get(`${LIVETAGUS_ENDPOINTS_BASE}feed`, (req, res) => {
-  if (IP_IS_DOWN) {
+  if (IP_IS_DOWN && !GPS_AUTONOMOUS_MODE) {
     return res.status(503).json({
       error: "IP_DOWN",
       status: "offline",
@@ -2474,7 +2678,7 @@ app.get(`${LIVETAGUS_ENDPOINTS_BASE}service-day/:date`, (req, res) => {
 });
 
 app.get(`${LIVETAGUS_ENDPOINTS_BASE}trips/:id`, (req, res) => {
-  if (IP_IS_DOWN) {
+  if (IP_IS_DOWN && !GPS_AUTONOMOUS_MODE) {
     return res.status(503).json({
       error: "IP_DOWN",
       status: "offline",
@@ -2510,7 +2714,7 @@ app.get(`${LIVETAGUS_ENDPOINTS_BASE}trips/:id`, (req, res) => {
 });
 
 app.get(`${LIVETAGUS_ENDPOINTS_BASE}stops/:id`, (req, res) => {
-  if (IP_IS_DOWN) {
+  if (IP_IS_DOWN && !GPS_AUTONOMOUS_MODE) {
     return res.status(503).json({
       error: "IP_DOWN",
       status: "offline",
@@ -2553,7 +2757,7 @@ app.get(`${LIVETAGUS_ENDPOINTS_BASE}stops`, (req, res) => {
 
 // apenas localização e bearing dos comboios para poupar recursos
 app.get(`${LIVETAGUS_ENDPOINTS_BASE}vehicle-positions`, (req, res) => {
-  if (IP_IS_DOWN) {
+  if (IP_IS_DOWN && !GPS_AUTONOMOUS_MODE) {
     return res.status(503).json({
       error: "IP_DOWN",
       status: "offline",
@@ -2593,7 +2797,7 @@ app.get(`${LIVETAGUS_ENDPOINTS_BASE}alerts`, (req, res) => {
 app.get("/", (req, res) =>
   res.json({
     status: "online",
-    version: "b6.0.0",
+    version: "b6.1.0",
     aviso:
       "Pedimos que não uses o nosso endpoint diretamente! Verifica toda as informações e código no github.",
     operational: getOperationalInfo(),
@@ -2613,7 +2817,7 @@ app.get("/", (req, res) =>
 );
 
 app.listen(PORT, () => {
-  console.log(`LiveTagus API vb6.0.0 ativa na porta ${PORT}`);
+  console.log(`LiveTagus API vb6.1.0 ativa na porta ${PORT}`);
   console.log(`Endpoint /fertagus protegido com API_KEY.`);
 
   // NÃO usar await aqui: checkOfflineTrains() faz station-poll com timeouts
@@ -2658,7 +2862,12 @@ app.listen(PORT, () => {
     // comboio fica em fallback estático).
     Geo.ingestTmlPayload(data, (veh) => {
       const meta = GtfsOutput.resolveTmlVehicle(veh);
-      if (meta) GtfsOutput.rememberTmlMeta(meta.trainId, meta.tml);
+      if (!meta) return meta;
+      GtfsOutput.rememberTmlMeta(meta.trainId, meta.tml);
+      // [SENTIDO INVERTIDO] Se este número foi reatribuído a um fantasma,
+      // encaminha o ping para o ID fantasma — é lá que a posição é acumulada.
+      const rerouted = REVERSED_ID_MAP.get(String(meta.trainId));
+      if (rerouted) return { ...meta, trainId: rerouted };
       return meta;
     });
   });
