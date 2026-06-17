@@ -1085,6 +1085,12 @@ function showIpDownPopup() {
 
         <h2 class="text-2xl font-bold text-zinc-900 dark:text-white mb-6 mt-2 leading-tight">Comunicado LiveTagus</h2>
 
+        <div class="w-full text-left mb-6 bg-amber-500/10 dark:bg-amber-500/5 rounded-xl p-5 border border-amber-500/30">
+          <p class="text-sm text-amber-800 dark:text-amber-200 leading-relaxed">
+            <strong class="font-bold text-white dark:text-white">ESCLARECIMENTO:</strong> A Fertagus não está envolvida em qualquer sentido no bloqueio do nosso servidor. A LiveTagus usava pontos não-oficiais da IP, que devido a uma compreensiva medida de segurança por parte deles, foi bloqueado.
+          </p>
+        </div>
+
         <div class="text-sm text-zinc-500 dark:text-zinc-400 mb-6 leading-relaxed space-y-4 text-left w-full">
           <p>Infelizmente, a LiveTagus (projeto independente) perdeu o acesso aos dados que alimentam os estados de circulação em tempo real desde sexta-feira, dia 12 de junho.</p>
           
