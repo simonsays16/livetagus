@@ -307,7 +307,6 @@ const expectedBaseIds = (isWeekendOrHoliday) => {
  * pedidos à IP por causa de um GET de um cliente).
  */
 const buildDayPayloadStatic = (dateStr, verifiedAtMs = Date.now()) => {
-  if (_ipBlocked) return buildDayPayloadStatic(dateStr, nowMs);
   const isWeekendOrHoliday = computeIsWeekendOrHoliday(dateStr);
   const richById = new Map();
   for (const t of _getRichSchedule()) richById.set(String(t.id), t);
