@@ -38,6 +38,16 @@ const ACCEL_MPS2 = 0.9; // 0 → 40 km/h (assumida constante p/ o modelo)
 const DECEL_MPS2 = 0.9; // frenagem de serviço
 const DWELL_MS = 60000; // tempo mínimo estacionário teórico na plataforma
 
+// ─── [TÚNEL DA PONTE] TROÇO SEM COBERTURA GPS ───────────────────────────────
+// Entre Campolide e Pragal o comboio atravessa o túnel/Ponte 25 de Abril, onde
+// o GPS deixa de atualizar. Sem pings novos, o motor lê velocidade ~0 e infla
+// o atraso (pensa que está parado). Neste troço NÃO calculamos atraso por GPS:
+// congelamos o último atraso conhecido até o comboio sair do túnel e voltar a
+// reportar posição. Aplica-se nos dois sentidos.
+const TUNNEL_SEGMENT = new Set(["campolide", "pragal"]);
+const isTunnelSegment = (fromKey, toKey) =>
+  TUNNEL_SEGMENT.has(fromKey) && TUNNEL_SEGMENT.has(toKey);
+
 // ─── ESTADO ──────────────────────────────────────────────────────────────────
 
 // { [trainId]: { arrivals:{key:{ts,delayS}}, departures:{...}, lastInRoute } }
@@ -45,7 +55,9 @@ const DELAYS = {};
 
 // Referências injetadas (evita dependência circular com gtfs-geo.js).
 let _geo = null;
-const init = (geoModule) => { _geo = geoModule; };
+const init = (geoModule) => {
+  _geo = geoModule;
+};
 
 const ensure = (trainId) =>
   (DELAYS[trainId] = DELAYS[trainId] || {
@@ -53,6 +65,16 @@ const ensure = (trainId) =>
     departures: {},
     lastInRoute: null,
   });
+
+// No congelamento do túnel, mantemos o atraso herdado mas projetamos um etaMs
+// simples: hora de chegada planeada + último atraso conhecido.
+const entryArrivalOr = (route, stationKey, lastInRoute, now) => {
+  const e = findRouteEntry(route, stationKey);
+  if (e && typeof e.arrivalMs === "number") {
+    return e.arrivalMs + lastInRoute.inRouteDelayS * 1000;
+  }
+  return lastInRoute.etaMs || now;
+};
 
 const findRouteEntry = (route, stationKey) =>
   Array.isArray(route) ? route.find((r) => r.key === stationKey) : null;
@@ -166,10 +188,35 @@ const kinematicRunTimeS = (v0, distM) => {
  *   inRouteDelayS, remainingM, effectiveSpeedMps, source
  * }
  */
-const computeInRoute = (trainId, { nextStationKey, route, now = Date.now() }) => {
+const computeInRoute = (
+  trainId,
+  { nextStationKey, route, now = Date.now() },
+) => {
   try {
     if (!_geo) throw new Error("geo não injetado (init)");
     if (!_geo.isGpsFresh(trainId, now)) return null; // → fallback estático
+
+    // [TÚNEL DA PONTE] Se o troço atual é Campolide↔Pragal, não confiamos no
+    // GPS (sem cobertura no túnel). Congela o último atraso conhecido; nunca
+    // inventa atraso novo a partir de uma velocidade falsamente nula.
+    {
+      const idxNext = route
+        ? route.findIndex((r) => r.key === nextStationKey)
+        : -1;
+      const fromKey = idxNext > 0 ? route[idxNext - 1].key : null;
+      if (fromKey && isTunnelSegment(fromKey, nextStationKey)) {
+        const d = ensure(trainId);
+        if (d.lastInRoute && typeof d.lastInRoute.inRouteDelayS === "number") {
+          return {
+            ...d.lastInRoute,
+            etaMs: entryArrivalOr(route, nextStationKey, d.lastInRoute, now),
+            frozen: true, // sinaliza: atraso herdado, não recalculado
+            source: "tunnel_frozen",
+          };
+        }
+        return null; // sem histórico → cai no fallback estático (horário)
+      }
+    }
 
     const remainingM = _geo.remainingDistanceM(trainId, nextStationKey);
     if (remainingM == null) return null;
@@ -240,7 +287,10 @@ const computeInRoute = (trainId, { nextStationKey, route, now = Date.now() }) =>
  * intermédios (cinemática a partir de paragem, v0=0) + dwell técnico de
  * 60 s por paragem intermédia.
  */
-const computeEtaToStation = (trainId, { targetKey, route, now = Date.now() }) => {
+const computeEtaToStation = (
+  trainId,
+  { targetKey, route, now = Date.now() },
+) => {
   try {
     if (!_geo || !Array.isArray(route)) return null;
     const state = _geo.getVehicle(trainId);
@@ -295,7 +345,9 @@ const shouldUseFallback = (trainId, now = Date.now()) =>
 // ─── LEITURA / LIMPEZA ───────────────────────────────────────────────────────
 
 const getDelays = (trainId) => DELAYS[trainId] || null;
-const cleanupTrain = (trainId) => { delete DELAYS[trainId]; };
+const cleanupTrain = (trainId) => {
+  delete DELAYS[trainId];
+};
 
 module.exports = {
   init,
