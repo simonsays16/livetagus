@@ -28,7 +28,6 @@ app.use(cors());
 const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.API_KEY;
 const API_BASE = process.env.API_BASE;
-const IP_BLOCKED = true;
 
 // Middleware para verificar a API Key
 const protectRoute = (req, res, next) => {
@@ -362,9 +361,6 @@ let LAST_RECOVERY_PING = 0;
 // --- FETCHING ---
 
 const fetchDetails = async (tid, dateStr) => {
-  // PROVISORIO
-  if (IP_BLOCKED) return null;
-
   const url = `${API_BASE}/horarios-ncombio/${tid}/${dateStr}`;
   try {
     const r = await fetch(url, { headers: FETCH_HEADERS, timeout: 10000 });
@@ -527,13 +523,6 @@ const checkOfflineTrains = async () => {
     return;
   }
 
-  if (IP_IS_DOWN || IP_BLOCKED) {
-    console.log(
-      "[CIRCUIT BREAKER] Offline Check cancelado. IP em baixo ou bloqueada.",
-    );
-    return;
-  }
-
   if (IP_IS_DOWN) {
     console.log("[CIRCUIT BREAKER] Offline Check cancelado. IP em baixo.");
     return;
@@ -552,10 +541,7 @@ const checkOfflineTrains = async () => {
   // POLL À ESTAÇÃO DE CORROIOS
   let stationMap;
   try {
-    // provisorio stationMap = await StationPoller.pollAllWindows(now);
-    stationMap = IP_BLOCKED
-      ? new Map()
-      : await StationPoller.pollAllWindows(now);
+    stationMap = await StationPoller.pollAllWindows(now);
   } catch (e) {
     console.error(
       "[FUTURE CHECK v2] Falha crítica no station-poll:",
@@ -1116,7 +1102,13 @@ const enterActiveSuppression = (richInfo, mem, isExtra) => {
 // fica APENAS a alimentar a posição no mapa (ingestTmlPayload no poller).
 // Não recalcula atrasos, não infere passagens, não reatribui números por
 // sentido. Religar gradualmente quando estabilizar.
-const GPS_CALCULATIONS_ENABLED = true;
+const GPS_CALCULATIONS_ENABLED = false;
+
+// [SENTIDO INVERTIDO] Interruptor MESTRE da deteção de sentido contrário.
+// false = COMPLETAMENTE DESLIGADO: nunca reatribui números, nunca cria
+// fantasmas 99xxx, nunca desvia pings. Os comboios mantêm SEMPRE o número e
+// sentido originais da IP/horário. Religar só quando a deteção estiver fiável.
+const DIRECTION_DETECTION_ENABLED = false;
 
 const GPS_AUTONOMOUS_MODE = true; // ← desligar quando a IP normalizar
 
@@ -1303,7 +1295,9 @@ const STATION_ORDER_KEYS = Object.keys(STATION_MAP_JSON_TO_IP);
 // pelo GPS contradiz o sentido declarado pelo número, devolve um ID fantasma.
 const resolveDirectionalId = (trainId, richInfo, nowObj) => {
   const idStr = String(trainId);
-  if (!GPS_CALCULATIONS_ENABLED) return idStr; // [ENVIO URGENTE] sem reatribuição
+  // [SENTIDO INVERTIDO] Desligado → devolve sempre o número original, intacto.
+  if (!DIRECTION_DETECTION_ENABLED) return idStr;
+  if (!GPS_CALCULATIONS_ENABLED) return idStr;
   // Já reatribuído nesta viagem → mantém o mesmo fantasma (sem oscilação).
   if (REVERSED_ID_MAP.has(idStr)) return REVERSED_ID_MAP.get(idStr);
   if (!richInfo || !richInfo.direction) return idStr;
@@ -2097,17 +2091,16 @@ const updateCycle = async () => {
   const now = new Date();
   const opInfo = getOperationalInfo(now);
   const opDateStr = opInfo.operationalDateStr;
-  if (IP_IS_DOWN || IP_BLOCKED) {
+  if (IP_IS_DOWN) {
     const nowMs = Date.now();
-    // Só tenta o ping de recuperação se não for um bloqueio intencional
-    if (!IP_BLOCKED && nowMs - LAST_RECOVERY_PING > 120000) {
+    if (nowMs - LAST_RECOVERY_PING > 120000) {
       LAST_RECOVERY_PING = nowMs;
       console.log(
         "[CIRCUIT BREAKER] IP em baixo. A enviar ping de recuperação...",
       );
       fetchDetails(String(14205), formatDateStr(new Date())).catch(() => {});
     }
-    // Se o modo autónomo não estiver ativo, aborta
+    // abortar, ip continua em baixo
     if (!GPS_AUTONOMOUS_MODE) {
       return;
     }
@@ -2812,7 +2805,7 @@ app.get(`${LIVETAGUS_ENDPOINTS_BASE}alerts`, (req, res) => {
 app.get("/", (req, res) =>
   res.json({
     status: "online",
-    version: "b6.2.2",
+    version: "b6.2.3",
     aviso:
       "Pedimos que não uses o nosso endpoint diretamente! Verifica toda as informações e código no github.",
     operational: getOperationalInfo(),
@@ -2832,7 +2825,7 @@ app.get("/", (req, res) =>
 );
 
 app.listen(PORT, () => {
-  console.log(`LiveTagus API vb6.2.2 ativa na porta ${PORT}`);
+  console.log(`LiveTagus API vb6.2.3 ativa na porta ${PORT}`);
   console.log(`Endpoint /fertagus protegido com API_KEY.`);
 
   // NÃO usar await aqui: checkOfflineTrains() faz station-poll com timeouts
@@ -2879,10 +2872,12 @@ app.listen(PORT, () => {
       const meta = GtfsOutput.resolveTmlVehicle(veh);
       if (!meta) return meta;
       GtfsOutput.rememberTmlMeta(meta.trainId, meta.tml);
-      // [SENTIDO INVERTIDO] Se este número foi reatribuído a um fantasma,
-      // encaminha o ping para o ID fantasma — é lá que a posição é acumulada.
-      const rerouted = REVERSED_ID_MAP.get(String(meta.trainId));
-      if (rerouted) return { ...meta, trainId: rerouted };
+      // [SENTIDO INVERTIDO] Só desvia pings se a deteção estiver ATIVA. Com ela
+      // desligada, o ping segue sempre com o número original (sem fantasmas).
+      if (DIRECTION_DETECTION_ENABLED) {
+        const rerouted = REVERSED_ID_MAP.get(String(meta.trainId));
+        if (rerouted) return { ...meta, trainId: rerouted };
+      }
       return meta;
     });
   });
