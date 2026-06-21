@@ -357,6 +357,7 @@ const subtractMinutes = (timeStr, minutes) => {
 let IP_CONSECUTIVE_ERRORS = 0;
 let IP_IS_DOWN = false;
 let LAST_RECOVERY_PING = 0;
+const IP_BLOCKED = false;
 
 // --- FETCHING ---
 
@@ -2805,7 +2806,7 @@ app.get(`${LIVETAGUS_ENDPOINTS_BASE}alerts`, (req, res) => {
 app.get("/", (req, res) =>
   res.json({
     status: "online",
-    version: "b6.2.3",
+    version: "b6.2.4",
     aviso:
       "Pedimos que não uses o nosso endpoint diretamente! Verifica toda as informações e código no github.",
     operational: getOperationalInfo(),
@@ -2825,7 +2826,7 @@ app.get("/", (req, res) =>
 );
 
 app.listen(PORT, () => {
-  console.log(`LiveTagus API vb6.2.3 ativa na porta ${PORT}`);
+  console.log(`LiveTagus API vb6.2.4 ativa na porta ${PORT}`);
   console.log(`Endpoint /fertagus protegido com API_KEY.`);
 
   // NÃO usar await aqui: checkOfflineTrains() faz station-poll com timeouts
