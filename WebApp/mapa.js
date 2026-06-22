@@ -323,6 +323,8 @@ document.addEventListener("DOMContentLoaded", () => {
       await initMap();
       await loadStaticData();
 
+      if (window.MapaCM) window.MapaCM.init(mapInstance);
+
       // Click num comboio → details (em estado mini, com route focus)
       window.MapaRender.setClickHandler((train) => {
         window.MapaDetails.open(train);

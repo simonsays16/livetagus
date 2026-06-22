@@ -416,6 +416,24 @@
                     por sentido diretamente no mapa, sem sair do ecrã.
                   </p>
                 </div>
+                <div class="relative">
+                  <span
+                    class="absolute -left-[37px] top-1.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-white dark:ring-[#09090b]"
+                  ></span>
+                  <h4 class="text-sm font-bold text-emerald-500 mb-1">
+                    Fase 3: Paragens da Carris Metropolitana
+                    <span
+                      class="text-xs font-mono text-zinc-400 opacity-80 tracking-wider"
+                    >
+                      (21 Jun 2026)
+                    </span>
+                  </h4>
+                  <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                    Integração das paragens da carris metropolitana com
+                    autocarros em tempo real. Indisponível em Pinhal Novo e
+                    Roma-Areeiro.
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -513,13 +531,14 @@
 
             <div class="relative pl-8 pb-4">
               <span
-                class="absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full animate-pulse bg-blue-500 ring-4 ring-white dark:ring-[#09090b]"
+                class="absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full animate-pulse bg-red-500 ring-4 ring-white dark:ring-[#09090b]"
               ></span>
               <div class="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
                 <span
-                  class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-500 border border-blue-500/20 uppercase tracking-wider w-fit"
+                  class="px-2 py-0.5 rounded text-[10px] font-bold bg-red-500/10 text-red-500 border border-red-500/20 uppercase tracking-wider w-fit"
                 >
-                  Planeado (Q2 2026)
+                  PARADO
+                  <!--Planeado (Q2 2026)-->
                 </span>
               </div>
               <button
@@ -573,6 +592,20 @@
                     Listagem de conexões em todas as estações (apenas serviços
                     disponíveis). Detalhes específicos para CP Lisboa, Metro de
                     Lisboa e MTS (linhas visíveis, sem horários).
+                  </p>
+                </div>
+
+                <div class="relative">
+                  <span
+                    class="absolute -left-[37px] top-1.5 w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse ring-4 ring-white dark:ring-[#09090b]"
+                  ></span>
+                  <h4 class="text-sm font-bold text-red-500 mb-1">PARADO</h4>
+                  <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                    Devido às alterações das APIs públicas e à migração de
+                    vários serviços para o ecossistema TML GO, o desenvolvimento
+                    desta funcionalidade encontra-se temporariamente suspenso. A
+                    integração será reavaliada quando existir uma plataforma
+                    estável e documentada para acesso aos dados.
                   </p>
                 </div>
 
@@ -872,4 +905,5 @@
 
     <div id="global-footer"></div>
   </body>
+  <script defer src="/train-scrollbar.js"></script>
 </html>

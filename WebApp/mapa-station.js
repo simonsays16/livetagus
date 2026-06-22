@@ -202,6 +202,7 @@
 
   // ─── AÇÕES PÚBLICAS ──────────────────────────────────────────────────
   function open(station) {
+    if (window.MapaCM && window.MapaCM.isOpen()) window.MapaCM.close();
     ensureElements();
     if (!panel || !backdrop || !station) return;
 
@@ -266,7 +267,7 @@
     }, 320);
     currentStation = null;
 
-    if (!silent && window.MapaRender) window.MapaRender.showWholeLine();
+    //if (!silent && window.MapaRender) window.MapaRender.showWholeLine();
   }
 
   function onKey(e) {

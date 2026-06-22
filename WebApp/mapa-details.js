@@ -627,6 +627,7 @@
   }
 
   function open(train, opts) {
+    if (window.MapaCM && window.MapaCM.isOpen()) window.MapaCM.close();
     ensureElements();
     if (!panel || !backdrop || !train) return;
     if (window.MapaStation && window.MapaStation.isOpen()) {

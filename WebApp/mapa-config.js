@@ -23,7 +23,7 @@
     ALERTS_REFRESH_MS: 90_000,
 
     // ─── INTERVALOS ────────────────────────────────────────────────────
-    API_REFRESH_MS: 30_000,
+    API_REFRESH_MS: 15_000,
     POSITION_UPDATE_MS: 5_000,
     LIVE_REFRESH_MS: 5_000, // poll das posições reais (/mapa)
     // Duração da animação do ponto. Propositadamente MAIOR que POSITION_UPDATE_MS

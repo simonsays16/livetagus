@@ -176,6 +176,18 @@
   .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 }
 
+@layer base {
+  :root {
+    --rail-w: 50px; --train-w: 33px;
+    --rail-green: #10b981; --rail-green-glow: rgba(16,185,129,.45);
+    --rail-tie: rgba(9,9,11,.13); --rail-line: rgba(9,9,11,.22);
+  }
+  .dark { --rail-tie: rgba(255,255,255,.13); --rail-line: rgba(255,255,255,.2); }
+  /* esconder scrollbar nativa em todos os browsers */
+  html { scrollbar-width: none; -ms-overflow-style: none; }
+  html::-webkit-scrollbar, body::-webkit-scrollbar { width:0; height:0; display:none; }
+}
+
 @layer utilities {
   .dot-ping { animation: pulse-dot 2s infinite; }
   .station-name { overflow-wrap: break-word; word-break: break-word; hyphens: auto; }

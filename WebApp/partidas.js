@@ -413,7 +413,7 @@
       statusText,
       dotStatus,
       delayMin: delayMin != null ? delayMin : 0,
-      occupancy: t.Ocupacao != null ? t.Ocupacao : null,
+      occupancy: special ? null : t.Ocupacao != null ? t.Ocupacao : null,
       carriages: t.Carruagens != null ? t.Carruagens : 4,
       timeStr: node ? nodeTimeStr(node) || "--:--" : "--:--",
       ts: node ? nodeTs(node) : Infinity,
@@ -452,7 +452,8 @@
       if (res.status === 503) {
         model.ipDown = true;
       } else if (res.ok) {
-        const data = await res.json();
+        // PROVISORIO
+        //const data = await res.json();
         if (data && data.error) {
           if (data.error === "IP_DOWN") model.ipDown = true;
         } else {

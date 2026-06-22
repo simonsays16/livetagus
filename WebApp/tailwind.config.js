@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: ["./*.{html,js}"],
+  content: ["./*.{html,js}", "./index.js", "./menu.js"],
   darkMode: "class",
 
   safelist: [
@@ -27,6 +27,11 @@ module.exports = {
     "bg-emerald-500",
     "bg-amber-500",
     "bg-red-500",
+    "bg-blue-600",
+    "bg-zinc-800",
+    "text-white",
+    "text-zinc-400",
+    "text-[10px]",
 
     // Cores Específicas da Timeline/Detalhes
     "bg-blue-500",

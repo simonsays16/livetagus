@@ -1257,6 +1257,21 @@
           transition: none !important;
         }
       }
+
+      /* logos CM dark/light */
+      .cm-logo-light {
+        display: block;
+      }
+      .cm-logo-dark {
+        display: none;
+      }
+
+      html.dark .cm-logo-light {
+        display: none !important;
+      }
+      html.dark .cm-logo-dark {
+        display: block !important;
+      }
     </style>
   </head>
 
@@ -1447,6 +1462,7 @@
     <script src="./mapa-station.js" defer></script>
     <script src="./mapa-share.js" defer></script>
     <script src="./mapa-alerts.js" defer></script>
+    <script src="./mapa-cm.js" defer></script>
     <script src="./mapa.js" defer></script>
   </body>
 </html>

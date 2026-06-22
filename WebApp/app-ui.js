@@ -1087,7 +1087,7 @@ function showIpDownPopup() {
 
         <div class="w-full text-left mb-6 bg-amber-500/10 dark:bg-amber-500/5 rounded-xl p-5 border border-amber-500/30">
           <p class="text-sm text-amber-800 dark:text-amber-200 leading-relaxed">
-            <strong class="font-bold text-white dark:text-white">ESCLARECIMENTO:</strong> A Fertagus não está envolvida em qualquer sentido no bloqueio do nosso servidor. A LiveTagus usava pontos não-oficiais da IP, que devido a uma compreensiva medida de segurança por parte deles, foi bloqueado.
+            <strong class="font-bold text-black dark:text-white">ESCLARECIMENTO:</strong> A Fertagus não está envolvida em qualquer sentido no bloqueio do nosso servidor. A LiveTagus usava pontos não-oficiais da IP, que devido a uma compreensiva medida de segurança por parte deles, foi bloqueado.
           </p>
         </div>
 

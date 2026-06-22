@@ -158,7 +158,7 @@ document.addEventListener("DOMContentLoaded", () => {
     {
       time: "17:45",
       greet: "Boa tarde! Sugestão:",
-      dir: "Coina",
+      dir: "Margem",
       train: "long",
       color: "green",
       fill: 3,

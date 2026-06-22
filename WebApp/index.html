@@ -46,9 +46,13 @@
     <link rel="alternate icon" href="./imagens/favicon-96x96.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="./site.webmanifest" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
+    />
     <link href="./output.css" rel="stylesheet" />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
 
@@ -63,28 +67,81 @@
         "applicationCategory": "TravelApplication",
         "operatingSystem": "Any",
         "datePublished": "2026-03-01",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "EUR"
-        },
-        "author": {
-          "@type": "Person",
-          "name": "Simão Dias"
-        }
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+        "author": { "@type": "Person", "name": "Simão Dias" }
       }
     </script>
 
+    <!-- ============================================================
+         LIVETAGUS · Art Direction
+         Scandinavian · Large-Type · Quiet Luxury · Premium Minimal
+         Todo o sistema visual vive aqui, em CSS próprio, para render
+         de forma idêntica com ou sem rebuild do Tailwind.
+         ============================================================ -->
     <style>
+      :root {
+        --bg: #ffffff;
+        --bg-soft: #fafafa;
+        --surface: #ffffff;
+        --surface-2: #fbfbfb;
+        --inset: #f4f4f5;
+        --hairline: rgba(9, 9, 11, 0.08);
+        --hairline-strong: rgba(9, 9, 11, 0.14);
+        --text: #18181b;
+        --text-soft: #52525b;
+        --text-faint: #a1a1aa;
+        --accent: #2563eb;
+        --shadow:
+          0 1px 2px rgba(9, 9, 11, 0.05), 0 12px 30px -22px rgba(9, 9, 11, 0.25);
+        --ft-green: #046a38;
+        --ft-yellow: #ffe900;
+        --ft-red: #da291c;
+        --ease: cubic-bezier(0.16, 1, 0.3, 1);
+        --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+
+        /* verde do marcador (usado pela tile da marca; a scrollbar-comboio
+           é agora um módulo standalone: train-scrollbar.js) */
+        --rail-green: #10b981;
+        --rail-green-glow: rgba(16, 185, 129, 0.45);
+      }
+      html.dark {
+        --bg: #09090b;
+        --bg-soft: #0b0b0d;
+        --surface: rgba(255, 255, 255, 0.022);
+        --surface-2: rgba(255, 255, 255, 0.04);
+        --inset: rgba(255, 255, 255, 0.04);
+        --hairline: rgba(255, 255, 255, 0.08);
+        --hairline-strong: rgba(255, 255, 255, 0.16);
+        --text: #ffffff;
+        --text-soft: #a1a1aa;
+        --text-faint: #52525b;
+        --accent: #3b82f6;
+        --shadow:
+          0 1px 0 rgba(255, 255, 255, 0.03) inset,
+          0 24px 60px -40px rgba(0, 0, 0, 0.9);
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
       body {
         font-family: "Inter", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
       }
-      .hero-text {
-        line-height: 0.95;
+      ::selection {
+        background: color-mix(in srgb, var(--accent) 26%, transparent);
       }
       *:focus-visible {
-        outline: 2px solid #3b82f6;
-        outline-offset: 2px;
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+        border-radius: 2px;
+      }
+
+      .mono {
+        font-family: "JetBrains Mono", monospace;
       }
 
       .spin {
@@ -92,405 +149,1398 @@
       }
       @keyframes spin {
         from {
-          transform: rotate(0deg);
+          transform: rotate(0);
         }
         to {
           transform: rotate(360deg);
         }
       }
+
+      /* ---------- LAYOUT SHELL ---------- */
+      .lt-wrap {
+        width: 100%;
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 0 22px;
+      }
+      @media (min-width: 768px) {
+        .lt-wrap {
+          padding: 0 36px;
+        }
+      }
+      /* folga ligeira à direita p/ o comboio (desktop); o mobile usa uma
+         barra de 4px colada à margem, por isso não precisa de goteira */
+      @media (min-width: 768px) and (max-width: 1340px) {
+        .lt-wrap {
+          padding-right: 44px;
+        }
+      }
+
+      /* ============================================================
+         HERO
+         ============================================================ */
+      .lt-hero {
+        position: relative;
+        min-height: 100svh;
+        display: flex;
+        align-items: center;
+        padding: 132px 0 64px;
+        overflow: hidden;
+      }
+      /* glow ambiente (só dark) */
+      .lt-hero-glow {
+        position: absolute;
+        top: 38%;
+        left: 50%;
+        width: 78vw;
+        height: 60vh;
+        transform: translate(-50%, -50%);
+        background: radial-gradient(
+          circle,
+          color-mix(in srgb, var(--accent) 16%, transparent),
+          transparent 60%
+        );
+        filter: blur(120px);
+        pointer-events: none;
+        z-index: 0;
+        display: none;
+      }
+      html.dark .lt-hero-glow {
+        display: block;
+      }
+
+      .lt-hero-inner {
+        position: relative;
+        z-index: 2;
+        max-width: 880px;
+      }
+
+      .lt-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--text-soft);
+        margin-bottom: 30px;
+      }
+      .lt-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--accent);
+        box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 70%, transparent);
+        flex: none;
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .lt-dot {
+          animation: ping 2.4s var(--ease) infinite;
+        }
+      }
+      @keyframes ping {
+        0% {
+          box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent);
+        }
+        70%,
+        100% {
+          box-shadow: 0 0 0 9px transparent;
+        }
+      }
+
+      .lt-title {
+        font-weight: 300;
+        font-size: clamp(3rem, 10.2vw, 8.4rem);
+        line-height: 0.9;
+        letter-spacing: -0.045em;
+        margin: 0;
+      }
+      .lt-title .strong {
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .lt-title .accent {
+        color: var(--text);
+      }
+      /* o ponto final É o sistema, ao vivo */
+      .lt-title-dot {
+        display: inline-block;
+        width: 0.16em;
+        height: 0.16em;
+        border-radius: 50%;
+        background: var(--accent);
+        vertical-align: 0.06em;
+        margin-left: 0.1em;
+        box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 60%, transparent);
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .lt-title-dot {
+          animation: ping 2.4s var(--ease) infinite;
+        }
+      }
+
+      /* máscara de revelação por linha */
+      .lt-line {
+        display: block;
+        overflow: hidden;
+      }
+      .lt-line__i {
+        display: inline-block;
+        will-change: transform;
+        margin-bottom: 17px;
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .lt-line__i {
+          transform: translateY(112%);
+          animation: lineUp 0.95s var(--ease) forwards;
+        }
+        .lt-line:nth-of-type(1) .lt-line__i {
+          animation-delay: 0.06s;
+        }
+        .lt-line:nth-of-type(2) .lt-line__i {
+          animation-delay: 0.16s;
+        }
+      }
+      @keyframes lineUp {
+        to {
+          transform: translateY(0);
+        }
+      }
+
+      /* filete tricolor Fertagus, desenha-se no load */
+      .lt-rule {
+        height: 2px;
+        width: 132px;
+        max-width: 60vw;
+        margin: 34px 0 30px;
+        background: linear-gradient(
+          90deg,
+          var(--ft-green),
+          var(--ft-yellow) 52%,
+          var(--ft-red)
+        );
+        border-radius: 2px;
+        transform-origin: left center;
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .lt-rule {
+          transform: scaleX(0);
+          animation: ruleIn 1s var(--ease) 0.5s forwards;
+        }
+      }
+      @keyframes ruleIn {
+        to {
+          transform: scaleX(1);
+        }
+      }
+
+      .lt-lede {
+        max-width: 32rem;
+        font-size: clamp(1rem, 1.4vw, 1.2rem);
+        line-height: 1.6;
+        color: var(--text-soft);
+        font-weight: 400;
+      }
+      .lt-lede b {
+        color: var(--text);
+        font-weight: 500;
+      }
+
+      .lt-fade {
+        opacity: 0;
+        animation: fadeUp 0.9s var(--ease) forwards;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .lt-fade {
+          opacity: 1;
+          animation: none;
+        }
+      }
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(16px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      .d1 {
+        animation-delay: 0.5s;
+      }
+      .d2 {
+        animation-delay: 0.62s;
+      }
+      .d3 {
+        animation-delay: 0.74s;
+      }
+
+      /* ---------- BOTÕES ---------- */
+      .lt-cta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        margin-top: 38px;
+      }
+      .lt-btn {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        height: 54px;
+        padding: 0 30px;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        cursor: pointer;
+        overflow: hidden;
+        transition:
+          transform 0.45s var(--ease),
+          border-color 0.4s var(--ease),
+          background 0.4s var(--ease);
+        text-decoration: none;
+        border: 1px solid transparent;
+      }
+      .lt-btn--solid {
+        background: var(--text);
+        color: var(--bg);
+      }
+      .lt-btn--solid span,
+      .lt-btn--solid #main-btn-text {
+        position: relative;
+        z-index: 1;
+      }
+      .lt-btn--solid .lt-btn__fill {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        background: var(--accent);
+        transform: scaleX(0);
+        transform-origin: left center;
+        transition: transform 0.5s var(--ease);
+      }
+      @media (hover: hover) {
+        .lt-btn--solid:hover {
+          transform: translateY(-2px);
+          color: #fff;
+        }
+        .lt-btn--solid:hover .lt-btn__fill {
+          transform: scaleX(1);
+        }
+        html.dark .lt-btn--solid:hover {
+          color: #fff;
+        }
+      }
+      .lt-btn--ghost {
+        background: transparent;
+        color: var(--text);
+        border-color: var(--hairline-strong);
+      }
+      @media (hover: hover) {
+        .lt-btn--ghost:hover {
+          transform: translateY(-2px);
+          background: var(--inset);
+          border-color: var(--text-faint);
+        }
+      }
+      .lt-hint {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+        margin: 16px 0 0;
+      }
+
+      /* mensagens de instalação PWA */
+      #installing-msg,
+      #installed-msg {
+        max-width: 320px;
+        margin-top: 14px;
+      }
+      .lt-install-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text);
+        margin-bottom: 8px;
+      }
+      .lt-install-row span {
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
+      .lt-install-p {
+        font-size: 11px;
+        line-height: 1.6;
+        color: var(--text-soft);
+      }
+
+      /* ============================================================
+         BENTO
+         ============================================================ */
+      .lt-section {
+        padding: 56px 0 110px;
+        position: relative;
+      }
+      .lt-section-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 26px;
+      }
+      .lt-section-title {
+        font-size: clamp(1.6rem, 4vw, 2.6rem);
+        font-weight: 300;
+        letter-spacing: -0.03em;
+        line-height: 1;
+        margin: 0;
+      }
+      .lt-section-title b {
+        font-weight: 600;
+      }
+
+      .lt-bento {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: 1fr;
+      }
+      @media (min-width: 680px) {
+        .lt-bento {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .c-sched,
+        .c-map,
+        .c-load {
+          grid-column: 1 / -1;
+        }
+      }
+      @media (min-width: 1024px) {
+        .lt-bento {
+          grid-template-columns: repeat(6, 1fr);
+          grid-auto-rows: minmax(158px, auto);
+          grid-template-areas:
+            "map  map  map  sched  sched  sched "
+            "map  map  map load  load  load"
+            "free  priv  priv  speed  prec  prec";
+        }
+        .c-sched {
+          grid-area: sched;
+        }
+        .c-map {
+          grid-area: map;
+        }
+        .c-load {
+          grid-area: load;
+        }
+        .c-prec {
+          grid-area: prec;
+        }
+        .c-priv {
+          grid-area: priv;
+        }
+        .c-speed {
+          grid-area: speed;
+        }
+        .c-free {
+          grid-area: free;
+        }
+        .c-brand {
+          grid-area: brand;
+        }
+      }
+
+      .lt-cell {
+        position: relative;
+        isolation: isolate;
+        border: 1px solid var(--hairline);
+        background: var(--surface);
+        border-radius: 24px;
+        padding: 24px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        transition:
+          transform 0.55s var(--ease),
+          border-color 0.5s var(--ease),
+          background 0.5s var(--ease);
+        display: flex;
+        flex-direction: column;
+      }
+      .lt-cell > * {
+        position: relative;
+        z-index: 1;
+      }
+      @media (hover: hover) {
+        .lt-cell:hover {
+          transform: translateY(-4px);
+          border-color: var(--hairline-strong);
+        }
+      }
+      /* spotlight do cursor (apenas nos grandes) */
+      .lt-spot::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        border-radius: inherit;
+        background: radial-gradient(
+          420px circle at var(--mx, 50%) var(--my, 50%),
+          color-mix(in srgb, var(--accent) 13%, transparent),
+          transparent 62%
+        );
+        opacity: 0;
+        transition: opacity 0.45s var(--ease);
+        pointer-events: none;
+      }
+      @media (hover: hover) {
+        .lt-spot:hover::before {
+          opacity: 1;
+        }
+      }
+
+      .lt-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 11px;
+        background: color-mix(in srgb, var(--accent) 12%, transparent);
+        color: var(--accent);
+        flex: none;
+      }
+      .lt-chip.emerald {
+        background: rgba(16, 185, 129, 0.12);
+        color: #10b981;
+      }
+      .lt-chip.amber {
+        background: rgba(245, 158, 11, 0.12);
+        color: #f59e0b;
+      }
+      .lt-chip svg {
+        width: 19px;
+        height: 19px;
+      }
+
+      .lt-cell-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+      .lt-cell-head h3 {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--text);
+        margin: 0;
+        line-height: 1.1;
+      }
+      .lt-cell-head p {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+        margin: 3px 0 0;
+      }
+      .lt-cell-body {
+        font-size: 12px;
+        line-height: 1.65;
+        color: var(--text-soft);
+      }
+      .lt-cell-body b {
+        color: var(--text);
+        font-weight: 500;
+      }
+
+      /* tiles de stat compactos */
+      .lt-stat {
+        justify-content: space-between;
+        min-height: 158px;
+      }
+      .lt-stat .lt-stat-label {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+      }
+      .lt-stat .lt-stat-h {
+        font-size: clamp(1.15rem, 2vw, 1.5rem);
+        font-weight: 300;
+        letter-spacing: -0.02em;
+        color: var(--text);
+        margin: 12px 0 8px;
+        line-height: 1;
+      }
+      .lt-stat .lt-stat-p {
+        font-size: 11.5px;
+        line-height: 1.55;
+        color: var(--text-soft);
+      }
+
+      /* ---------- TILE: HORÁRIO INTELIGENTE ---------- */
+      .lt-sched-card {
+        margin-top: auto;
+        background: var(--bg-soft);
+        border: 1px solid var(--hairline);
+        border-radius: 16px;
+        padding: 17px 18px 18px;
+        position: relative;
+        overflow: hidden;
+      }
+      html.dark .lt-sched-card {
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .lt-sched-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .lt-sched-live {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        flex: none;
+        background: var(--accent);
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .lt-sched-live {
+          animation: ping 2.4s var(--ease) infinite;
+          box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent);
+        }
+      }
+      #demo-greeting {
+        margin: 0;
+        font-size: 11px;
+        color: var(--text-faint);
+        font-family: "JetBrains Mono", monospace;
+        letter-spacing: 0.03em;
+      }
+
+      .lt-sched-row {
+        margin-top: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      #demo-clock {
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 600;
+        font-size: 2.15rem;
+        line-height: 1;
+        letter-spacing: -0.02em;
+        color: var(--text);
+        font-variant-numeric: tabular-nums;
+        transition: opacity 0.3s var(--ease-soft);
+      }
+      .lt-sched-dir {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+      }
+      .lt-sched-arrow {
+        color: var(--text-faint);
+        display: grid;
+        place-items: center;
+      }
+      .lt-sched-arrow svg {
+        width: 16px;
+        height: 16px;
+        display: block;
+      }
+      .lt-sched-sentido {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--text-faint);
+        font-family: "JetBrains Mono", monospace;
+      }
+      #demo-direction {
+        transition: opacity 0.3s var(--ease-soft);
+        white-space: nowrap;
+        font-family: "JetBrains Mono", monospace;
+      }
+
+      /* mini-rota decorativa (origem → destino) */
+      .lt-sched-route {
+        margin-top: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .lt-sched-route .o {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--accent);
+        flex: none;
+        box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 14%, transparent);
+      }
+      .lt-sched-route .rail {
+        flex: 1;
+        height: 2px;
+        border-radius: 2px;
+        background: linear-gradient(
+          to right,
+          var(--accent),
+          var(--hairline-strong)
+        );
+      }
+      .lt-sched-route .dest {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        flex: none;
+        border: 2px solid var(--text-faint);
+        background: var(--bg);
+      }
+
+      /* ---------- TILE: LOTAÇÃO ---------- */
+      .lt-train-stage {
+        height: 56px;
+        border-radius: 14px;
+        background: var(--inset);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        margin: 4px 0 16px;
+      }
+      .lt-load-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        gap: 12px;
+      }
+      #demo-title {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text);
+        font-style: italic;
+        transition: all 0.4s var(--ease);
+      }
+      #status-badge {
+        padding: 4px 9px;
+        border-radius: 7px;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        transition: all 0.4s var(--ease);
+      }
+      .lt-disclaimer {
+        font-size: 9.5px;
+        line-height: 1.6;
+        color: var(--text-faint);
+        margin-top: 10px;
+      }
+      .lt-disclaimer a {
+        color: var(--text-soft);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+      }
+
+      /* carruagens — comportamento preservado p/ index.js */
+      .car-v2 {
+        width: 1.6rem;
+        height: 1.05rem;
+        border-radius: 0.28rem;
+        flex-shrink: 0;
+        background: var(--hairline-strong);
+        transition:
+          width 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+          margin-left 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+          opacity 0.4s ease,
+          background 0.3s;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+      }
+      #train-wrapper-v2 {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+      }
+      .extra-v2.collapsed {
+        width: 0 !important;
+        opacity: 0 !important;
+        margin-left: -0.25rem !important;
+        pointer-events: none;
+      }
+      .dimmed-v2 {
+        background: #e4e4e7 !important;
+        opacity: 0.4;
+        box-shadow: none;
+      }
+      html.dark .dimmed-v2 {
+        background: #27272a !important;
+        opacity: 0.45;
+      }
+
+      .car-v2.bg-emerald-500 {
+        background: #10b981 !important;
+        box-shadow: none;
+      }
+      .car-v2.bg-red-500 {
+        background: #ef4444 !important;
+        box-shadow: none;
+      }
+
+      /* ---------- TILE: MAPA ---------- */
+      .lt-cell-map {
+        padding: 0;
+        min-height: 400px;
+        position: relative;
+        overflow: hidden;
+        background: var(--surface-2);
+        text-decoration: none;
+      }
+      /* grelha de "ruas" muito ténue (sem imagens) */
+      .lt-cell-map::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background:
+          repeating-linear-gradient(
+            0deg,
+            var(--hairline) 0 1px,
+            transparent 1px 40px
+          ),
+          repeating-linear-gradient(
+            90deg,
+            var(--hairline) 0 1px,
+            transparent 1px 40px
+          );
+        -webkit-mask-image: radial-gradient(
+          120% 90% at 78% 30%,
+          #000 30%,
+          transparent 86%
+        );
+        mask-image: radial-gradient(
+          120% 90% at 78% 30%,
+          #000 30%,
+          transparent 86%
+        );
+        opacity: 0.7;
+      }
+      .lt-map-inner {
+        position: relative;
+        z-index: 1;
+        padding: 22px;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: inherit;
+      }
+      .lt-map-live {
+        align-self: flex-start;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: #fff;
+        background: rgba(9, 9, 11, 0.55);
+        padding: 6px 11px;
+        border-radius: 99px;
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+      }
+      .lt-map-live .o {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #34d399;
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .lt-map-live .o {
+          animation: ping 2.4s var(--ease) infinite;
+          box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.6);
+        }
+      }
+      .lt-map-foot {
+        margin-top: auto;
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .lt-map-foot h3 {
+        color: var(--text);
+        font-size: 1.05rem;
+        font-weight: 500;
+        letter-spacing: -0.02em;
+        margin: 0;
+      }
+      .lt-map-foot p {
+        color: var(--text-soft);
+        font-size: 11.5px;
+        margin: 4px 0 0;
+      }
+      .lt-map-arrow {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        flex: none;
+        display: grid;
+        place-items: center;
+        background: var(--text);
+        color: var(--bg);
+        transition: transform 0.45s var(--ease);
+      }
+      @media (hover: hover) {
+        .lt-cell-map:hover .lt-map-arrow {
+          transform: translate(3px, -3px);
+        }
+      }
+
+      /* ---------- TILE: MARCA / COMBOIO ---------- */
+      .lt-cell-brand {
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        gap: 12px;
+        min-height: 158px;
+      }
+      /* marcador verde (igual ao do comboio-scrollbar), sem imagens */
+      .lt-brand-marker {
+        position: relative;
+        width: 46px;
+        height: 46px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--bg);
+        border: 2.5px solid var(--rail-green);
+        box-shadow:
+          0 0 0 2px color-mix(in srgb, var(--bg) 85%, transparent),
+          0 0 16px var(--rail-green-glow),
+          0 1px 6px rgba(0, 0, 0, 0.18);
+      }
+      .lt-brand-marker svg {
+        width: 24px;
+        height: 24px;
+        display: block;
+      }
+      .lt-cell-brand p {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 9.5px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+      }
+
+      /* reveal on scroll */
+      .lt-js [data-reveal] {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .lt-js [data-reveal] {
+          transition:
+            opacity 0.75s var(--ease),
+            transform 0.75s var(--ease);
+          transition-delay: var(--d, 0s);
+        }
+      }
+      [data-reveal].is-in {
+        opacity: 1;
+        transform: none;
+      }
+      /* ============================================================
+         MAPA AO VIVO NA HOMEPAGE  ·  preenchido por home-map.js
+         (a scrollbar-comboio é agora um módulo à parte: train-scrollbar.js)
+         ============================================================ */
+      /* canvas do mapa (por baixo das sobreposições) */
+      #home-map {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+      }
+      /* a grelha de "ruas" decorativa só faz sentido sem mapa real */
+      #home-map-card.lt-cell-map::before {
+        display: none;
+      }
+
+      /* skeleton / carregamento */
+      #home-map-skeleton {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        background: var(--surface-2);
+        color: var(--text-soft);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        font-weight: 500;
+        transition: opacity 0.4s var(--ease);
+      }
+      .lt-map-spin {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        border: 2px solid var(--hairline-strong);
+        border-top-color: var(--rail-green);
+        animation: spin 1s linear infinite;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .lt-map-spin {
+          animation: none;
+        }
+      }
+
+      /* scrim inferior p/ legibilidade do texto sobre os tiles */
+      #home-map-card::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 46%;
+        z-index: 0;
+        pointer-events: none;
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.5), transparent);
+      }
+      /* texto da legenda passa a branco sobre o mapa */
+      #home-map-card .lt-map-foot h3 {
+        color: #fff;
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
+      }
+      #home-map-card .lt-map-foot p {
+        color: rgba(255, 255, 255, 0.85);
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+      }
+      #home-map-card .lt-map-arrow {
+        background: #fff;
+        color: #09090b;
+      }
     </style>
   </head>
 
   <body
-    class="bg-white text-zinc-900 dark:bg-[#09090b] dark:text-white overflow-x-hidden selection:bg-blue-500/30 transition-colors duration-500"
+    class="bg-white text-zinc-900 dark:bg-[#09090b] dark:text-white overflow-x-hidden transition-colors duration-500"
   >
     <div id="global-nav"></div>
 
-    <main
-      class="relative min-h-screen flex flex-col justify-center px-6 pt-24 pb-12"
-    >
-      <div
-        class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vh] bg-blue-600/10 rounded-full blur-[150px] pointer-events-none z-0 hidden dark:block"
-      ></div>
+    <main>
+      <!-- ===================== HERO ===================== -->
+      <section class="lt-hero">
+        <div class="lt-hero-glow"></div>
 
-      <div class="relative z-10 max-w-4xl mx-auto w-full">
-        <div class="mb-12 animate-fade-in-up">
-          <h1
-            class="hero-text text-5xl md:text-8xl font-light tracking-tighter mb-6 text-transparent bg-clip-text bg-gradient-to-br from-zinc-900 via-zinc-700 to-zinc-500 dark:from-white dark:via-zinc-200 dark:to-zinc-500"
-          >
-            A FERTAGUS
-            <br />
-            <span class="font-semibold text-zinc-900 dark:text-white">
-              EM TEMPO REAL.
-            </span>
-          </h1>
+        <div class="lt-wrap">
+          <div class="lt-hero-inner">
+            <!--<p class="lt-eyebrow lt-fade d1">
+              <span class="lt-dot"></span>
+              Fertagus &nbsp;·&nbsp; Margem Sul &nbsp;⇄&nbsp; Lisboa
+            </p>-->
 
-          <p
-            class="text-lg md:text-xl text-zinc-600 dark:text-zinc-400 font-light max-w-lg leading-relaxed"
-          >
-            Esquece o desconhecido. A
-            <span class="text-zinc-900 dark:text-white font-medium">
-              LiveTagus
-            </span>
-            mostra-te onde anda o comboio, estima atrasos ao segundo e avisa-te
-            de supressões.
-          </p>
-        </div>
+            <h1 class="lt-title">
+              <span class="lt-line">
+                <span class="lt-line__i">Fertagus em</span>
+              </span>
+              <span class="lt-line">
+                <span class="lt-line__i strong accent">
+                  TEMPO REAL
+                  <span class="lt-title-dot"></span>
+                </span>
+              </span>
+            </h1>
 
-        <div
-          class="flex flex-col gap-3 w-full max-w-xs items-start animate-fade-in-up"
-          style="animation-delay: 0.1s"
-        >
-          <button
-            id="main-btn"
-            class="hidden w-60 group relative px-8 py-4 bg-zinc-900 dark:bg-white text-white dark:text-black font-bold text-sm uppercase tracking-widest overflow-hidden transition-transform hover:scale-[1.02] shadow-lg text-center"
-            aria-label="Ação Principal"
-          >
-            <span
-              id="main-btn-text"
-              class="relative z-10 flex items-center justify-center gap-2"
-            >
-              Instalar WebApp
-            </span>
-            <div
-              class="absolute inset-0 bg-red-600 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"
-            ></div>
-          </button>
+            <div class="lt-rule" aria-hidden="true"></div>
 
-          <div id="installing-msg" class="hidden mt-1 max-w-xs text-left">
-            <div
-              class="flex items-center gap-2 text-zinc-900 dark:text-white mb-2"
-            >
-              <svg
-                class="w-3 h-3 spin"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
+            <p class="lt-lede lt-fade d2">
+              Com a
+              <b>LiveTagus</b>
+              podes seguir cada comboio da Fertagus no mapa, em tempo real, com
+              <b>estimativas de atraso</b>
+              . Sem anúncios. Sem registo.
+              <!--e avisos de supressão-->
+            </p>
+
+            <div class="lt-cta lt-fade d3">
+              <!-- Botão contextual (PWA / Tempo Real) — controlado pelo index.js -->
+              <button
+                id="main-btn"
+                class="lt-btn lt-btn--solid hidden group"
+                aria-label="Ação Principal"
               >
-                <circle cx="12" cy="12" r="10"></circle>
-                <path d="M12 6v6l4 2"></path>
-              </svg>
-              <span class="text-[10px] font-bold uppercase tracking-widest">
-                A preparar instalação...
-              </span>
+                <span id="main-btn-text">Instalar WebApp</span>
+                <span class="lt-btn__fill" aria-hidden="true"></span>
+              </button>
+
+              <!-- CTA sempre visível: a funcionalidade ativa é o Mapa -->
+              <a
+                href="./mapa"
+                class="lt-btn lt-btn--solid group"
+                aria-label="Abrir o Mapa em direto"
+              >
+                <span>Abrir Mapa</span>
+                <span class="lt-btn__fill" aria-hidden="true"></span>
+              </a>
+
+              <!-- Abrir App no navegador - DESATIVADO PROVISORIO
+              <a
+                id="browser-btn"
+                href="./app"
+                class="lt-btn lt-btn--ghost"
+                aria-label="Abrir LiveTagus no Navegador"
+              >
+                Abrir App
+              </a> -->
             </div>
-            <p
-              class="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed"
-            >
-              A aplicação vai aparecer no menu principal do seu telemóvel.
-              <br />
-              Por favor, abra-a por lá.
-            </p>
-          </div>
 
-          <div id="installed-msg" class="hidden mt-1 max-w-xs text-left">
-            <p
-              class="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed flex items-start gap-1.5"
-            >
-              <span class="text-green-500 font-bold">✓</span>
-              <span>
-                Aplicação instalada. Aceda pelo
-                <strong>menu principal</strong>
-                .
-              </span>
-            </p>
-          </div>
-
-          <a
-            id="browser-btn"
-            href="./app"
-            class="w-60 px-8 py-4 border border-zinc-200 dark:border-white/20 text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-white/5 font-medium text-sm uppercase tracking-widest transition-all text-center flex items-center justify-center"
-            aria-label="Abrir LiveTagus no Navegador"
-          >
-            Abrir App
-          </a>
-
-          <a
-            href="./mapa"
-            class="w-60 px-8 py-4 border border-zinc-200 dark:border-white/20 text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-white/5 font-medium text-sm uppercase tracking-widest transition-all text-center flex items-center justify-center"
-            aria-label="Abrir LiveTagus no Navegador"
-          >
-            Abrir Mapa
-          </a>
-
-          <p
-            id="web-hint"
-            class="text-[10px] text-zinc-400 uppercase tracking-wide w-full text-left ml-1"
-          >
-            Rápida • Leve • Prática
-          </p>
-        </div>
-
-        <div
-          class="grid grid-cols-2 md:grid-cols-4 gap-8 mt-20 border-t border-zinc-200 dark:border-white/10 pt-10 animate-fade-in-up"
-          style="animation-delay: 0.2s"
-        >
-          <div class="flex flex-col gap-2">
-            <h2
-              class="text-xs font-bold text-zinc-500 uppercase tracking-widest"
-            >
-              Precisão
-            </h2>
-            <p class="text-sm text-zinc-600 dark:text-zinc-300 leading-snug">
-              Dados oficiais das infraestruturas em direto.
-            </p>
-          </div>
-          <div class="flex flex-col gap-2">
-            <h2
-              class="text-xs font-bold text-zinc-500 uppercase tracking-widest"
-            >
-              Privacidade
-            </h2>
-            <p class="text-sm text-zinc-600 dark:text-zinc-300 leading-snug">
-              Zero tracking pessoal. Sem anúncios. 100% Local.
-            </p>
-          </div>
-          <div class="flex flex-col gap-2">
-            <h2
-              class="text-xs font-bold text-zinc-500 uppercase tracking-widest"
-            >
-              Velocidade
-            </h2>
-            <p class="text-sm text-zinc-600 dark:text-zinc-300 leading-snug">
-              Interface leve otimizada para rede móvel.
-            </p>
-          </div>
-          <div class="flex flex-col gap-2">
-            <h2
-              class="text-xs font-bold text-zinc-500 uppercase tracking-widest"
-            >
-              Gratuito
-            </h2>
-            <p class="text-sm text-zinc-600 dark:text-zinc-300 leading-snug">
-              Serviço totalmente gratuito e sem anúncios.
-            </p>
-          </div>
-        </div>
-
-        <div
-          class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12 animate-fade-in-up"
-          style="animation-delay: 0.3s"
-        >
-          <div
-            class="p-6 bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-2xl relative overflow-hidden group"
-          >
-            <div class="flex items-center gap-3 mb-6">
-              <div class="p-2 bg-blue-500/10 rounded-lg text-blue-500">
+            <div id="installing-msg" class="hidden">
+              <div class="lt-install-row">
                 <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
+                  class="w-3 h-3 spin"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
                   stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
                 >
-                  <circle cx="12" cy="12" r="10" />
-                  <polyline points="12 6 12 12 16 14" />
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M12 6v6l4 2"></path>
                 </svg>
+                <span>A preparar instalação…</span>
               </div>
-              <div>
-                <h3
-                  class="text-sm font-bold text-zinc-900 dark:text-white uppercase tracking-tight"
-                >
-                  Horário Inteligente
-                </h3>
-                <p class="text-[10px] text-zinc-500 uppercase font-mono">
-                  Sentido Automático
-                </p>
-              </div>
+              <p class="lt-install-p">
+                A aplicação vai aparecer no menu principal do telemóvel. Abre-a
+                por lá.
+              </p>
             </div>
 
-            <div class="space-y-4 relative z-10">
-              <div
-                id="schedule-demo"
-                class="bg-white dark:bg-zinc-900/50 p-4 rounded-xl border border-zinc-200 dark:border-white/5 transition-all duration-500 shadow-sm"
+            <div id="installed-msg" class="hidden">
+              <p
+                class="lt-install-p"
+                style="display: flex; gap: 7px; align-items: flex-start"
               >
-                <div class="flex justify-between items-end">
+                <span style="color: #10b981; font-weight: 700">✓</span>
+                <span>
+                  Aplicação instalada. Acede pelo
+                  <b>menu principal</b>
+                  .
+                </span>
+              </p>
+            </div>
+
+            <p id="web-hint" class="lt-hint">Rápida · Leve · Prática</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== BENTO ===================== -->
+      <section class="lt-section">
+        <div class="lt-wrap">
+          <div class="lt-section-head">
+            <h2 class="lt-section-title">
+              Pensada ao
+              <b>detalhe.</b>
+            </h2>
+          </div>
+
+          <div class="lt-bento">
+            <!-- MAPA AO VIVO (home-map.js: lazy MapLibre + posições reais) -->
+            <a
+              href="./mapa"
+              id="home-map-card"
+              class="lt-cell lt-cell-map lt-spot c-map"
+              data-reveal
+              style="--d: 0s"
+              aria-label="Abrir o mapa em direto"
+            >
+              <div id="home-map"></div>
+              <div id="home-map-skeleton">
+                <span class="lt-map-spin"></span>
+                <span>A carregar mapa…</span>
+              </div>
+              <div class="lt-map-inner">
+                <span class="lt-map-live">
+                  <span class="o"></span>
+                  Em direto
+                </span>
+                <div class="lt-map-foot">
                   <div>
-                    <span
-                      id="demo-clock"
-                      class="text-2xl font-mono font-medium text-zinc-900 dark:text-white transition-all"
+                    <h3>Mapa ao vivo</h3>
+                    <p>Cada comboio, posição real, atualizado ao segundo.</p>
+                  </div>
+                  <span class="lt-map-arrow" aria-hidden="true">
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
                     >
-                      08:32
-                    </span>
-                    <p id="demo-greeting" class="text-xs text-zinc-500 mt-1">
-                      Bom dia! Sugestão:
-                    </p>
-                  </div>
-                  <div class="text-right">
-                    <span
-                      id="demo-direction"
-                      class="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-500 text-white uppercase transition-all"
-                    >
-                      Lisboa
-                    </span>
-                  </div>
-                </div>
-                <div class="mt-4 flex items-center gap-3">
-                  <div
-                    class="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"
-                  ></div>
-                  <div
-                    class="flex-1 h-[1px] bg-zinc-200 dark:bg-zinc-800 relative"
-                  >
-                    <div
-                      class="absolute -top-1 right-0 w-2 h-2 rounded-full border-2 border-zinc-400 bg-white dark:bg-zinc-900"
-                    ></div>
-                  </div>
-                  <span
-                    class="text-xs font-medium text-zinc-700 dark:text-zinc-300"
-                  >
-                    Roma-Areeiro
+                      <path d="M7 17 17 7" />
+                      <path d="M7 7h10v10" />
+                    </svg>
                   </span>
                 </div>
               </div>
-              <p class="text-[11px] text-zinc-500 leading-relaxed">
-                A app sabe para onde vais. De manhã mostra o sentido
-                <span
-                  class="text-zinc-900 dark:text-zinc-100 font-medium italic"
-                >
-                  Lisboa
+            </a>
+
+            <!-- HORÁRIO INTELIGENTE -->
+            <div class="lt-cell lt-spot c-sched" data-reveal style="--d: 0.06s">
+              <div class="lt-cell-head">
+                <span class="lt-chip">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
                 </span>
-                . À tarde, o percurso
-                <span
-                  class="text-zinc-900 dark:text-zinc-100 font-medium italic"
-                >
-                  Margem Sul
+                <div>
+                  <h3>Horário Inteligente</h3>
+                  <p>Sentido automático</p>
+                </div>
+              </div>
+
+              <p class="lt-cell-body" style="margin-bottom: 18px">
+                A app já sabe para onde vais. De manhã, sugere o sentido
+                <b>Lisboa</b>
+                ; à tarde, o percurso para a
+                <b>Margem Sul</b>
+                está pronto à partida. Ativa nas definições.
+              </p>
+
+              <div id="schedule-demo" class="lt-sched-card">
+                <div class="lt-sched-head">
+                  <span class="lt-sched-live" aria-hidden="true"></span>
+                  <p id="demo-greeting">Bom dia! Sugestão:</p>
+                </div>
+                <div class="lt-sched-row">
+                  <span id="demo-clock">08:32</span>
+                  <span class="lt-sched-dir">
+                    <span class="lt-sched-arrow" aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path d="M5 12h14" />
+                        <path d="m13 6 6 6-6 6" />
+                      </svg>
+                    </span>
+                    <span class="lt-sched-sentido">Sentido</span>
+                    <span
+                      id="demo-direction"
+                      class="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-600 text-white uppercase"
+                    >
+                      Lisboa
+                    </span>
+                  </span>
+                </div>
+                <div class="lt-sched-route" aria-hidden="true">
+                  <span class="o"></span>
+                  <span class="rail"></span>
+                  <span class="dest"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- LOTAÇÃO -->
+            <div class="lt-cell c-load" data-reveal style="--d: 0.12s">
+              <div class="lt-cell-head">
+                <span class="lt-chip emerald">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="m12 14 4-4" />
+                    <path d="M3.34 19a10 10 0 1 1 17.32 0" />
+                  </svg>
                 </span>
-                já está pronto. Ativa já nas definições!
+                <div>
+                  <h3>Lotação &amp; Tamanho</h3>
+                  <p>Decisões em segundos</p>
+                </div>
+              </div>
+
+              <div class="lt-train-stage">
+                <div id="train-wrapper-v2">
+                  <div class="car-v2"></div>
+                  <div class="car-v2 extra-v2"></div>
+                  <div class="car-v2"></div>
+                  <div class="car-v2 extra-v2"></div>
+                  <div class="car-v2"></div>
+                  <div class="car-v2 extra-v2"></div>
+                  <div class="car-v2"></div>
+                  <div class="car-v2 extra-v2"></div>
+                </div>
+              </div>
+
+              <div class="lt-load-row">
+                <span id="demo-title">--</span>
+                <span id="status-badge">--</span>
+              </div>
+
+              <p class="lt-cell-body">
+                Apanhaste um comboio
+                <b style="color: #ef4444">curto e cheio</b>
+                ? Espera pelo próximo, que costuma ser
+                <b style="color: #10b981">longo e livre</b>
+                .
+              </p>
+              <p class="lt-disclaimer">
+                Estimativa baseada no histórico oficial da Fertagus — não em
+                tempo real. Disponível apenas em horas de ponta.
+                <a
+                  rel="noopener"
+                  target="_blank"
+                  href="https://www.fertagus.pt/Fertagus-pt/Viajar/Comunicados-e-Campanhas/Nova-oferta-de-comboios-duplos-e-simples-20-de-janeiro-25"
+                  aria-label="Site Oficial da Fertagus, Tabela de Ocupação"
+                >
+                  Fonte
+                </a>
+                .
               </p>
             </div>
-          </div>
 
-          <div
-            class="p-6 bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-2xl relative overflow-hidden group"
-          >
-            <div class="flex items-center gap-3 mb-6">
-              <div class="p-2 bg-emerald-500/10 rounded-lg text-emerald-500">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="m12 14 4-4" />
-                  <path d="M3.34 19a10 10 0 1 1 17.32 0" />
-                </svg>
-              </div>
+            <!-- PRECISÃO -->
+            <div class="lt-cell lt-stat c-prec" data-reveal style="--d: 0.16s">
+              <span class="lt-stat-label">Precisão</span>
               <div>
-                <h3
-                  class="text-sm font-bold text-zinc-900 dark:text-white uppercase tracking-tight"
-                >
-                  Lotação & Tamanho
-                </h3>
-                <p class="text-[10px] text-zinc-500 uppercase font-mono">
-                  Decisões em segundos
+                <h3 class="lt-stat-h">Dados oficiais</h3>
+                <p class="lt-stat-p">
+                  Posições e estimativas a partir da infraestrutura e gps dos
+                  comboios.
                 </p>
               </div>
             </div>
 
-            <div
-              class="h-12 flex items-center justify-center bg-zinc-100 dark:bg-black/20 rounded-xl mb-4 relative overflow-hidden"
-            >
-              <div
-                id="train-wrapper-v2"
-                class="flex gap-1 items-center relative z-10"
-              >
-                <div class="car-v2"></div>
-                <div class="car-v2 extra-v2"></div>
-                <div class="car-v2"></div>
-                <div class="car-v2 extra-v2"></div>
-                <div class="car-v2"></div>
-                <div class="car-v2 extra-v2"></div>
-                <div class="car-v2"></div>
-                <div class="car-v2 extra-v2"></div>
+            <!-- PRIVACIDADE -->
+            <div class="lt-cell lt-stat c-priv" data-reveal style="--d: 0.2s">
+              <span class="lt-stat-label">Privacidade</span>
+              <div>
+                <h3 class="lt-stat-h">Tudo no teu telemóvel</h3>
+                <p class="lt-stat-p">
+                  Sem contas, sem tracking, com privacidade. Nada sai do
+                  dispositivo.
+                </p>
               </div>
             </div>
 
-            <div class="flex justify-between items-center mb-4">
-              <span
-                id="demo-title"
-                class="text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase italic transition-all"
-              >
-                --
-              </span>
-              <span
-                id="status-badge"
-                class="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider transition-all duration-300"
-              >
-                --
-              </span>
+            <!-- VELOCIDADE -->
+            <div class="lt-cell lt-stat c-speed" data-reveal style="--d: 0.24s">
+              <span class="lt-stat-label">Velocidade</span>
+              <div>
+                <h3 class="lt-stat-h">Rápida</h3>
+                <p class="lt-stat-p">Feita para a rede móvel.</p>
+              </div>
             </div>
 
-            <p class="text-[11px] text-zinc-500 leading-relaxed">
-              Vês um comboio
-              <span class="text-red-500 font-medium">Curto e Cheio</span>
-              ? Espera pelo próximo que é
-              <span class="text-emerald-500 font-medium">Longo e Verde.</span>
-            </p>
-            <p
-              class="text-[9px] text-zinc-500 dark:text-zinc-400 leading-relaxed"
+            <!-- GRATUITO -->
+            <div class="lt-cell lt-stat c-free" data-reveal style="--d: 0.28s">
+              <span class="lt-stat-label">Público</span>
+              <div>
+                <h3 class="lt-stat-h">Gratuito</h3>
+                <p class="lt-stat-p">Sem anúncios, nem registos.</p>
+              </div>
+            </div>
+
+            <!-- MARCA 
+            <div
+              class="lt-cell lt-cell-brand c-brand"
+              data-reveal
+              style="--d: 0.32s"
             >
-              * Estimativa de Lotação: Os dados baseiam-se no histórico oficial
-              da Fertagus e
-              <b>não</b>
-              em tempo real. Apenas disponível em horas de ponta.
-              <a
-                rel="noopener"
-                class="underline"
-                target="_blank"
-                href="https://www.fertagus.pt/Fertagus-pt/Viajar/Comunicados-e-Campanhas/Nova-oferta-de-comboios-duplos-e-simples-20-de-janeiro-25"
-                aria-label="Site Oficial da Fertagus, Tabela de Ocupação"
-              >
-                Fonte
-              </a>
-            </p>
+              <span class="lt-brand-marker" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M7 4.5h10a2 2 0 0 1 2 2V15a2.5 2.5 0 0 1-2.5 2.5h-9A2.5 2.5 0 0 1 5 15V6.5a2 2 0 0 1 2-2Z"
+                    style="fill: var(--rail-green); opacity: 0.16"
+                  />
+                  <path
+                    d="M7 4.5h10a2 2 0 0 1 2 2V15a2.5 2.5 0 0 1-2.5 2.5h-9A2.5 2.5 0 0 1 5 15V6.5a2 2 0 0 1 2-2Z"
+                    style="stroke: var(--rail-green)"
+                    stroke-width="1.5"
+                  />
+                  <rect
+                    x="7.5"
+                    y="7.5"
+                    width="9"
+                    height="4"
+                    rx="1"
+                    style="fill: var(--rail-green)"
+                  />
+                  <circle
+                    cx="8.5"
+                    cy="14.5"
+                    r="1"
+                    style="fill: var(--rail-green)"
+                  />
+                  <circle
+                    cx="15.5"
+                    cy="14.5"
+                    r="1"
+                    style="fill: var(--rail-green)"
+                  />
+                  <path
+                    d="m7.5 19-1.2 1.6M16.5 19l1.2 1.6"
+                    style="stroke: var(--rail-green)"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              </span>
+              <p>Comboio da Ponte</p>
+            </div>-->
           </div>
-
-          <style>
-            .car-v2 {
-              width: 1.5rem;
-              height: 1rem;
-              border-radius: 0.25rem;
-              flex-shrink: 0;
-              transition:
-                width 0.5s cubic-bezier(0.22, 1, 0.36, 1),
-                margin-left 0.5s cubic-bezier(0.22, 1, 0.36, 1),
-                opacity 0.4s ease,
-                background 0.3s;
-              box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
-            }
-
-            .extra-v2.collapsed {
-              width: 0 !important;
-              opacity: 0 !important;
-              margin-left: -0.25rem !important;
-              pointer-events: none;
-            }
-
-            .dimmed-v2 {
-              background: #e4e4e7 !important;
-              opacity: 0.4;
-              box-shadow: none;
-            }
-            .dark .dimmed-v2 {
-              background: #27272a !important;
-              opacity: 0.3;
-            }
-          </style>
         </div>
-      </div>
+      </section>
     </main>
 
     <div id="global-footer"></div>
+
+    <!-- Melhorias da homepage (reveal, spotlight) · CSP: script-src 'self' -->
+    <script src="/index-home.js" defer></script>
+    <!-- Scrollbar-comboio standalone (auto-injeta CSS+DOM) -->
+    <script src="/train-scrollbar.js" defer></script>
+    <!-- Mini-mapa ao vivo (lazy MapLibre + posições reais) -->
+    <script src="/home-map.js" defer></script>
+
+    <script
+      src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"
+      defer
+    ></script>
   </body>
 </html>

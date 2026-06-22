@@ -234,9 +234,9 @@ function injectFooter() {
                             <a href="https://www.facebook.com/people/LiveTagus/61583577115985/" target="_blank" rel="noopener noreferrer" class="hover:opacity-70 transition-opacity" aria-label="Facebook">
                                 <svg fill="currentColor" width="20" height="20" viewBox="0 0 24 24"><path d="M23 12C23 5.92487 18.0751 0.999996 12 0.999996C5.92488 0.999996 1 5.92487 1 12C1 17.1588 4.55146 21.4874 9.34266 22.6761V15.3614H7.07438V12H9.34266V10.5516C9.34266 6.80751 11.037 5.07215 14.7128 5.07215C15.4096 5.07215 16.6121 5.20877 17.104 5.34544V8.39261C16.8444 8.36529 16.3935 8.3516 15.8332 8.3516C14.0295 8.3516 13.3326 9.03484 13.3326 10.8112V12H16.9256L16.3084 15.3614H13.3326V22.9194C18.7792 22.2616 23 17.624 23 12Z"></path></svg>
                             </a>
-                            <a href="https://bsky.app/profile/livetagus.pt" target="_blank" rel="noopener noreferrer" class="hover:opacity-70 transition-opacity" aria-label="Bluesky">
+                            <!--<a href="https://bsky.app/profile/livetagus.pt" target="_blank" rel="noopener noreferrer" class="hover:opacity-70 transition-opacity" aria-label="Bluesky">
                                 <svg fill="currentColor" width="20" height="20" viewBox="0 0 24 24"><path d="M6.33526 4.37382C8.62822 6.09522 11.0945 9.58551 12.0001 11.4586C12.9056 9.58565 15.3718 6.09519 17.6649 4.37382C19.3193 3.13172 22 2.17066 22 5.22881C22 5.83957 21.6498 10.3595 21.4445 11.0933C20.7306 13.6444 18.1292 14.2951 15.8152 13.9013C19.86 14.5897 20.8889 16.87 18.6668 19.1502C14.4465 23.4809 12.601 18.0636 12.1278 16.6755C12.0412 16.4211 12.0006 16.302 12 16.4033C11.9994 16.302 11.9588 16.4211 11.8721 16.6755C11.3993 18.0636 9.55378 23.481 5.33322 19.1502C3.11103 16.87 4.13995 14.5896 8.18483 13.9013C5.87077 14.2951 3.26934 13.6444 2.55555 11.0933C2.35016 10.3594 2 5.8395 2 5.22881C2 2.17066 4.68074 3.13172 6.33515 4.37382H6.33526Z"></path></svg>
-                            </a>
+                            </a>-->
                             <button id="footer-share-btn" class="hover:opacity-70 transition-opacity cursor-pointer text-black dark:text-white" aria-label="Partilhar LiveTagus">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-share-icon lucide-share"><path d="M12 2v13"/><path d="m16 6-4-4-4 4"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/></svg>
                             </button>
@@ -270,7 +270,7 @@ function injectFooter() {
                         Tempo Real
                     </a>
 
-                    <a href="/sobre" class="text-xs text-zinc-500 hover:text-black dark:hover:text-white transition-colors">Apoia o Projeto</a>
+                    <!-- PROVISORIO <a href="/sobre" class="text-xs text-zinc-500 hover:text-black dark:hover:text-white transition-colors">Apoia o Projeto</a>-->
                     <a href="/code_of_conduct" class="text-xs text-zinc-500 hover:text-black dark:hover:text-white transition-colors">Código de Conduta</a>
                     <a href="/privacidade" class="text-xs text-zinc-500 hover:text-black dark:hover:text-white transition-colors">Termos & Privacidade</a>
                     <a href="https://status.livetagus.pt/pt-pt" target="_blank" rel="noopener noreferrer" class="text-xs text-zinc-500 hover:text-black dark:hover:text-white transition-colors">Estado dos servidores</a>
