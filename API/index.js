@@ -28,6 +28,7 @@ app.use(cors());
 const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.API_KEY;
 const API_BASE = process.env.API_BASE;
+const IP_BLOCKED = true;
 
 // Middleware para verificar a API Key
 const protectRoute = (req, res, next) => {
@@ -357,11 +358,13 @@ const subtractMinutes = (timeStr, minutes) => {
 let IP_CONSECUTIVE_ERRORS = 0;
 let IP_IS_DOWN = false;
 let LAST_RECOVERY_PING = 0;
-const IP_BLOCKED = false;
 
 // --- FETCHING ---
 
 const fetchDetails = async (tid, dateStr) => {
+  // PROVISORIO
+  if (IP_BLOCKED) return null;
+
   const url = `${API_BASE}/horarios-ncombio/${tid}/${dateStr}`;
   try {
     const r = await fetch(url, { headers: FETCH_HEADERS, timeout: 10000 });
@@ -524,6 +527,13 @@ const checkOfflineTrains = async () => {
     return;
   }
 
+  if (IP_IS_DOWN || IP_BLOCKED) {
+    console.log(
+      "[CIRCUIT BREAKER] Offline Check cancelado. IP em baixo ou bloqueada.",
+    );
+    return;
+  }
+
   if (IP_IS_DOWN) {
     console.log("[CIRCUIT BREAKER] Offline Check cancelado. IP em baixo.");
     return;
@@ -542,7 +552,10 @@ const checkOfflineTrains = async () => {
   // POLL À ESTAÇÃO DE CORROIOS
   let stationMap;
   try {
-    stationMap = await StationPoller.pollAllWindows(now);
+    // provisorio stationMap = await StationPoller.pollAllWindows(now);
+    stationMap = IP_BLOCKED
+      ? new Map()
+      : await StationPoller.pollAllWindows(now);
   } catch (e) {
     console.error(
       "[FUTURE CHECK v2] Falha crítica no station-poll:",
@@ -1103,7 +1116,7 @@ const enterActiveSuppression = (richInfo, mem, isExtra) => {
 // fica APENAS a alimentar a posição no mapa (ingestTmlPayload no poller).
 // Não recalcula atrasos, não infere passagens, não reatribui números por
 // sentido. Religar gradualmente quando estabilizar.
-const GPS_CALCULATIONS_ENABLED = false;
+const GPS_CALCULATIONS_ENABLED = true;
 
 // [SENTIDO INVERTIDO] Interruptor MESTRE da deteção de sentido contrário.
 // false = COMPLETAMENTE DESLIGADO: nunca reatribui números, nunca cria
@@ -2092,16 +2105,17 @@ const updateCycle = async () => {
   const now = new Date();
   const opInfo = getOperationalInfo(now);
   const opDateStr = opInfo.operationalDateStr;
-  if (IP_IS_DOWN) {
+  if (IP_IS_DOWN || IP_BLOCKED) {
     const nowMs = Date.now();
-    if (nowMs - LAST_RECOVERY_PING > 120000) {
+    // Só tenta o ping de recuperação se não for um bloqueio intencional
+    if (!IP_BLOCKED && nowMs - LAST_RECOVERY_PING > 120000) {
       LAST_RECOVERY_PING = nowMs;
       console.log(
         "[CIRCUIT BREAKER] IP em baixo. A enviar ping de recuperação...",
       );
       fetchDetails(String(14205), formatDateStr(new Date())).catch(() => {});
     }
-    // abortar, ip continua em baixo
+    // Se o modo autónomo não estiver ativo, aborta
     if (!GPS_AUTONOMOUS_MODE) {
       return;
     }
@@ -2806,7 +2820,7 @@ app.get(`${LIVETAGUS_ENDPOINTS_BASE}alerts`, (req, res) => {
 app.get("/", (req, res) =>
   res.json({
     status: "online",
-    version: "b6.2.4",
+    version: "b6.2.5",
     aviso:
       "Pedimos que não uses o nosso endpoint diretamente! Verifica toda as informações e código no github.",
     operational: getOperationalInfo(),
@@ -2826,7 +2840,7 @@ app.get("/", (req, res) =>
 );
 
 app.listen(PORT, () => {
-  console.log(`LiveTagus API vb6.2.4 ativa na porta ${PORT}`);
+  console.log(`LiveTagus API vb6.2.5 ativa na porta ${PORT}`);
   console.log(`Endpoint /fertagus protegido com API_KEY.`);
 
   // NÃO usar await aqui: checkOfflineTrains() faz station-poll com timeouts

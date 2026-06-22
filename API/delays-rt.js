@@ -307,25 +307,75 @@ const computeEtaToStation = (
       now,
     });
     if (!first) return null;
-    let etaMs = first.etaMs;
+    // ── REGRA ANTI-ATRASO-FANTASMA ───────────────────────────────────────
+    // O atraso das estações futuras NÃO se calcula pela física teórica de cada
+    // troço (arranque parado + dwell), porque isso acumula um "atraso" fictício
+    // que não existe (ex: a horas no Pragal → +40 min em Penalva, do nada).
+    // Em vez disso: o atraso futuro PARTE do atraso REAL da próxima estação e
+    // só muda se houver uma razão real para agravar/recuperar.
+    //
+    // Atraso da PRÓXIMA estação (o troço atual, medido por GPS):
+    const nextDelayS =
+      typeof first.inRouteDelayS === "number" ? first.inRouteDelayS : 0;
 
-    // Troços seguintes: arranque parado (v0=0) + dwell técnico por paragem.
+    // Se a próxima estação vem A HORAS (ou adiantada), as futuras herdam isso:
+    // sem atraso na próxima → sem atraso propagado. Só se a próxima JÁ tiver
+    // atraso é que faz sentido projetar como ele evolui mais à frente.
+    const NEXT_DELAY_THRESHOLD_S = 60; // < 1 min na próxima = considerar a horas
+
+    const entry = route[targetIdx];
+    if (typeof entry.arrivalMs !== "number") {
+      return { etaMs: first.etaMs, inRouteDelayS: null, source: "gps" };
+    }
+
+    if (nextDelayS <= NEXT_DELAY_THRESHOLD_S) {
+      // PRÓXIMA A HORAS → estação futura também a horas. ETA = horário planeado
+      // + o (pequeno) atraso atual herdado, sem inventar atraso por troço.
+      const etaMs = entry.arrivalMs + Math.max(nextDelayS, 0) * 1000;
+      return {
+        etaMs,
+        inRouteDelayS: Math.max(nextDelayS, 0),
+        source: "gps_inherited",
+      };
+    }
+
+    // PRÓXIMA COM ATRASO REAL → aí sim projetamos a evolução até à estação alvo.
+    // O atraso propaga-se a partir do atraso atual; entre paragens o comboio
+    // pode RECUPERAR parte da folga do horário (margem operacional), nunca
+    // criar atraso novo. Recuperação = diferença entre o tempo planeado do
+    // troço e o tempo físico mínimo (a folga existente no horário).
+    let carriedDelayMs = nextDelayS * 1000;
+
     for (let i = startIdx; i < targetIdx; i++) {
       const a = route[i];
       const b = route[i + 1];
+      if (typeof a.arrivalMs !== "number" || typeof b.arrivalMs !== "number") {
+        continue; // sem horário do troço → mantém o atraso herdado, não inventa
+      }
+      const plannedSegMs = b.arrivalMs - a.arrivalMs; // tempo planeado do troço
+      if (plannedSegMs <= 0) continue;
+
       const dA = _geo.remainingDistanceM(trainId, a.key);
       const dB = _geo.remainingDistanceM(trainId, b.key);
-      if (dA == null || dB == null) return null;
+      if (dA == null || dB == null) continue;
       const segM = Math.abs(dB - dA);
-      etaMs += DWELL_MS + kinematicRunTimeS(0, segM) * 1000;
+
+      // Tempo físico mínimo do troço (a partir de parado). Se for MENOR que o
+      // planeado, há folga → o comboio pode recuperar parte do atraso aqui.
+      const physMinMs = DWELL_MS + kinematicRunTimeS(0, segM) * 1000;
+      const slackMs = plannedSegMs - physMinMs; // folga do horário neste troço
+      if (slackMs > 0 && carriedDelayMs > 0) {
+        // Recupera no máximo a folga disponível (não cria atraso se folga<0).
+        carriedDelayMs = Math.max(0, carriedDelayMs - slackMs);
+      }
+      // NB: troços sem folga (slack<=0) NÃO acrescentam atraso — o comboio já
+      // está atrasado e mantém o atraso; o horário é que é apertado, não é
+      // atraso novo.
     }
 
-    const entry = route[targetIdx];
-    const delayS =
-      typeof entry.arrivalMs === "number"
-        ? Math.round((etaMs - entry.arrivalMs) / 1000)
-        : null;
-    return { etaMs, inRouteDelayS: delayS, source: "gps" };
+    const etaMs = entry.arrivalMs + carriedDelayMs;
+    const delayS = Math.round(carriedDelayMs / 1000);
+    return { etaMs, inRouteDelayS: delayS, source: "gps_projected" };
   } catch (e) {
     console.error("[DELAYS-RT] computeEtaToStation:", e.message);
     return null;
