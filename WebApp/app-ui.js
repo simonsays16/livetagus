@@ -1116,8 +1116,7 @@ function showIpDownPopup() {
         
         <div class="text-sm text-zinc-500 dark:text-zinc-400 mb-6 leading-relaxed space-y-4 text-left w-full">
           <p class="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400 italic bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-xl border border-zinc-100 dark:border-zinc-700/50 my-4">
-            <span class="font-bold text-zinc-700 dark:text-zinc-300">Nota Adicional:</span> A decoração visual do Mundial já estava programada antes deste problema técnico surgir.
-            Deu trabalho a fazer e seria um desperdício deitar o código ao lixo. Força Portugal!
+            <span class="font-bold text-zinc-700 dark:text-zinc-300">Última Atualização:</span> 17 Jun 26
           </p>
         </div>
 
