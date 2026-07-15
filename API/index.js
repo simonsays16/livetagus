@@ -6,196 +6,53 @@ const path = require("path");
 const fs = require("fs");
 const os = require("os");
 const { exec } = require("child_process");
-const AnalyticsManager = require("./analytics.js");
-const DelayManager = require("./delays.js");
-const AvisosManager = require("./avisos.js");
-const GhostManager = require("./ghosts.js");
-const VerifyManager = require("./verify.js");
-const StationPoller = require("./station-poller.js");
-const ExtrasHelpers = require("./extras-helpers.js");
-const EstacaoEndpoint = require("./estacao-endpoint.js");
-const GetLocation = require("./get-location.js");
-const Geo = require("./gtfs-geo.js");
-const DelaysRT = require("./delays-rt.js");
-const GtfsOutput = require("./gtfs-output.js");
-const ServiceDayManager = require("./serviceDayManager.js");
-Geo.init("./fertagus_line_detailed.json", "./ft_stations_detailed.json");
+const AnalyticsManager = require("./src/extra/analytics.js");
+const DelayManager = require("./src/extra/delays.js");
+const AvisosManager = require("./src/extra/avisos.js");
+const GhostManager = require("./src/realtime/ghosts.js");
+const VerifyManager = require("./src/schedule/verify.js");
+const StationPoller = require("./src/realtime/station-poller.js");
+const ExtrasHelpers = require("./src/schedule/extras-helpers.js");
+const EstacaoEndpoint = require("./src/output/estacao-endpoint.js");
+const GetLocation = require("./src/realtime/get-location.js");
+const Geo = require("./src/realtime/gtfs-geo.js");
+const DelaysRT = require("./src/realtime/delays-rt.js");
+const GtfsOutput = require("./src/output/gtfs-output.js");
+const ServiceDayManager = require("./src/schedule/serviceDayManager.js");
+
+// --- MÓDULOS EXTRAÍDOS DO index.js (refatoração — ver estrutura) ---
+const {
+  PORT,
+  API_KEY,
+  API_BASE,
+  IP_BLOCKED,
+  STATION_MAP_JSON_TO_IP,
+  STATION_MAP_IP_TO_JSON,
+  STATION_IDS_FIXED,
+  STATION_ORDER_LISBOA,
+  STATION_ORDER_MARGEM,
+  FETCH_HEADERS,
+  GPS_CALCULATIONS_ENABLED,
+  DIRECTION_DETECTION_ENABLED,
+  GPS_AUTONOMOUS_MODE,
+  ADMIN_API_KEY,
+  ADMIN_ROUTE,
+} = require("./config.js");
+const {
+  formatDateStr,
+  parseSmartTime,
+  formatTimeHHMMSS,
+  subtractMinutes,
+} = require("./dates.js");
+const MapAuthority = require("./map-authority.js");
+const registerRoutes = require("./routes.js");
+Geo.init(
+  "./data/geo/fertagus_line_detailed.json",
+  "./data/geo/fertagus_stations_detailed.json",
+);
 
 const app = express();
 app.use(cors());
-
-// --- CONFIGURAÇÃO ---
-const PORT = process.env.PORT || 3000;
-const API_KEY = process.env.API_KEY;
-const API_BASE = process.env.API_BASE;
-const IP_BLOCKED = true;
-
-// Middleware para verificar a API Key
-const protectRoute = (req, res, next) => {
-  const userKey = req.headers["x-api-key"];
-
-  if (!userKey || userKey !== API_KEY) {
-    const htmlResponse = `
-<!doctype html>
-<html lang="pt-PT">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>403 | Acesso Restrito - LiveTagus</title>
-    <link rel="shortcut icon" href="https://livetagus.pt/imagens/favicon-96x96.png" type="image/x-icon" />
-    <meta name="robots" content="noindex, nofollow" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
-    <script>
-      tailwind.config = {
-        darkMode: 'media', // Adapta-se automaticamente ao tema do sistema do utilizador
-        theme: {
-          extend: {
-            fontFamily: { sans: ['Inter', 'sans-serif'] }
-          }
-        }
-      }
-    </script>
-    <style>
-      @keyframes float {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-10px); }
-      }
-      .animate-float {
-        animation: float 6s ease-in-out infinite;
-      }
-    </style>
-  </head>
-
-  <body class="bg-white text-zinc-900 dark:bg-[#09090b] dark:text-white overflow-hidden transition-colors duration-500 flex flex-col min-h-screen selection:bg-red-500/30">
-    <main class="flex-grow flex flex-col items-center justify-center px-6 relative">
-      
-      <div class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vh] bg-red-500/5 dark:bg-red-900/10 rounded-full blur-[120px] pointer-events-none z-0"></div>
-
-      <div class="relative z-10 text-center max-w-2xl w-full">
-        <h1 class="text-[120px] md:text-[180px] font-thin leading-none tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-zinc-300 to-transparent dark:from-zinc-700 dark:to-transparent select-none animate-float">
-          403
-        </h1>
-
-        <h2 class="text-2xl md:text-4xl font-light tracking-tight mb-4 mt-[-20px]">
-          Acesso Restrito.
-        </h2>
-
-        <p class="text-zinc-500 dark:text-zinc-400 font-light mb-10 text-lg leading-relaxed">
-          A API é de uso exclusivo da <span class="font-medium text-zinc-900 dark:text-zinc-200">livetagus.pt</span>.
-          <br />
-          O acesso não autorizado é bloqueado e monitorizado.
-        </p>
-
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <a href="https://github.com/simonsays16/livetagus?tab=readme-ov-file#important-note-about-the-api"
-             target="_blank" 
-             rel="noopener noreferrer"
-             class="inline-flex items-center w-72 sm:w-auto justify-center px-8 py-4 border border-zinc-200 dark:border-white/20 text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-white/5 font-medium text-sm uppercase tracking-widest transition-all rounded-sm group">
-            Ver Código
-            <span class="ml-2 group-hover:translate-x-1 transition-transform">
-              →
-            </span>
-          </a>
-          
-          <a href="https://livetagus.pt/"
-             class="inline-flex items-center w-72 sm:w-auto justify-center px-8 py-4 border border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white font-medium text-sm uppercase tracking-widest transition-all rounded-sm group">
-            <span class="mr-2 group-hover:-translate-x-1 transition-transform">
-              ←
-            </span>
-            Voltar à LiveTagus
-          </a>
-        </div>
-      </div>
-    </main>
-  </body>
-</html>
-    `;
-
-    return res.status(403).send(htmlResponse);
-  }
-
-  next();
-};
-
-// Mapeamento de nomes
-const STATION_MAP_JSON_TO_IP = {
-  setubal: "SETÚBAL",
-  palmela: "PALMELA",
-  venda_do_alcaide: "VENDA DO ALCAIDE",
-  pinhal_novo: "PINHAL NOVO",
-  penalva: "PENALVA",
-  coina: "COINA",
-  fogueteiro: "FOGUETEIRO",
-  foros_de_amora: "FOROS DE AMORA",
-  corroios: "CORROIOS",
-  pragal: "PRAGAL",
-  campolide: "CAMPOLIDE",
-  sete_rios: "SETE RIOS",
-  entrecampos: "ENTRECAMPOS",
-  roma_areeiro: "ROMA-AREEIRO",
-};
-
-const STATION_MAP_IP_TO_JSON = Object.entries(STATION_MAP_JSON_TO_IP).reduce(
-  (acc, [k, v]) => {
-    acc[v] = k;
-    return acc;
-  },
-  {},
-);
-
-// IDs Fixos para Fallback Offline
-const STATION_IDS_FIXED = {
-  SETÚBAL: 9468122,
-  PALMELA: 9468098,
-  "VENDA DO ALCAIDE": 9468049,
-  "PINHAL NOVO": 9468007,
-  PENALVA: 9417095,
-  COINA: 9417236,
-  FOGUETEIRO: 9417186,
-  "FOROS DE AMORA": 9417152,
-  CORROIOS: 9417137,
-  PRAGAL: 9417087,
-  CAMPOLIDE: 9467033,
-  "SETE RIOS": 9466076,
-  ENTRECAMPOS: 9466050,
-  "ROMA-AREEIRO": 9466035,
-};
-
-// Ordem Sul -> Norte
-const STATION_ORDER_LISBOA = [
-  "setubal",
-  "palmela",
-  "venda_do_alcaide",
-  "pinhal_novo",
-  "penalva",
-  "coina",
-  "fogueteiro",
-  "foros_de_amora",
-  "corroios",
-  "pragal",
-  "campolide",
-  "sete_rios",
-  "entrecampos",
-  "roma_areeiro",
-];
-
-// Ordem Norte -> Sul (Inversa)
-const STATION_ORDER_MARGEM = [...STATION_ORDER_LISBOA].reverse();
-
-// FIX #6: Cache-Control e Pragma forçam a IP (e qualquer CDN/proxy intermédio)
-// a retornar sempre uma resposta fresca.
-const FETCH_HEADERS = {
-  "User-Agent":
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-  Referer: "https://www.infraestruturasdeportugal.pt/",
-  Accept: "application/json, text/javascript, */*; q=0.01",
-  "X-Requested-With": "XMLHttpRequest",
-  "Cache-Control": "no-cache",
-  Pragma: "no-cache",
-};
 
 // --- BASE DE DADOS OFFLINE ---
 let RICH_SCHEDULE = [];
@@ -237,21 +94,21 @@ const loadDataFiles = () => {
     }
 
     const arrLisboa = loadFile(
-      ["fertagus_sentido_lisboa_chegada.json"],
+      ["/data/schedules/fertagus_sentido_lisboa_chegada.json"],
       "lisboa",
     );
     const arrMargem = loadFile(
-      ["fertagus_sentido_margem_chegadas.json"],
+      ["/data/schedules/fertagus_sentido_margem_chegadas.json"],
       "margem",
     );
     RICH_SCHEDULE = [...arrLisboa, ...arrMargem];
 
     const depLisboa = loadFile(
-      ["fertagus_sentido_lisboa_partida.json"],
+      ["/data/schedules/fertagus_sentido_lisboa_partida.json"],
       "lisboa",
     );
     const depMargem = loadFile(
-      ["fertagus_sentido_margem_partida.json"],
+      ["/data/schedules/fertagus_sentido_margem_partida.json"],
       "margem",
     );
     DEPARTURE_SCHEDULE = [...depLisboa, ...depMargem];
@@ -288,11 +145,6 @@ const SUPPRESSED_RECHECK_MS = 10 * 60 * 1000;
 
 // --- DATE & SCHEDULE HELPERS ---
 
-const formatDateStr = (d) => {
-  const pad = (n) => n.toString().padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-};
-
 const getOperationalInfo = (now = new Date()) => {
   const d = new Date(now.getTime());
   const hour = d.getHours();
@@ -311,48 +163,6 @@ const getOperationalInfo = (now = new Date()) => {
     operationalDateStr: dateStr,
     isWeekendOrHoliday: isHoliday || isWeekend,
   };
-};
-
-const parseSmartTime = (timeStr, now = new Date()) => {
-  if (!timeStr) return null;
-  const parts = timeStr.split(":");
-  const h = parseInt(parts[0]);
-  const m = parseInt(parts[1]);
-  const s = parts[2] ? parseInt(parts[2]) : 0;
-
-  const d = new Date(now);
-  const nowH = now.getHours();
-
-  // Fix: Basear sempre no dia operacional (05h00 às 02h30)
-  // Se ainda não são 05h00, o dia operacional começou "ontem"
-  if (nowH < 5) {
-    d.setDate(d.getDate() - 1);
-  }
-  // Se a hora do comboio for de madrugada (00h-04h),
-  // ele pertence ao dia civil seguinte do atual dia operacional.
-  if (h < 5) {
-    d.setDate(d.getDate() + 1);
-  }
-  d.setHours(h, m, s, 0);
-
-  return d;
-};
-
-const formatTimeHHMMSS = (d) => {
-  const pad = (n) => n.toString().padStart(2, "0");
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-};
-
-const subtractMinutes = (timeStr, minutes) => {
-  const [h, m] = timeStr.split(":").map(Number);
-  let date = new Date();
-  date.setHours(h, m, 0, 0);
-
-  const totalSeconds = Math.round(minutes * 60);
-  date.setSeconds(date.getSeconds() - totalSeconds);
-
-  const pad = (n) => n.toString().padStart(2, "0");
-  return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
 
 let IP_CONSECUTIVE_ERRORS = 0;
@@ -1108,332 +918,6 @@ const enterActiveSuppression = (richInfo, mem, isExtra) => {
   return null;
 };
 
-// ─── [GPS AUTONOMY] MODO AUTÓNOMO DA IP ─────────────────────────────────────
-// Qualquer comboio com GPS fresco na TML é FORÇADO a Live:true e as
-// HoraPrevista dos nós futuros são recalculadas pelo motor cinemático
-// (posição real na linha), ignorando os atrasos da IP.
-// [ENVIO URGENTE] Cálculos por GPS DESLIGADOS — demasiado instáveis. O GPS
-// fica APENAS a alimentar a posição no mapa (ingestTmlPayload no poller).
-// Não recalcula atrasos, não infere passagens, não reatribui números por
-// sentido. Religar gradualmente quando estabilizar.
-const GPS_CALCULATIONS_ENABLED = true;
-
-// [SENTIDO INVERTIDO] Interruptor MESTRE da deteção de sentido contrário.
-// false = COMPLETAMENTE DESLIGADO: nunca reatribui números, nunca cria
-// fantasmas 99xxx, nunca desvia pings. Os comboios mantêm SEMPRE o número e
-// sentido originais da IP/horário. Religar só quando a deteção estiver fiável.
-const DIRECTION_DETECTION_ENABLED = false;
-
-const GPS_AUTONOMOUS_MODE = true; // ← desligar quando a IP normalizar
-
-const applyGpsAutonomy = (trainOutput, trainId, richInfo, nowObj) => {
-  if (!GPS_CALCULATIONS_ENABLED) return; // [ENVIO URGENTE] só posição no mapa
-  if (!GPS_AUTONOMOUS_MODE) return;
-  try {
-    if (!Geo.isGpsFresh(String(trainId))) return; // sem GPS → fluxo IP normal
-
-    // ── [GPS AUTONOMY] PASSAGENS POR POSIÇÃO ──────────────────────────────
-    // A IP não está a marcar ComboioPassou; inferimos pela posição snapped:
-    // toda a estação que ficou PARA TRÁS no sentido de marcha está passada.
-    // Cobre também reinícios do servidor a meio da viagem.
-    const veh = Geo.getVehicle(String(trainId));
-    const stationsProj = Geo._stations();
-    if (veh && veh.lastPing && stationsProj) {
-      // Sentido de marcha em termos de km da linha: compara a projeção da
-      // primeira e da última estação do trajeto deste comboio.
-      const routeKeys = (trainOutput.NodesPassagemComboio || [])
-        .map((n) => {
-          const nm = (n.NomeEstacao || "").toUpperCase().replace(/-A$/, "");
-          return STATION_MAP_IP_TO_JSON[nm];
-        })
-        .filter((k) => k && stationsProj[k] && stationsProj[k].proj);
-
-      if (routeKeys.length >= 2) {
-        const kmFirst = stationsProj[routeKeys[0]].proj.km;
-        const kmLast = stationsProj[routeKeys[routeKeys.length - 1]].proj.km;
-        const dirSign = kmLast >= kmFirst ? 1 : -1;
-        const PASSED_MARGIN_KM = 0.1; // 100 m depois da estação = passou
-
-        for (const node of trainOutput.NodesPassagemComboio || []) {
-          if (node.ComboioPassou) continue; // já marcado pela IP — não tocar
-          const nm = (node.NomeEstacao || "").toUpperCase().replace(/-A$/, "");
-          const key = STATION_MAP_IP_TO_JSON[nm];
-          const st = key && stationsProj[key];
-          if (!st || !st.proj) continue;
-          if (st.proj.featureIdx !== veh.lastPing.featureIdx) continue;
-
-          // Estação atrás do comboio (no sentido de marcha) com folga de 100 m.
-          const aheadKm = (st.proj.km - veh.lastPing.km) * dirSign;
-          if (aheadKm < -PASSED_MARGIN_KM) {
-            node.ComboioPassou = true;
-          }
-        }
-      }
-    }
-
-    trainOutput.Live = true;
-    trainOutput.AtrasoDinamico = true;
-
-    const now = nowObj.getTime();
-    let maxDelayMins = 0;
-
-    for (const node of trainOutput.NodesPassagemComboio || []) {
-      if (node.ComboioPassou) continue; // passados ficam como a IP os deixou
-
-      const nomeUpper = (node.NomeEstacao || "")
-        .toUpperCase()
-        .replace(/-A$/, "");
-      const key = STATION_MAP_IP_TO_JSON[nomeUpper];
-      if (!key || richInfo[key] == null) continue;
-
-      const delayS = GtfsOutput.dynamicStationDelayS(String(trainId), key, now);
-      if (delayS == null) continue; // cinemático indisponível p/ esta estação
-
-      // HoraPrevista = HoraProgramada (richInfo) + atraso cinemático
-      const prog = parseSmartTime(
-        String(richInfo[key]).substring(0, 5),
-        nowObj,
-      );
-      if (!prog) continue;
-      const prev = new Date(prog.getTime() + delayS * 1000);
-      const hh = String(prev.getHours()).padStart(2, "0");
-      const mm = String(prev.getMinutes()).padStart(2, "0");
-      const ss = String(prev.getSeconds()).padStart(2, "0");
-      node.HoraPrevista = `${hh}:${mm}:${ss}`;
-
-      maxDelayMins = Math.max(maxDelayMins, Math.round(delayS / 60));
-    }
-
-    // SituacaoComboio coerente com o atraso cinemático (não o da IP),
-    // sem pisar estados fortes (SUPRIMIDO etc.).
-    const sit = (trainOutput.SituacaoComboio || "").toUpperCase();
-    if (!sit.includes("SUPRIMIDO")) {
-      trainOutput.SituacaoComboio =
-        maxDelayMins >= 1
-          ? `Circula com atraso de ${maxDelayMins} min.`
-          : "Em circulação";
-    }
-  } catch (e) {
-    console.error(`[GPS-AUTONOMY] ${trainId}:`, e.message);
-  }
-};
-
-// ─── [GPS AUTONOMY] FILTRO DO /fertagus ─────────────────────────────────────
-// Em modo autónomo, o endpoint serve APENAS os comboios que existem na TML
-// com GPS fresco — a verdade é o GPS, não o estado herdado da IP.
-// Chaves reservadas (futureTrains/extratrains/abnormalRoutes) passam sempre.
-const RESERVED_OUTPUT_KEYS = new Set([
-  "futureTrains",
-  "extratrains",
-  "abnormalRoutes",
-]);
-
-// [GPS-ÚNICO] A TML é a fonte de verdade: QUALQUER comboio com GPS fresco
-// aparece SEMPRE e nunca é removido por lógica de supressão/ghost a montante.
-// A única transformação permitida é a troca de número por sentido invertido
-// (ID fantasma 99xxx). Construímos a resposta A PARTIR da lista de veículos
-// vivos da TML, não filtrando o OUTPUT_CACHE — assim, qualquer "delete" feito
-// no pipeline deixa de afetar o que é servido (o comboio continua na TML e
-// reaparece de imediato). O cache só ENRIQUECE (nós, atrasos) quando existe.
-const buildGpsLiveResponse = (cache) => {
-  try {
-    const liveIds = Geo.liveVehicleIds();
-    // Feed TML vazio/em baixo → devolve o cache tal como está (não inventamos
-    // nem escondemos nada por culpa da TML).
-    if (liveIds.length === 0) return cache;
-
-    const out = {};
-    // 1) Chaves reservadas (futureTrains/extratrains/abnormalRoutes) passam.
-    for (const k of RESERVED_OUTPUT_KEYS) {
-      if (cache[k] !== undefined) out[k] = cache[k];
-    }
-
-    // 2) Um comboio cujo número foi reatribuído por sentido invertido aparece
-    //    SÓ com o ID fantasma — o número original (errado) é omitido. Mapa
-    //    inverso fantasma→original para sabermos quais omitir.
-    const rerouted = new Set(); // IDs originais que viraram fantasma
-    for (const origId of REVERSED_ID_MAP.keys()) rerouted.add(String(origId));
-
-    // 3) Todo o veículo vivo na TML entra. Se já está no cache, usa-se esse
-    //    objeto (rico). Se não, constrói-se um placeholder mínimo (o comboio
-    //    existe fisicamente; mais vale mostrá-lo sem nós do que escondê-lo).
-    for (const id of liveIds) {
-      const idStr = String(id);
-      if (RESERVED_OUTPUT_KEYS.has(idStr)) continue;
-      if (rerouted.has(idStr)) continue; // número errado: só entra o fantasma
-
-      if (cache[idStr] !== undefined) {
-        out[idStr] = cache[idStr];
-      } else if (GHOST_TRAIN_REGISTRY.has(idStr)) {
-        // Fantasma sem entrada no cache ainda → gera o output agora.
-        const g = buildGhostTrainOutput(idStr, new Date());
-        if (g) out[idStr] = g;
-      } else {
-        // Veículo vivo sem qualquer dado: placeholder mínimo, mas visível.
-        out[idStr] = {
-          "id-comboio": idStr,
-          Live: true,
-          SemDados: true,
-          Operador: "FERTAGUS",
-          SituacaoComboio: "Em circulação",
-          NodesPassagemComboio: [],
-        };
-      }
-    }
-
-    return out;
-  } catch (e) {
-    console.error("[GPS-AUTONOMY] buildGpsLiveResponse:", e.message);
-    return cache; // fail-safe: nunca degradar o endpoint
-  }
-};
-
-// --- PROCESSAMENTO ---
-// ─── [SENTIDO INVERTIDO] REATRIBUIÇÃO DE ID FANTASMA ────────────────────────
-// Quando o número de comboio do feed TML indica um sentido mas o GPS viaja no
-// oposto, o número está corrompido (dado errado da TML). Não confiamos no
-// horário desse número: atribuímos um ID sintético >= 99001 que NÃO existe na
-// base, e o comboio passa a viver SEM horário — só posição + horas reais
-// registadas à passagem; previsões sempre "a horas" (nunca afirmamos atraso,
-// porque o horário real é desconhecido).
-
-let GHOST_ID_SEQ = 99001;
-const REVERSED_ID_MAP = new Map(); // idTML → idFantasma (estável durante a viagem)
-const GHOST_TRAIN_REGISTRY = new Map(); // idFantasma → { direction, observedTimes, createdAt, sourceTmlId }
-
-// Ordem física das estações (sul→norte). As chaves de STATION_MAP_JSON_TO_IP
-// já estão por esta ordem; o sentido "margem" usa-a invertida.
-const STATION_ORDER_KEYS = Object.keys(STATION_MAP_JSON_TO_IP);
-
-// Resolve (e memoiza) o ID a usar para um comboio. Se o sentido real observado
-// pelo GPS contradiz o sentido declarado pelo número, devolve um ID fantasma.
-const resolveDirectionalId = (trainId, richInfo, nowObj) => {
-  const idStr = String(trainId);
-  // [SENTIDO INVERTIDO] Desligado → devolve sempre o número original, intacto.
-  if (!DIRECTION_DETECTION_ENABLED) return idStr;
-  if (!GPS_CALCULATIONS_ENABLED) return idStr;
-  // Já reatribuído nesta viagem → mantém o mesmo fantasma (sem oscilação).
-  if (REVERSED_ID_MAP.has(idStr)) return REVERSED_ID_MAP.get(idStr);
-  if (!richInfo || !richInfo.direction) return idStr;
-
-  const obs = Geo.observedDirection(idStr);
-  if (!obs) return idStr; // parado/insuficiente → confia no número
-
-  const declared = richInfo.direction === "margem" ? "margem" : "lisboa";
-  if (obs === declared) return idStr; // coerente → normal
-
-  // ── DIVERGÊNCIA CONFIRMADA: criar fantasma ──
-  const ghostId = String(GHOST_ID_SEQ++);
-  REVERSED_ID_MAP.set(idStr, ghostId);
-  GHOST_TRAIN_REGISTRY.set(ghostId, {
-    direction: obs, // sentido REAL observado
-    observedTimes: {}, // key → "HH:MM:SS" reais (preenchido à passagem)
-    createdAt: nowObj.getTime(),
-    sourceTmlId: idStr,
-  });
-  console.warn(
-    `[SENTIDO INVERTIDO] Comboio TML ${idStr} declara "${declared}" mas o GPS ` +
-      `viaja "${obs}". Reatribuído ao fantasma ${ghostId} (sem horário associado).`,
-  );
-  return ghostId;
-};
-
-// Constrói/atualiza o trainOutput de um fantasma (99xxx): sem horário, posição
-// via GPS, horas reais registadas à passagem, previsão "a horas" (HoraPrevista
-// null) para o resto. Não inventa atrasos.
-const buildGhostTrainOutput = (ghostId, nowObj) => {
-  const reg = GHOST_TRAIN_REGISTRY.get(ghostId);
-  if (!reg) return null;
-
-  const dirKeys =
-    reg.direction === "margem"
-      ? [...STATION_ORDER_KEYS].reverse()
-      : STATION_ORDER_KEYS;
-
-  const veh = Geo.getVehicle(ghostId);
-  const stationsProj = Geo._stations();
-
-  // Marca de presença: enquanto houver GPS fresco, o fantasma está vivo.
-  if (veh && veh.lastPing && Geo.isGpsFresh(ghostId)) {
-    reg.lastSeenTs = veh.lastPing.ts;
-  }
-
-  let dirSign = 1;
-  if (stationsProj) {
-    const first = stationsProj[dirKeys[0]] && stationsProj[dirKeys[0]].proj;
-    const last =
-      stationsProj[dirKeys[dirKeys.length - 1]] &&
-      stationsProj[dirKeys[dirKeys.length - 1]].proj;
-    if (first && last) dirSign = last.km >= first.km ? 1 : -1;
-  }
-
-  const nodes = dirKeys.map((key) => {
-    const nomeIP = STATION_MAP_JSON_TO_IP[key] || key;
-    let passou = false;
-
-    if (
-      veh &&
-      veh.lastPing &&
-      stationsProj &&
-      stationsProj[key] &&
-      stationsProj[key].proj &&
-      stationsProj[key].proj.featureIdx === veh.lastPing.featureIdx
-    ) {
-      const aheadKm = (stationsProj[key].proj.km - veh.lastPing.km) * dirSign;
-      if (aheadKm < -0.1) passou = true; // 100 m para trás = passou
-    }
-
-    if (passou && !reg.observedTimes[key]) {
-      const hh = String(nowObj.getHours()).padStart(2, "0");
-      const mm = String(nowObj.getMinutes()).padStart(2, "0");
-      const ss = String(nowObj.getSeconds()).padStart(2, "0");
-      reg.observedTimes[key] = `${hh}:${mm}:${ss}`;
-    }
-
-    return {
-      NomeEstacao: nomeIP,
-      ComboioPassou: passou,
-      HoraPrevista: reg.observedTimes[key] || null, // null = horário desconhecido
-      Atraso: 0,
-    };
-  });
-
-  return {
-    "id-comboio": ghostId,
-    Origem: STATION_MAP_JSON_TO_IP[dirKeys[0]] || dirKeys[0],
-    Destino:
-      STATION_MAP_JSON_TO_IP[dirKeys[dirKeys.length - 1]] ||
-      dirKeys[dirKeys.length - 1],
-    Operador: "FERTAGUS",
-    TipoServico: "URB|SUBUR",
-    Live: true,
-    AtrasoDinamico: false, // sem horário → não afirmamos atraso
-    SemHorario: true, // flag p/ a app: comboio sem número/horário fiável
-    Ocupacao: null,
-    SituacaoComboio: "Em circulação",
-    NodesPassagemComboio: nodes,
-  };
-};
-
-// Limpeza de fantasmas: SÓ liberta memória de comboios que já não estão na TML
-// há muito tempo (terminaram a viagem). Nunca remove um fantasma que ainda
-// tenha GPS — e mantém o mapeamento de número ESTÁVEL durante uma janela larga
-// para que, se o comboio reaparecer (paragem longa, túnel), recupere o MESMO
-// ID fantasma em vez de receber um número novo.
-const GHOST_STALE_MS = 30 * 60 * 1000; // 30 min sem qualquer ping → terminou
-const cleanupGhostTrains = (now = Date.now()) => {
-  for (const [ghostId, reg] of GHOST_TRAIN_REGISTRY) {
-    if (Geo.isGpsFresh(ghostId, now)) continue; // vivo → nunca mexer
-    const lastSeen = reg.lastSeenTs || reg.createdAt || 0;
-    if (now - lastSeen > GHOST_STALE_MS) {
-      GHOST_TRAIN_REGISTRY.delete(ghostId);
-      REVERSED_ID_MAP.delete(reg.sourceTmlId);
-      delete OUTPUT_CACHE[ghostId];
-      Geo.removeVehicle(ghostId);
-    }
-  }
-};
-
 const processTrain = async (richInfo, originDateStr) => {
   const trainId = String(richInfo.id);
   const nowTime = Date.now();
@@ -1456,9 +940,13 @@ const processTrain = async (richInfo, originDateStr) => {
   // [SENTIDO INVERTIDO] Antes de tudo: o número do comboio bate com o sentido
   // real do GPS? Se não, este número está corrompido — trata como fantasma
   // sem horário e não o processes pelo horário (errado) deste ID.
-  const effectiveId = resolveDirectionalId(trainId, richInfo, nowObj);
+  const effectiveId = MapAuthority.resolveDirectionalId(
+    trainId,
+    richInfo,
+    nowObj,
+  );
   if (effectiveId !== trainId) {
-    const ghostOut = buildGhostTrainOutput(effectiveId, nowObj);
+    const ghostOut = MapAuthority.buildGhostTrainOutput(effectiveId, nowObj);
     if (ghostOut) {
       OUTPUT_CACHE[effectiveId] = ghostOut;
       delete OUTPUT_CACHE[trainId]; // o número errado não deve aparecer
@@ -2095,7 +1583,7 @@ const processTrain = async (richInfo, originDateStr) => {
   mem.lastDelay = currentDelay;
   mem.lastResult = trainOutput;
 
-  applyGpsAutonomy(trainOutput, trainId, richInfo, nowObj);
+  MapAuthority.applyGpsAutonomy(trainOutput, trainId, richInfo, nowObj);
 
   return trainOutput;
 };
@@ -2379,7 +1867,7 @@ const updateCycle = async () => {
 
   // Limpar Ghost Suppressed expirados (delegado ao GhostManager)
   GhostManager.cleanupExpiredGhosts(now, RICH_SCHEDULE, parseSmartTime);
-  cleanupGhostTrains(nowMs); // [SENTIDO INVERTIDO] fantasmas 99xxx terminados
+  MapAuthority.cleanupGhostTrains(nowMs, OUTPUT_CACHE); // [SENTIDO INVERTIDO] fantasmas 99xxx terminados
   for (const id of Object.keys(TRAIN_MEMORY)) {
     const m = TRAIN_MEMORY[id];
     if (m.isFetching) continue;
@@ -2499,348 +1987,34 @@ const scheduleNextTick = () => {
   }, delay || 15000);
 };
 
-// Admin management
-
-const ADMIN_API_KEY = process.env.ADMIN_API_KEY;
-const ADMIN_ROUTE = process.env.ADMIN_ROUTE;
-
-const adminAuth = (req, res, next) => {
-  const userAdminKey = req.headers["x-admin-key"];
-
-  if (!userAdminKey || userAdminKey !== ADMIN_API_KEY) {
-    return res.status(401).json({ error: "Não autorizado" });
-  }
-  next();
-};
-
-// check
-app.get(`${ADMIN_ROUTE}/ping`, adminAuth, (req, res) => {
-  res.json({ ok: true, timestamp: new Date().toISOString() });
-});
-
-// vitais server
-app.get(`${ADMIN_ROUTE}/vitals`, adminAuth, (req, res) => {
-  res.json({
-    uptime: os.uptime(),
-    freemem: os.freemem(),
-    totalmem: os.totalmem(),
-    loadavg: os.loadavg(),
-    cpus: os.cpus().length,
-    node_version: process.version,
-    platform: os.platform(),
-  });
-});
-
-// Avisos
-app.get(`${ADMIN_ROUTE}/avisos`, adminAuth, (req, res) => {
-  try {
-    const data = fs.readFileSync(path.join(__dirname, "avisos.json"), "utf8");
-    res.json(JSON.parse(data));
-  } catch (err) {
-    res.status(500).json({ error: "Erro ao ler avisos.json" });
-  }
-});
-
-app.post(`${ADMIN_ROUTE}/avisos`, adminAuth, express.json(), (req, res) => {
-  try {
-    const newAvisos = req.body;
-    if (
-      !newAvisos ||
-      typeof newAvisos !== "object" ||
-      Array.isArray(newAvisos)
-    ) {
-      return res
-        .status(400)
-        .json({ error: "Payload inválido: esperado objeto JSON." });
-    }
-    const target = path.join(__dirname, "avisos.json");
-    const tmp = path.join(__dirname, `.avisos.json.${process.pid}.tmp`);
-    fs.writeFileSync(tmp, JSON.stringify(newAvisos, null, 2), "utf8");
-    fs.renameSync(tmp, target);
-    if (typeof AvisosManager.reload === "function") {
-      AvisosManager.reload();
-    }
-    res.json({ success: true, message: "Avisos atualizados com sucesso" });
-  } catch (err) {
-    console.error("[ADMIN /avisos] Erro a gravar:", err.message);
-    res.status(500).json({ error: "Erro ao gravar avisos.json" });
-  }
-});
-
-// Processos de gestão api
-app.get(`${ADMIN_ROUTE}/pm2`, adminAuth, (req, res) => {
-  exec("pm2 jlist", (err, stdout) => {
-    if (err) return res.status(500).json({ error: "Erro ao executar PM2" });
-    try {
-      res.json(JSON.parse(stdout));
-    } catch (e) {
-      res.status(500).json({ error: "Erro ao processar dados do PM2" });
-    }
-  });
-});
-
-// açoes pm2 (restart stop start)
-app.post(`${ADMIN_ROUTE}/pm2-action`, adminAuth, express.json(), (req, res) => {
-  const { action, process: procName } = req.body;
-  const allowedActions = ["restart", "stop", "start"];
-
-  if (!allowedActions.includes(action)) {
-    return res.status(400).json({ error: "Ação não permitida" });
-  }
-
-  // --- command injection protection ---
-  if (!procName || !/^[a-zA-Z0-9_\-]+$/.test(procName)) {
-    return res.status(400).json({ error: "Nome de processo inválido/crazy." });
-  }
-
-  exec(`pm2 ${action} ${procName}`, (err) => {
-    if (err)
-      return res
-        .status(500)
-        .json({ error: `Erro ao executar ${action} no ${procName}` });
-    res.json({ success: true, message: `${procName} ${action}ed` });
-  });
-});
-
-// --- ROUTES ---
-
-// keeping old support while app gets adjusted
-// ENPOINT WITH DEPRECATED WARNING
-app.get("/fertagus", protectRoute, (req, res) => {
-  if (IP_IS_DOWN && !GPS_AUTONOMOUS_MODE) {
-    return res.status(503).json({
-      error: "IP_DOWN",
-      status: "offline",
-      message: "Infraestruturas de Portugal Incontactável",
-    });
-  }
-
-  if (GPS_AUTONOMOUS_MODE) {
-    return res.json(buildGpsLiveResponse(OUTPUT_CACHE));
-  }
-
-  res.json(OUTPUT_CACHE);
-});
-
-app.get("/estacao/:id", protectRoute, (req, res) => {
-  if (IP_IS_DOWN) {
-    return res.status(503).json({
-      error: "IP_DOWN",
-      status: "offline",
-      message: "Infraestruturas de Portugal Incontactável",
-    });
-  }
-
-  const station = EstacaoEndpoint.resolveStation(req.params.id);
-  if (!station) {
-    return res.status(404).json({
-      error: "ESTACAO_DESCONHECIDA",
-      message:
-        "ID inválido. Usa o EstacaoID numérico da IP (ex: 9417236 = Coina).",
-      estacoes: EstacaoEndpoint.listStations(),
-    });
-  }
-
-  const payload = EstacaoEndpoint.buildStationPayload(station, {
+// --- ROTAS (extraídas para ./routes.js) ---
+registerRoutes(app, {
+  AvisosManager,
+  EstacaoEndpoint,
+  GtfsOutput,
+  ServiceDayManager,
+  AnalyticsManager,
+  GhostManager,
+  VerifyManager,
+  GetLocation,
+  MapAuthority,
+  parseSmartTime,
+  getOperationalInfo,
+  formatDateStr,
+  getState: () => ({
     OUTPUT_CACHE,
     EXTRA_TRAINS_CACHE,
-    GtfsOutput,
     FUTURE_TRAINS_CACHE,
     ABNORMAL_ROUTES_CACHE,
     RICH_SCHEDULE,
     DYNAMIC_EXTRA_SCHEDULE,
-    parseSmartTime,
-    now: new Date(),
-    ipDown: IP_IS_DOWN,
-    operationalDate: getOperationalInfo().operationalDateStr,
-    limit: req.query.limit ? parseInt(req.query.limit, 10) : undefined,
-  });
-
-  res.json(payload);
-});
-
-app.get("/estacoes", protectRoute, (req, res) => {
-  res.json({ estacoes: EstacaoEndpoint.listStations() });
-});
-
-app.get("/mapa", protectRoute, (req, res) => {
-  res.json(GetLocation.getMapData());
-});
-
-app.get("/stats", (req, res) => {
-  res.json(AnalyticsManager.getStats());
-});
-
-app.get("/avisos", (req, res) => {
-  res.json(AvisosManager.getAvisos());
-});
-
-// --- VERSION 2 | GTFS-RT COMPLIANT ---
-
-// Ainda precisa de protectRoute!!
-
-const LIVETAGUS_ENDPOINTS_BASE = "/v2/fertagus/";
-
-app.get(`${LIVETAGUS_ENDPOINTS_BASE}feed`, (req, res) => {
-  if (IP_IS_DOWN && !GPS_AUTONOMOUS_MODE) {
-    return res.status(503).json({
-      error: "IP_DOWN",
-      status: "offline",
-      message: "Infraestruturas de Portugal Incontactável",
-    });
-  }
-  res.json(GtfsOutput.decorateOutputCache(OUTPUT_CACHE));
-});
-
-app.get(`${LIVETAGUS_ENDPOINTS_BASE}service-day/:date`, (req, res) => {
-  const { status, body } = ServiceDayManager.resolveServiceDay(
-    req.params.date,
-    new Date(),
-  );
-  res.status(status).json(body);
-});
-
-app.get(`${LIVETAGUS_ENDPOINTS_BASE}trips/:id`, (req, res) => {
-  if (IP_IS_DOWN && !GPS_AUTONOMOUS_MODE) {
-    return res.status(503).json({
-      error: "IP_DOWN",
-      status: "offline",
-      message: "Infraestruturas de Portugal Incontactável",
-    });
-  }
-
-  const tripId = req.params.id;
-
-  // 1. Evitar que o cliente aceda às chaves reservadas da cache global
-  const RESERVED_KEYS = ["futureTrains", "extratrains", "abnormalRoutes"];
-  if (RESERVED_KEYS.includes(tripId)) {
-    return res.status(404).json({ error: "TRIP_NOT_LIVE_OR_UNKNOWN" });
-  }
-
-  // 2. Procurar o comboio no OUTPUT_CACHE ou nos Extras (caso ainda não esteja Live)
-  let train = OUTPUT_CACHE[tripId];
-  if (!train && EXTRA_TRAINS_CACHE && EXTRA_TRAINS_CACHE[tripId]) {
-    train = EXTRA_TRAINS_CACHE[tripId];
-  }
-
-  // 3. Se não existir, devolver 404
-  if (!train) {
-    return res.status(404).json({
-      error: "TRIP_NOT_LIVE_OR_UNKNOWN",
-      message: "O serviço não está ativo de momento ou o ID é inválido.",
-    });
-  }
-
-  // 4. Se existir, decora APENAS este comboio com os dados GTFS-RT e envia
-  const decoratedTrip = GtfsOutput.decorateTrain(train);
-  res.json(decoratedTrip);
-});
-
-app.get(`${LIVETAGUS_ENDPOINTS_BASE}stops/:id`, (req, res) => {
-  if (IP_IS_DOWN && !GPS_AUTONOMOUS_MODE) {
-    return res.status(503).json({
-      error: "IP_DOWN",
-      status: "offline",
-      message: "Infraestruturas de Portugal Incontactável",
-    });
-  }
-
-  const station = EstacaoEndpoint.resolveStation(req.params.id);
-  if (!station) {
-    return res.status(404).json({
-      error: "STOP_UNKNOWN",
-      message:
-        "ID inválido. Usa o EstacaoID numérico da IP (ex: 9417236 = Coina).",
-      estacoes: EstacaoEndpoint.listStations(),
-    });
-  }
-
-  const payload = EstacaoEndpoint.buildStationPayload(station, {
-    OUTPUT_CACHE,
-    EXTRA_TRAINS_CACHE,
-    GtfsOutput,
-    FUTURE_TRAINS_CACHE,
-    ABNORMAL_ROUTES_CACHE,
-    RICH_SCHEDULE,
-    DYNAMIC_EXTRA_SCHEDULE,
-    parseSmartTime,
-    now: new Date(),
-    ipDown: IP_IS_DOWN,
-    operationalDate: getOperationalInfo().operationalDateStr,
-    limit: req.query.limit ? parseInt(req.query.limit, 10) : undefined,
-  });
-
-  res.json(payload);
-});
-
-// todas as estações
-app.get(`${LIVETAGUS_ENDPOINTS_BASE}stops`, (req, res) => {
-  res.json({ estacoes: EstacaoEndpoint.listStations() });
-});
-
-// apenas localização e bearing dos comboios para poupar recursos
-app.get(`${LIVETAGUS_ENDPOINTS_BASE}vehicle-positions`, (req, res) => {
-  if (IP_IS_DOWN && !GPS_AUTONOMOUS_MODE) {
-    return res.status(503).json({
-      error: "IP_DOWN",
-      status: "offline",
-    });
-  }
-
-  const mapPayload = {};
-  const RESERVED_KEYS = ["futureTrains", "extratrains", "abnormalRoutes"];
-
-  for (const [id, train] of Object.entries(OUTPUT_CACHE)) {
-    if (RESERVED_KEYS.includes(id)) continue;
-
-    const dec = GtfsOutput.decorateTrain(train);
-
-    // Filtra apenas comboios com GPS fresco e projetado na linha
-    if (dec.gtfs_realtime?.position?.is_snapped) {
-      mapPayload[id] = {
-        lat: dec.gtfs_realtime.position.latitude,
-        lng: dec.gtfs_realtime.position.longitude,
-        bearing: dec.gtfs_realtime.position.bearing,
-        // Velocidade em metros por segundo (standard GTFS)
-        // speed: dec.gtfs_realtime.position.speed, (NOT PROD READY)
-      };
-    }
-  }
-
-  res.json(mapPayload);
-});
-
-// avisos ativos na linha. OLD "/avisos"
-app.get(`${LIVETAGUS_ENDPOINTS_BASE}alerts`, (req, res) => {
-  res.json(AvisosManager.getAvisos());
-});
-
-// --- GENEREAL ---
-
-app.get("/", (req, res) =>
-  res.json({
-    status: "online",
-    version: "b6.2.5",
-    aviso:
-      "Pedimos que não uses o nosso endpoint diretamente! Verifica toda as informações e código no github.",
-    operational: getOperationalInfo(),
-    ghost: {
-      monitoring: Object.keys(GhostManager.GHOST_TRAINS).length,
-      suppressed: GhostManager.GHOST_SUPPRESSED.size,
-    },
-    suppressed_active: SUPPRESSED_ACTIVE.size,
-    extras: {
-      active: Object.keys(EXTRA_TRAINS_CACHE).length,
-      tracked: Object.keys(DYNAMIC_EXTRA_SCHEDULE).length,
-    },
-    changes: {
-      today: VerifyManager.getChangesForDate(formatDateStr(new Date())),
-    },
+    SUPPRESSED_ACTIVE,
+    IP_IS_DOWN,
   }),
-);
+});
 
 app.listen(PORT, () => {
-  console.log(`LiveTagus API vb6.2.5 ativa na porta ${PORT}`);
+  console.log(`LiveTagus API vb6.3.0 ativa na porta ${PORT}`);
   console.log(`Endpoint /fertagus protegido com API_KEY.`);
 
   // NÃO usar await aqui: checkOfflineTrains() faz station-poll com timeouts
@@ -2852,8 +2026,8 @@ app.listen(PORT, () => {
   scheduleNextTick();
   try {
     Geo.init(
-      path.join(__dirname, "fertagus_line_detailed.json"),
-      path.join(__dirname, "ft_stations_detailed.json"),
+      path.join(__dirname, "/data/geo/fertagus_line_detailed.json"),
+      path.join(__dirname, "/data/geo/fertagus_stations_detailed.json"),
     );
     GtfsOutput.init({
       Geo,
@@ -2861,7 +2035,7 @@ app.listen(PORT, () => {
       parseSmartTime,
       stationsDetailed: JSON.parse(
         fs.readFileSync(
-          path.join(__dirname, "ft_stations_detailed.json"),
+          path.join(__dirname, "/data/geo/fertagus_stations_detailed.json"),
           "utf8",
         ),
       ),
@@ -2890,7 +2064,7 @@ app.listen(PORT, () => {
       // [SENTIDO INVERTIDO] Só desvia pings se a deteção estiver ATIVA. Com ela
       // desligada, o ping segue sempre com o número original (sem fantasmas).
       if (DIRECTION_DETECTION_ENABLED) {
-        const rerouted = REVERSED_ID_MAP.get(String(meta.trainId));
+        const rerouted = MapAuthority.getReversedId(meta.trainId);
         if (rerouted) return { ...meta, trainId: rerouted };
       }
       return meta;
@@ -2916,7 +2090,7 @@ app.listen(PORT, () => {
     STATION_MAP_IP_TO_JSON,
     stationsDetailed: JSON.parse(
       fs.readFileSync(
-        path.join(__dirname, "ft_stations_detailed.json"),
+        path.join(__dirname, "/data/geo/fertagus_stations_detailed.json"),
         "utf8",
       ),
     ),
