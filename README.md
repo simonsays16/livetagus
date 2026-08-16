@@ -1,89 +1,134 @@
-# LiveTagus
+# LiveTagus v2
 
-[![Mozilla Observatory](https://img.shields.io/mozilla-observatory/grade-score/livetagus.pt)](https://developer.mozilla.org/en-US/observatory/analyze?host=livetagus.pt) [![Netlify Status](https://api.netlify.com/api/v1/badges/0b2c7227-c652-44a1-9e33-db20c3387dd6/deploy-status)](https://app.netlify.com/projects/livetagus/deploys) [![Better Stack Badge](https://uptime.betterstack.com/status-badges/v2/monitor/2dwgi.svg)](https://uptime.betterstack.com/?utm_source=status_badge) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) 
+A LiveTagus acompanha os comboios da Fertagus em tempo real com posição,
+atrasos, ocupação e avisos. Está online em **[livetagus.pt](https://livetagus.pt)**.
 
-**LiveTagus** is an independent, open-source web interface designed to help commuters in the Lisbon South Bay area track **Fertagus** trains in real-time.
-
-> **Note:** LiveTagus is an independent project and is **not affiliated, associated, authorized, endorsed by, or in any way officially connected with Fertagus nor Infraestruturas de Portugal (IP)**. The official Fertagus website can be found at [fertagus.pt](https://www.fertagus.pt). The official IP website can be found at [infraestruturasdeportugal.pt](https://www.infraestruturasdeportugal.pt/).
-
-## Live Demo
-
-Visit the app: [**https://livetagus.pt**](https://livetagus.pt)
+Este branch é a **v2**, um redesign da PWA.
 
 ---
 
-## Important Note about the API
+## ⚠️ Isto é uma beta, e está extremamente instável!
 
-Although the API code is open-source and available for review, we kindly ask that you do not use our production endpoint for your own projects or applications.
+Se chegaste aqui à procura da LiveTagus, **não é este o sítio**. Usa a
+[livetagus.pt](https://livetagus.pt), que corre a partir da `main` e é a versão
+estável.
 
-Maintaining the servers involves costs that are covered by us. High external traffic to our API increases these costs and risks service instability for users of the official application. If you need API functionality for other purposes, please self-host it using the code provided in the **/API** folder.
-## Project Structure
+Este branch é trabalho em curso, feito em público. Espera funcionalidades
+partidas, dados errados, ecrãs meio desenhados e coisas que mudam de sítio de
+um dia para o outro. Não é utilizável no dia a dia e não deve ser tratado como
+tal.
 
-The repository is organized as follows:
+Também não é autónoma. Precisa de ficheiros de dados que não estão no
+repositório (gtfs), por isso clone e abrir não chega para o ver a funcionar.
 
-* **/WebApp**: Contains the Frontend source code (main focus).
-    * HTML, Javascript, and CSS.
-    * Styling with Tailwind CSS.
-    * PWA Configuration.
-* **/API**: Backend source code (provided for reference and self-hosting purposes only).
-    * Node.js Server.
-    * Static JSON files.
+## O que muda na v2
 
-## How to run locally
+**O mapa passa a multimodal.** A Fertagus continua a ser o centro e é a razão de a app existir, mas o mapa passa a
+mostrar também o Metro de Lisboa, o Metro Sul do Tejo, a CP e a Carris
+Metropolitana, com horários, percursos das viagens e ligações entre operadores.
 
-To test or develop the project on your machine:
+Plano de disponibilidade:
 
-### Prerequisites
-* Node.js installed.
+| Operadores AML                    | Horários e Linhas | Tempo Real                 |
+| --------------------------------- | ----------------- | -------------------------- |
+| Fertagus                          | ✅                | (Em Resolução)             |
+| Carris Metropolitana (Área 3 e 4) | ✅                | ✅                         |
+| Carris Metropolitana (Área 1 e 2) | ⌛                | ⌛                         |
+| Metro de Lisboa                   | ✅                | ⌛                         |
+| Metro Transportes do Sul          | ✅                | ❌                         |
+| CP                                | ✅                | (Atalho para Site Oficial) |
+| TCB                               | ⌛                | ⌛                         |
+| Carris                            | Em Análise        | ❌                         |
+| Transtejo                         | ❌                | ❌                         |
 
-### 1. Setup API (Backend)
-If you need to modify data or server logic:
+**Planeador de viagem.** Permite planear a tua viagem com antecedência. Selecionas a data e a hora a que queres chegar/partir de uma estação e recebes uma proposta de viagem. O planeador avisa para trajetos com ocupação elevada e sugere horários com ocupações menores.
 
-```bash
-cd API
-npm install
-node index.js
-# The server should start
-```
+**"A minha paragem" muda de propósito.** Deixa de ser uma lista de paragens
+guardadas para consulta e passa a ser o sítio onde escolhes que paragens de
+autocarro queres ver no teu mapa.
 
-### 2. Setup WebApp (Frontend)
-The WebApp uses Tailwind CSS. To compile CSS and see changes:
+**Perto de mim.** Mostra os transportes mais próximos, com raio ajustável. A
+localização é obtida e usada apenas no teu dispositivo. Não é enviada para
+lado nenhum, não é guardada, e desaparece quando fechas a página. A estação da Fertagus mais próxima aparece sempre no topo.
 
-```bash
-cd WebApp
-npm install
-# To start the Tailwind watch process (automatic compilation):
-npm run watch
-```
+**Muitas correções e muitos acertos pequenos**, incluindo bugs antigos que estavam
+lá há meses sem ninguém dar por eles.
 
-Then, simply open the `index.html` or `app.html` file in your browser.
-## Features
+## O que ainda não está bem
 
-* **Schedules:** Quick check for upcoming trains.
-* **Service Status:** Information regarding delays or cancellations.
-* **PWA:** Can be installed on mobile devices as a native application.
-* **Design:** Mobile-optimized interface.
+Vale a pena ser claro sobre os limites, porque alguns são do próprio dado e não
+se resolvem com código:
 
-## Contributing
+- **Os horários do Metro de Lisboa não são horários.** O feed publica
+  frequências ("de 4 em 4 minutos"), não partidas. As horas mostradas são
+  interpoladas a partir desse intervalo, por isso ainda estamos a averiguar a situação.
+- **A CP só cobre a região de Lisboa** nesta versão, e os horários são os
+  programados. Para tempo real há um atalho para o site da CP.
+- **Só a Fertagus e a Carris Metropolitana têm tempo real.**
+- Etiquetas de estação podem desaparecer: as fontes do mapa vêm de um servidor
+  de demonstração, sem garantias de disponibilidade.
+- Alguns ecrãs carregam bastantes dados. Ainda não está optimizado.
 
-Contributions are welcome. If you found a bug or have a suggestion:
+## FAQ
 
-1. Fork the project.
-2. Create a Branch for your feature (`git checkout -b feature/NovaFuncionalidade`).
-3. Commit your changes (`git commit -m 'Adiciona NovaFuncionalidade'`).
-4. Push to the Branch (`git push origin feature/NovaFuncionalidade`).
-5. Open a Pull Request.
+<details>
+<summary>
+<b>A LiveTagus voltou?</b>
+</summary>
 
-Please review our [Code of Conduct](https://github.com/simonsays16/livetagus/blob/main/CODE_OF_CONDUCT.md) before contributing.
+A LiveTagus nunca foi embora, apenas ficou com menos informação disponível. Infelizmente isso não vai mudar para já. PLaneio lançar esta atualização quando voltarmos a ter os dados todos!
 
-## License
+</details>
+<p></p>
+<details>
+<summary>
+<b>Quando vai ser lançada?</b>
+</summary>
 
-This project is licensed under the MIT License. See the [LICENSE](https://github.com/simonsays16/livetagus/blob/main/LICENSE) file for details.
+Também gostava de saber :)
 
-## Disclaimer
-LiveTagus is an independent project and is **not affiliated, associated, authorized, endorsed by, or in any way officially connected with Fertagus**. The official Fertagus website can be found at [fertagus.pt](https://www.fertagus.pt).
+</details>
+<p></p>
+<details>
+<summary>
+<b>Como lidamos com tantos horários?</b>
+</summary>
+
+Os horários dos operadores vêm de bundles
+gerados pelo [`gtfs-departures`](https://gtfs-departures.livetagus.pt), uma
+ferramenta que fiz para transformar feeds GTFS (Padrão Internacional) em JSON divididos por estação para carregar mais rápido.
+
+</details>
+<p></p>
+<details>
+<summary>
+<b>Mesmo assim queres ver como está?</b>
+</summary>
+
+A PWA BETA **INSTÁVEL** está disponível em [`beta.livetagus.pt`](https://beta.livetagus.pt) e **APENAS** em fase de testes, os termos e condições, política de privacidade podem estar desatualizados por ser uma versão dev.
+
+</details>
+
+<details>
+<summary>
+<b>Encontrei um erro na beta. Onde aviso?</b>
+</summary>
+
+Como isto ainda está em construção, os erros são normais. Abre um _Issue_ aqui e explica o que falhou (exemplo: qual era a estação, o operador).
+
+</details>
+
+<details>
+<summary>
+<b>Isto é uma app oficial da Fertagus?</b>
+</summary>
+
+**Não.** A LiveTagus é um projeto **100% independente**, desenvolvido e mantido por mim. Não tem qualquer ligação institucional, patrocínio ou afiliação com a Fertagus, Infraestruturas de Portugal ou qualquer outro operador de transportes.
+
+</details>
+<p></p>
 
 ---
-<img src="https://livetagus.pt/imagens/badge_coded_in_europe_portugal_margem_sul.svg?github" alt="Coded in Europe | Portugal | Margem Sul" width="150"/>
 
-Developed with ❤️ in Margem Sul.
+Projecto pessoal e independente. Sugestões e relatos de
+erros são bem-vindos nos _issues_.

@@ -838,3 +838,33 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 });
+
+// ─── INJEÇÃO DE ELEMENTOS DO MENU GLOBAL ───
+function injectCustomMenuElements() {
+  const menuOverlay = document.getElementById("menu-overlay");
+  const settingsTemplate = document.getElementById("menu-settings-template");
+
+  if (menuOverlay && settingsTemplate) {
+    const nav = menuOverlay.querySelector("nav");
+    if (nav) {
+      const wrapper = document.createElement("div");
+      wrapper.innerHTML = settingsTemplate.innerHTML;
+      nav.parentNode.insertBefore(wrapper, nav.nextSibling);
+      settingsTemplate.remove();
+    }
+  }
+
+  const header = document.querySelector("#global-nav header");
+  const trigger = document.getElementById("menu-trigger");
+
+  const footer = document.getElementById("global-footer");
+  if (footer && !document.getElementById("footer-warning")) {
+    const p = document.createElement("p");
+    p.id = "footer-warning";
+    p.className =
+      "text-[0.6rem] text-center text-zinc-500 dark:text-zinc-400 mb-6 opacity-60 block w-full px-4 uppercase tracking-widest";
+    p.innerText =
+      "Atenção: Os horários e estado de circulação podem sofrer alterações sem aviso prévio. Esteja na paragem à hora programada.";
+    footer.insertBefore(p, footer.firstChild);
+  }
+}

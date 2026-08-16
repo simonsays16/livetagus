@@ -284,7 +284,7 @@
             <i data-lucide="${hasRealPosition ? "satellite-dish" : "route"}"
                class="w-3 h-3 ${hasRealPosition ? "text-emerald-500" : "text-zinc-400"} shrink-0"></i>
             <span class="text-[9px] font-medium uppercase tracking-[0.2em] ${hasRealPosition ? "text-emerald-600 dark:text-emerald-400" : "text-zinc-400 dark:text-zinc-500"}">
-              ${hasRealPosition ? "Localização Real do Comboio <b>(NOVO)</b>" : "Localização do Comboio Estimada"}
+              ${hasRealPosition ? "Localização Real do Comboio" : "Localização do Comboio Estimada"}
             </span>
           </div>
 

@@ -2,12 +2,12 @@
 // get-location.js  —  Posições em tempo real dos comboios Fertagus (mapa)
 // -----------------------------------------------------------------------------
 // A TML passou a expor APENAS a localização das viaturas. Este módulo faz um
-// poll de fundo de 5 em 5 segundos ao endpoint de posições da TML, filtra só a
-// agência Fertagus ("15") e mantém em memória um cache leve no formato:
+// poll de fundo de 3 em 3 segundos ao endpoint de posições da TML, filtra só a
+// agência Fertagus ("7NTB1") e mantém em memória um cache leve no formato:
 //
 //   {
-//     "14297": { latitude: 38.530334, longitude: -8.885048 },
-//     "14301": { latitude: 38.665642, longitude: -9.180532 },
+//     "14308": { latitude: 38.660736, longitude: -9.186214 },
+//     "14309": { latitude: 38.586900, longitude: -9.055337 },
 //     ...
 //   }
 //
@@ -19,8 +19,8 @@ require("dotenv").config();
 const fetch = require("node-fetch");
 
 const TML_URL = process.env.API_LOCATION;
-const AGENCY_ID = "15"; // Fertagus
-const POLL_INTERVAL_MS = 3000; // refresh de 5s pedido
+const AGENCY_ID = "7NTB1"; // Fertagus
+const POLL_INTERVAL_MS = 3000; // refresh de 3 s
 const FETCH_TIMEOUT_MS = 2500; // < intervalo, para não acumular pedidos pendurados
 
 // Mantém o estilo do FETCH_HEADERS do index.js: força resposta fresca.
@@ -39,9 +39,15 @@ let pollTimer = null;
 let isFetching = false; // evita sobreposição se a TML demorar a responder
 let onPayloadCb = null;
 
-// Remove o prefixo de agência: "[15]14297" -> "14297"
+// Remove os prefixos entre parênteses rectos do início do identificador.
+// A TML mudou o formato da agência de numérico para alfanumérico e alguns
+// campos trazem prefixos ENCADEADOS, daí o quantificador no grupo:
+//   "[15]14297"           -> "14297"   (formato antigo)
+//   "[7NTB1]14308"        -> "14308"   (formato atual)
+//   "[2XUL7][7NTB1]3109"  -> "3109"    (trip_id, dois prefixos)
+//   "14308"               -> "14308"   (já normalizado, inalterado)
 const stripAgencyPrefix = (vehicleId) =>
-  String(vehicleId || "").replace(/^\[\d+\]/, "");
+  String(vehicleId || "").replace(/^(?:\[[^\]]+\])+/, "");
 
 const pollPositions = async () => {
   // Se o poll anterior ainda não terminou, salta este tick (não empilha pedidos).

@@ -1,0 +1,4459 @@
+{
+  "type": "FeatureCollection",
+  "generator": "overpass-turbo",
+  "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL.",
+  "timestamp": "2026-06-28T19:04:15Z",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/33360557",
+        "level": "0",
+        "name": "Baixa-Chiado",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1390868,
+          38.7106621
+        ]
+      },
+      "id": "node/33360557"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/265290986",
+        "level": "-0.4",
+        "name": "Baixa-Chiado",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1420645,
+          38.7105683
+        ]
+      },
+      "id": "node/265290986"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/376031049",
+        "name": "Praça de Espanha",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1601944,
+          38.7380153
+        ]
+      },
+      "id": "node/376031049"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/376811849",
+        "name": "Restauradores",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1409911,
+          38.7153799
+        ]
+      },
+      "id": "node/376811849"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/376811870",
+        "name": "Restauradores",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1415437,
+          38.7151077
+        ]
+      },
+      "id": "node/376811870"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/494451977",
+        "name": "Jardim Zoológico",
+        "name:de": "Zoologischer Garten",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1686961,
+          38.7421755
+        ]
+      },
+      "id": "node/494451977"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/494451978",
+        "name": "Jardim Zoológico",
+        "name:de": "Zoologischer Garten",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1683109,
+          38.7424084
+        ]
+      },
+      "id": "node/494451978"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1118902552",
+        "door": "no",
+        "indoor": "door",
+        "level": "-1",
+        "name": "Terreiro do Paço",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1348826,
+          38.7066678
+        ]
+      },
+      "id": "node/1118902552"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1118902554",
+        "door": "no",
+        "indoor": "door",
+        "level": "-1",
+        "name": "Terreiro do Paço",
+        "railway": "subway_entrance",
+        "stairs": "yes",
+        "wheelchair": "no",
+        "wikidata": "Q999002",
+        "wikimedia_commons": "Category:Praça do Comércio",
+        "wikipedia": "pt:Praça do Comércio"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.13544,
+          38.7074551
+        ]
+      },
+      "id": "node/1118902554"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1118902561",
+        "name": "Santa Apolónia",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1223465,
+          38.713519
+        ]
+      },
+      "id": "node/1118902561"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1118902564",
+        "name": "Santa Apolónia",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1222077,
+          38.7136445
+        ]
+      },
+      "id": "node/1118902564"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1118902569",
+        "name": "Terreiro do Paço",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1336018,
+          38.7069906
+        ]
+      },
+      "id": "node/1118902569"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1119839341",
+        "level": "-1",
+        "name": "Acesso 1",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1491337,
+          38.7250293
+        ]
+      },
+      "id": "node/1119839341"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1121125543",
+        "name": "Acesso 3",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1500222,
+          38.7245926
+        ]
+      },
+      "id": "node/1121125543"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1121125634",
+        "name": "Acesso 2",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1498056,
+          38.7246142
+        ]
+      },
+      "id": "node/1121125634"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508338",
+        "level": "0;-0.5",
+        "name": "Quinta das Conchas",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1555852,
+          38.7679575
+        ]
+      },
+      "id": "node/1122508338"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508342",
+        "level": "0;-0.5",
+        "name": "Quinta das Conchas",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1553957,
+          38.7671253
+        ]
+      },
+      "id": "node/1122508342"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508345",
+        "name": "Lumiar",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1598245,
+          38.7728471
+        ]
+      },
+      "id": "node/1122508345"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508348",
+        "name": "Roma",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1415929,
+          38.7483759
+        ]
+      },
+      "id": "node/1122508348"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508364",
+        "door": "no",
+        "indoor": "door",
+        "level": "-1",
+        "name": "Rossio",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1389018,
+          38.713849
+        ]
+      },
+      "id": "node/1122508364"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508367",
+        "name": "Roma",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1414876,
+          38.7489128
+        ]
+      },
+      "id": "node/1122508367"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508368",
+        "name": "Intendente",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1353572,
+          38.7230385
+        ]
+      },
+      "id": "node/1122508368"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508370",
+        "name": "Arroios",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1344205,
+          38.7334172
+        ]
+      },
+      "id": "node/1122508370"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508386",
+        "name": "Lumiar",
+        "railway": "subway_entrance",
+        "stairs": "yes",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1593249,
+          38.7728866
+        ]
+      },
+      "id": "node/1122508386"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508390",
+        "level": "-1-0",
+        "name": "Restauradores",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1414137,
+          38.7150845
+        ]
+      },
+      "id": "node/1122508390"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508393",
+        "level": "0;-1",
+        "name": "Quinta das Conchas",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1557582,
+          38.7672461
+        ]
+      },
+      "id": "node/1122508393"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508396",
+        "name": "Rossio",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1384114,
+          38.7140193
+        ]
+      },
+      "id": "node/1122508396"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508408",
+        "name": "Areeiro",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1334808,
+          38.7429462
+        ]
+      },
+      "id": "node/1122508408"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508410",
+        "name": "Alvalade",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1434604,
+          38.7524692
+        ]
+      },
+      "id": "node/1122508410"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508428",
+        "level": "0;-1",
+        "name": "Martim Moniz",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.135691,
+          38.7168286
+        ]
+      },
+      "id": "node/1122508428"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508431",
+        "name": "Areeiro",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1336524,
+          38.7428943
+        ]
+      },
+      "id": "node/1122508431"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508432",
+        "name": "Alameda",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1339999,
+          38.7375743
+        ]
+      },
+      "id": "node/1122508432"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508434",
+        "name": "Intendente",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1351792,
+          38.7228422
+        ]
+      },
+      "id": "node/1122508434"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508435",
+        "name": "Azinhaga da Cidade",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1594322,
+          38.7794042
+        ]
+      },
+      "id": "node/1122508435"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508445",
+        "name": "Intendente",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1354148,
+          38.7224663
+        ]
+      },
+      "id": "node/1122508445"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508448",
+        "name": "Alvalade",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1445193,
+          38.7537969
+        ]
+      },
+      "id": "node/1122508448"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508451",
+        "name": "Alvalade",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1437704,
+          38.7523881
+        ]
+      },
+      "id": "node/1122508451"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508456",
+        "name": "Alameda",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1336941,
+          38.7377117
+        ]
+      },
+      "id": "node/1122508456"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508465",
+        "name": "Alameda",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1335744,
+          38.7376034
+        ]
+      },
+      "id": "node/1122508465"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508468",
+        "name": "Alameda",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1336284,
+          38.7372493
+        ]
+      },
+      "id": "node/1122508468"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508486",
+        "name": "Escola Básica nº 109",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1596549,
+          38.779854
+        ]
+      },
+      "id": "node/1122508486"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508491",
+        "name": "Alameda",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1319657,
+          38.736695
+        ]
+      },
+      "id": "node/1122508491"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508495",
+        "level": "0;-1",
+        "name": "Martim Moniz",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1363646,
+          38.7169109
+        ]
+      },
+      "id": "node/1122508495"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508498",
+        "name": "Alameda",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1340221,
+          38.7372755
+        ]
+      },
+      "id": "node/1122508498"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508511",
+        "door": "no",
+        "indoor": "door",
+        "level": "-1",
+        "name": "Rossio",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1389526,
+          38.7139778
+        ]
+      },
+      "id": "node/1122508511"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508516",
+        "name": "Alameda",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1338848,
+          38.7377373
+        ]
+      },
+      "id": "node/1122508516"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508519",
+        "name": "Alameda",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1326846,
+          38.7366504
+        ]
+      },
+      "id": "node/1122508519"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508523",
+        "check_date:wheelchair": "2026-01-16",
+        "name": "Arroios",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1340326,
+          38.7333947
+        ]
+      },
+      "id": "node/1122508523"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508538",
+        "name": "Alvalade",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1442573,
+          38.7538819
+        ]
+      },
+      "id": "node/1122508538"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508539",
+        "name": "Lumiar",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1595744,
+          38.7728067
+        ]
+      },
+      "id": "node/1122508539"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122508541",
+        "name": "Roma",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1418427,
+          38.7488049
+        ]
+      },
+      "id": "node/1122508541"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122550663",
+        "name": "Amadora Este",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.2191236,
+          38.7584417
+        ]
+      },
+      "id": "node/1122550663"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122550669",
+        "name": "Amadora Este",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.2179997,
+          38.7582342
+        ]
+      },
+      "id": "node/1122550669"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122550683",
+        "name": "Avenida Marechal Teixeira Rebelo / Estrada da Correia",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1923072,
+          38.7593071
+        ]
+      },
+      "id": "node/1122550683"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122550704",
+        "name": "Alto dos Moínhos",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.179913,
+          38.7495991
+        ]
+      },
+      "id": "node/1122550704"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122550715",
+        "name": "Praça Duque de Saldanha, Avenida Praia da Vitória, Avenida Defensores de Chaves, Avenida Casal Ribeiro",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1442045,
+          38.7340605
+        ]
+      },
+      "id": "node/1122550715"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122550719",
+        "name": "Praça Duque de Saldanha, Avenida Praia da Vitória, Avenida Fontes Pereira de Melo, Rua das Picoas, Avenida 5 de Outubro",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1455777,
+          38.7338635
+        ]
+      },
+      "id": "node/1122550719"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122550724",
+        "name": "Avenida da República / Avenida 5 de Outubro",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1482102,
+          38.7458721
+        ]
+      },
+      "id": "node/1122550724"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122550731",
+        "name": "Avenida da República / Avenida 5 de Outubro",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1480396,
+          38.7451603
+        ]
+      },
+      "id": "node/1122550731"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122550735",
+        "name": "Avenida Marechal Teixeira Rebelo / Rua Eduardo Viana",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1927923,
+          38.7593208
+        ]
+      },
+      "id": "node/1122550735"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122550749",
+        "name": "Avenida da República (nascente) / Rua de Entre Campos",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1476371,
+          38.7464979
+        ]
+      },
+      "id": "node/1122550749"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122550758",
+        "name": "Amadora Este",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.2183874,
+          38.7587349
+        ]
+      },
+      "id": "node/1122550758"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122550786",
+        "name": "Praça de Espanha",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.159973,
+          38.7377659
+        ]
+      },
+      "id": "node/1122550786"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122550807",
+        "name": "Colégio Militar/Luz",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1897586,
+          38.7533837
+        ]
+      },
+      "id": "node/1122550807"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122550814",
+        "addr:city": "Lisboa",
+        "name": "Colégio Militar/Luz",
+        "railway": "subway_entrance",
+        "website": "http://metro.transporteslisboa.pt/",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1894164,
+          38.7537622
+        ]
+      },
+      "id": "node/1122550814"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122550827",
+        "name": "Alto dos Moínhos",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1802804,
+          38.7496321
+        ]
+      },
+      "id": "node/1122550827"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122550828",
+        "name": "Jardim Zoológico",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1680382,
+          38.7414813
+        ]
+      },
+      "id": "node/1122550828"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122550868",
+        "name": "Campo Pequeno",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1460674,
+          38.7401051
+        ]
+      },
+      "id": "node/1122550868"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122550886",
+        "addr:city": "Lisboa",
+        "name": "Colégio Militar/Luz",
+        "railway": "subway_entrance",
+        "website": "http://metro.transporteslisboa.pt/"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1886427,
+          38.7533381
+        ]
+      },
+      "id": "node/1122550886"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122550889",
+        "level": "0;-1",
+        "name": "Picoas",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1470511,
+          38.7310118
+        ]
+      },
+      "id": "node/1122550889"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122550890",
+        "name": "Cidade Universitária",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1592903,
+          38.751152
+        ]
+      },
+      "id": "node/1122550890"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122550893",
+        "level": "0;-1",
+        "name": "Picoas",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1469173,
+          38.73081
+        ]
+      },
+      "id": "node/1122550893"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122550904",
+        "name": "Jardim Zoológico",
+        "name:de": "Zoologischer Garten",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1693433,
+          38.7420072
+        ]
+      },
+      "id": "node/1122550904"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122550907",
+        "name": "Avenida da República (poente); Avenida de Berna",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1470196,
+          38.7414546
+        ]
+      },
+      "id": "node/1122550907"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122550929",
+        "name": "Cidade Universitária",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1590301,
+          38.7509277
+        ]
+      },
+      "id": "node/1122550929"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122550946",
+        "name": "Avenida da República (poente)",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1482661,
+          38.746313
+        ]
+      },
+      "id": "node/1122550946"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122550968",
+        "name": "Praça de Espanha",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1587644,
+          38.7378949
+        ]
+      },
+      "id": "node/1122550968"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122550974",
+        "level": "0;-1",
+        "name": "Rua Teófilo Braga; Rua Adriano Correia de Oliveira",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.2042347,
+          38.7599242
+        ]
+      },
+      "id": "node/1122550974"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122550985",
+        "level": "0;-1",
+        "name": "Rua Teófilo Braga; Rua Adriano Correia de Oliveira",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.2045958,
+          38.7599189
+        ]
+      },
+      "id": "node/1122550985"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122550997",
+        "name": "Colégio Militar/Luz",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1889821,
+          38.7529573
+        ]
+      },
+      "id": "node/1122550997"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122551004",
+        "name": "Avenida Marechal Teixeira Rebelo / Rua Guiomar Torresão",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1926884,
+          38.7587961
+        ]
+      },
+      "id": "node/1122551004"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122551015",
+        "name": "Avenida das Forças Armadas",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1485315,
+          38.7477502
+        ]
+      },
+      "id": "node/1122551015"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122689128",
+        "level": "-1-0",
+        "name": "Restauradores",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1410079,
+          38.7153169
+        ]
+      },
+      "id": "node/1122689128"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122703835",
+        "name": "Largo do Rato, Rua do Salitre, Rua Alexandre Herculano, Rua da Escola Politécnica",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1540331,
+          38.7201296
+        ]
+      },
+      "id": "node/1122703835"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1122703892",
+        "name": "Largo do Rato, Rua das Amoreiras, Avenida Álvares Cabral, Rua de São Bento",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1556826,
+          38.7201819
+        ]
+      },
+      "id": "node/1122703892"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1123933002",
+        "level": "0;-1",
+        "name": "Olivais",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1113764,
+          38.7610428
+        ]
+      },
+      "id": "node/1123933002"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1123933006",
+        "name": "Avenida de Pádua, Avenida Infante Dom Henrique",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1040676,
+          38.7631974
+        ]
+      },
+      "id": "node/1123933006"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1123933021",
+        "name": "Bela Vista",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1185213,
+          38.7477176
+        ]
+      },
+      "id": "node/1123933021"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1123933031",
+        "level": "0;-1",
+        "name": "Olivais",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1119533,
+          38.7602738
+        ]
+      },
+      "id": "node/1123933031"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1123933051",
+        "name": "Avenida Doutor Augusto de Castro;Rua Engenheiro Rodrigues de Carvalho",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1140982,
+          38.7552586
+        ]
+      },
+      "id": "node/1123933051"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1123933055",
+        "level": "0;-1",
+        "name": "Olivais",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1120078,
+          38.7612741
+        ]
+      },
+      "id": "node/1123933055"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1123933057",
+        "level": "0;-1",
+        "name": "Olivais",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1121728,
+          38.7607189
+        ]
+      },
+      "id": "node/1123933057"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1123933061",
+        "name": "Bela Vista",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1167401,
+          38.7477558
+        ]
+      },
+      "id": "node/1123933061"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1123933063",
+        "name": "Olaias",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.123652,
+          38.7391941
+        ]
+      },
+      "id": "node/1123933063"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1123933078",
+        "name": "Avenida Doutor Augusto de Castro;Rua Actriz Palmira Bastos",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1137257,
+          38.7544661
+        ]
+      },
+      "id": "node/1123933078"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1123933098",
+        "name": "Bela Vista",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1183097,
+          38.7477582
+        ]
+      },
+      "id": "node/1123933098"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1123933106",
+        "name": "Olaias",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1240654,
+          38.7400383
+        ]
+      },
+      "id": "node/1123933106"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1124214067",
+        "name": "Laranjeiras",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1724309,
+          38.7485566
+        ]
+      },
+      "id": "node/1124214067"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1124214166",
+        "name": "Laranjeiras",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1727429,
+          38.748433
+        ]
+      },
+      "id": "node/1124214166"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1135498726",
+        "check_date:wheelchair": "2025-09-18",
+        "name": "Intendente",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1352379,
+          38.7222726
+        ]
+      },
+      "id": "node/1135498726"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1586066468",
+        "name": "Avenida da República (sul), Avenida Duque de Ávila",
+        "railway": "subway_entrance",
+        "source": "knowledge",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.144811,
+          38.7348907
+        ]
+      },
+      "id": "node/1586066468"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1678697820",
+        "name": "Rua Egas Moniz / Rua Álvaro Campos",
+        "railway": "subway_entrance",
+        "wheelchair": "limited"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1730284,
+          38.7934838
+        ]
+      },
+      "id": "node/1678697820"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1678698096",
+        "name": "Rua Egas Moniz / Rua José Gomes Monteiro",
+        "railway": "subway_entrance",
+        "wheelchair": "limited"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.173106,
+          38.7932538
+        ]
+      },
+      "id": "node/1678698096"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1735446290",
+        "name": "Avenida António Augusto de Aguiar, Rua Carlos Testa",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1526451,
+          38.7334037
+        ]
+      },
+      "id": "node/1735446290"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1800615079",
+        "name": "Parque",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1501975,
+          38.7297461
+        ]
+      },
+      "id": "node/1800615079"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1805482882",
+        "name": "Avenida",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1446521,
+          38.718802
+        ]
+      },
+      "id": "node/1805482882"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1830679356",
+        "highway": "elevator",
+        "name": "Santa Apolónia",
+        "railway": "subway_entrance",
+        "wheelchair": "yes;no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1225949,
+          38.7138694
+        ]
+      },
+      "id": "node/1830679356"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1831350951",
+        "name": "Rua General Silva Freire (sul)",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1157797,
+          38.7749313
+        ]
+      },
+      "id": "node/1831350951"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1849064176",
+        "name": "Campo Grande",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1579635,
+          38.7603423
+        ]
+      },
+      "id": "node/1849064176"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1864139682",
+        "name": "Rua 1º de Maio (nascente)",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1028807,
+          38.7750856
+        ]
+      },
+      "id": "node/1864139682"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1864139685",
+        "name": "Rua 1º de Maio (poente), Rua Almirante Gago Coutinho",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1030525,
+          38.7750736
+        ]
+      },
+      "id": "node/1864139685"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1914270652",
+        "name": "Rua General Silva Freire (norte)",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1158483,
+          38.7752156
+        ]
+      },
+      "id": "node/1914270652"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1940783144",
+        "name": "Jardim Zoológico",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1665075,
+          38.7402896
+        ]
+      },
+      "id": "node/1940783144"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1940783150",
+        "name": "Jardim Zoológico",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.167079,
+          38.7403152
+        ]
+      },
+      "id": "node/1940783150"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2122598606",
+        "name": "Lumiar",
+        "railway": "subway_entrance",
+        "stairs": "yes",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1598028,
+          38.7741327
+        ]
+      },
+      "id": "node/2122598606"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2122598611",
+        "name": "Lumiar",
+        "railway": "subway_entrance",
+        "stairs": "yes",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1596751,
+          38.7742936
+        ]
+      },
+      "id": "node/2122598611"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2182353199",
+        "name": "Cidade Universitária",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1586166,
+          38.7519527
+        ]
+      },
+      "id": "node/2182353199"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2330953717",
+        "check_date:wheelchair": "2023-04-16",
+        "name": "Avenida",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1456542,
+          38.7200408
+        ]
+      },
+      "id": "node/2330953717"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2333165060",
+        "name": "Aeroporto",
+        "railway": "subway_entrance",
+        "wikidata": "Q744682",
+        "wikimedia_commons": "Category:Aeroporto (Lisbon Metro)",
+        "wikipedia": "pt:Estação Aeroporto (Metropolitano de Lisboa)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1280417,
+          38.7686326
+        ]
+      },
+      "id": "node/2333165060"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2472271861",
+        "name": "Avenida da República(poente); Avenida João Crisóstomo (poente)",
+        "railway": "subway_entrance",
+        "source": "knowledge",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1455359,
+          38.7353456
+        ]
+      },
+      "id": "node/2472271861"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2472271862",
+        "name": "Avenida da República (nascente); Avenida João Crisóstomo (nascente)",
+        "railway": "subway_entrance",
+        "source": "knowledge",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1449522,
+          38.7354634
+        ]
+      },
+      "id": "node/2472271862"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2477982550",
+        "addr:city": "Lisboa",
+        "addr:postcode": "1500-909",
+        "name": "Colégio Militar/Luz",
+        "railway": "subway_entrance",
+        "website": "http://metro.transporteslisboa.pt/"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1883134,
+          38.7538
+        ]
+      },
+      "id": "node/2477982550"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2481048017",
+        "name": "Rua Conselheiro Emídio Navarro (ISEL);Rua André Vidal Negreiros",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1139265,
+          38.7556617
+        ]
+      },
+      "id": "node/2481048017"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2485068039",
+        "access": "emergency",
+        "level": "1",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.0986268,
+          38.7676428
+        ]
+      },
+      "id": "node/2485068039"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2485068191",
+        "access": "emergency",
+        "level": "1",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.0985991,
+          38.7679475
+        ]
+      },
+      "id": "node/2485068191"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2508703381",
+        "name": "Jardim do Campo Grande",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1490074,
+          38.7485119
+        ]
+      },
+      "id": "node/2508703381"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2512560517",
+        "name": "Restauradores",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1426892,
+          38.7164246
+        ]
+      },
+      "id": "node/2512560517"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2512560518",
+        "name": "Restauradores",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1425287,
+          38.7165063
+        ]
+      },
+      "id": "node/2512560518"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2591895781",
+        "name": "Avenida Almirante Reis (nascente) / Avenida Afonso Costa",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1330688,
+          38.7418965
+        ]
+      },
+      "id": "node/2591895781"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2690518317",
+        "name": "Alvalade",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1439228,
+          38.7534823
+        ]
+      },
+      "id": "node/2690518317"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2760245696",
+        "name": "Anjos",
+        "operator": "Metropolitano de Lisboa",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1346764,
+          38.7278464
+        ]
+      },
+      "id": "node/2760245696"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2937819149",
+        "name": "Avenida Ressano Garcia, Bairro Azul",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1544839,
+          38.7345433
+        ]
+      },
+      "id": "node/2937819149"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2937819150",
+        "name": "Avenida Duque de Ávila (poente), Rua Marquês Sá da Bandeira, Rua Marquês de Fronteira, Rua Pinheiro Chagas",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1517973,
+          38.7350644
+        ]
+      },
+      "id": "node/2937819150"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2937824494",
+        "name": "El Corte Inglés",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1539781,
+          38.7337798
+        ]
+      },
+      "id": "node/2937824494"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2952337779",
+        "name": "Roma",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1406546,
+          38.7472293
+        ]
+      },
+      "id": "node/2952337779"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2952337821",
+        "name": "Roma",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1413301,
+          38.7484567
+        ]
+      },
+      "id": "node/2952337821"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2966380038",
+        "level": "0;-1",
+        "name": "Picoas",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1461333,
+          38.7308811
+        ]
+      },
+      "id": "node/2966380038"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3020942761",
+        "check_date:wheelchair": "2023-04-28",
+        "name": "Avenida Duque de Ávila; Avenida Defensores de Chaves",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1428093,
+          38.7353399
+        ]
+      },
+      "id": "node/3020942761"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3020942762",
+        "check_date:wheelchair": "2023-04-28",
+        "name": "Rua Dona Filipa de Vilhena; Rua Dona Estefânia",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1425637,
+          38.7353479
+        ]
+      },
+      "id": "node/3020942762"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3141074586",
+        "level": "0",
+        "name": "Telheiras",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1660343,
+          38.7603515
+        ]
+      },
+      "id": "node/3141074586"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3141074587",
+        "level": "0",
+        "name": "Telheiras",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1668724,
+          38.7598634
+        ]
+      },
+      "id": "node/3141074587"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3251152794",
+        "level": "0;-1",
+        "name": "Picoas",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1469629,
+          38.7299139
+        ]
+      },
+      "id": "node/3251152794"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3251152795",
+        "level": "0;-1",
+        "name": "Picoas",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1464943,
+          38.7306478
+        ]
+      },
+      "id": "node/3251152795"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3251718686",
+        "level": "0;-1",
+        "name": "Picoas",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1473481,
+          38.73006
+        ]
+      },
+      "id": "node/3251718686"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3251806307",
+        "name": "Avenida da República (nascente); Avenida João Crisóstomo (nascente)",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1449643,
+          38.7355217
+        ]
+      },
+      "id": "node/3251806307"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3251806308",
+        "check_date:wheelchair": "2023-01-19",
+        "name": "Avenida da República (sul)",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1454091,
+          38.7348652
+        ]
+      },
+      "id": "node/3251806308"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3251927305",
+        "access": "permissive",
+        "level": "-1",
+        "name": "Acesso 7",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1488622,
+          38.7235376
+        ]
+      },
+      "id": "node/3251927305"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3445723633",
+        "highway": "elevator",
+        "name": "Largo do Rato",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1546937,
+          38.7203371
+        ]
+      },
+      "id": "node/3445723633"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3665250841",
+        "elevator": "yes",
+        "name": "Lumiar",
+        "railway": "subway_entrance",
+        "stairs": "no",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1596461,
+          38.7737883
+        ]
+      },
+      "id": "node/3665250841"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3871232094",
+        "name": "Arroios",
+        "railway": "subway_entrance",
+        "wheelchair": "no",
+        "wikidata": "Q1848374",
+        "wikimedia_commons": "Category:Arroios (Lisbon Metro)",
+        "wikipedia": "pt:Estação Arroios"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1344644,
+          38.731971
+        ]
+      },
+      "id": "node/3871232094"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3871232095",
+        "name": "Arroios",
+        "railway": "subway_entrance",
+        "wheelchair": "no",
+        "wikidata": "Q1848374",
+        "wikimedia_commons": "Category:Arroios (Lisbon Metro)",
+        "wikipedia": "pt:Estação Arroios"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1342691,
+          38.7319591
+        ]
+      },
+      "id": "node/3871232095"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4186674624",
+        "elevator": "yes",
+        "name": "Aeroporto",
+        "railway": "subway_entrance",
+        "stairs": "yes",
+        "wikidata": "Q744682",
+        "wikimedia_commons": "Category:Aeroporto (Lisbon Metro)",
+        "wikipedia": "pt:Estação Aeroporto (Metropolitano de Lisboa)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1285374,
+          38.768553
+        ]
+      },
+      "id": "node/4186674624"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4266720396",
+        "name": "Anjos",
+        "operator": "Metropolitano de Lisboa",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1348716,
+          38.7278583
+        ]
+      },
+      "id": "node/4266720396"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4267538019",
+        "name": "Anjos",
+        "operator": "Metropolitano de Lisboa",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1348471,
+          38.7261554
+        ]
+      },
+      "id": "node/4267538019"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4267538020",
+        "name": "Anjos",
+        "operator": "Metropolitano de Lisboa",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1350394,
+          38.7261672
+        ]
+      },
+      "id": "node/4267538020"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4267889600",
+        "level": "0;-1",
+        "name": "Praça Teófilo Braga; Rua Damião de Góis",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.2046641,
+          38.7606567
+        ]
+      },
+      "id": "node/4267889600"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4267915223",
+        "highway": "elevator",
+        "name": "Carnide",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1925109,
+          38.7590028
+        ]
+      },
+      "id": "node/4267915223"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4285403791",
+        "name": "Rua Vitorino Nemésio; Rua Jorge de Sena",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1599456,
+          38.7799034
+        ]
+      },
+      "id": "node/4285403791"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4358242200",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.2229638,
+          38.7504287
+        ]
+      },
+      "id": "node/4358242200"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4358242209",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.2232687,
+          38.7505235
+        ]
+      },
+      "id": "node/4358242209"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4473551007",
+        "level": "0",
+        "name": "Oriente",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.0995323,
+          38.767846
+        ]
+      },
+      "id": "node/4473551007"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4713720483",
+        "level": "0",
+        "name": "Pontinha",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1967447,
+          38.7620271
+        ]
+      },
+      "id": "node/4713720483"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4713721117",
+        "level": "0",
+        "name": "Pontinha",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1969351,
+          38.7624009
+        ]
+      },
+      "id": "node/4713721117"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4852004345",
+        "access": "permissive",
+        "entrance": "staircase",
+        "level": "-1",
+        "name": "Acesso 6",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1483588,
+          38.7238092
+        ]
+      },
+      "id": "node/4852004345"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4852004361",
+        "check_date:wheelchair": "2025-07-15",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1442298,
+          38.7189265
+        ]
+      },
+      "id": "node/4852004361"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4869927984",
+        "name": "Avenida Almirante Reis (poente) / Avenida João XXI",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1336807,
+          38.7418973
+        ]
+      },
+      "id": "node/4869927984"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5059223708",
+        "level": "0;-1",
+        "name": "Reboleira",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.2247256,
+          38.7522354
+        ]
+      },
+      "id": "node/5059223708"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5059223709",
+        "level": "0",
+        "name": "Reboleira",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.2240117,
+          38.7518958
+        ]
+      },
+      "id": "node/5059223709"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5145130437",
+        "name": "Entrecampos",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.149081,
+          38.7488463
+        ]
+      },
+      "id": "node/5145130437"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5293134755",
+        "level": "0;-1",
+        "name": "Reboleira",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.2245978,
+          38.7523547
+        ]
+      },
+      "id": "node/5293134755"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5293134756",
+        "level": "0;-1",
+        "name": "Reboleira",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.2235653,
+          38.7513288
+        ]
+      },
+      "id": "node/5293134756"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5854352980",
+        "door": "no",
+        "indoor": "door",
+        "level": "-1",
+        "name": "Terreiro do Paço",
+        "railway": "subway_entrance",
+        "stairs": "yes",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1333995,
+          38.7071688
+        ]
+      },
+      "id": "node/5854352980"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5934171807",
+        "highway": "elevator",
+        "name": "Avenida da República, Avenida Duque de Ávila",
+        "railway": "subway_entrance",
+        "source": "knowledge",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1448268,
+          38.7349574
+        ]
+      },
+      "id": "node/5934171807"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5934171808",
+        "name": "Avenida da República (sul)",
+        "railway": "subway_entrance",
+        "source": "knowledge",
+        "wheelchair": "limited"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1453738,
+          38.734705
+        ]
+      },
+      "id": "node/5934171808"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5934180714",
+        "name": "Avenida da República (nascente); Praça do Campo Pequeno",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1463678,
+          38.7415767
+        ]
+      },
+      "id": "node/5934180714"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5934180716",
+        "check_date:wheelchair": "2023-02-07",
+        "name": "Campo Pequeno",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1466474,
+          38.7399725
+        ]
+      },
+      "id": "node/5934180716"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5934190268",
+        "name": "Avenida da República (nascente) / Rua de Entre Campos",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1475713,
+          38.7462278
+        ]
+      },
+      "id": "node/5934190268"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5934202286",
+        "highway": "elevator",
+        "level": "0;-1",
+        "name": "Elevador",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1498753,
+          38.7245538
+        ]
+      },
+      "id": "node/5934202286"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5934212491",
+        "check_date:wheelchair": "2025-10-26",
+        "name": "Avenida",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1453133,
+          38.7201688
+        ]
+      },
+      "id": "node/5934212491"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5934238170",
+        "highway": "elevator",
+        "name": "Restauradores",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1425135,
+          38.7164437
+        ]
+      },
+      "id": "node/5934238170"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5934267787",
+        "highway": "elevator",
+        "level": "-1;0",
+        "name": "Rossio",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1384165,
+          38.7138247
+        ]
+      },
+      "id": "node/5934267787"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5934309503",
+        "name": "Intendente",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1352751,
+          38.7238899
+        ]
+      },
+      "id": "node/5934309503"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5934309504",
+        "name": "Intendente",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1350724,
+          38.723875
+        ]
+      },
+      "id": "node/5934309504"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5934342231",
+        "highway": "elevator",
+        "name": "Alameda",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.133565,
+          38.7372947
+        ]
+      },
+      "id": "node/5934342231"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5934373283",
+        "name": "Roma",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1409382,
+          38.7471274
+        ]
+      },
+      "id": "node/5934373283"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5934373284",
+        "highway": "elevator",
+        "name": "Roma",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1410065,
+          38.7472722
+        ]
+      },
+      "id": "node/5934373284"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5934388572",
+        "highway": "elevator",
+        "name": "Alvalade",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1441821,
+          38.7538291
+        ]
+      },
+      "id": "node/5934388572"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6014951833",
+        "barrier": "kerb",
+        "level": "-1;0",
+        "name": "Acesso 5",
+        "railway": "subway_entrance",
+        "tactile_paving": "no",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1507596,
+          38.7249177
+        ]
+      },
+      "id": "node/6014951833"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6014951834",
+        "barrier": "kerb",
+        "level": "-1;0",
+        "name": "Acesso 4",
+        "railway": "subway_entrance",
+        "tactile_paving": "no",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1507138,
+          38.7248661
+        ]
+      },
+      "id": "node/6014951834"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6355781456",
+        "name": "Avenida Duque de Ávila (nascente)",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1509318,
+          38.7350862
+        ]
+      },
+      "id": "node/6355781456"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6443849275",
+        "highway": "elevator",
+        "name": "Avenida António Augusto de Aguiar, Avenida Ressano Garcia",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1543639,
+          38.7345546
+        ]
+      },
+      "id": "node/6443849275"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6532391536",
+        "level": "-1-0",
+        "name": "Restauradores",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1418667,
+          38.715344
+        ]
+      },
+      "id": "node/6532391536"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6842665822",
+        "door": "no",
+        "indoor": "door",
+        "level": "-1",
+        "name": "Rossio",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1375263,
+          38.7142006
+        ]
+      },
+      "id": "node/6842665822"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6979744928",
+        "highway": "elevator",
+        "name": "Chelas",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1136231,
+          38.7547889
+        ]
+      },
+      "id": "node/6979744928"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/7108567990",
+        "bicycle": "yes",
+        "elevator": "yes",
+        "name": "Aeroporto",
+        "railway": "subway_entrance",
+        "stairs": "yes",
+        "wheelchair": "yes",
+        "wikidata": "Q744682",
+        "wikimedia_commons": "Category:Aeroporto (Lisbon Metro)",
+        "wikipedia": "pt:Estação Aeroporto (Metropolitano de Lisboa)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1284253,
+          38.7690262
+        ]
+      },
+      "id": "node/7108567990"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/7167785854",
+        "name": "Laranjeiras",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1728726,
+          38.7482221
+        ]
+      },
+      "id": "node/7167785854"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/7167785856",
+        "name": "Laranjeiras",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1729847,
+          38.7483639
+        ]
+      },
+      "id": "node/7167785856"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/7174044230",
+        "name": "Praça de Espanha",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1585307,
+          38.7374568
+        ]
+      },
+      "id": "node/7174044230"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/7728494961",
+        "name": "Faculdade de Ciências; Universidade Lusófona",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.157773,
+          38.7599994
+        ]
+      },
+      "id": "node/7728494961"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/7733997213",
+        "name": "Lumiar",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1600417,
+          38.7726357
+        ]
+      },
+      "id": "node/7733997213"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/7734906064",
+        "level": "0",
+        "name": "Quinta das Conchas",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1556598,
+          38.7672937
+        ]
+      },
+      "id": "node/7734906064"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8422289357",
+        "highway": "elevator",
+        "name": "Telheiras",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1663555,
+          38.7601706
+        ]
+      },
+      "id": "node/8422289357"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8904856985",
+        "name": "Avenida António Augusto de Aguiar",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1541672,
+          38.7347797
+        ]
+      },
+      "id": "node/8904856985"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9377706653",
+        "highway": "elevator",
+        "name": "Rua General Silva Freire (sul)",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1151507,
+          38.7748363
+        ]
+      },
+      "id": "node/9377706653"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9377706654",
+        "name": "Rua General Silva Freire (sul), Rua Capitão Tenente Oliveira e Carmo",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1149302,
+          38.7747526
+        ]
+      },
+      "id": "node/9377706654"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9377715536",
+        "name": "Rua João Pinto Ribeiro (nascente)",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1028347,
+          38.774651
+        ]
+      },
+      "id": "node/9377715536"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9377715537",
+        "name": "Rua João Pinto Ribeiro (poente)",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1030083,
+          38.7746393
+        ]
+      },
+      "id": "node/9377715537"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9377715538",
+        "handrail": "yes",
+        "highway": "elevator",
+        "level": "-1;0",
+        "name": "Rua João Pinto Ribeiro",
+        "name:etymology:wikidata": "Q9015093",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1029551,
+          38.7746762
+        ]
+      },
+      "id": "node/9377715538"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9491134652",
+        "name": "Colégio Militar/Luz",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.189812,
+          38.7526918
+        ]
+      },
+      "id": "node/9491134652"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9491134653",
+        "name": "Colégio Militar/Luz",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1896263,
+          38.7528983
+        ]
+      },
+      "id": "node/9491134653"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9491134669",
+        "highway": "elevator",
+        "name": "Colégio Militar/Luz",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1892608,
+          38.7536822
+        ]
+      },
+      "id": "node/9491134669"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9550765393",
+        "name": "Areeiro",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1337695,
+          38.7426149
+        ]
+      },
+      "id": "node/9550765393"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9593288527",
+        "indoor": "yes",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1419011,
+          38.7146107
+        ]
+      },
+      "id": "node/9593288527"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9650379966",
+        "name": "Bela Vista",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1166468,
+          38.7475256
+        ]
+      },
+      "id": "node/9650379966"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10097936761",
+        "name": "Alvalade",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1445974,
+          38.7537882
+        ]
+      },
+      "id": "node/10097936761"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10099089623",
+        "highway": "elevator",
+        "name": "Areeiro",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1333851,
+          38.7428238
+        ]
+      },
+      "id": "node/10099089623"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10169309457",
+        "highway": "elevator",
+        "name": "Arroios",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1344137,
+          38.733457
+        ]
+      },
+      "id": "node/10169309457"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10172618715",
+        "level": "0",
+        "name": "Cais do Sodré",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1456701,
+          38.7060611
+        ]
+      },
+      "id": "node/10172618715"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10172639378",
+        "door": "no",
+        "indoor": "door",
+        "level": "0",
+        "name": "Cais do Sodré",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1463213,
+          38.7060739
+        ]
+      },
+      "id": "node/10172639378"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10172639381",
+        "door": "no",
+        "indoor": "door",
+        "level": "0",
+        "name": "Cais do Sodré",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1465106,
+          38.7059228
+        ]
+      },
+      "id": "node/10172639381"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10172639397",
+        "door": "no",
+        "indoor": "door",
+        "level": "0",
+        "name": "Cais do Sodré",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1467031,
+          38.7057664
+        ]
+      },
+      "id": "node/10172639397"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10172651873",
+        "level": "0",
+        "name": "Cais do Sodré",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.145022,
+          38.7059644
+        ]
+      },
+      "id": "node/10172651873"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10172651888",
+        "level": "0",
+        "name": "Cais do Sodré",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1450049,
+          38.706077
+        ]
+      },
+      "id": "node/10172651888"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10172653052",
+        "level": "0",
+        "name": "Cais do Sodré",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1447236,
+          38.7058618
+        ]
+      },
+      "id": "node/10172653052"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10172653053",
+        "level": "0",
+        "name": "Cais do Sodré",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1460497,
+          38.7057544
+        ]
+      },
+      "id": "node/10172653053"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10172659718",
+        "level": "0",
+        "name": "Cais do Sodré",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1456731,
+          38.7059064
+        ]
+      },
+      "id": "node/10172659718"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10185101823",
+        "entrance": "elevator",
+        "level": "0",
+        "name": "Terreiro do Paço",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1341926,
+          38.7071129
+        ]
+      },
+      "id": "node/10185101823"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10198537270",
+        "level": "0",
+        "name": "Alfornelos",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.20446,
+          38.7606184
+        ]
+      },
+      "id": "node/10198537270"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10198537284",
+        "level": "0;-1",
+        "name": "Praça Teófilo Braga; Rua Damião de Góis",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.2044574,
+          38.7607553
+        ]
+      },
+      "id": "node/10198537284"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10219950972",
+        "level": "0",
+        "name": "Senhor Roubado",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1715901,
+          38.7855143
+        ]
+      },
+      "id": "node/10219950972"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10219950983",
+        "level": "0",
+        "name": "Senhor Roubado",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1717226,
+          38.7858239
+        ]
+      },
+      "id": "node/10219950983"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10219950993",
+        "level": "0",
+        "name": "Senhor Roubado",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.17204,
+          38.7857419
+        ]
+      },
+      "id": "node/10219950993"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10219951025",
+        "level": "0",
+        "name": "Senhor Roubado",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1719091,
+          38.7854319
+        ]
+      },
+      "id": "node/10219951025"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10264323963",
+        "level": "0;-1",
+        "name": "Reboleira",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.2237828,
+          38.7516646
+        ]
+      },
+      "id": "node/10264323963"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10277016956",
+        "highway": "elevator",
+        "name": "Entrecampos",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1482398,
+          38.7461919
+        ]
+      },
+      "id": "node/10277016956"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10277016957",
+        "highway": "elevator",
+        "name": "Cidade Universitária",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1593337,
+          38.751358
+        ]
+      },
+      "id": "node/10277016957"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10898510134",
+        "name": "Jardim Zoológico",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1683835,
+          38.7424869
+        ]
+      },
+      "id": "node/10898510134"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10898510135",
+        "name": "Jardim Zoológico",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1683542,
+          38.742297
+        ]
+      },
+      "id": "node/10898510135"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10898510188",
+        "name": "Jardim Zoológico",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.169168,
+          38.7419496
+        ]
+      },
+      "id": "node/10898510188"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10922243242",
+        "highway": "elevator",
+        "name": "Avenida de Pádua, Avenida Infante Dom Henrique",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1041562,
+          38.7630562
+        ]
+      },
+      "id": "node/10922243242"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10922326934",
+        "name": "El Corte Inglés",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1532011,
+          38.7331119
+        ]
+      },
+      "id": "node/10922326934"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10922326935",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1544693,
+          38.7342554
+        ]
+      },
+      "id": "node/10922326935"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11517753590",
+        "highway": "elevator",
+        "level": "0",
+        "name": "Olivais",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1121684,
+          38.760476
+        ]
+      },
+      "id": "node/11517753590"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11844516847",
+        "level": "0;-1",
+        "name": "Picoas",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1461309,
+          38.730953
+        ]
+      },
+      "id": "node/11844516847"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11886423966",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1724733,
+          38.7929746
+        ]
+      },
+      "id": "node/11886423966"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12248791454",
+        "name": "Campo Grande",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1585053,
+          38.7601097
+        ]
+      },
+      "id": "node/12248791454"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12248791455",
+        "name": "Avenida Padre Cruz",
+        "railway": "subway_entrance"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1583587,
+          38.7598497
+        ]
+      },
+      "id": "node/12248791455"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12249202730",
+        "highway": "elevator",
+        "name": "Amadora Este",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.2182097,
+          38.7583183
+        ]
+      },
+      "id": "node/12249202730"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12249202770",
+        "highway": "elevator",
+        "name": "Ameixoeira",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1597307,
+          38.7796557
+        ]
+      },
+      "id": "node/12249202770"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12700847438",
+        "highway": "elevator",
+        "name": "Olaias",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.123584,
+          38.7395493
+        ]
+      },
+      "id": "node/12700847438"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13208076030",
+        "level": "0",
+        "name": "Oriente",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.0986129,
+          38.7677952
+        ]
+      },
+      "id": "node/13208076030"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13523617067",
+        "door": "yes",
+        "indoor": "door",
+        "level": "-1",
+        "name": "Martim Moniz",
+        "railway": "subway_entrance",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1356461,
+          38.7169011
+        ]
+      },
+      "id": "node/13523617067"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13525810021",
+        "level": "0",
+        "name": "Martim Moniz",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1358425,
+          38.7181131
+        ]
+      },
+      "id": "node/13525810021"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13525810037",
+        "level": "0",
+        "name": "Martim Moniz",
+        "railway": "subway_entrance",
+        "wheelchair": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1356497,
+          38.7181269
+        ]
+      },
+      "id": "node/13525810037"
+    }
+  ]
+}

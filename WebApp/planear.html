@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="pt-PT" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="theme-color" content="#09090b" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta
+      name="description"
+      content="Planeia a tua viagem na Fertagus com o LiveTagus. Escolhe partida, destino, data e hora e vê as melhores partidas, ocupação das carruagens e detalhes de cada comboio."
+    />
+    <meta name="robots" content="index, follow" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://livetagus.pt/planear" />
+    <meta property="og:title" content="Planear Viagem | LiveTagus" />
+    <meta
+      property="og:description"
+      content="Planeia a tua viagem na Fertagus: partida, destino, data e hora, com ocupação das carruagens e detalhes de cada comboio."
+    />
+    <meta
+      property="og:image"
+      content="https://livetagus.pt/imagens/opengraph-livetagus.png"
+    />
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://livetagus.pt/planear" />
+    <meta property="twitter:title" content="Planear Viagem | LiveTagus" />
+    <meta
+      property="twitter:description"
+      content="Planeia a tua viagem na Fertagus: partida, destino, data e hora, com ocupação das carruagens e detalhes de cada comboio."
+    />
+    <meta
+      property="twitter:image"
+      content="https://livetagus.pt/imagens/opengraph-livetagus.png"
+    />
+    <link
+      rel="shortcut icon"
+      href="./imagens/favicon-96x96.png"
+      type="image/x-icon"
+    />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <title>Planear Viagem | LiveTagus</title>
+    <link rel="stylesheet" href="./output.css" />
+    <script src="./offline.js"></script>
+    <script src="./menu.js" defer></script>
+    <script src="./nav-tools.js" defer></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      body {
+        font-family:
+          "Inter",
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+        font-feature-settings: "ss01", "cv11";
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      /* Cabeçalho editorial — mesmo tratamento da página das estações */
+      .pl-title {
+        font-weight: 200;
+        letter-spacing: -0.045em;
+        line-height: 0.92;
+      }
+      .pl-title strong {
+        font-weight: 600;
+      }
+
+      /* Ponto azul pulsante (assinatura LiveTagus) */
+      .pl-dot {
+        display: inline-block;
+        width: 9px;
+        height: 9px;
+        border-radius: 999px;
+        background: #3b82f6;
+        margin-left: 2px;
+        animation: pl-pulse 2.2s ease-in-out infinite;
+      }
+      @keyframes pl-pulse {
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.45);
+        }
+        50% {
+          box-shadow: 0 0 0 7px rgba(59, 130, 246, 0);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .pl-dot {
+          animation: none;
+        }
+      }
+
+      /* Fio tricolor Fertagus */
+      .pl-rule {
+        display: flex;
+        height: 1px;
+        width: 100%;
+      }
+      .pl-rule span {
+        flex: 1;
+      }
+    </style>
+    <script src="./lucide-icons.js"></script>
+  </head>
+  <body
+    class="bg-white dark:bg-[#09090b] text-zinc-900 dark:text-white min-h-screen flex flex-col antialiased"
+  >
+    <div class="pt-safe-ios" id="global-nav"></div>
+
+    <main id="page-main" class="flex-grow flex flex-col">
+      <!-- ═══ CABEÇALHO EDITORIAL ═══ -->
+      <section class="px-6 md:px-10 max-w-2xl mx-auto w-full pt-24 pb-8">
+        <span
+          class="text-[9px] font-extrabold uppercase tracking-[0.3em] text-zinc-400 dark:text-zinc-500"
+        >
+          Fertagus · Planeador
+        </span>
+        <h1
+          class="pl-title mt-4 text-4xl md:text-5xl text-zinc-900 dark:text-white"
+        >
+          <strong>PLANEAR</strong>
+          <br />
+          VIAGEM<span class="pl-dot"></span>
+        </h1>
+        <p
+          class="mt-5 text-sm font-light leading-relaxed text-zinc-500 dark:text-zinc-400 max-w-sm"
+        >
+          Escolha as estações, o dia e a hora. Mostramos as partidas, a ocupação
+          prevista de cada comboio e alternativas mais confortáveis.
+        </p>
+        <div class="pl-rule mt-8">
+          <span style="background: #046a38"></span>
+          <span style="background: #ffe900"></span>
+          <span style="background: #da291c"></span>
+        </div>
+      </section>
+
+      <!-- ═══ PESQUISA ═══ -->
+      <section class="px-6 md:px-10 max-w-2xl mx-auto w-full pb-10">
+        <div
+          id="lt-searchbar"
+          data-inline="true"
+          data-read-url="true"
+          data-target="/planear"
+        ></div>
+      </section>
+
+      <div class="px-6 md:px-10 max-w-2xl mx-auto w-full">
+        <div class="w-full h-px bg-zinc-100 dark:bg-zinc-800"></div>
+      </div>
+
+      <!-- ═══ RESULTADOS ═══ -->
+      <section class="px-6 md:px-10 max-w-2xl mx-auto w-full pt-10 pb-14">
+        <div id="planear-summary"></div>
+        <div id="planear-list-head"></div>
+        <div id="planear-results"></div>
+        <button
+          id="planear-load-more"
+          data-action="plan-load-more"
+          type="button"
+          class="lt-pl-more hidden"
+        >
+          Ver mais comboios
+        </button>
+      </section>
+
+      <!-- ═══ NOTA DE RODAPÉ ═══ -->
+      <div class="px-6 md:px-10 max-w-2xl mx-auto w-full pb-12">
+        <p
+          class="text-[9px] uppercase tracking-[0.3em] text-zinc-400 dark:text-zinc-500 text-center font-bold leading-relaxed"
+        >
+          Horários e ocupação estimados · Fertagus
+        </p>
+      </div>
+    </main>
+
+    <div id="global-footer"></div>
+
+    <!-- Painel de detalhe da viagem -->
+    <div id="modal-backdrop" class="lt-pl-bd" aria-hidden="true"></div>
+    <aside
+      id="train-details-modal"
+      class="lt-pl-sheet"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Detalhe da viagem"
+    ></aside>
+
+    <!-- Scripts (ordem importa: planear.js regista o handler antes de a searchbar disparar) -->
+    <script src="./lucide-icons.js" defer></script>
+    <script src="./planear.js" defer></script>
+    <script src="./planear-searchbar.js" defer></script>
+  </body>
+</html>

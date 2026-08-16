@@ -1,8 +1,2 @@
 User-agent: *
-Disallow: /paragens
-Disallow: /stats
-Disallow: /dev
-Disallow: /404
-Allow: /
-
-Sitemap: https://livetagus.pt/sitemap.xml
+Disallow: /

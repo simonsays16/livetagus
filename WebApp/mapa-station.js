@@ -62,7 +62,8 @@
           </button>
 
           <div class="flex items-center gap-2 mb-3">
-            <span class="text-[9px] font-bold tracking-[0.3em] uppercase text-blue-600 dark:text-blue-400">Estação</span>
+            <img src="./imagens/lig-logos/fertagus.png" alt="MTS" class="w-5 h-5 object-contain" onerror="this.style.display='none'">
+            <span class="text-[9px] font-bold tracking-[0.3em] uppercase text-blue-600 dark:text-blue-400">Fertagus</span>
             <span class="h-px flex-1 max-w-16 bg-zinc-200 dark:bg-zinc-800"></span>
           </div>
           <h2 class="text-3xl font-light tracking-tighter text-zinc-900 dark:text-white leading-[1.05]">
@@ -210,6 +211,17 @@
       window.MapaDetails.close();
 
     currentStation = station;
+    // Pinta de verde o círculo desta estação. Directo, e não à espera de que o
+    // mapa-selecao.js envolva este método: o envolvimento depende da ordem de
+    // carregamento dos scripts e é resolvido por polling.
+    if (window.MapaSelecao)
+      window.MapaSelecao.set({
+        op: "fertagus",
+        id: station.id != null ? station.id : null,
+        name: station.name || null,
+        lng: typeof station.lng === "number" ? station.lng : null,
+        lat: typeof station.lat === "number" ? station.lat : null,
+      });
     if (window.MapaRender) window.MapaRender.focusStation(station);
 
     panel.innerHTML = shellHtml(station);
@@ -240,6 +252,12 @@
     ensureElements();
     if (!panel || !backdrop) return;
     const silent = !!(opts && opts.silent);
+
+    // Tira o verde da estação. Tem de ser AQUI e não no window.MapaStation.close:
+    // o X, o Escape, o clique no fundo e o arrasto chamam esta função local
+    // directamente, sem passar pela propriedade exportada — que é a única coisa
+    // que o mapa-selecao.js consegue envolver de fora.
+    if (window.MapaSelecao) window.MapaSelecao.clear();
 
     if (partidasCtrl) {
       try {

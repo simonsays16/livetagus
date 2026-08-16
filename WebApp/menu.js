@@ -52,7 +52,7 @@ function injectNavigation() {
             
             <a href="/" class="flex items-center gap-3 group" aria-label="Ir para a página inicial">
                 <img id="nav-logo" src="${logoSrc}" class="w-8 h-8 opacity-100 transition-opacity object-contain" alt="LiveTagus Logo" width="32" height="32">
-                <span class="font-sans font-bold tracking-tighter text-lg text-zinc-900 dark:text-white">LIVETAGUS</span>
+                <span class="font-sans font-bold tracking-tighter text-lg text-zinc-900 dark:text-white">LIVETAGUS</span><span class="text-xs"> (beta)</span>
                 <!--<span class="font-sans font-bold tracking-tighter text-lg">
                     <span style="color: #046A38;"><b>LIVE</b></span><span style="color: #FFE900; opacity: 0.9;">T</span><span style="color: #DA291C;">AGUS</span>
                 </span>-->

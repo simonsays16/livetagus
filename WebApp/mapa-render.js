@@ -442,6 +442,135 @@
   }
 
   // ─── ESTAÇÕES (pontos + labels) ──────────────────────────────────────
+  //
+  // O marcador da Fertagus são DUAS camadas: um círculo branco com contorno
+  // ("fertagus-stations-bg") e, por cima, o logótipo. O logótipo é composto
+  // pelo mapa-icones.js com background "none" — se trouxesse fundo próprio
+  // ficava um quadrado dentro do círculo.
+  //
+  // Regra entre as duas: o icon-size é ~68% do DIÂMETRO do círculo, que é
+  // 2 × circle-radius. Mais do que isso e o logótipo encosta ao contorno,
+  // dando a sensação de não haver círculo nenhum.
+  //
+  //   zoom   raio   diâmetro   icon-size
+  //     8     12       24         16
+  //    12     16       32         22
+  //    15     22       44         30
+  //    17     30       60         41
+
+  // ─── SELECÇÃO ────────────────────────────────────────────────────────
+  // Sem anel por cima: o círculo branco de fundo passa a verde.
+  function selectionColorExpr(sel) {
+    const mine = sel && sel.op === "fertagus" ? sel : null;
+    const expr = window.MapaSelecao
+      ? window.MapaSelecao.matchExpr(mine, ["name", "id"])
+      : false;
+    const green = (window.MapaSelecao && window.MapaSelecao.GREEN) || "#22C55E";
+    return ["case", expr, green, "#ffffff"];
+  }
+
+  function applyStationSelection(map, sel) {
+    if (!map || !map.getLayer("fertagus-stations-bg")) return;
+    try {
+      map.setPaintProperty(
+        "fertagus-stations-bg",
+        "circle-color",
+        selectionColorExpr(sel),
+      );
+    } catch (e) {
+      console.warn("[MapaRender] selecção falhou:", e && e.message);
+    }
+  }
+
+  const FERTAGUS_ICON = "fertagus-logo-icon";
+  const FERTAGUS_LOGO = "/imagens/lig-logos/fertagus.png";
+  let fertagusIconReady = false;
+
+  // Círculo branco de fundo. É também o alvo de clique: é um círculo perfeito
+  // e já responde antes de o logótipo carregar.
+  function stationBackgroundLayerDef() {
+    return {
+      id: "fertagus-stations-bg",
+      type: "circle",
+      source: "fertagus-stations",
+      paint: {
+        "circle-radius": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          8,
+          12,
+          12,
+          16,
+          15,
+          22,
+          17,
+          30,
+        ],
+        // Verde na estação seleccionada. É este círculo que faz de fundo do
+        // logótipo, por isso é aqui que a selecção se vê.
+        "circle-color": selectionColorExpr(
+          window.MapaSelecao && window.MapaSelecao.current(),
+        ),
+        "circle-stroke-width": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          8,
+          1.5,
+          15,
+          2.5,
+        ],
+        "circle-stroke-color": "#0f172a",
+      },
+    };
+  }
+
+  function stationLayerDef() {
+    if (fertagusIconReady && window.MapaIcones) {
+      return {
+        id: "fertagus-stations-layer",
+        type: "symbol",
+        source: "fertagus-stations",
+        layout: {
+          "icon-image": FERTAGUS_ICON,
+          "icon-size": window.MapaIcones.sizeExpr([
+            [8, 16],
+            [12, 22],
+            [15, 30],
+            [17, 41],
+          ]),
+          "icon-allow-overlap": true,
+          "icon-ignore-placement": true,
+        },
+      };
+    }
+    // Enquanto o logótipo não chega, esta camada não desenha nada — quem se vê
+    // é o círculo branco de baixo. rgba(0,0,0,0) em vez de "transparent", para
+    // não depender de o parser de cores aceitar nomes CSS.
+    return {
+      id: "fertagus-stations-layer",
+      type: "circle",
+      source: "fertagus-stations",
+      paint: { "circle-radius": 0, "circle-color": "rgba(0,0,0,0)" },
+    };
+  }
+
+  function ensureStationIcon(map) {
+    if (fertagusIconReady || !window.MapaIcones) return;
+    window.MapaIcones.ensure(map, {
+      id: FERTAGUS_ICON,
+      url: FERTAGUS_LOGO,
+      // Sem fundo: o círculo por baixo já é o fundo branco. Com "none" o
+      // icon-size passa a ser exactamente o tamanho do logótipo.
+      background: "none",
+    }).then((ok) => {
+      if (!ok) return; // sem logótipo fica só o círculo branco
+      fertagusIconReady = true;
+      if (map.getLayer("fertagus-stations-layer"))
+        window.MapaIcones.replaceLayer(map, stationLayerDef());
+    });
+  }
 
   function drawStations(map, stops) {
     if (!stops) return;
@@ -450,45 +579,31 @@
       geometry: { type: "Point", coordinates: [s.c[1], s.c[0]] },
       properties: { id: s.id, name: s.n },
     }));
+
     if (!map.getSource("fertagus-stations")) {
       map.addSource("fertagus-stations", {
         type: "geojson",
         data: { type: "FeatureCollection", features },
       });
     }
-    if (!map.getLayer("fertagus-stations-layer")) {
-      map.addLayer({
-        id: "fertagus-stations-layer",
-        type: "circle",
-        source: "fertagus-stations",
-        paint: {
-          "circle-radius": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            8,
-            4,
-            12,
-            6,
-            15,
-            9,
-            17,
-            13,
-          ],
-          "circle-color": "#ffffff",
-          "circle-stroke-width": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            8,
-            1.5,
-            15,
-            2.5,
-          ],
-          "circle-stroke-color": "#0f172a",
-        },
-      });
+
+    // A. Círculo de fundo primeiro. É também o que fica verde na estação
+    // seleccionada.
+    if (!map.getLayer("fertagus-stations-bg")) {
+      map.addLayer(stationBackgroundLayerDef());
+      if (window.MapaSelecao && !map._ltSelFertagus) {
+        map._ltSelFertagus = true;
+        window.MapaSelecao.register((sel) => applyStationSelection(map, sel));
+      }
     }
+
+    // B. Logótipo por cima.
+    if (!map.getLayer("fertagus-stations-layer")) {
+      map.addLayer(stationLayerDef());
+      ensureStationIcon(map);
+    }
+
+    // C. Nomes no topo.
     if (!map.getLayer("fertagus-stations-labels")) {
       map.addLayer({
         id: "fertagus-stations-labels",
@@ -497,10 +612,16 @@
         minzoom: 11,
         layout: {
           "text-field": ["get", "name"],
-          "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
+          // Uma fonte só: o servidor de glyphs deste estilo devolve 404 para
+          // fontstacks combinados. Ver a nota no mapa-icones.js.
+          "text-font": (window.MapaIcones && window.MapaIcones.FONT) || [
+            "Open Sans Semibold",
+          ],
           "text-size": ["interpolate", ["linear"], ["zoom"], 11, 10, 16, 14],
-          "text-offset": [0, 1.2],
-          "text-anchor": "center",
+          // 2,5 em a 14 px dá ~35 px, mais do que os 30 px de raio do círculo
+          // ao zoom 17 — o nome fica abaixo do marcador, não por cima.
+          "text-offset": [0, 2.5],
+          "text-anchor": "top",
           "text-letter-spacing": 0.05,
           "text-transform": "uppercase",
         },
@@ -513,7 +634,9 @@
       });
     }
 
-    map.on("click", "fertagus-stations-layer", (e) => {
+    // D. Interacção no círculo de fundo, não no logótipo: a área de clique é um
+    // círculo perfeito e funciona mesmo antes de o ícone carregar.
+    map.on("click", "fertagus-stations-bg", (e) => {
       const f = e.features && e.features[0];
       if (!f) return;
       const station = MAPA.STATIONS.find(
@@ -523,10 +646,10 @@
         window.MapaStation.open(station);
       }
     });
-    map.on("mouseenter", "fertagus-stations-layer", () => {
+    map.on("mouseenter", "fertagus-stations-bg", () => {
       map.getCanvas().style.cursor = "pointer";
     });
-    map.on("mouseleave", "fertagus-stations-layer", () => {
+    map.on("mouseleave", "fertagus-stations-bg", () => {
       map.getCanvas().style.cursor = "";
     });
   }

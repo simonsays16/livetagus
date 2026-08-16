@@ -13,12 +13,14 @@ yarn-debug.log*
 yarn-error.log*
 
 # Ficheiros atoa
+resources/
 test-extras-helpers.js
 test-station-poller.js
 capacitor.config.json
 fiveserver.config.js
 ligacoes_base.json
 version-bumper.js
+service-days.json
 test-mapa.js
 update_cm.js
 avisos.json

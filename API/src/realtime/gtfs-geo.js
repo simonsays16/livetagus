@@ -4,7 +4,7 @@
  *
  * RESPONSABILIDADES
  * ─────────────────────────────────────────────────────────────────────────────
- *  • Ingerir o payload bruto da TML (filtra agency_id "15" — Fertagus).
+ *  • Ingerir o payload bruto da TML (filtra agency_id "7NTB1" — Fertagus).
  *  • Higienizar cada ping GPS: dedup, outliers, saltos abruptos.
  *  • SNAP TO LINE: projetar a coordenada ruidosa sobre a geometria real da
  *    via férrea (fertagus_line_detailed.json) com turf.nearestPointOnLine.
@@ -33,7 +33,10 @@ const DelaysRT = require("./delays-rt.js");
 
 // ─── CONSTANTES ──────────────────────────────────────────────────────────────
 
-const AGENCY_ID = "15"; // Fertagus — tudo o resto é ignorado.
+// Identificador de agência da TML. Mudou de "15" para "7NTB1" (2026-07).
+// Lido do ambiente para que uma futura alteração da TML não exija deploy;
+// tem de coincidir com o AGENCY_ID do get-location.js.
+const AGENCY_ID = process.env.TML_AGENCY_ID || "7NTB1"; // Fertagus — tudo o resto é ignorado.
 
 const VMAX_MPS = 140 / 3.6; // 38.89 m/s — teto físico UQE 3500
 const OUTLIER_SPEED_MPS = VMAX_MPS * 1.5; // salto implica >210 km/h → lixo

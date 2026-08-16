@@ -442,6 +442,15 @@
           /* Em desktop não há diferença de altura — o conteúdo decide */
           height: auto;
         }
+        /* O translate-y-full desloca o painel exactamente a sua própria altura.
+           Em mobile isso chega, porque está colado a bottom: 0. Em desktop está
+           ancorado a bottom: 2rem, por isso sobrava uma faixa de 32px visível
+           no fundo do ecrã depois de fechar. O id + atributo têm especificidade
+           suficiente para vencer a classe do Tailwind. */
+        #details-panel[data-state="closed"] {
+          transform: translateY(calc(100% + 4rem)) !important;
+          pointer-events: none;
+        }
         /* Em desktop o conteúdo expandido é sempre mostrado */
         #details-panel .dp-expanded-content {
           display: block;
@@ -765,8 +774,8 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 2.5rem;
-        height: 2.5rem;
+        width: 42px;
+        height: 42px;
         padding: 0;
         border: 1px solid rgb(228 228 231);
         background: rgba(255, 255, 255, 0.9);
@@ -1456,6 +1465,12 @@
     <script src="./mapa-geo.js" defer></script>
     <script src="./mapa-api.js" defer></script>
     <script src="./mapa-render.js" defer></script>
+    <script src="./mapa-icones.js" defer></script>
+    <script src="./mapa-selecao.js" defer></script>
+    <script src="./mapa-metro-lisboa.js" defer></script>
+    <script src="./mapa-mts.js" defer></script>
+    <script src="./mapa-cp.js" defer></script>
+    <script src="./mapa-gtfs-horarios.js" defer></script>
     <script src="./mapa-live.js" defer></script>
     <script src="./mapa-details.js" defer></script>
     <script src="./partidas.js" defer></script>
@@ -1463,6 +1478,9 @@
     <script src="./mapa-share.js" defer></script>
     <script src="./mapa-alerts.js" defer></script>
     <script src="./mapa-cm.js" defer></script>
+    <script src="./mapa-guardadas.js" defer></script>
+    <script src="./mapa-search.js" defer></script>
+    <script src="./mapa-perto.js" defer></script>
     <script src="./mapa.js" defer></script>
   </body>
 </html>

@@ -275,7 +275,16 @@
                 >
                   Política de Privacidade
                 </h2>
-                <p class="text-xs mb-4">Última atualização: 07-04-2026</p>
+                <p class="text-xs mb-4">Última atualização: 16-08-2026</p>
+                <p
+                  class="text-xs mb-4 border-l-2 border-zinc-300 dark:border-zinc-700 pl-3"
+                >
+                  Esta política aplica-se também à versão de testes em
+                  <strong>beta.livetagus.pt</strong>
+                  . É uma versão em desenvolvimento e pode ter funcionalidades
+                  incompletas, mas os princípios aqui descritos são os mesmos:
+                  sem contas, sem rastreamento e sem envio de dados pessoais.
+                </p>
 
                 <h3
                   class="text-zinc-900 dark:text-white font-bold text-base mt-8 mb-3"
@@ -291,7 +300,9 @@
                   </strong>
                   . Não é necessário criar conta, fazer login, ou fornecer
                   qualquer informação de identificação (como nome, email ou
-                  localização) para utilizar a aplicação.
+                  morada) para utilizar a aplicação. A localização só é usada se
+                  a pedir através do "Perto de Mim", e mesmo aí nunca sai do seu
+                  dispositivo (ver ponto 4).
                 </p>
                 <p class="mb-4">
                   Para percebermos quantas pessoas utilizam a LiveTagus e quais
@@ -525,8 +536,42 @@
                       <tr>
                         <td class="px-4 py-2 font-mono">cm_saved_stops</td>
                         <td class="px-4 py-2">
-                          As suas configurações na funcionalidade "A Minha
-                          Paragem".
+                          As paragens de autocarro que escolheu ver no mapa, na
+                          funcionalidade "A Minha Paragem".
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="px-4 py-2 font-mono">lt_saved_stations</td>
+                        <td class="px-4 py-2">
+                          As estações de comboio e metro que marcou como
+                          favoritas na pesquisa do mapa.
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="px-4 py-2 font-mono">
+                          mapview / mapview_known
+                        </td>
+                        <td class="px-4 py-2">
+                          Que camadas de operadores escolheu ver ou esconder no
+                          mapa.
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="px-4 py-2 font-mono">
+                          lt_geo_intro / lt_geo_auto
+                        </td>
+                        <td class="px-4 py-2">
+                          Se já viu o aviso sobre localização e se pediu para o
+                          "Perto de Mim" o localizar automaticamente ao abrir o
+                          mapa. Guardam apenas essa preferência (sim ou não),
+                          nunca uma posição.
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="px-4 py-2 font-mono">lt_near_range</td>
+                        <td class="px-4 py-2">
+                          O último raio de procura escolhido no "Perto de Mim"
+                          (por exemplo, 500 metros).
                         </td>
                       </tr>
                     </tbody>
@@ -544,7 +589,62 @@
                 <h3
                   class="text-zinc-900 dark:text-white font-bold text-base mt-8 mb-3"
                 >
-                  4. Segurança e Infraestrutura
+                  4. Localização ("Perto de Mim")
+                </h3>
+                <p class="mb-4">
+                  A funcionalidade
+                  <strong>"Perto de Mim"</strong>
+                  usa a localização do seu dispositivo para lhe mostrar as
+                  paragens e estações mais próximas. É a única parte da
+                  aplicação que pede esta permissão, e só é pedida quando
+                  <strong>carrega no botão</strong>
+                  , nunca ao abrir a página.
+                </p>
+                <p class="mb-4 text-zinc-900 dark:text-white font-medium">
+                  A sua localização é usada exclusivamente dentro do seu
+                  dispositivo. Não é enviada para os nossos servidores nem para
+                  terceiros, não entra em nenhum pedido de rede, não é incluída
+                  em estatísticas, e não é guardada em lado nenhum.
+                </p>
+                <p class="mb-4">
+                  O cálculo das distâncias é feito no seu navegador, sobre dados
+                  de paragens já descarregados. A posição existe apenas na
+                  memória da página e desaparece assim que a fecha ou recarrega.
+                  Se ativar a opção de localizar automaticamente ao abrir o
+                  mapa, guardamos apenas essa preferência, nunca coordenadas.
+                </p>
+                <p class="mb-4">
+                  Pode revogar a permissão a qualquer momento nas definições de
+                  localização do seu navegador para este site, sem afetar o
+                  resto da aplicação.
+                </p>
+
+                <h3
+                  class="text-zinc-900 dark:text-white font-bold text-base mt-8 mb-3"
+                >
+                  5. Serviços de Terceiros e Mapas
+                </h3>
+                <p class="mb-4">
+                  Para desenhar o mapa, o seu navegador vai buscar os
+                  <em>tiles</em>
+                  e os tipos de letra a fornecedores externos. Nesses pedidos, e
+                  como acontece em qualquer ligação à Internet, esses
+                  fornecedores recebem o
+                  <strong>endereço IP</strong>
+                  do seu dispositivo. Não lhes é enviada qualquer outra
+                  informação sua, nem a sua localização.
+                </p>
+                <p class="mb-4">
+                  O mesmo se aplica às ligações que abrem sites de operadores,
+                  como o atalho para o tempo real no site da CP: a partir do
+                  momento em que sai da LiveTagus, passa a aplicar-se a política
+                  de privacidade desse operador.
+                </p>
+
+                <h3
+                  class="text-zinc-900 dark:text-white font-bold text-base mt-8 mb-3"
+                >
+                  6. Segurança e Infraestrutura
                 </h3>
                 <p class="mb-4">
                   A aplicação é servida através de ligações encriptadas (HTTPS)
@@ -552,14 +652,17 @@
                   <em>Content Security Policy - CSP</em>
                   ) de classificação A+, o que impede a injeção de scripts
                   maliciosos de terceiros no seu dispositivo enquanto navega na
-                  LiveTagus. A aplicação não solicita permissões intrusivas ao
-                  seu dispositivo (como acesso a câmara, microfone ou GPS).
+                  LiveTagus. A aplicação não solicita acesso à câmara, ao
+                  microfone, aos contactos nem aos seus ficheiros. A única
+                  permissão que pode vir a pedir é a de localização, e apenas se
+                  <strong>carregar</strong>
+                  no "Perto de Mim" (ver ponto 4).
                 </p>
 
                 <h3
                   class="text-zinc-900 dark:text-white font-bold text-base mt-8 mb-3"
                 >
-                  5. Doações e Dados Financeiros
+                  7. Doações e Dados Financeiros
                 </h3>
                 <p class="mb-4">
                   Ao realizares um donativo através de plataformas externas (ex:
@@ -582,7 +685,7 @@
                 <h3
                   class="text-zinc-900 dark:text-white font-bold text-base mt-8 mb-3"
                 >
-                  6. Os teus Direitos
+                  8. Os teus Direitos
                 </h3>
                 <p class="mb-4">
                   Embora o LiveTagus não mantenha uma base de dados de
@@ -606,7 +709,7 @@
                 <h3
                   class="text-zinc-900 dark:text-white font-bold text-base mt-8 mb-3"
                 >
-                  7. Alterações à Política de Privacidade
+                  9. Alterações à Política de Privacidade
                 </h3>
                 <p class="mb-4">
                   Esta política pode ser atualizada ocasionalmente. Recomendamos
@@ -617,7 +720,7 @@
                 <h3
                   class="text-zinc-900 dark:text-white font-bold text-base mt-8 mb-3"
                 >
-                  8. Contacto
+                  10. Contacto
                 </h3>
                 <p class="mb-4">
                   Para questões de privacidade, contacta-nos através do email de

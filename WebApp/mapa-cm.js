@@ -49,7 +49,7 @@
   const CM_LOGO_LIGHT = "/imagens/lig-logos/cm-light.svg";
   const CM_LOGO_DARK = "/imagens/lig-logos/cm-dark.svg";
   const CM_MARKER_COLOR = "#FFDD00";
-  const CM_SELECTED_COLOR = "#22C55E"; // paragem selecionada (destaque)
+  const CM_SELECTED_COLOR = "#3b82f6"; // paragem selecionada (destaque)
 
   // ─── ESTADO ──────────────────────────────────────────────────────────
   let map = null;
@@ -186,37 +186,11 @@
       map.addSource(SRC_ID, { type: "geojson", data: geojson });
     }
     if (!map.getLayer(LAYER_ID)) {
-      map.addLayer({
-        id: LAYER_ID,
-        type: "circle",
-        source: SRC_ID,
-        // Só visível a partir de zoom 13 — os postes ficam muito juntos.
-        minzoom: 13,
-        paint: {
-          "circle-radius": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            13,
-            4,
-            15,
-            7,
-            17,
-            10,
-          ],
-          "circle-color": CM_MARKER_COLOR,
-          "circle-stroke-width": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            13,
-            1.5,
-            17,
-            2.5,
-          ],
-          "circle-stroke-color": "#000000",
-        },
-      });
+      map.addLayer(stopLayerDef());
+      // O logótipo é composto de forma assíncrona (mapa-icones.js): entra já o
+      // círculo amarelo e a camada é trocada quando o ícone estiver pronto.
+      ensureStopIcon();
+      watchSelection();
 
       map.on("click", LAYER_ID, (e) => {
         const f = e.features && e.features[0];
@@ -234,9 +208,143 @@
     applySelectionPaint();
   }
 
+  // ─── MARCADOR DAS PARAGENS ───────────────────────────────────────────
+  // Logótipo da Carris sobre fundo branco. Diâmetros 8/14/20 px: menores que
+  // os do Metro e da CP, e bem menores que os da Fertagus — são postes de
+  // autocarro, não devem competir com as estações.
+  //
+  // A variante escolhida é a cm-light.svg: é a que tem tinta escura, feita
+  // para fundos claros, e o fundo do ícone é branco em qualquer tema.
+  //
+  // Só a partir do zoom 13, como os restantes intermodais: abaixo disso o mapa
+  // fica limpo e as paragens não são sequer clicáveis, porque o MapLibre não
+  // consulta uma camada que não desenha. (Opacidade a zero não servia: as
+  // features continuavam a responder ao rato.) As paragens guardadas, essas,
+  // aparecem a qualquer zoom — são as do utilizador.
+  const STOPS_MINZOOM = 13;
+  const STOP_ICON = "cm-logo-icon";
+  const STOP_LOGO = "/imagens/lig-logos/cm-light.svg";
+  const STOP_FADE = ["interpolate", ["linear"], ["zoom"], 13, 0.55, 15, 1];
+  const STOP_ICON_SEL = STOP_ICON + "-sel";
+  let stopIconReady = false;
+
+  // Pinta a paragem seleccionada: o fundo do logótipo fica verde. Substitui o
+  // antigo applySelectionPaint, que só funcionava com a camada de círculos.
+  function applySelection(sel) {
+    const layer = map && map.getLayer(LAYER_ID);
+    if (!layer) return;
+    const mine = sel && sel.op === "cm" ? sel : null;
+    const expr = window.MapaSelecao
+      ? window.MapaSelecao.matchExpr(mine, ["id"])
+      : false;
+    try {
+      if (layer.type === "symbol") {
+        map.setLayoutProperty(LAYER_ID, "icon-image", [
+          "case",
+          expr,
+          STOP_ICON_SEL,
+          STOP_ICON,
+        ]);
+      } else {
+        map.setPaintProperty(LAYER_ID, "circle-color", [
+          "case",
+          expr,
+          CM_SELECTED_COLOR,
+          CM_MARKER_COLOR,
+        ]);
+      }
+    } catch (e) {
+      console.warn("[CM] selecção falhou:", e && e.message);
+    }
+  }
+
+  function stopLayerDef() {
+    if (stopIconReady && window.MapaIcones) {
+      return {
+        id: LAYER_ID,
+        type: "symbol",
+        source: SRC_ID,
+        minzoom: STOPS_MINZOOM,
+        layout: {
+          "icon-image": STOP_ICON,
+          "icon-size": window.MapaIcones.sizeExpr([
+            [12, 8],
+            [15, 14],
+            [17, 20],
+          ]),
+          "icon-allow-overlap": true,
+          "icon-ignore-placement": true,
+        },
+        paint: { "icon-opacity": STOP_FADE },
+      };
+    }
+    return {
+      id: LAYER_ID,
+      type: "circle",
+      source: SRC_ID,
+      minzoom: STOPS_MINZOOM,
+      paint: {
+        "circle-radius": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          12,
+          4,
+          15,
+          7,
+          17,
+          10,
+        ],
+        "circle-color": CM_MARKER_COLOR,
+        "circle-stroke-width": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          13,
+          1.5,
+          17,
+          2.5,
+        ],
+        "circle-stroke-color": "#000000",
+        "circle-opacity": STOP_FADE,
+        "circle-stroke-opacity": STOP_FADE,
+      },
+    };
+  }
+
+  function ensureStopIcon() {
+    if (stopIconReady || !window.MapaIcones || !map) return;
+    Promise.all([
+      window.MapaIcones.ensure(map, { id: STOP_ICON, url: STOP_LOGO }),
+      window.MapaIcones.ensure(map, {
+        id: STOP_ICON_SEL,
+        url: STOP_LOGO,
+        bgColor: CM_SELECTED_COLOR,
+      }),
+    ]).then((r) => {
+      if (!r[0] || !r[1]) return; // sem logótipo fica o círculo amarelo
+      stopIconReady = true;
+      if (map.getLayer(LAYER_ID)) {
+        window.MapaIcones.replaceLayer(map, stopLayerDef());
+        // A camada é nova: a expressão da selecção tem de ser reposta.
+        applySelection(window.MapaSelecao && window.MapaSelecao.current());
+      }
+    });
+  }
+
+  function watchSelection() {
+    if (!window.MapaSelecao || !map || map._ltSelCm) return;
+    map._ltSelCm = true;
+    window.MapaSelecao.register(applySelection);
+  }
+
   // Destaca a paragem selecionada (cor + anel maior) via paint properties.
   function applySelectionPaint() {
     if (!map || !map.getLayer(LAYER_ID)) return;
+    // Com o logótipo a camada é symbol e estas propriedades não existem. O
+    // destaque da selecionada passa a ser o anel verde do mapa-selecao.js,
+    // que já cobre todos os operadores.
+    if (map.getLayer(LAYER_ID).type !== "circle") return;
     const sel = selectedId || "__none__";
     map.setPaintProperty(LAYER_ID, "circle-color", [
       "case",
@@ -273,13 +381,8 @@
 
   function operatorHeaderHtml() {
     return `
-      <div class="flex items-center gap-2.5 mt-3">
-        <span class="inline-flex items-center justify-center w-7 h-7 rounded-md shrink-0">
-          <img src="${CM_LOGO_LIGHT}" alt="Carris Metropolitana" class="w-7 h-7 object-contain cm-logo-light" />
-          <img src="${CM_LOGO_DARK}" alt="Carris Metropolitana" class="w-7 h-7 object-contain cm-logo-dark" />
-        </span>
+      <div class="flex items-center gap-2.5">
         <div class="leading-tight">
-          <p class="text-[11px] font-bold uppercase tracking-wider text-zinc-900 dark:text-white">Carris Metropolitana</p>
           <p class="text-[9px] font-mono tracking-wider text-zinc-400">ID: #${escapeHtml(currentStop.id)}</p>
         </div>
       </div>`;
@@ -340,7 +443,9 @@
           </button>
 
           <div class="flex items-center gap-2 mb-3">
-            <span class="text-[9px] font-bold tracking-[0.3em] uppercase text-yellow-500">Paragem</span>
+            <img src="${CM_LOGO_LIGHT}" alt="Carris Metropolitana" class="w-5 h-5 object-contain cm-logo-light" onerror="this.style.display='none'"/>
+            <img src="${CM_LOGO_DARK}" alt="Carris Metropolitana" class="w-5 h-5 object-contain cm-logo-dark" onerror="this.style.display='none'"/>
+            <span class="text-[9px] font-bold tracking-[0.3em] uppercase text-yellow-500">Carris Metropolitana</span>
             <span class="h-px flex-1 max-w-16 bg-zinc-200 dark:bg-zinc-800"></span>
           </div>
           <h2 class="text-2xl md:text-2xl font-light tracking-tighter text-zinc-900 dark:text-white leading-[1.1] pr-12">
@@ -697,6 +802,18 @@
 
   // ─── AÇÕES PÚBLICAS ──────────────────────────────────────────────────
   function open(stop) {
+    // Pinta de verde o fundo do logótipo desta paragem. Directo, pela mesma
+    // razão que no mapa-station.js.
+    if (stop && window.MapaSelecao) {
+      const loc = Array.isArray(stop.location) ? stop.location : [];
+      window.MapaSelecao.set({
+        op: "cm",
+        id: stop.id,
+        name: stop.name || null,
+        lat: typeof loc[0] === "number" ? loc[0] : null,
+        lng: typeof loc[1] === "number" ? loc[1] : null,
+      });
+    }
     ensureElements();
     if (!panel || !backdrop || !stop) return;
 
@@ -748,6 +865,9 @@
   }
 
   function close() {
+    // Tira o verde da paragem. Aqui e não no window.MapaCM.close, porque os
+    // handlers internos chamam esta função local directamente.
+    if (window.MapaSelecao) window.MapaSelecao.clear();
     ensureElements();
     if (!panel || !backdrop) return;
 
@@ -791,5 +911,11 @@
     return !!currentStop;
   }
 
-  window.MapaCM = { init, open, close, isOpen };
+  // Paragens verificadas já indexadas (após init) — usado pela pesquisa
+  // (mapa-search.js) para não duplicar o gate AVAILABLE_STATIONS.
+  function getStops() {
+    return Array.from(stopsById.values());
+  }
+
+  window.MapaCM = { init, open, close, isOpen, getStops };
 })();

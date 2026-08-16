@@ -1,0 +1,855 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.224093,
+          38.7521904
+        ]
+      },
+      "properties": {
+        "id_destino": "RB",
+        "nome_destino": "Reboleira",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/reboleira/]",
+        "linha": "[Azul]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.2183219,
+          38.7584061
+        ]
+      },
+      "properties": {
+        "id_destino": "AS",
+        "nome_destino": "Amadora Este",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/amadora-este/]",
+        "linha": "[Azul]",
+        "zone_id": "C"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+        -9.1968448,
+        38.7622296
+        ]
+      },
+      "properties": {
+        "id_destino": "PO",
+        "nome_destino": "Pontinha",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/pontinha/]",
+        "linha": "[Azul]",
+        "zone_id": "C"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+        -9.1892931,
+        38.7533803
+        ]
+      },
+      "properties": {
+        "id_destino": "CM",
+        "nome_destino": "Colégio Militar/Luz",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/colegio-militar-luz/]",
+        "linha": "[Azul]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1730362,
+          38.7482497
+        ]
+      },
+      "properties": {
+        "id_destino": "LA",
+        "nome_destino": "Laranjeiras",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/laranjeiras/]",
+        "linha": "[Azul]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1539005,
+          38.7342844
+        ]
+      },
+      "properties": {
+        "id_destino": "SS",
+        "nome_destino": "São Sebastião",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/sao-sebastiao-linha-azul/,https://www.metrolisboa.pt/viajar/sao-sebastiao-linha-vermelha/]",
+        "linha": "[Azul, Vermelha]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1718324,
+          38.7856218
+        ]
+      },
+      "properties": {
+        "id_destino": "SR",
+        "nome_destino": "Senhor Roubado",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/senhor-roubado/]",
+        "linha": "[Amarela]",
+        "zone_id": "C"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.144831,
+          38.7190102
+        ]
+      },
+      "properties": {
+        "id_destino": "AV",
+        "nome_destino": "Avenida",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/avenida/]",
+        "linha": "[Azul]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1400448,
+          38.7104186
+        ]
+      },
+      "properties": {
+        "id_destino": "BC",
+        "nome_destino": "Baixa/Chiado",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/baixa-chiado-linha-azul/,https://www.metrolisboa.pt/viajar/baixa-chiado-linha-verde/]",
+        "linha": "[Azul, Verde]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1343684,
+          38.7070133
+        ]
+      },
+      "properties": {
+        "id_destino": "TP",
+        "nome_destino": "Terreiro do Paço",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/terreiro-do-paco/]",
+        "linha": "[Azul]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1224361,
+          38.713671
+        ]
+      },
+      "properties": {
+        "id_destino": "SP",
+        "nome_destino": "Santa Apolónia",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/santa-apolonia/]",
+        "linha": "[Azul]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1730002,
+          38.79326
+        ]
+      },
+      "properties": {
+        "id_destino": "OD",
+        "nome_destino": "Odivelas",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/odivelas/]",
+        "linha": "[Amarela]",
+        "zone_id": "C"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+        -9.1593701,
+        38.773391
+        ]
+      },
+      "properties": {
+        "id_destino": "LU",
+        "nome_destino": "Lumiar",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/lumiar/]",
+        "linha": "[Amarela]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1578199,
+          38.7600826
+        ]
+      },
+      "properties": {
+        "id_destino": "CG",
+        "nome_destino": "Campo Grande",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/campo-grande-linha-amarela/,https://www.metrolisboa.pt/viajar/campo-grande-linha-verde/]",
+        "linha": "[Amarela, Verde]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1467947,
+          38.7411137
+        ]
+      },
+      "properties": {
+        "id_destino": "CP",
+        "nome_destino": "Campo Pequeno",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/campo-pequeno/]",
+        "linha": "[Amarela]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1481984,
+          38.7470271
+        ]
+      },
+      "properties": {
+        "id_destino": "EC",
+        "nome_destino": "Entre Campos",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/entre-campos/]",
+        "linha": "[Amarela]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1453679,
+          38.7351761
+        ]
+      },
+      "properties": {
+        "id_destino": "SA",
+        "nome_destino": "Saldanha",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/saldanha-linha-amarela/,https://www.metrolisboa.pt/viajar/saldanha-linha-vermelha/]",
+        "linha": "[Amarela, Vermelha]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.12395,
+          38.7394852
+        ]
+      },
+      "properties": {
+        "id_destino": "OL",
+        "nome_destino": "Olaias",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/olaias/]",
+        "linha": "[Vermelha]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1120139,
+          38.7606063
+        ]
+      },
+      "properties": {
+        "id_destino": "OS",
+        "nome_destino": "Olivais",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/olivais/]",
+        "linha": "[Vermelha]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1040551,
+          38.7629773
+        ]
+      },
+      "properties": {
+        "id_destino": "CR",
+        "nome_destino": "Cabo Ruivo",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/cabo-ruivo/]",
+        "linha": "[Vermelha]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.0997334,
+          38.7678571
+        ]
+      },
+      "properties": {
+        "id_destino": "OR",
+        "nome_destino": "Oriente",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/oriente/]",
+        "linha": "[Vermelha]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1155101,
+          38.7750749
+        ]
+      },
+      "properties": {
+        "id_destino": "EN",
+        "nome_destino": "Encarnação",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/encarnacao/]",
+        "linha": "[Vermelha]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1548457,
+          38.7201088
+        ]
+      },
+      "properties": {
+        "id_destino": "RA",
+        "nome_destino": "Rato",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/rato/]",
+        "linha": "[Amarela]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1664263,
+          38.7599435
+        ]
+      },
+      "properties": {
+        "id_destino": "TE",
+        "nome_destino": "Telheiras",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/telheiras/]",
+        "linha": "[Verde]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1440306,
+          38.7531067
+        ]
+      },
+      "properties": {
+        "id_destino": "AL",
+        "nome_destino": "Alvalade",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/alvalade/]",
+        "linha": "[Verde]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1338936,
+          38.7367721
+        ]
+      },
+      "properties": {
+        "id_destino": "AM",
+        "nome_destino": "Alameda",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/alameda-linha-verde/,https://www.metrolisboa.pt/viajar/alameda-linha-vermelha/]",
+        "linha": "[Verde, Vermelha]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1358765,
+          38.7168742
+        ]
+      },
+      "properties": {
+        "id_destino": "MM",
+        "nome_destino": "Martim Moniz",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/martim-moniz/]",
+        "linha": "[Verde]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1468277,
+          38.7061368
+        ]
+      },
+      "properties": {
+        "id_destino": "CS",
+        "nome_destino": "Cais do Sodré",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/cais-do-sodre/]",
+        "linha": "[Verde]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1176782,
+          38.7475415
+        ]
+      },
+      "properties": {
+        "id_destino": "BV",
+        "nome_destino": "Bela Vista",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/bela-vista/]",
+        "linha": "[Vermelha]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1138872,
+          38.7548276
+        ]
+      },
+      "properties": {
+        "id_destino": "CH",
+        "nome_destino": "Chelas",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/chelas/]",
+        "linha": "[Vermelha]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1030009,
+          38.774894
+        ]
+      },
+      "properties": {
+        "id_destino": "MO",
+        "nome_destino": "Moscavide",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/moscavide/]",
+        "linha": "[Vermelha]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.1282772,
+          38.7684185
+        ]
+      },
+      "properties": {
+        "id_destino": "AP",
+        "nome_destino": "Aeroporto",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/aeroporto/]",
+        "linha": "[Vermelha]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+        -9.2045596,
+        38.7603342
+        ]
+      },
+      "properties": {
+        "id_destino": "AF",
+        "nome_destino": "Alfornelos",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/alfornelos/]",
+        "linha": "[Azul]",
+        "zone_id": "C"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+        -9.1797946,
+        38.7498954
+        ]
+      },
+      "properties": {
+        "id_destino": "AH",
+        "nome_destino": "Alto dos Moinhos",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/alto-dos-moinhos/]",
+        "linha": "[Azul]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+        -9.1596665,
+        38.7793282
+        ]
+      },
+      "properties": {
+        "id_destino": "AX",
+        "nome_destino": "Ameixoeira",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/ameixoeira/]",
+        "linha": "[Amarela]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+        -9.1349013,
+        38.72697
+        ]
+      },
+      "properties": {
+        "id_destino": "AN",
+        "nome_destino": "Anjos",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/anjos/]",
+        "linha": "[Verde]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+        -9.1335044,
+        38.7423293
+        ]
+      },
+      "properties": {
+        "id_destino": "AE",
+        "nome_destino": "Areeiro",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/areeiro/]",
+        "linha": "[Verde]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.134266,
+          38.7333573
+        ]
+      },
+      "properties": {
+        "id_destino": "AR",
+        "nome_destino": "Arroios",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/arroios/]",
+        "linha": "[Verde]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+        -9.1927437,
+        38.7592419
+        ]
+      },
+      "properties": {
+        "id_destino": "CA",
+        "nome_destino": "Carnide",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/carnide/]",
+        "linha": "[Azul]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+        -9.159114,
+        38.7514975
+        ]
+      },
+      "properties": {
+        "id_destino": "CU",
+        "nome_destino": "Cidade Universitária",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/cidade-universitaria/]",
+        "linha": "[Amarela]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+        -9.1352785,
+        38.7231737
+        ]
+      },
+      "properties": {
+        "id_destino": "IN",
+        "nome_destino": "Intendente",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/intendente/]",
+        "linha": "[Verde]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+        -9.1689132,
+        38.7420882
+        ]
+      },
+      "properties": {
+        "id_destino": "JZ",
+        "nome_destino": "Jardim Zoológico",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/jardim-zoologico/]",
+        "linha": "[Azul]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+        -9.1497742,
+        38.7256131
+        ]
+      },
+      "properties": {
+        "id_destino": "MP",
+        "nome_destino": "Marquês de Pombal",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/marques-de-pombal-linha-amarela/,https://www.metrolisboa.pt/viajar/marques-de-pombal-linha-azul/]",
+        "linha": "[Amarela, Azul]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+        -9.150259,
+        38.7295152
+        ]
+      },
+      "properties": {
+        "id_destino": "PA",
+        "nome_destino": "Parque",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/parque/]",
+        "linha": "[Azul]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+        -9.1469543,
+        38.7303574
+        ]
+      },
+      "properties": {
+        "id_destino": "PI",
+        "nome_destino": "Picoas",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/picoas/]",
+        "linha": "[Amarela]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+        -9.1592473,
+        38.737684
+        ]
+      },
+      "properties": {
+        "id_destino": "PE",
+        "nome_destino": "Praça de Espanha",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/praca-de-espanha/]",
+        "linha": "[Azul]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+        -9.1555614,
+        38.7673144
+        ]
+      },
+      "properties": {
+        "id_destino": "QC",
+        "nome_destino": "Quinta das Conchas",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/quinta-das-conchas/]",
+        "linha": "[Amarela]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+        -9.1416854,
+        38.7152706
+        ]
+      },
+      "properties": {
+        "id_destino": "RE",
+        "nome_destino": "Restauradores",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/restauradores/]",
+        "linha": "[Azul]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+        -9.1412408,
+        38.7479867
+        ]
+      },
+      "properties": {
+        "id_destino": "RM",
+        "nome_destino": "Roma",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/roma/]",
+        "linha": "[Verde]",
+        "zone_id": "L"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+        -9.1383282,
+        38.7139532
+        ]
+      },
+      "properties": {
+        "id_destino": "RO",
+        "nome_destino": "Rossio",
+        "stop_url": "[https://www.metrolisboa.pt/viajar/rossio/]",
+        "linha": "[Verde]",
+        "zone_id": "L"
+      }
+    }
+  ]
+}
