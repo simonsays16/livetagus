@@ -43,7 +43,12 @@
   const RANGES = [100, 200, 300, 500, 750, 1000, 1500, 2000, 3000, 4000, 5000];
   const DEFAULT_RANGE = 500;
   const MAX_ITEMS = 40; // a 5 km a lista fica enorme
-  const WALK_M_PER_MIN = 80; // ~4,8 km/h
+
+  // Área servida pela app, com folga. Se a posição cair fora disto, o
+  // enquadramento automático não acontece: voar para o Porto mostraria um mapa
+  // vazio, o que é pior do que ficar onde se estava.
+  const AREA = { minLat: 38.2, maxLat: 39.1, minLng: -9.65, maxLng: -8.45 };
+  const AUTO_ZOOM = 14; // perto o suficiente para as paragens aparecerem (min. 13)
 
   const GEO_OPTS = {
     enableHighAccuracy: true, // localização exata, como pedido
@@ -61,6 +66,10 @@
   let position = null; // { lat, lng, accuracy } — só em memória
   let range = DEFAULT_RANGE;
   let lastFocus = null;
+  // O enquadramento automático é uma cortesia de arranque, não um comando: só
+  // acontece uma vez, e só se o utilizador ainda não tiver mexido no mapa.
+  let autoFrameDone = false;
+  let userMovedMap = false;
 
   // ═══ PREFERÊNCIAS ══════════════════════════════════════════════════════
   function pref(key) {
@@ -111,15 +120,8 @@
     return `${(m / 1000).toFixed(m < 10000 ? 1 : 0).replace(".", ",")} km`;
   }
   function fmtRange(m) {
-    return m < 1000
-      ? `${m} m`
-      : `${(m / 1000).toFixed(1).replace(".0", "")} km`;
+    return m < 1000 ? `${m} m` : `${(m / 1000).toFixed(1).replace(".0", "")} km`;
   }
-  function fmtWalk(m) {
-    const min = Math.max(1, Math.round(m / WALK_M_PER_MIN));
-    return min < 60 ? `${min} min a pé` : `${Math.round(min / 60)} h a pé`;
-  }
-
   // ═══ ÍCONES ════════════════════════════════════════════════════════════
   const SVG_NEAR = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="19" height="19"><path d="M12 2v2m0 16v2M2 12h2m16 0h2"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg>`;
   const SVG_X = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="18" height="18"><path d="M18 6 6 18M6 6l12 12"/></svg>`;
@@ -223,6 +225,16 @@
     }
     html.dark .lt-np-toggle { color: #d4d4d8; }
     .lt-np-toggle input { width: 17px; height: 17px; flex-shrink: 0; accent-color: #16a34a; }
+    /* O mesmo interruptor do aviso inicial, agora também por baixo da lista:
+       depois da primeira vez o aviso não volta a aparecer, e sem isto não havia
+       forma de mudar de ideias. */
+    .lt-np-toggle-foot {
+      margin: .35rem 1.25rem 0; padding: .85rem .9rem;
+      border-radius: 10px; border: 1px solid rgb(244 244 245);
+      background: #fafafa; font-size: 12px; align-items: flex-start;
+    }
+    html.dark .lt-np-toggle-foot { background: #131316; border-color: rgb(24 24 27); }
+    .lt-np-toggle-sub { color: #a1a1aa; font-size: 11px; }
     .lt-np-actions { display: flex; gap: .5rem; margin-top: .35rem; }
     .lt-np-btn {
       flex: 1; height: 44px; border-radius: 10px; cursor: pointer;
@@ -265,7 +277,22 @@
     }
 
     /* Passo 2 — lista */
-    .lt-np-list { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
+    /* O corpo é o único filho da sheet e tem de ser ele a coluna flexível.
+       Sem isto o .lt-np-list ficava com flex:1 dentro de um pai que não era
+       flex, a lista crescia à vontade e o overflow:hidden da sheet cortava-a
+       — não havia scroll nenhum com muitos resultados. */
+    .lt-near-sheet > [data-np-body] {
+      display: flex; flex-direction: column; flex: 1; min-height: 0;
+    }
+    /* min-height:0 é o que permite a um filho flex encolher abaixo do conteúdo
+       e, com isso, ganhar scroll próprio. */
+    .lt-np-list {
+      flex: 1 1 auto; min-height: 0;
+      overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
+    /* O cabeçalho, o cursor do raio, o interruptor e o rodapé ficam fixos. */
+    .lt-np-head, .lt-np-range, .lt-np-toggle-foot, .lt-np-foot { flex: 0 0 auto; }
     .lt-np-row {
       display: flex; align-items: center; gap: .875rem; width: 100%; min-width: 0;
       padding: .8rem 1.25rem; cursor: pointer; text-align: left;
@@ -361,10 +388,7 @@
       features: [
         {
           type: "Feature",
-          geometry: {
-            type: "Point",
-            coordinates: [position.lng, position.lat],
-          },
+          geometry: { type: "Point", coordinates: [position.lng, position.lat] },
           properties: {},
         },
       ],
@@ -382,15 +406,7 @@
           type: "circle",
           source: SRC,
           paint: {
-            "circle-radius": [
-              "interpolate",
-              ["linear"],
-              ["zoom"],
-              10,
-              12,
-              16,
-              22,
-            ],
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 12, 16, 22],
             "circle-color": "#3b82f6",
             "circle-opacity": 0.18,
             "circle-blur": 0.3,
@@ -413,6 +429,64 @@
     } catch (_) {}
   }
 
+  function foraDaArea() {
+    return (
+      !position ||
+      position.lat < AREA.minLat ||
+      position.lat > AREA.maxLat ||
+      position.lng < AREA.minLng ||
+      position.lng > AREA.maxLng
+    );
+  }
+
+  // Leva o mapa até à zona do utilizador.
+  //
+  // Há dois casos, e as regras são diferentes de propósito:
+  //   arranque → não foi pedido, por isso desiste à mínima suspeita de que a
+  //     pessoa já está a ver outra coisa;
+  //   toque no botão → foi pedido, por isso obedece sempre. Aproxima com o
+  //     desvio do painel, senão a posição ficava por baixo da sheet.
+  //
+  // Em qualquer dos casos, fora da área servida não vale a pena: o mapa não tem
+  // dados lá e mostrar um ecrã vazio é pior do que ficar onde se estava.
+  function frameUser(manual) {
+    if (!map || !position) return;
+    if (!manual) {
+      if (autoFrameDone || !autoOn()) return;
+      autoFrameDone = true; // mesmo que desista abaixo: isto é de arranque
+      // Um deep link a um comboio ou estação manda mais do que a localização.
+      if (window.location.hash && window.location.hash.length > 1) return;
+      // Se já mexeu no mapa, mexeu por alguma razão.
+      if (userMovedMap) return;
+      // Uma sheet aberta significa que já está a ver outra coisa.
+      if (
+        (window.MapaStation && window.MapaStation.isOpen()) ||
+        (window.MapaDetails && window.MapaDetails.isOpen()) ||
+        (window.GtfsHorarios && window.GtfsHorarios.isOpen()) ||
+        (window.MapaCM && window.MapaCM.isOpen())
+      )
+        return;
+    }
+    if (foraDaArea()) {
+      console.info("[MapaPerto] fora da área servida; o mapa fica onde estava.");
+      return;
+    }
+    try {
+      if (manual && window.MapaRender && window.MapaRender.focusStation) {
+        // Reaproveita o enquadramento das estações: já aproxima e já
+        // compensa o espaço que o painel ocupa.
+        window.MapaRender.focusStation({ lat: position.lat, lng: position.lng });
+        return;
+      }
+      map.easeTo({
+        center: [position.lng, position.lat],
+        zoom: Math.max(map.getZoom(), AUTO_ZOOM),
+        duration: 900,
+        essential: true,
+      });
+    } catch (_) {}
+  }
+
   function patchMapaRender() {
     if (!window.MapaRender) return false;
     if (window.MapaRender._pertoPatched) return true;
@@ -420,6 +494,12 @@
     window.MapaRender.setMap = function (m) {
       if (orig) orig.call(this, m);
       map = m;
+      // Qualquer gesto do utilizador cancela o enquadramento automático que
+      // ainda esteja para vir: a posição pode demorar segundos a chegar, e a
+      // essa altura ele já pode estar a olhar para outro sítio.
+      map.on("movestart", (e) => {
+        if (e && e.originalEvent) userMovedMap = true;
+      });
       if (position) {
         if (map.isStyleLoaded()) pushMe();
         else map.once("styledata", pushMe);
@@ -491,6 +571,8 @@
         };
         syncButton();
         pushMe();
+        // Silencioso é o de arranque; com o popup aberto foi um toque no botão.
+        frameUser(!silent);
         // As fontes assíncronas (MTS, Metro) podem ainda não estar prontas.
         const ready =
           window.MapaSearch && window.MapaSearch.ensureSources
@@ -518,14 +600,11 @@
   function nearby() {
     if (!position) return { list: [], fertagus: null, withinCount: 0 };
     const index =
-      window.MapaSearch && window.MapaSearch.index
-        ? window.MapaSearch.index()
-        : [];
+      window.MapaSearch && window.MapaSearch.index ? window.MapaSearch.index() : [];
 
     const withDist = [];
     for (const item of index) {
-      if (typeof item.lat !== "number" || typeof item.lng !== "number")
-        continue;
+      if (typeof item.lat !== "number" || typeof item.lng !== "number") continue;
       const d = distance(position.lat, position.lng, item.lat, item.lng);
       withDist.push({ item, d });
     }
@@ -619,7 +698,9 @@
       entry.pinned && entry.d > range
         ? `<span class="lt-np-flag">Mais próxima</span>`
         : "";
-    const meta2 = [fmtWalk(entry.d), item.ctx].filter(Boolean).join(" · ");
+    // Sem estimativa de tempo a pé: a distância é em linha reta e o tempo que
+    // se calculava a partir dela dava uma precisão que não existe.
+    const meta2 = item.ctx || "";
     return `
       <button type="button" class="lt-np-row" data-np-open="${idx}">
         <span class="lt-np-ic">${logo}<span class="lt-sr-glyph">${glyph}</span></span>
@@ -628,7 +709,11 @@
             <span class="lt-np-name">${escapeHtml(item.name)}</span>
             ${flag}
           </span>
-          <span class="lt-np-meta">${pills}<span class="lt-np-walk">${escapeHtml(meta2)}</span></span>
+          ${
+            pills || meta2
+              ? `<span class="lt-np-meta">${pills}${meta2 ? `<span class="lt-np-walk">${escapeHtml(meta2)}</span>` : ""}</span>`
+              : ""
+          }
         </span>
         <span class="lt-np-dist">${escapeHtml(fmtDistance(entry.d))}</span>
         ${SVG_CHEV}
@@ -668,7 +753,13 @@
         <div class="lt-np-range-ends"><span>${fmtRange(RANGES[0])}</span><span>${fmtRange(RANGES[RANGES.length - 1])}</span></div>
       </div>
       <div class="lt-np-list">${listHtml}</div>
-      <p class="lt-np-foot">Distância em linha reta a partir do teu dispositivo${escapeHtml(accuracy)}. A localização não sai do teu disppositivo.</p>`;
+      <label class="lt-np-toggle lt-np-toggle-foot">
+        <input type="checkbox" data-np="auto" ${autoOn() ? "checked" : ""}>
+        <span>Localizar automaticamente ao abrir o mapa<br>
+          <span class="lt-np-toggle-sub">Com isto ligado, o mapa abre já na tua zona.</span>
+        </span>
+      </label>
+      <p class="lt-np-foot">Distância em linha reta a partir do teu dispositivo${escapeHtml(accuracy)}. A localização não sai daqui.</p>`;
 
     if (window.MapaSearch && window.MapaSearch.hookLogos)
       window.MapaSearch.hookLogos(bodyEl);
@@ -725,6 +816,18 @@
     }
   }
 
+  // O interruptor existe em dois sítios (aviso inicial e rodapé dos
+  // resultados). Guardar aqui cobre os dois, e o "Permitir" volta a ler o
+  // estado na mesma — não faz mal.
+  function onSheetChange(e) {
+    const el = e.target;
+    if (!el || !el.getAttribute || el.getAttribute("data-np") !== "auto") return;
+    setPref(KEY_AUTO, el.checked ? "1" : "0");
+    // Ligar com a autorização já dada e sem posição em memória: vai buscá-la
+    // agora, para o efeito ser imediato em vez de só no próximo arranque.
+    if (el.checked && introDone() && !position) locate({ silent: true });
+  }
+
   function onSheetInput(e) {
     const el = e.target;
     if (el && el.getAttribute && el.getAttribute("data-np") === "range") {
@@ -750,6 +853,7 @@
     });
     sheet.addEventListener("click", onSheetClick);
     sheet.addEventListener("input", onSheetInput);
+    sheet.addEventListener("change", onSheetChange);
   }
 
   function open() {
@@ -766,8 +870,11 @@
     // Passo 1 na primeira vez; depois, se já houver posição em memória, a lista
     // aparece de imediato.
     if (!introDone()) renderIntro();
-    else if (position) renderResults();
-    else locate();
+    else if (position) {
+      // Posição já em memória: mostra a lista de imediato e aproxima na mesma.
+      renderResults();
+      frameUser(true);
+    } else locate();
   }
 
   function close() {
@@ -798,16 +905,36 @@
     );
   }
 
-  function positionButton() {
-    if (!btnEl) return;
+  // Pilha de botões flutuantes do canto superior direito, de cima para baixo.
+  // Um só sítio a decidir a ordem e as posições: antes cada módulo posicionava
+  // o seu e tinha de saber da existência dos outros.
+  const STACK = ["btn-mapview", "lt-near-btn", "lt-search-btn"];
+  const STACK_GAP = 8;
+
+  function layoutStack() {
     const header = document.querySelector("#global-nav header");
     if (!header) return;
     const r = header.getBoundingClientRect();
     if (!r || r.bottom <= 0) return;
-    btnEl.style.top = Math.round(r.bottom + 12) + "px";
-    // A pesquisa fica abaixo deste botão.
-    if (window.MapaSearch && window.MapaSearch.reposition)
-      window.MapaSearch.reposition();
+    let top = r.bottom + 12;
+    for (const id of STACK) {
+      const el = document.getElementById(id);
+      if (!el) continue;
+      el.style.top = Math.round(top) + "px";
+      top += (el.offsetHeight || 42) + STACK_GAP;
+    }
+    // O menu das camadas alinha por baixo do seu próprio botão.
+    const eye = document.getElementById("btn-mapview");
+    const menu = document.getElementById("mapview-menu");
+    if (eye && menu) {
+      menu.style.top =
+        Math.round(parseFloat(eye.style.top || 0) + (eye.offsetHeight || 42) + 6) +
+        "px";
+    }
+  }
+
+  function positionButton() {
+    layoutStack();
   }
 
   function injectButton() {
@@ -865,6 +992,8 @@
   else boot();
 
   window.MapaPerto = {
+    // Chamado pelos outros módulos quando acrescentam ou removem um botão.
+    layout: layoutStack,
     open,
     close,
     locate,
@@ -877,6 +1006,6 @@
       syncButton();
       pushMe();
     },
-    _internals: { distance, nearby, RANGES, fmtDistance, fmtWalk },
+    _internals: { distance, nearby, RANGES, fmtDistance, frameUser },
   };
 })();

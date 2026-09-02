@@ -80,6 +80,12 @@
       glyph: "metro",
       logo: "/imagens/lig-logos/mts.svg",
     },
+    cp: {
+      label: "CP",
+      dot: "#0075C9",
+      glyph: "rail",
+      logo: "/imagens/lig-logos/cp.svg",
+    },
     cm: {
       label: "Carris Metropolitana",
       dot: "#f5b700",
@@ -89,7 +95,7 @@
     },
   };
   // As guardadas são do utilizador → primeiro nas sugestões.
-  const OP_ORDER = { guardadas: 0, fertagus: 1, ml: 2, mts: 3, cm: 4 };
+  const OP_ORDER = { guardadas: 0, fertagus: 1, ml: 2, mts: 3, cp: 4, cm: 5 };
 
   // ═══ ÍCONES INLINE (independentes do lucide) ═════════════════════════════════
   const SVG_SEARCH = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>`;
@@ -654,8 +660,47 @@
     return mlPromise;
   }
 
+  // As estações da CP vêm do módulo do mapa, não de um fetch próprio: assim a
+  // pesquisa oferece exactamente as que estão desenhadas — as da região de
+  // Lisboa, agrupadas por estação — e não as 455 do feed nacional.
+  function cpItems() {
+    const stations =
+      window.MapaCP && typeof window.MapaCP.getStations === "function"
+        ? window.MapaCP.getStations()
+        : [];
+    return stations.map((st) => ({
+      op: "cp",
+      name: st.name,
+      ctx: st.lines || "",
+      pills: [],
+      blob: norm(st.name) + " " + norm(st.lines || ""),
+      lat: st.lat,
+      lng: st.lng,
+      fav: { store: "st", op: "cp", id: st.stop_id, name: st.name },
+      run: () => {
+        if (
+          typeof st.lat === "number" &&
+          window.MapaRender &&
+          window.MapaRender.focusStation
+        ) {
+          window.MapaRender.focusStation({ lat: st.lat, lng: st.lng });
+        }
+        if (window.GtfsHorarios)
+          window.GtfsHorarios.openStop("cp", st.stop_id, { name: st.name });
+      },
+    }));
+  }
+
   function ensureSources() {
-    return Promise.all([ensureMts(), ensureMl()]);
+    return Promise.all([
+      ensureMts(),
+      ensureMl(),
+      // O CP carrega os dados de forma preguiçosa; a pesquisa força-o para as
+      // estações estarem no índice.
+      window.MapaCP && window.MapaCP.ensureLoaded
+        ? window.MapaCP.ensureLoaded()
+        : Promise.resolve(),
+    ]);
   }
 
   function ensureMts() {
@@ -864,6 +909,7 @@
       fertagusItems(),
       mlCache || [],
       mtsCache || [],
+      cpItems(),
       cm,
     );
   }
@@ -1365,16 +1411,17 @@
   // ═══ BOTÃO FLUTUANTE ══════════════════════════════════════════════════════════
   function positionButton() {
     if (!btnEl) return;
+    // A pilha inteira é posicionada pelo mapa-perto.js, que conhece a ordem de
+    // todos os botões. Aqui fica só o caso de ele não estar carregado.
+    if (window.MapaPerto && window.MapaPerto.layout) {
+      window.MapaPerto.layout();
+      return;
+    }
     const header = document.querySelector("#global-nav header");
     if (!header) return;
     const r = header.getBoundingClientRect();
     if (!r || r.bottom <= 0) return;
-    let top = r.bottom + 12;
-    // O botão "perto de mim" (mapa-perto.js) ocupa o lugar de cima na pilha;
-    // se existir, a pesquisa fica logo abaixo dele.
-    const near = document.getElementById("lt-near-btn");
-    if (near) top += (near.offsetHeight || 42) + 8;
-    btnEl.style.top = Math.round(top) + "px";
+    btnEl.style.top = Math.round(r.bottom + 12) + "px";
   }
 
   function injectButton() {

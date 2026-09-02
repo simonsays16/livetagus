@@ -453,10 +453,16 @@
   // dando a sensação de não haver círculo nenhum.
   //
   //   zoom   raio   diâmetro   icon-size
-  //     8     12       24         16
+  //     6      5       10          7
+  //     9      8       16         11
   //    12     16       32         22
   //    15     22       44         30
   //    17     30       60         41
+  //
+  // Do zoom 12 para cima nada mudou. Abaixo disso o marcador encolhe: com os
+  // intermodais escondidos e as linhas a 0 px até ao zoom 10, a Fertagus fica
+  // sozinha no mapa e ao tamanho grande tapava metade da margem sul. A partir
+  // do 12 volta ao destaque de sempre.
 
   // ─── SELECÇÃO ────────────────────────────────────────────────────────
   // Sem anel por cima: o círculo branco de fundo passa a verde.
@@ -486,6 +492,136 @@
   const FERTAGUS_LOGO = "/imagens/lig-logos/fertagus.png";
   let fertagusIconReady = false;
 
+  // ─── SELO DA CP NAS ESTAÇÕES PARTILHADAS ─────────────────────────────
+  // Estações onde a Fertagus e a CP param. O selo aparece ao lado do marcador
+  // da Fertagus, mas só quando a camada da CP está ligada e com zoom suficiente
+  // — caso contrário anunciava um operador que não está no mapa.
+  // O clique continua a abrir a Fertagus: o selo é informação, não um atalho.
+  const CP_BADGE_ICON = "cp-badge-icon";
+  const CP_BADGE_LOGO = "/imagens/lig-logos/cp.svg";
+  const CP_BADGE_LAYER = "fertagus-cp-badge";
+  const CP_BADGE_MINZOOM = 13; // igual ao dos restantes intermodais
+
+  function cpBadgeLayerDef() {
+    return {
+      id: CP_BADGE_LAYER,
+      type: "symbol",
+      source: "fertagus-stations",
+      minzoom: CP_BADGE_MINZOOM,
+      // Sem nomes ainda: nada é desenhado até o cruzamento estar feito.
+      filter: ["in", ["get", "name"], ["literal", []]],
+      layout: {
+        "icon-image": CP_BADGE_ICON,
+        // Cerca de 45% do marcador da Fertagus.
+        "icon-size": window.MapaIcones.sizeExpr([
+          [8, 12],
+          [12, 15],
+          [15, 20],
+          [17, 26],
+        ]),
+        "icon-allow-overlap": true,
+        "icon-ignore-placement": true,
+      },
+      paint: {
+        // icon-translate é em pixéis e não é multiplicado pelo icon-size, o que
+        // o torna previsível: encosta o selo à direita do círculo, cujo raio
+        // vai de 12 a 30 px.
+        "icon-translate": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          8,
+          ["literal", [18, -8]],
+          12,
+          ["literal", [23, -10]],
+          15,
+          ["literal", [31, -14]],
+          17,
+          ["literal", [42, -19]],
+        ],
+      },
+    };
+  }
+
+  function applyCpBadgeVisibility(map) {
+    if (!map || !map.getLayer(CP_BADGE_LAYER)) return;
+    const on = !window.MapaView || window.MapaView.isVisible("cp");
+    try {
+      map.setLayoutProperty(
+        CP_BADGE_LAYER,
+        "visibility",
+        on ? "visible" : "none",
+      );
+    } catch (_) {}
+  }
+
+  function refreshCpBadges(map) {
+    if (!map || !window.GtfsHorarios || !window.GtfsHorarios.sharedFertagusCp)
+      return;
+    // Se a camada da CP está desligada, os dados nem sequer são descarregados.
+    const on = !window.MapaView || window.MapaView.isVisible("cp");
+    if (!on) {
+      applyCpBadgeVisibility(map);
+      return;
+    }
+    const ready =
+      window.MapaCP && window.MapaCP.ensureLoaded
+        ? window.MapaCP.ensureLoaded()
+        : Promise.resolve();
+    Promise.all([ready, window.MapaIcones ? ensureCpBadgeIcon(map) : false])
+      .then(([, iconOk]) => {
+        if (!iconOk) return null;
+        return window.GtfsHorarios.sharedFertagusCp();
+      })
+      .then((shared) => {
+        if (!shared || !map.getSource("fertagus-stations")) return;
+        // O filtro compara pelo nome tal como está no geojson das estações.
+        const nomes = [];
+        for (const st of window.MAPA && window.MAPA.STATIONS
+          ? window.MAPA.STATIONS
+          : [])
+          if (shared.has(normName(st.name))) nomes.push(st.name);
+        if (!map.getLayer(CP_BADGE_LAYER)) map.addLayer(cpBadgeLayerDef());
+        map.setFilter(CP_BADGE_LAYER, [
+          "in",
+          ["get", "name"],
+          ["literal", nomes],
+        ]);
+        applyCpBadgeVisibility(map);
+        // Clicar no selo abre a Fertagus, tal como o resto do marcador.
+        if (!map._ltCpBadgeClick) {
+          map._ltCpBadgeClick = true;
+          map.on("click", CP_BADGE_LAYER, onStationFeatureClick);
+          map.on("mouseenter", CP_BADGE_LAYER, () => {
+            map.getCanvas().style.cursor = "pointer";
+          });
+          map.on("mouseleave", CP_BADGE_LAYER, () => {
+            map.getCanvas().style.cursor = "";
+          });
+        }
+      })
+      .catch((e) => console.warn("[MapaRender] selos da CP:", e && e.message));
+  }
+
+  function ensureCpBadgeIcon(map) {
+    return window.MapaIcones.ensure(map, {
+      id: CP_BADGE_ICON,
+      url: CP_BADGE_LOGO,
+      // Redondo com traço, para ler como um selo ao lado do círculo maior.
+      background: "circle",
+      padding: 0.18,
+    });
+  }
+
+  function normName(v) {
+    return String(v == null ? "" : v)
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+  }
+
   // Círculo branco de fundo. É também o alvo de clique: é um círculo perfeito
   // e já responde antes de o logótipo carregar.
   function stationBackgroundLayerDef() {
@@ -498,8 +634,10 @@
           "interpolate",
           ["linear"],
           ["zoom"],
+          6,
+          5,
+          9,
           8,
-          12,
           12,
           16,
           15,
@@ -516,7 +654,9 @@
           "interpolate",
           ["linear"],
           ["zoom"],
-          8,
+          6,
+          1,
+          9,
           1.5,
           15,
           2.5,
@@ -534,8 +674,11 @@
         source: "fertagus-stations",
         layout: {
           "icon-image": FERTAGUS_ICON,
+          // ~68% do diâmetro do círculo em todos os pontos, para o logótipo
+          // não encostar ao contorno nem se perder no branco.
           "icon-size": window.MapaIcones.sizeExpr([
-            [8, 16],
+            [6, 7],
+            [9, 11],
             [12, 22],
             [15, 30],
             [17, 41],
@@ -570,6 +713,15 @@
       if (map.getLayer("fertagus-stations-layer"))
         window.MapaIcones.replaceLayer(map, stationLayerDef());
     });
+  }
+
+  function onStationFeatureClick(e) {
+    const f = e.features && e.features[0];
+    if (!f) return;
+    const station = MAPA.STATIONS.find(
+      (s) => s.name === f.properties.name || s.apiName === f.properties.name,
+    );
+    if (station && window.MapaStation) window.MapaStation.open(station);
   }
 
   function drawStations(map, stops) {
@@ -636,16 +788,14 @@
 
     // D. Interacção no círculo de fundo, não no logótipo: a área de clique é um
     // círculo perfeito e funciona mesmo antes de o ícone carregar.
-    map.on("click", "fertagus-stations-bg", (e) => {
-      const f = e.features && e.features[0];
-      if (!f) return;
-      const station = MAPA.STATIONS.find(
-        (s) => s.name === f.properties.name || s.apiName === f.properties.name,
-      );
-      if (station && window.MapaStation) {
-        window.MapaStation.open(station);
-      }
-    });
+    map.on("click", "fertagus-stations-bg", onStationFeatureClick);
+    // Selos da CP nas estações partilhadas, e a acompanhar o botão do olho.
+    refreshCpBadges(map);
+    if (window.MapaView && !map._ltCpBadgeWatch) {
+      map._ltCpBadgeWatch = true;
+      window.MapaView.onChange(() => refreshCpBadges(map));
+    }
+
     map.on("mouseenter", "fertagus-stations-bg", () => {
       map.getCanvas().style.cursor = "pointer";
     });

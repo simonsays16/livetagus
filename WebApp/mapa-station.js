@@ -20,6 +20,10 @@
 
   let panel, backdrop;
   let currentStation = null;
+  // Hora (epoch ms) a partir da qual as partidas interessam. Vem de quem abre o
+  // painel — por exemplo, o percurso de um comboio da CP que faz ligação aqui:
+  // só as partidas que a pessoa consegue apanhar à chegada.
+  let currentFrom = null;
   let partidasCtrl = null;
   let trainsSource = null; // () => Array (comboios processados do mapa)
 
@@ -46,6 +50,78 @@
       .replace(/'/g, "&#39;");
   }
 
+  // ─── TROCA PARA A CP ─────────────────────────────────────────────────
+  // Nas estações que a Fertagus partilha com a CP, um botão ao lado da cruz
+  // para saltar para o painel da CP. O cruzamento vem do mapa-gtfs-horarios.js,
+  // que já cruza o ligacoes.json com as estações da CP desenhadas no mapa.
+  const CP_LOGO = "/imagens/lig-logos/cp.svg";
+
+  function cpStationFor(station) {
+    if (!station || !window.GtfsHorarios || !window.GtfsHorarios.cpStationFor)
+      return null;
+    try {
+      return window.GtfsHorarios.cpStationFor(station.name) || null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // O cruzamento Fertagus/CP depende do ligacoes.json e das estações da CP,
+  // ambos assíncronos. Se ainda não estiverem prontos quando a sheet abre, o
+  // botão é inserido depois — em vez de simplesmente não existir, que era o que
+  // acontecia a quem clicasse numa estação sem nunca ter aberto outro painel.
+  function refreshSwapCp(station) {
+    if (!panel || !station || !window.GtfsHorarios) return;
+    const fn = window.GtfsHorarios.sharedFertagusCp;
+    if (typeof fn !== "function") return;
+    fn()
+      .then(() => {
+        // A sheet pode ter fechado ou mudado de estação entretanto.
+        if (!panel || currentStation !== station) return;
+        const header = panel.querySelector(".dp-header");
+        if (!header) return;
+        const existe = header.querySelector("[data-details-action='swap-cp']");
+        const html = swapCpHtml(station);
+        if (!html) {
+          if (existe) existe.remove();
+          return;
+        }
+        if (existe) return;
+        header.insertAdjacentHTML("afterbegin", html);
+        attachShellListeners();
+      })
+      .catch(() => {});
+  }
+
+  function swapCpHtml(station) {
+    const cp = cpStationFor(station);
+    if (!cp) return "";
+    return `<button type="button" class="ltg-swap" data-details-action="swap-cp"
+        title="Ver ${escapeHtml(station.name)} na CP"
+        aria-label="Trocar para a estação ${escapeHtml(station.name)} da CP">
+        <img src="${CP_LOGO}" alt="" data-swap-logo></button>`;
+  }
+
+  // Mesmo bloco de estilos que o mapa-gtfs-horarios.js injecta: o id partilhado
+  // faz com que só o primeiro a chegar o escreva.
+  function injectSwapStyles() {
+    if (document.getElementById("lt-swap-styles")) return;
+    const el = document.createElement("style");
+    el.id = "lt-swap-styles";
+    el.textContent = `
+    .ltg-swap{position:absolute;right:3.5rem;top:.75rem;width:40px;height:40px;
+      display:inline-flex;align-items:center;justify-content:center;padding:0;
+      border-radius:9999px;border:1px solid rgba(0,0,0,.55);background:#fff;
+      cursor:pointer;transition:transform .12s ease,box-shadow .16s ease;}
+    html.dark .ltg-swap{border-color:rgba(255,255,255,.5);}
+    .ltg-swap img{width:20px;height:20px;object-fit:contain;display:block;}
+    .ltg-swap:hover{box-shadow:0 2px 10px rgba(0,0,0,.18);}
+    .ltg-swap:active{transform:scale(.9);}
+    .ltg-swap:focus-visible{outline:2px solid rgb(59 130 246);outline-offset:2px;}
+    @media (min-width:768px){.ltg-swap{top:1.25rem;}}`;
+    document.head.appendChild(el);
+  }
+
   // ─── SHELL DO PAINEL ─────────────────────────────────────────────────
   function shellHtml(station) {
     return `
@@ -55,6 +131,7 @@
         </div>
 
         <div class="dp-header relative shrink-0 px-6 pt-3 md:pt-safe-ios md:pt-5 pb-5 border-b border-zinc-100 dark:border-zinc-900" data-drag-area="1">
+          ${swapCpHtml(station)}
           <button data-details-action="close"
             class="absolute right-4 top-3 md:top-5 w-10 h-10 flex items-center justify-center text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"
             aria-label="Fechar">
@@ -118,6 +195,7 @@
       container: host,
       station: currentStation,
       context: "map",
+      fromTime: currentFrom,
       autoRefresh: 0, // o mapa controla via refresh()
       detectMaintenance: true, // mostra aviso de manutenção se ativo
       onLiveTrain,
@@ -196,14 +274,48 @@
 
   // ─── EVENTOS DO SHELL ────────────────────────────────────────────────
   function attachShellListeners() {
+    // Pode ser chamado duas vezes (a segunda ao inserir o botão da CP), por
+    // isso cada botão é marcado depois de ligado.
     panel.querySelectorAll("[data-details-action='close']").forEach((b) => {
+      if (b.dataset.bound === "1") return;
+      b.dataset.bound = "1";
       b.addEventListener("click", () => close());
+    });
+    panel.querySelectorAll("[data-details-action='swap-cp']").forEach((b) => {
+      if (b.dataset.bound === "1") return;
+      b.dataset.bound = "1";
+      b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const cp = cpStationFor(currentStation);
+        if (!cp) return;
+        close({ silent: true });
+        setTimeout(() => {
+          if (window.GtfsHorarios)
+            window.GtfsHorarios.openStop("cp", cp.stopId, { name: cp.name });
+        }, 140);
+      });
+    });
+    // Sem onerror inline (CSP): sem logótipo, o botão sairia vazio.
+    panel.querySelectorAll("[data-swap-logo]").forEach((img) => {
+      img.addEventListener(
+        "error",
+        function () {
+          const b = this.closest(".ltg-swap");
+          if (b) b.remove();
+        },
+        { once: true },
+      );
     });
   }
 
   // ─── AÇÕES PÚBLICAS ──────────────────────────────────────────────────
-  function open(station) {
+  function open(station, opts) {
+    currentFrom =
+      opts && typeof opts.fromTime === "number" && isFinite(opts.fromTime)
+        ? opts.fromTime
+        : null;
     if (window.MapaCM && window.MapaCM.isOpen()) window.MapaCM.close();
+    injectSwapStyles();
     ensureElements();
     if (!panel || !backdrop || !station) return;
 
@@ -226,6 +338,7 @@
 
     panel.innerHTML = shellHtml(station);
     attachShellListeners();
+    refreshSwapCp(station);
     mountPartidas();
 
     const sc = panel.querySelector('[data-details-scroll="1"]');
@@ -267,6 +380,8 @@
     }
     if (window.Partidas && window.Partidas.closeSheet)
       window.Partidas.closeSheet();
+    // O filtro é de quem abriu esta vez: não pode sobreviver ao fecho.
+    currentFrom = null;
 
     panel.classList.add("translate-y-full");
     panel.classList.remove("translate-y-0");

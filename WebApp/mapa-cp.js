@@ -81,18 +81,27 @@
   // trazem "colour" em #RRGGBB.
   const LINE_COLOR = "#FFFFFF";
 
-  // Largura do traço. O casing preto é sempre o branco + 2 px, o que dá 1 px de
-  // borda de cada lado em qualquer zoom — uma borda fina, não uma segunda linha.
+  // Largura do traço. Dois requisitos ao mesmo tempo:
+  //
+  // 1. Aparece e desaparece com o zoom, nos mesmos limiares do Metro de Lisboa
+  //    e do MTS: 0 px no zoom 10, cheia no 14. Ao contrário deles, a CP é uma
+  //    rede regional e antes desenhava-se já a partir do zoom 7.
+  // 2. A borda preta é o branco + 3 px, ou seja 1,5 px de cada lado a partir do
+  //    zoom 14. Antes eram 2 px e o traço mínimo era 1,2 px: no tema claro a
+  //    borda caía abaixo de um pixel do ecrã e sobrava um traço branco em fundo
+  //    branco. É a borda que faz o branco existir — se mexeres numa, mexe nas
+  //    duas.
+  //
+  // No zoom 10 as duas são 0, senão a borda aparecia sozinha antes do traço.
+  const LINE_BORDER = 3;
   const LINE_WIDTH = (extra) => [
     "interpolate",
     ["linear"],
     ["zoom"],
-    7,
-    1.2 + extra,
     10,
-    2.2 + extra,
+    0,
     14,
-    4.0 + extra,
+    4.2 + extra,
     18,
     7.0 + extra,
   ];
@@ -113,6 +122,12 @@
   let stations = null; // FeatureCollection das estações
   let stopsById = new Map();
   const pendingOrder = [];
+  // Estações que a CP partilha com a Fertagus. O marcador da CP fica escondido
+  // nessas: os dois ficavam praticamente sobrepostos e o da CP, por baixo,
+  // apanhava cliques que eram para a Fertagus. Quem lá está é o marcador da
+  // Fertagus, com o selo da CP ao lado e o botão de troca no cabeçalho.
+  // Continuam no getStations(), portanto continuam a aparecer na pesquisa.
+  let sharedIds = [];
 
   // ═══ ORDEM DAS CAMADAS ═════════════════════════════════════════════════
   // Mesmo problema do mapa-mts.js: a "fertagus-line-casing" pode ainda não
@@ -192,7 +207,8 @@
       list.sort((a, b) => {
         if (SHAPE_PICK === "busiest") {
           const d =
-            (b.meta.pattern_ids || []).length - (a.meta.pattern_ids || []).length;
+            (b.meta.pattern_ids || []).length -
+            (a.meta.pattern_ids || []).length;
           if (d) return d;
         }
         const s = bboxSpan(b.meta.bbox) - bboxSpan(a.meta.bbox);
@@ -208,8 +224,9 @@
   async function fetchAll(items, worker, limit) {
     const results = [];
     let i = 0;
-    const runners = new Array(Math.min(limit, items.length)).fill(0).map(
-      async () => {
+    const runners = new Array(Math.min(limit, items.length))
+      .fill(0)
+      .map(async () => {
         while (i < items.length) {
           const idx = i++;
           try {
@@ -219,8 +236,7 @@
             console.warn("[CP] shape falhou:", e && e.message);
           }
         }
-      },
-    );
+      });
     await Promise.all(runners);
     return results;
   }
@@ -241,7 +257,8 @@
   // estação fica perto de algum traçado, por isso basta a distância aos
   // vértices — não é preciso projectar nos segmentos.
   function distToLines(lon, lat, features, step) {
-    const R = 6371000, rad = Math.PI / 180;
+    const R = 6371000,
+      rad = Math.PI / 180;
     const cosLat = Math.cos(lat * rad);
     let best = Infinity;
     for (const f of features) {
@@ -291,9 +308,9 @@
           getJSON(`${BUNDLE}/${res.routes || "routes.json"}`).catch(() => []),
           useGeojson
             ? Promise.resolve({})
-            : getJSON(`${BUNDLE}/${res.shapes_index || "shapes/index.json"}`).catch(
-                () => ({}),
-              ),
+            : getJSON(
+                `${BUNDLE}/${res.shapes_index || "shapes/index.json"}`,
+              ).catch(() => ({})),
           getJSON(`${BUNDLE}/${res.stops_index || "stops/index.json"}`),
           // Os ícones entram na mesma espera, para o addLayers já saber se os
           // pode usar. São dois: fundo branco e fundo verde (seleccionada). Se
@@ -301,38 +318,45 @@
           ensureIcons(),
         ]).then(async ([routes, shapeIndex, stopsIndex, hasIcon]) => {
           iconReady = !!hasIcon;
-          const routesById = new Map((routes || []).map((r) => [r.route_id, r]));
+          const routesById = new Map(
+            (routes || []).map((r) => [r.route_id, r]),
+          );
 
           // ── Geometrias ──
           if (useGeojson) {
             lines = await loadGeojsonLines();
           } else {
-          const chosen = pickShapes(shapeIndex, routesById);
-          const features = await fetchAll(
-            chosen,
-            async ({ shapeId, meta }) => {
-              const gj = await getJSON(`${BUNDLE}/${meta.file}`);
-              const f = gj && gj.features && gj.features[0];
-              if (!f) return null;
-              const routeId = (meta.route_ids && meta.route_ids[0]) || null;
-              const route = routeId ? routesById.get(routeId) : null;
-              const out = simplify(f);
-              out.properties = {
-                shape_id: shapeId,
-                route_id: routeId,
-                // A cor vem do feed; o fallback é a cor de marca da CP.
-                colour: route && route.route_color ? `#${route.route_color}` : CP_COLOR,
-                ref:
-                  (route && (route.route_short_name || route.route_long_name)) ||
-                  routeId ||
-                  "",
-                route_type: route && route.route_type != null ? route.route_type : null,
-              };
-              return out;
-            },
-            FETCH_CONCURRENCY,
-          );
-          lines = { type: "FeatureCollection", features };
+            const chosen = pickShapes(shapeIndex, routesById);
+            const features = await fetchAll(
+              chosen,
+              async ({ shapeId, meta }) => {
+                const gj = await getJSON(`${BUNDLE}/${meta.file}`);
+                const f = gj && gj.features && gj.features[0];
+                if (!f) return null;
+                const routeId = (meta.route_ids && meta.route_ids[0]) || null;
+                const route = routeId ? routesById.get(routeId) : null;
+                const out = simplify(f);
+                out.properties = {
+                  shape_id: shapeId,
+                  route_id: routeId,
+                  // A cor vem do feed; o fallback é a cor de marca da CP.
+                  colour:
+                    route && route.route_color
+                      ? `#${route.route_color}`
+                      : CP_COLOR,
+                  ref:
+                    (route &&
+                      (route.route_short_name || route.route_long_name)) ||
+                    routeId ||
+                    "",
+                  route_type:
+                    route && route.route_type != null ? route.route_type : null,
+                };
+                return out;
+              },
+              FETCH_CONCURRENCY,
+            );
+            lines = { type: "FeatureCollection", features };
           }
 
           // ── Estações ──
@@ -355,8 +379,12 @@
             // trabalho para um quarto.
             stationEntries = stationEntries.filter(
               (e) =>
-                distToLines(e.coordinates[0], e.coordinates[1], lines.features, 4) <=
-                STATION_MAX_DIST_M,
+                distToLines(
+                  e.coordinates[0],
+                  e.coordinates[1],
+                  lines.features,
+                  4,
+                ) <= STATION_MAX_DIST_M,
             );
           }
           stations = {
@@ -369,7 +397,9 @@
                 name: e.stop_name,
                 // Sem o Set, uma estação da Linha de Sintra listava "Sintra"
                 // dezenas de vezes — uma por route_id do feed nacional.
-                lines: Array.from(new Set(e.route_short_names || [])).join(" · "),
+                lines: Array.from(new Set(e.route_short_names || [])).join(
+                  " · ",
+                ),
               },
             })),
           };
@@ -439,7 +469,7 @@
     "Open Sans Semibold",
   ];
   const LABEL_MINZOOM = 14;
-    // Os operadores intermodais só aparecem a partir daqui. Abaixo disto o mapa
+  // Os operadores intermodais só aparecem a partir daqui. Abaixo disto o mapa
   // fica limpo e as paragens não são sequer clicáveis — o minzoom trata das
   // duas coisas, porque o MapLibre não consulta uma camada que não desenha.
   // (Opacidade a zero não servia: as features continuavam a responder ao rato.)
@@ -569,8 +599,9 @@
           layout: { "line-join": "round", "line-cap": "round" },
           paint: {
             "line-color": "#000000",
-            "line-width": LINE_WIDTH(2),
-            "line-opacity": 0.9,
+            "line-width": LINE_WIDTH(LINE_BORDER),
+            // Opaca: é ela que dá contraste ao branco, não pode ser translúcida.
+            "line-opacity": 1,
           },
         },
         BELOW_ID,
@@ -588,7 +619,9 @@
           paint: {
             "line-color": LINE_COLOR,
             "line-width": LINE_WIDTH(0),
-            "line-opacity": ["interpolate", ["linear"], ["zoom"], 7, 0.85, 12, 1],
+            // A opacidade é constante: quem faz o fade é a largura, como no
+            // Metro. Duas rampas ao mesmo tempo davam um desvanecimento duplo.
+            "line-opacity": 1.0,
           },
         },
         BELOW_ID,
@@ -633,6 +666,7 @@
     watchLayerOrder();
     applyTheme();
     attachClicks();
+    refreshSharedFilter();
     // Selecção: aplica já o estado actual e volta a aplicar sempre que muda.
     if (window.MapaSelecao && !map._ltSelCp) {
       map._ltSelCp = true;
@@ -643,11 +677,50 @@
     applyVisibility(isOn());
   }
 
+  // A expressão exclui as partilhadas dos pontos e das etiquetas.
+  function applySharedFilter() {
+    if (!map) return;
+    const expr = sharedIds.length
+      ? ["!", ["in", ["get", "stop_id"], ["literal", sharedIds]]]
+      : null;
+    for (const id of [L_POINTS, L_LABELS]) {
+      if (!map.getLayer(id)) continue;
+      try {
+        map.setFilter(id, expr);
+      } catch (e) {
+        console.warn("[CP] filtro das partilhadas:", e && e.message);
+      }
+    }
+  }
+
+  function refreshSharedFilter() {
+    if (!map || !window.GtfsHorarios || !window.GtfsHorarios.sharedFertagusCp) {
+      applySharedFilter();
+      return;
+    }
+    // Sem risco de ciclo: o sharedFertagusCp() lê o getStations(), que devolve
+    // sempre a lista completa — é só a CAMADA que é filtrada.
+    window.GtfsHorarios.sharedFertagusCp()
+      .then((shared) => {
+        const ids = [];
+        shared.forEach((v) => {
+          if (v && v.stopId != null) ids.push(String(v.stopId));
+        });
+        sharedIds = ids;
+        applySharedFilter();
+      })
+      .catch(() => applySharedFilter());
+  }
+
   function applyTheme() {
     if (!map || !map.getLayer(L_LABELS)) return;
     const dark = document.documentElement.classList.contains("dark");
     try {
-      map.setPaintProperty(L_LABELS, "text-color", dark ? "#e2e8f0" : "#1e293b");
+      map.setPaintProperty(
+        L_LABELS,
+        "text-color",
+        dark ? "#e2e8f0" : "#1e293b",
+      );
       map.setPaintProperty(
         L_LABELS,
         "text-halo-color",
@@ -780,8 +853,25 @@
 
   window.MapaCP = {
     ensureLoaded,
+    // Ids escondidos por serem partilhados com a Fertagus.
+    getSharedIds: () => sharedIds.slice(),
+    refreshSharedFilter,
     isOn,
+    // Todas as paragens do bundle (país inteiro).
     getStops: () => Array.from(stopsById.values()),
+    // Só as que estão desenhadas: agrupadas por estação e dentro do âmbito das
+    // linhas. É esta a lista que a pesquisa usa, para não oferecer estações que
+    // não existem no mapa.
+    getStations: () =>
+      stations
+        ? stations.features.map((f) => ({
+            stop_id: f.properties.stop_id,
+            name: f.properties.name,
+            lines: f.properties.lines,
+            lat: f.geometry.coordinates[1],
+            lng: f.geometry.coordinates[0],
+          }))
+        : [],
     getLines: () => (lines ? lines.features.slice() : []),
     _internals: { pickShapes, bboxSpan, SHAPE_GROUP, SHAPE_PICK },
   };

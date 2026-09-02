@@ -321,26 +321,22 @@
             layout: { "line-join": "round", "line-cap": "round" },
             paint: {
               "line-color": ["get", "colour"],
+              // Aparece e desaparece com o zoom, exactamente como no Metro de
+              // Lisboa: largura 0 no zoom 10, cheia no 14. O casing já fazia
+              // isto; a linha de cor começava em 2 px e ficava visível sozinha
+              // ao longe, sem contorno nenhum por baixo.
               "line-width": [
                 "interpolate",
                 ["linear"],
                 ["zoom"],
                 10,
-                2.0,
+                0,
                 14,
                 4.5,
                 18,
                 8.5,
               ],
-              "line-opacity": [
-                "interpolate",
-                ["linear"],
-                ["zoom"],
-                10,
-                0.9,
-                14,
-                1,
-              ],
+              "line-opacity": 1.0,
               "line-offset": offsetExpr,
             },
           },

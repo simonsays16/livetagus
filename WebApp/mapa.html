@@ -51,11 +51,24 @@
     />
 
     <!-- MapLibre GL -->
+    <!-- MapLibre por duas vias, de propósito: em cada ambiente uma falha e a
+         outra serve. Em localhost o /maplibre-gl.css dá 404 (o netlify.toml não
+         corre no Live Server) e vale o unpkg; em produção a CSP bloqueia o
+         unpkg e vale o proxy do netlify.toml. Nunca carregam as duas.
+         O integrity é o SHA-384 do maplibre-gl@4.7.1/dist/maplibre-gl.css. O
+         crossorigin é obrigatório no externo: sem CORS o browser não consegue
+         verificar o hash e recusa o ficheiro. -->
     <link
       rel="stylesheet"
       href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
+      integrity="sha384-MinO0mNliZ3vwppuPOUnGa+iq619pfMhLVUXfC4LHwSCvF9H+6P/KO4Q7qBOYV5V"
+      crossorigin="anonymous"
     />
-    <link href="/maplibre-gl.css" rel="stylesheet" />
+    <link
+      href="/maplibre-gl.css"
+      rel="stylesheet"
+      integrity="sha384-MinO0mNliZ3vwppuPOUnGa+iq619pfMhLVUXfC4LHwSCvF9H+6P/KO4Q7qBOYV5V"
+    />
 
     <!-- Tailwind compilado -->
     <link rel="stylesheet" href="./output.css" />
@@ -1446,14 +1459,35 @@
     </main>
 
     <!-- SCRIPTS-->
-    <!-- Bibliotecas externas (link externos para produção) -->
+    <!-- Bibliotecas externas, por duas vias de propósito (ver nota no <head>):
+         localhost usa o unpkg, produção usa o proxy do netlify.toml. Em cada
+         ambiente uma falha e a outra serve — nunca carregam as duas.
+         O integrity é o SHA-384 dos ficheiros publicados no npm para
+         maplibre-gl@4.7.1 e @turf/turf@7.2.0, e é o mesmo nas duas vias porque
+         o proxy serve exactamente o mesmo ficheiro. Ao mudar de versão, mudar
+         o URL, o netlify.toml E os hashes. -->
     <script
       src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"
+      integrity="sha384-SYKAG6cglRMN0RVvhNeBY0r3FYKNOJtznwA0v7B5Vp9tr31xAHsZC0DqkQ/pZDmj"
+      crossorigin="anonymous"
       defer
     ></script>
-    <script src="/maplibre-gl.js" defer></script>
-    <script src="https://unpkg.com/@turf/turf@7.2.0/turf.min.js" defer></script>
-    <script src="/turf.min.js" defer></script>
+    <script
+      src="/maplibre-gl.js"
+      integrity="sha384-SYKAG6cglRMN0RVvhNeBY0r3FYKNOJtznwA0v7B5Vp9tr31xAHsZC0DqkQ/pZDmj"
+      defer
+    ></script>
+    <script
+      src="https://unpkg.com/@turf/turf@7.2.0/turf.min.js"
+      integrity="sha384-ll8qH0IE3im19Dtlr1jtv5fdy+gm+0bx8T4+OYxPeJpc6PO1XLNFnyvdzaKJ78bU"
+      crossorigin="anonymous"
+      defer
+    ></script>
+    <script
+      src="/turf.min.js"
+      integrity="sha384-ll8qH0IE3im19Dtlr1jtv5fdy+gm+0bx8T4+OYxPeJpc6PO1XLNFnyvdzaKJ78bU"
+      defer
+    ></script>
 
     <!-- Menu global -->
     <script src="./menu.js" defer></script>

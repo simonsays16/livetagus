@@ -105,8 +105,14 @@
 
     try {
       return ctx.getImageData(0, 0, side, side);
-    } catch (_) {
-      // Canvas contaminado (imagem de outra origem): sem ícone.
+    } catch (e) {
+      // Canvas contaminado: a imagem veio de outra origem sem CORS. Sem ícone,
+      // fica o círculo — mas fica dito, senão é um marcador que desaparece
+      // sem explicação nenhuma.
+      console.warn(
+        "[MapaIcones] canvas contaminado ao compor um logótipo; fica o círculo.",
+        e && e.message,
+      );
       return null;
     }
   }
@@ -127,7 +133,16 @@
       }
       // Os logótipos são da mesma origem; isto só evita surpresas se algum dia
       // passarem a vir de um CDN.
-      img.crossOrigin = "anonymous";
+      // crossOrigin SÓ quando a imagem é mesmo de outra origem. Pedir CORS
+      // para um ficheiro da própria origem faz o pedido passar a modo "cors",
+      // e num PWA com service worker a resposta em cache pode não o satisfazer
+      // — o desenho falha ou o canvas fica contaminado e o getImageData atira.
+      // Em localhost não há service worker, o que é exactamente porque isto só
+      // aparecia em produção.
+      try {
+        if (new URL(url, location.href).origin !== location.origin)
+          img.crossOrigin = "anonymous";
+      } catch (_) {}
       img.onload = () => {
         // Um SVG sem width/height declarados reporta naturalWidth 0; o
         // drawImage com dimensões explícitas continua a funcionar desde que

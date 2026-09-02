@@ -46,7 +46,15 @@
   const PATH_HOLIDAYS = "/json/feriados.json";
   const PATH_CHANGES = "/json/changes.json";
 
-  const MAX_LIST = 40; // limite de seguranca (ambos os sentidos juntos)
+  const MAX_LIST = 40; // limite do que se MOSTRA (ambos os sentidos juntos)
+  // O modelo guarda mais do que se mostra. Com um filtro "a partir das XX:XX"
+  // activo, as primeiras 40 do dia podem ser todas anteriores a essa hora e a
+  // lista sairia vazia — o corte tem de ser feito DEPOIS de filtrar.
+  const MAX_MODEL = 160;
+  // Margem de transbordo, em minutos. A zero mostra as partidas a partir da
+  // hora de chegada, à letra. Qualquer valor acima disso é um palpite sobre
+  // quanto tempo se leva a mudar de cais, e varia de estação para estação.
+  const TRANSFER_MARGIN_MIN = 0;
 
   // ═══ ESTAÇÕES (Sul → Norte) ════════════════════════════════════════════════
   const STATIONS = [
@@ -110,6 +118,96 @@
   const BY_API_ID = Object.fromEntries(
     STATIONS.map((s) => [String(s.apiId), s]),
   );
+
+  // ── DESTINOS ──────────────────────────────────────────────────────────────
+  // O sentido deixou de ser "Lisboa / Margem" e passou a ser o destino real:
+  // Lisboa, Coina e Setúbal. A linha tem dois términos a sul, e a maioria dos
+  // comboios fica em Coina — dizer só "margem" escondia essa diferença, que é
+  // exactamente a que faz alguém perder ou não perder o comboio.
+  //
+  // As STATIONS estão ordenadas de Setúbal (0) a Roma-Areeiro (13), por isso a
+  // posição na linha diz tudo o que é preciso.
+  const COINA_IDX = 5; // ORDER_KEYS: setubal, palmela, venda_do_alcaide, pinhal_novo, penalva, coina, …
+
+  // "lisboa" | "setubal" | "coina" | "margem" (retorno curto antes de Coina)
+  function destGroup(dep) {
+    if (!dep) return null;
+    if (dep.direction !== "margem") return "lisboa";
+    const st = resolveStationByName(dep.destino);
+    const i = st ? ORDER_KEYS.indexOf(st.key) : -1;
+    if (i < 0) return "margem";
+    if (i === COINA_IDX) return "coina";
+    return i < COINA_IDX ? "setubal" : "margem";
+  }
+
+  // ── LIGAÇÕES NAS ESTAÇÕES ────────────────────────────────────────────────
+  // O percurso mostra, à frente de cada estação, os logótipos dos operadores
+  // com que se pode fazer ligação ali. Vem do mesmo ficheiro que o mapa usa.
+  const LIGACOES_JSON = "/json/ligacoes_atualizado.json";
+  // Um tipo sem logótipo conhecido simplesmente não aparece; e se o ficheiro
+  // não existir, a imagem é removida (ver bindLigacaoLogos).
+  const LIG_LOGOS = {
+    metro: { src: "/imagens/lig-logos/metro.svg", nome: "Metro de Lisboa" },
+    mts: { src: "/imagens/lig-logos/mts.svg", nome: "Metro Sul do Tejo" },
+    cp: { src: "/imagens/lig-logos/cp.svg", nome: "CP" },
+    cm: { src: "/imagens/lig-logos/cm-light.svg", nome: "Carris Metropolitana" },
+    carris: { src: "/imagens/lig-logos/carris.svg", nome: "Carris" },
+    re: { src: "/imagens/lig-logos/rede-expressos.svg", nome: "Rede Expressos" },
+    tcb: { src: "/imagens/lig-logos/tcb.svg", nome: "TCB" },
+  };
+
+  let ligacoesPorEstacao = null; // Map(chaveEstacao → ["metro","cm",…])
+  let ligacoesPromise = null;
+
+  function loadLigacoes() {
+    if (ligacoesPorEstacao) return Promise.resolve(ligacoesPorEstacao);
+    if (ligacoesPromise) return ligacoesPromise;
+    ligacoesPromise = fetch(LIGACOES_JSON)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        const m = new Map();
+        for (const id in data || {}) {
+          const e = data[id];
+          if (!e || !e.name || !e.ligacoes) continue;
+          const st = resolveStationByName(e.name);
+          if (!st) continue;
+          m.set(
+            st.key,
+            Object.keys(e.ligacoes).filter((t) => (e.ligacoes[t] || []).length),
+          );
+        }
+        ligacoesPorEstacao = m;
+        return m;
+      })
+      .catch((err) => {
+        console.warn("[Partidas] ligações indisponíveis:", err && err.message);
+        ligacoesPorEstacao = new Map();
+        return ligacoesPorEstacao;
+      });
+    return ligacoesPromise;
+  }
+
+  function ligacoesHtml(stationKey) {
+    if (!ligacoesPorEstacao || !stationKey) return "";
+    const tipos = ligacoesPorEstacao.get(stationKey) || [];
+    const imgs = tipos
+      .map((t) => LIG_LOGOS[t])
+      .filter(Boolean)
+      .map(
+        (l) =>
+          `<img class="ltp-lig-logo" src="${esc(l.src)}" alt="${esc(l.nome)}" title="${esc(l.nome)}" data-ltp-lig>`,
+      )
+      .join("");
+    return imgs ? `<span class="ltp-lig">${imgs}</span>` : "";
+  }
+
+  // Sem onerror inline (CSP): um logótipo em falta desaparece em vez de deixar
+  // o ícone partido do browser.
+  function bindLigacaoLogos(root) {
+    (root || document).querySelectorAll("[data-ltp-lig]").forEach((img) => {
+      img.addEventListener("error", function () { this.remove(); }, { once: true });
+    });
+  }
 
   function resolveStationByApiId(id) {
     return BY_API_ID[String(id)] || null;
@@ -529,7 +627,7 @@
     model.items = Array.from(base.values())
       .filter((d) => !d._drop)
       .sort((a, b) => a.ts - b.ts)
-      .slice(0, MAX_LIST);
+      .slice(0, MAX_MODEL);
     if (!endpointOk && !navigator.onLine) model.offline = true;
     return model;
   }
@@ -578,6 +676,20 @@
   }
 
   // ═══ CSS INJETADO (.ltp-*) ══════════════════════════════════════════════════
+  const SVG_CLOCK =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+  const SVG_X_SMALL =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" width="12" height="12"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+
+  function fmtHM(ts) {
+    const d = new Date(ts);
+    return (
+      String(d.getHours()).padStart(2, "0") +
+      ":" +
+      String(d.getMinutes()).padStart(2, "0")
+    );
+  }
+
   function injectStyles() {
     if (document.getElementById("ltp-styles")) return;
     const css = `
@@ -591,6 +703,14 @@
 html.dark .ltp-dir{border-color:rgb(39,39,42);color:rgb(161,161,170)}
 .ltp-dir[aria-pressed="true"]{background:rgb(24,24,27);border-color:rgb(24,24,27);color:#fff}
 html.dark .ltp-dir[aria-pressed="true"]{background:rgb(244,244,245);border-color:rgb(244,244,245);color:rgb(9,9,11)}
+/* Segundo nível de Coina: mesma selecção, mas apertada. O anel distingue-o do
+   primeiro toque sem precisar de ler o texto. */
+.ltp-dir-strict{box-shadow:0 0 0 2px rgba(24,24,27,.25)}
+html.dark .ltp-dir-strict{box-shadow:0 0 0 2px rgba(244,244,245,.3)}
+/* Três destinos em vez de dois: os nomes são curtos, mas o Setúbal não pode
+   partir a linha em ecrãs estreitos. */
+.ltp-dir{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:360px){.ltp-dir{letter-spacing:.12em;padding-left:.25rem;padding-right:.25rem}}
 
 /* Cabeçalho de grupo por sentido */
 .ltp-group{margin-bottom:2rem}
@@ -665,6 +785,11 @@ html.dark .ltp-warn.enc{color:rgb(252,165,165)}
 
 /* Banners de estado */
 .ltp-bar{display:flex;align-items:center;gap:.6rem;padding:.6rem 1rem;margin-bottom:1.25rem;font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgb(82,82,91);background:rgba(244,244,245,.7);border:1px solid rgb(228,228,231);border-radius:8px}
+.ltp-bar-from{color:rgb(29,78,216);background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.35)}
+html.dark .ltp-bar-from{color:rgb(147,197,253);background:rgba(59,130,246,.12);border-color:rgba(59,130,246,.3)}
+.ltp-bar-from span{flex:1;min-width:0}
+.ltp-from-x{flex-shrink:0;width:26px;height:26px;margin:-.3rem -.5rem -.3rem 0;display:inline-flex;align-items:center;justify-content:center;border:0;background:transparent;color:inherit;opacity:.7;cursor:pointer;border-radius:9999px}
+.ltp-from-x:hover{opacity:1;background:rgba(59,130,246,.14)}
 html.dark .ltp-bar{color:rgb(212,212,216);background:rgba(24,24,27,.6);border-color:rgb(39,39,42)}
 
 /* Vazio / manutenção */
@@ -691,25 +816,52 @@ html.dark .ltp-sheet{background:#09090b}
 .ltp-grab span{width:36px;height:4px;border-radius:99px;background:rgb(212,212,216)}
 html.dark .ltp-grab span{background:rgb(63,63,70)}
 .ltp-sh-head{padding:.5rem 1.4rem 1.1rem;border-bottom:1px solid rgb(244,244,245);flex-shrink:0}
+/* No mesmo painel não há sheet: sem margens laterais próprias e com o botão de
+   voltar em vez da cruz. */
+.ltp-sh-head.inline{padding:0 0 1rem}
+.ltp-back{display:inline-flex;align-items:center;gap:6px;background:none;border:0;padding:0;margin-bottom:.7rem;font:inherit;font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgb(113,113,122);cursor:pointer}
+.ltp-back:hover{color:rgb(9,9,11)}
+html.dark .ltp-back:hover{color:#fff}
+.ltp-route .ltp-sh-body{padding:1.2rem 0 .5rem;overflow:visible}
 html.dark .ltp-sh-head{border-bottom-color:rgb(24,24,27)}
 .ltp-sh-close{position:absolute;right:1rem;top:.9rem;width:38px;height:38px;display:flex;align-items:center;justify-content:center;color:rgb(161,161,170);background:transparent;border:0;cursor:pointer}
 .ltp-sh-body{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:1.2rem 1.4rem 2rem}
 .ltp-stop{display:grid;grid-template-columns:auto 14px 1fr auto;align-items:center;gap:.7rem;padding:.45rem 0;position:relative}
+/* Trilho vertical: cinzento no que já passou, a cor do comboio no que falta. */
+.ltp-stop::before{content:"";position:absolute;left:calc(var(--ltp-time-w,3.1rem) + .7rem + 6px);top:0;bottom:0;width:2px;background:rgb(228,228,231);z-index:0}
+html.dark .ltp-stop::before{background:rgb(39,39,42)}
+.ltp-stop.todo::before{background:var(--ltp-trip,#10b981)}
+.ltp-stop:first-child::before{top:50%}
+.ltp-stop:last-child::before{bottom:50%}
+.ltp-stop.todo .ltp-stop-dot{border-color:var(--ltp-trip,#10b981)}
+/* Logótipos das ligações, à frente do nome. */
+.ltp-lig{display:inline-flex;align-items:center;gap:4px;margin-left:.45rem;vertical-align:middle}
+.ltp-lig-logo{width:14px;height:14px;object-fit:contain;display:block;border-radius:3px;background:#fff;padding:1px;box-shadow:0 0 0 1px rgba(0,0,0,.12)}
+.ltp-stop.past .ltp-lig{opacity:.45}
 .ltp-stop-time{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:13px;font-variant-numeric:tabular-nums;color:rgb(82,82,91)}
 html.dark .ltp-stop-time{color:rgb(161,161,170)}
 .ltp-stop-dot{width:9px;height:9px;border-radius:50%;border:2px solid rgb(212,212,216);background:#fff;z-index:1}
 html.dark .ltp-stop-dot{background:#09090b;border-color:rgb(63,63,70)}
-.ltp-stop-name{font-size:13px;color:rgb(39,39,42);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ltp-stop-name{font-size:13px;color:rgb(39,39,42);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+/* O risco é só no texto: sem isto, atravessava também os logótipos. */
+.ltp-stop.past .ltp-stop-name{text-decoration:none}
+.ltp-stop.past .ltp-stop-name>span.ltp-lig{text-decoration:none}
 html.dark .ltp-stop-name{color:rgb(212,212,216)}
 .ltp-stop-delay{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;font-weight:700}
-.ltp-stop.past .ltp-stop-name,.ltp-stop.past .ltp-stop-time{color:rgb(161,161,170);text-decoration:line-through;text-decoration-thickness:.5px}
+.ltp-stop.past .ltp-stop-time{color:rgb(161,161,170);text-decoration:line-through;text-decoration-thickness:.5px}
+.ltp-stop.past .ltp-stop-name{color:rgb(161,161,170)}
+.ltp-stop.past .ltp-stop-name .ltp-nm{text-decoration:line-through;text-decoration-thickness:.5px}
 html.dark .ltp-stop.past .ltp-stop-name,html.dark .ltp-stop.past .ltp-stop-time{color:rgb(82,82,91)}
 .ltp-stop.past .ltp-stop-dot{background:rgb(161,161,170);border-color:rgb(161,161,170)}
 .ltp-stop.cur .ltp-stop-dot{background:#10b981;border-color:#10b981;box-shadow:0 0 0 4px rgba(16,185,129,.18)}
+/* Depois da estação seleccionada: o resto do percurso de quem está a ler. */
+.ltp-stop.after .ltp-stop-dot{background:#3b82f6;border-color:#3b82f6}
+.ltp-stop.after .ltp-stop-name{color:rgb(24,24,27)}
+html.dark .ltp-stop.after .ltp-stop-name{color:rgb(228,228,231)}
 .ltp-stop.cur .ltp-stop-name{color:rgb(24,24,27);font-weight:700}
 html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
 .ltp-stop.skip{opacity:.85}
-.ltp-stop.skip .ltp-stop-time,.ltp-stop.skip .ltp-stop-name{color:rgb(161,161,170);text-decoration:line-through;text-decoration-color:rgba(245,158,11,.6)}
+.ltp-stop.skip .ltp-stop-time,.ltp-stop.skip .ltp-nm{color:rgb(161,161,170);text-decoration:line-through;text-decoration-color:rgba(245,158,11,.6)}
 .ltp-stop.skip .ltp-stop-dot{background:transparent;border-color:rgba(245,158,11,.6)}
 .ltp-stop-skip{font-size:8px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#f59e0b;white-space:nowrap}
 @media(prefers-reduced-motion:reduce){.ltp-live-dot.pulse,.ltp-skel{animation:none!important}}
@@ -1016,7 +1168,7 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
   }
 
   // Render do percurso (cases 2 e 3) numa sheet.
-  function renderRouteSheet(dep, nodes, station) {
+  function renderRouteSheet(dep, nodes, station, inline) {
     const noNet = !navigator.onLine;
     const { bars, n, occ } = carBars(dep, noNet);
     const stationApiId = station ? String(station.apiId) : null;
@@ -1051,12 +1203,17 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
       `<div class="ltp-stop skip">
           <span class="ltp-stop-time">${esc(s.hora || "--:--")}</span>
           <span class="ltp-stop-dot"></span>
-          <span class="ltp-stop-name">${esc(s.name)}</span>
+          <span class="ltp-stop-name"><span class="ltp-nm">${esc(s.name)}</span></span>
           <span class="ltp-stop-skip">Não passa</span>
         </div>`;
 
     let skipPtr = 0;
     let stops = "";
+    let restante = false; // já apanhámos a primeira estação por passar?
+    // Depois da estação onde a pessoa está, o que vem é a viagem DELA. Essas
+    // ficam com a bola azul: o trilho colorido diz o que falta ao comboio, a
+    // bola azul diz o que falta a quem o vai apanhar aqui.
+    let depoisDaMinha = false;
     (nodes || []).forEach((nd) => {
       const st = resolveStationByApiName(nd.NomeEstacao);
       const servedOrder = st ? orderIdx(st.key) : -1;
@@ -1089,10 +1246,17 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
       else if (!dep.suppressed && dly != null && dly <= -1)
         dh = `<span class="ltp-stop-delay" style="color:#059669">${dly}</span>`;
       const nm = st ? st.name : (nd.NomeEstacao || "").replace(/-A$/, "");
-      stops += `<div class="ltp-stop ${past ? "past" : ""} ${cur ? "cur" : ""}">
+      // A cor acompanha o que FALTA fazer: assim que aparece a primeira
+      // estação por passar, o trilho acende até ao fim.
+      if (!past) restante = true;
+      const minhaViagem = depoisDaMinha;
+      if (cur) depoisDaMinha = true; // a partir da SEGUINTE
+      stops += `<div class="ltp-stop ${past ? "past" : ""} ${cur ? "cur" : ""} ${
+        restante ? "todo" : ""
+      } ${minhaViagem ? "after" : ""}">
           <span class="ltp-stop-time">${esc(time)}</span>
           <span class="ltp-stop-dot"></span>
-          <span class="ltp-stop-name">${esc(nm)}</span>
+          <span class="ltp-stop-name"><span class="ltp-nm">${esc(nm)}</span>${ligacoesHtml(st && st.key)}</span>
           ${dh}
         </div>`;
     });
@@ -1118,12 +1282,27 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
       bTxt = `Atraso ${dep.delayMin} min`;
     }
 
+    const ACCENT = {
+      green: "#10b981",
+      yellow: "#f59e0b",
+      orange: "#f97316",
+      red: "#ef4444",
+      gray: "#d4d4d8",
+    };
+    const cor = ACCENT[dep.dotStatus] || ACCENT.green;
+
     return `
-      <div class="ltp-grab" data-ltp-grab><span></span></div>
-      <div class="ltp-sh-head" style="position:relative">
-        <button class="ltp-sh-close" data-ltp-sheet-close aria-label="Fechar">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
+      ${inline ? "" : `<div class="ltp-grab" data-ltp-grab><span></span></div>`}
+      <div class="ltp-sh-head ${inline ? "inline" : ""}" style="position:relative">
+        ${
+          inline
+            ? `<button class="ltp-back" data-ltp-route-back>
+                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="m15 18-6-6 6-6"/></svg>
+                 <span>Partidas</span></button>`
+            : `<button class="ltp-sh-close" data-ltp-sheet-close aria-label="Fechar">
+                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+               </button>`
+        }
         <div style="display:flex;align-items:baseline;gap:.6rem;margin-bottom:.55rem">
           <span class="ltp-num" style="font-size:11px;color:rgb(161,161,170)">#${esc(dep.numero || dep.id)}</span>
           <span class="ltp-badge ${bCls}">${esc(bTxt)}</span>
@@ -1137,14 +1316,14 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
         </div>
         ${warnHtml(dep)}
       </div>
-      <div class="ltp-sh-body">
+      <div class="ltp-sh-body" style="--ltp-trip:${esc(cor)}">
         <p style="font-size:9px;font-weight:800;letter-spacing:.28em;text-transform:uppercase;color:rgb(161,161,170);margin-bottom:.85rem">Percurso</p>
         ${stops || `<p style="font-size:11px;color:rgb(161,161,170)">Sem paragens disponíveis.</p>`}
       </div>`;
   }
 
   // Resolve o percurso completo conforme o caso (2 ou 3) e abre a sheet.
-  async function openTrainDetail(dep, station) {
+  async function openTrainDetail(dep, station, onRoute) {
     // 2) Extra não-vivo → /fertagus
     // 3) Normal não-vivo → JSON de horários
     let nodes = null;
@@ -1191,10 +1370,52 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
       }
     }
     if (!nodes && dep.node) nodes = [dep.node];
-    openSheet(renderRouteSheet(dep, nodes || [], station));
+    // As ligações são precisas para desenhar os logótipos; se falharem, o
+    // percurso aparece na mesma, só sem eles.
+    await loadLigacoes();
+    const html = renderRouteSheet(dep, nodes || [], station, !!onRoute);
+    // Com callback, o percurso substitui o conteúdo do painel — como acontece
+    // no Metro, no MTS e na CP. Sem callback (quem ainda chame isto por fora),
+    // mantém-se a sheet antiga.
+    if (onRoute) onRoute(html);
+    else openSheet(html);
+  }
+
+
+  // Ao trocar de vista, o painel tem de voltar ao topo. O elemento que faz
+  // scroll não é sempre o mesmo — no mapa é a sheet, na página /estacao é a
+  // própria janela, e o #details-panel também tem overflow próprio — por isso
+  // sobe-se a árvore a repor todos os que rolam.
+  function scrollAoTopo(el) {
+    let n = el;
+    let saltos = 0;
+    while (n && n.nodeType === 1 && saltos < 12) {
+      if (n.scrollTop > 0) n.scrollTop = 0;
+      n = n.parentElement;
+      saltos++;
+    }
+    try {
+      if (window.scrollY > 0) window.scrollTo({ top: 0, behavior: "auto" });
+    } catch (_) {}
   }
 
   // ═══ CONTROLLER / MOUNT ═════════════════════════════════════════════════════
+  // Compatibilidade com quem ainda passa { lisboa, margem }.
+  function initialDest(df) {
+    if (!df) return null;
+    const l = df.lisboa !== false;
+    const m = df.margem !== false;
+    if (l && !m) return "lisboa";
+    if (m && !l) return "coina"; // sul, no sentido lato
+    return null;
+  }
+
+  const DEST_BTNS = [
+    { id: "lisboa", label: "Lisboa" },
+    { id: "coina", label: "Coina" },
+    { id: "setubal", label: "Setúbal" },
+  ];
+
   function mount(opts) {
     injectStyles();
     const container = opts.container;
@@ -1209,10 +1430,21 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
       station,
       model: null,
       maintenanceMode: null,
-      directionFilter: Object.assign(
-        { lisboa: true, margem: true },
-        opts.directionFilter || {},
-      ),
+      // Um destino selecionado de cada vez (null = todos). O "strict" só tem
+      // significado em Coina, que é o único com dois níveis: primeiro toque =
+      // tudo o que vai para sul, segundo = só os que terminam em Coina.
+      dest: initialDest(opts.directionFilter),
+      destStrict: false,
+      // Filtro "a partir de": epoch em ms, ou null. Vem de quem abriu o painel
+      // — por exemplo, ao tocar na ligação à Fertagus a meio de uma viagem da
+      // CP, para mostrar só o que se apanha à chegada.
+      fromTs:
+        typeof opts.fromTime === "number" && isFinite(opts.fromTime)
+          ? opts.fromTime + TRANSFER_MARGIN_MIN * 60000
+          : null,
+      // Percurso a ocupar o painel, em vez da lista de partidas.
+      routeHtml: null,
+      _routeBuilt: false,
       _timer: null,
       _destroyed: false,
       _built: false,
@@ -1229,36 +1461,101 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
     function handleClick(dep) {
       if (!dep) return;
       if (dep.live) return onLive(dep); // caso 1
-      return openTrainDetail(dep, station); // casos 2/3
+      // Casos 2/3: o percurso substitui a lista no MESMO painel, com um botão
+      // para voltar — em vez de abrir uma segunda sheet por cima.
+      return openTrainDetail(dep, station, showRoute);
+    }
+
+    function showRoute(html) {
+      if (ctrl._destroyed) return;
+      ctrl.routeHtml = html;
+      ctrl._built = false; // a lista vai ter de ser reconstruída ao voltar
+      paintRoute();
+    }
+
+    function backToList() {
+      ctrl.routeHtml = null;
+      ctrl._routeBuilt = false;
+      paint();
+      scrollAoTopo(container);
+    }
+
+    function paintRoute() {
+      container.innerHTML = `<div class="ltp-wrap ltp-route">${ctrl.routeHtml}</div>`;
+      ctrl._routeBuilt = true;
+      const b = container.querySelector("[data-ltp-route-back]");
+      if (b) b.addEventListener("click", backToList);
+      bindLigacaoLogos(container);
+      scrollAoTopo(container);
     }
 
     // Sequência desejada (lista única ordenada por hora, conforme filtro).
+    // Um comboio passa o filtro se:
+    //   Lisboa   → vai para norte
+    //   Coina    → vai para sul (Coina, Setúbal ou retorno curto)
+    //   Coina²   → termina mesmo em Coina
+    //   Setúbal  → termina em Setúbal ou para lá dele
+    function matchesDest(d) {
+      if (!ctrl.dest) return true;
+      const g = destGroup(d);
+      if (ctrl.dest === "lisboa") return g === "lisboa";
+      if (ctrl.dest === "setubal") return g === "setubal";
+      // coina
+      return ctrl.destStrict ? g === "coina" : g !== "lisboa";
+    }
+
     function desiredDeps() {
       const m = ctrl.model;
       if (!m) return [];
-      const df = ctrl.directionFilter;
-      return m.items.filter((d) => df[d.direction]);
+      let out = m.items.filter(matchesDest);
+      // O filtro de hora é aplicado ANTES do corte, senão as 40 primeiras do
+      // dia podiam ser todas anteriores à hora pedida.
+      if (ctrl.fromTs) out = out.filter((d) => d.ts >= ctrl.fromTs);
+      return out.slice(0, MAX_LIST);
     }
 
     function buildShell() {
       container.innerHTML = `
         <div class="ltp-wrap">
+          <div data-ltp-from></div>
           <div data-ltp-state></div>
-          <div class="ltp-filter">
-            <button class="ltp-dir" data-ltp-dir-btn="lisboa" aria-pressed="${!!ctrl.directionFilter.lisboa}">← Sentido Lisboa</button>
-            <button class="ltp-dir" data-ltp-dir-btn="margem" aria-pressed="${!!ctrl.directionFilter.margem}">Sentido Margem →</button>
+          <div class="ltp-filter" role="group" aria-label="Filtrar por destino">
+            ${DEST_BTNS.map(
+              (b) =>
+                `<button class="ltp-dir" data-ltp-dir-btn="${b.id}" aria-pressed="false">
+                   <span data-ltp-dir-label>${esc(b.label)}</span>
+                 </button>`,
+            ).join("")}
           </div>
           <div class="ltp-list" data-ltp-list></div>
           <div class="ltp-foot" data-ltp-foot></div>
         </div>`;
 
+      // Cruz da barra "a partir de": volta a mostrar tudo.
+      container.addEventListener("click", (e) => {
+        if (!e.target.closest("[data-ltp-from-clear]")) return;
+        ctrl.fromTs = null;
+        updateFromBar();
+        paint();
+      });
+
       // Filtro — toggle + reconciliar (sem rebuild).
       container.querySelectorAll("[data-ltp-dir-btn]").forEach((b) => {
         b.addEventListener("click", () => {
           const d = b.dataset.ltpDirBtn;
-          ctrl.directionFilter[d] = !ctrl.directionFilter[d];
-          if (!ctrl.directionFilter.lisboa && !ctrl.directionFilter.margem)
-            ctrl.directionFilter[d] = true;
+          if (ctrl.dest !== d) {
+            // Carregar num destino selecciona-o, não acumula com o anterior.
+            ctrl.dest = d;
+            ctrl.destStrict = false;
+          } else if (d === "coina" && !ctrl.destStrict) {
+            // Segundo toque seguido em Coina: só os que terminam lá.
+            ctrl.destStrict = true;
+          } else {
+            // Terceiro toque (ou segundo nos outros): volta a mostrar tudo, para
+            // haver sempre saída pelo mesmo botão.
+            ctrl.dest = null;
+            ctrl.destStrict = false;
+          }
           paint();
         });
       });
@@ -1284,6 +1581,24 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
       ctrl._built = true;
     }
 
+    // Barra "Partidas a partir das XX:XX". Só aparece se a hora ainda estiver
+    // à frente: filtrar por uma hora já passada não esconde nada, e a barra
+    // seria ruído.
+    function updateFromBar() {
+      const el = container.querySelector("[data-ltp-from]");
+      if (!el) return;
+      const activo = ctrl.fromTs && ctrl.fromTs > Date.now() + 60000;
+      const html = activo
+        ? `<div class="ltp-bar ltp-bar-from">
+             ${SVG_CLOCK}
+             <span>Partidas a partir das ${fmtHM(ctrl.fromTs)}</span>
+             <button type="button" class="ltp-from-x" data-ltp-from-clear="1"
+               aria-label="Mostrar todas as partidas" title="Mostrar todas">${SVG_X_SMALL}</button>
+           </div>`
+        : "";
+      if (el.innerHTML !== html) el.innerHTML = html;
+    }
+
     function updateState() {
       const stateEl = container.querySelector("[data-ltp-state]");
       if (!stateEl) return;
@@ -1297,7 +1612,39 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
     }
     function updateFilterPressed() {
       container.querySelectorAll("[data-ltp-dir-btn]").forEach((b) => {
-        const v = ctrl.directionFilter[b.dataset.ltpDirBtn] ? "true" : "false";
+        const id = b.dataset.ltpDirBtn;
+        const escolhido = ctrl.dest === id;
+        // O primeiro toque em Coina mostra tudo o que vai para sul, o que
+        // inclui os comboios para Setúbal — por isso o Setúbal também aparece
+        // aceso. Não é o destino escolhido, é um destino incluído: carregar
+        // nele aperta para só Setúbal, em vez de desligar.
+        const incluido =
+          id === "setubal" && ctrl.dest === "coina" && !ctrl.destStrict;
+        const on = escolhido || incluido;
+        // O estado restrito tem de se ver: sem isto os dois níveis de Coina
+        // eram indistinguíveis e o segundo toque parecia não fazer nada.
+        const strict = escolhido && id === "coina" && ctrl.destStrict;
+        const lbl = b.querySelector("[data-ltp-dir-label]");
+        if (lbl) {
+          const txt = strict ? "Só Coina" : DEST_BTNS.find((x) => x.id === id).label;
+          if (lbl.textContent !== txt) lbl.textContent = txt;
+        }
+        b.classList.toggle("ltp-dir-strict", !!strict);
+        b.classList.toggle("ltp-dir-incluido", !!incluido);
+        const nome = DEST_BTNS.find((x) => x.id === id).label;
+        b.setAttribute(
+          "title",
+          incluido
+            ? "Incluído no sentido sul · toca para ver só Setúbal"
+            : escolhido
+              ? strict
+                ? "A mostrar só os que terminam em Coina · toca para ver todos"
+                : id === "coina"
+                  ? "A mostrar tudo para sul · toca para ver só os que terminam em Coina"
+                  : "A mostrar só " + nome + " · toca para ver todos"
+              : "Ver só " + nome,
+        );
+        const v = on ? "true" : "false";
         if (b.getAttribute("aria-pressed") !== v)
           b.setAttribute("aria-pressed", v);
       });
@@ -1321,6 +1668,10 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
 
     function paint() {
       if (ctrl._destroyed) return;
+      if (ctrl.routeHtml) {
+        if (!ctrl._routeBuilt) paintRoute();
+        return;
+      }
       if (ctrl.maintenanceMode) {
         if (!ctrl._maintBuilt) paintMaintenance();
         return;
@@ -1328,6 +1679,7 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
       ctrl._maintBuilt = false;
       if (!ctrl._built) buildShell();
 
+      updateFromBar();
       updateState();
       updateFilterPressed();
 
@@ -1342,6 +1694,21 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
           ? `${deps.length} ${deps.length === 1 ? "partida" : "partidas"}`
           : "";
         if (footEl.textContent !== txt) footEl.textContent = txt;
+      }
+
+      // Lista vazia por causa do filtro é diferente de não haver serviço: a
+      // pessoa tem de perceber que o botão para ver tudo está ali em cima.
+      if (!deps.length && ctrl.fromTs && listEl) {
+        const total = (ctrl.model ? ctrl.model.items : []).filter(
+          matchesDest,
+        ).length;
+        listEl.innerHTML = `<div class="ltp-empty">
+          <p class="ltp-empty-t">Sem partidas depois das ${esc(fmtHM(ctrl.fromTs))}</p>
+          <p class="ltp-empty-s">${
+            total
+              ? "Há partidas mais cedo. Fecha o aviso em cima para as ver."
+              : "Não há mais partidas hoje a partir desta estação."
+          }</p></div>`;
       }
     }
 
@@ -1375,17 +1742,33 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
     if (autoMs > 0) {
       ctrl._timer = setInterval(() => {
         if (document.hidden) return;
+        // Com o percurso aberto, actualizar em silêncio: um repaint da lista
+        // por cima dele tirava a pessoa de onde estava.
+        if (ctrl.routeHtml) return;
         refresh(false);
       }, autoMs);
     }
 
+    loadLigacoes(); // em paralelo: só é preciso ao abrir um percurso
     buildShell();
     refresh(false);
 
     ctrl.refresh = refresh;
+    ctrl.backToList = backToList;
     ctrl.destroy = destroy;
     ctrl.paint = paint;
     ctrl.el = container;
+    // Permite acender ou apagar o filtro sem voltar a montar o painel.
+    ctrl.setFromTime = function (ts) {
+      ctrl.fromTs =
+        typeof ts === "number" && isFinite(ts)
+          ? ts + TRANSFER_MARGIN_MIN * 60000
+          : null;
+      if (ctrl._built) {
+        updateFromBar();
+        paint();
+      }
+    };
     return ctrl;
   }
 

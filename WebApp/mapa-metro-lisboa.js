@@ -166,30 +166,40 @@
     function injectStyles() {
       if (document.getElementById("lt-mapview-styles")) return;
       const css = `
+        /* Mesmo visual do botão "perto de mim" (mapa-perto.js): faz parte da
+           mesma pilha no canto superior direito, e o "top" é atribuído pelo
+           MapaPerto.layout(). O fallback do top serve para o caso de o
+           mapa-perto.js não estar carregado. */
         .lt-eye-btn {
-          position: absolute; left: 1rem; bottom: 8rem; z-index: 10;
-          width: 42px; height: 42px;
+          position: fixed; right: .75rem;
+          top: calc(env(safe-area-inset-top, 0px) + 4.75rem);
+          z-index: 15; width: 42px; height: 42px;
           display: inline-flex; align-items: center; justify-content: center;
-          border: 1px solid rgb(228 228 231); background: rgba(255,255,255,.9);
-          -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
-          border-radius: .125rem; box-shadow: 0 1px 2px rgba(0,0,0,.05);
-          color: rgb(63 63 70); cursor: pointer;
-          transition: background .2s, border-color .2s, color .2s, box-shadow .2s, transform .15s;
+          border: 1px solid rgba(228,228,231,.5);
+          background: rgba(255,255,255,.8);
+          -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+          border-radius: 9999px; box-shadow: 0 1px 2px rgba(0,0,0,.06);
+          color: #18181b; cursor: pointer;
+          transition: box-shadow .2s ease, transform .15s ease, background .2s ease;
         }
-        html.dark .lt-eye-btn { border-color: rgb(39 39 42); background: rgba(9,9,11,.9); color: rgb(212 212 216); }
-        .lt-eye-btn:hover { box-shadow: 0 2px 12px rgba(0,0,0,.1); }
-        html.dark .lt-eye-btn:hover { box-shadow: 0 2px 12px rgba(0,0,0,.4); }
+        html.dark .lt-eye-btn {
+          border-color: rgba(255,255,255,.06);
+          background: rgba(9,9,11,.8); color: #fff;
+        }
+        .lt-eye-btn:hover { box-shadow: 0 4px 12px rgba(0,0,0,.1); }
         .lt-eye-btn:active { transform: scale(.94); }
         .lt-eye-btn svg { width: 1.05rem; height: 1.05rem; }
 
         .lt-eye-menu {
-          position: absolute; left: 1rem; bottom: 11rem; z-index: 11; width: 14rem;
+          position: fixed; right: .75rem; z-index: 16; width: 14rem;
           border: 1px solid rgb(228 228 231); background: rgba(255,255,255,.97);
           -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
-          border-radius: .25rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,.15);
+          border-radius: .75rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,.15);
           padding: .75rem;
         }
         html.dark .lt-eye-menu { border-color: rgb(39 39 42); background: rgba(9,9,11,.97); }
+        /* Sem o top do MapaPerto.layout(), o menu cai por baixo do botão. */
+        .lt-eye-menu:not([style*="top"]) { top: calc(env(safe-area-inset-top, 0px) + 8.25rem); }
         .lt-eye-menu.lt-hidden { display: none; }
         .lt-eye-title { font-size: 9px; font-weight: 700; letter-spacing: .3em; text-transform: uppercase; color: #71717a; margin: 0 0 .5rem .25rem; }
         .lt-eye-row {
@@ -247,9 +257,13 @@
 
       host.appendChild(btn);
       host.appendChild(menuEl);
+      // Entra na pilha de botões flutuantes; o MapaPerto decide as posições.
+      if (window.MapaPerto && window.MapaPerto.layout) window.MapaPerto.layout();
 
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
+        // Reposiciona antes de mostrar: o header pode ter mudado de altura.
+        if (window.MapaPerto && window.MapaPerto.layout) window.MapaPerto.layout();
         menuEl.classList.toggle("lt-hidden");
       });
       menuEl.querySelectorAll("[data-view-group]").forEach((row) => {

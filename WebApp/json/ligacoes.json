@@ -1,0 +1,749 @@
+{
+    "9468122": {
+        "name" : "Setúbal",
+        "ligacoes": {
+            "cm": [
+                {
+                    "type": "bus",
+                    "operator": "Carris Metropolitana"
+                },
+                {
+                    "line": 4422,
+                    "name": "Setúbal (Bairro Camolas) - Setúbal (Casal Figueiras) via Bairro do Viso",
+                    "way": 2,
+                    "stop-id-1": 160068,
+                    "stop-id-2": 160095
+                },
+                {
+                    "line": 4431,
+                    "name": "Setúbal (ITS) - Setúbal (Quinta Varzinha)",
+                    "way": 1,
+                    "stop-id": 160095
+                },
+                {
+                    "line": 4428,
+                    "name": "Setúbal (Casal Figueiras) - Vale Ana Gomes",
+                    "way": 2,
+                    "stop-id-1": 160068,
+                    "stop-id-2": 160095
+                },
+                {
+                    "line": 4512
+                },
+                {
+                    "line": 4517
+                },
+                {
+                    "line": 4720
+                },
+                {
+                    "line": 4715
+                },
+                {
+                    "line": 4547
+                },
+                {
+                    "line": 4549
+                },
+                {
+                    "line": 4453
+                },
+                {
+                    "line": 3605
+                },
+                {
+                    "line": 4411
+                }
+            ],
+            "cp": [
+                {
+                    "type": "train",
+                    "operator": "CP"
+                },
+                { 
+                    "line": "Sado"
+                }
+            ]
+        }
+    },
+    "9468098": {
+        "name" : "Palmela",
+        "ligacoes": {
+            "cm": [
+                {
+                    "type": "bus",
+                    "operator": "Carris Metropolitana"
+                },
+                {
+                    "line": 4305,
+                    "name": "Brejos do Assa - Palmela (Terminal)",
+                    "way": 2,
+                    "stop-id-1": 130009,
+                    "stop-id-2": 130009
+                },
+                {
+                    "line": 4524,
+                    "name": "Palmela (Terminal) - Pegões",
+                    "way": 2,
+                    "stop-id-1": 130009,
+                    "stop-id-2": 130009
+                },
+                {
+                    "line": 4302
+                },
+                {
+                    "line": 4307
+                },
+                {
+                    "line": 4562
+                }
+            ],
+            "cp": [
+                {
+                    "type": "train",
+                    "operator": "CP"
+                },
+                { 
+                    "line": "Sado"
+                }
+            ]
+        }
+    },
+    "9468049": {
+        "name" : "Venda do Alcaite",
+        "ligacoes": {
+            "cm": [
+                {
+                    "type": "bus",
+                    "operator": "Carris Metropolitana"
+                },
+                {
+                    "line": 4308,
+                    "stop-id": 130213
+                },
+                {
+                    "line": 4322,
+                    "stop-id": 130213
+                }
+            ],
+            "cp": [
+                {
+                    "type": "train",
+                    "operator": "CP"
+                },
+                { 
+                    "line": "Sado"
+                }
+            ]
+        }
+    },
+    "9468007": {
+        "name" : "Pinhal Novo",
+        "ligacoes": {
+            "cm": [
+                {
+                    "type": "bus",
+                    "operator": "Carris Metropolitana"
+                },
+                {
+                    "line": 4308,
+                    "name": "Pinhal Novo (Estação)",
+                    "way": 1,
+                    "stop-id": 130228
+                },
+                {
+                    "line": 4320
+                },
+                {
+                    "line": 4321
+                },
+                {
+                    "line": 4322
+                },
+                {
+                    "line": 4512
+                },
+                {
+                    "line": 4530
+                }
+            ],
+            "cp": [
+                {
+                    "type": "train",
+                    "operator": "CP"
+                },
+                { 
+                    "line": "Sado"
+                }
+            ]
+        }
+    },
+    "9417095": {
+        "name" : "Penalva",
+        "ligacoes": {
+            "cm": [
+                {
+                    "type": "bus",
+                    "operator": "Carris Metropolitana"
+                },
+                {
+                    "line": 4304
+                },
+                {
+                    "line": 4313
+                },
+                {
+                    "line": 4611
+                },
+                {
+                    "line": 4612
+                }
+            ]
+        }
+    },
+    "9417236": {
+        "name" : "Coina",
+        "ligacoes": {
+            "cm": [
+                {
+                    "type": "bus",
+                    "operator": "Carris Metropolitana"
+                },
+                {
+                    "line": 3106
+                },
+                {
+                    "line": 3540
+                },
+                {
+                    "line": 3541
+                },
+                {
+                    "line": 3542
+                },
+                {
+                    "line": 3544
+                },
+                {
+                    "line": 3543
+                },
+                {
+                    "line": 3543
+                },
+                {
+                    "line": 3620
+                },
+                {
+                    "line": 3626
+                },
+                {
+                    "line": 3635
+                },
+                {
+                    "line": 4632
+                },
+                {
+                    "line": 3620
+                },
+                {
+                    "line": 4620
+                },
+                {
+                    "line": 4621
+                },
+                {
+                    "line": 3543
+                },
+                {
+                    "line": 3626
+                },
+                {
+                    "line": 4632
+                },
+                {
+                    "line": 3635,
+                    "name": "Sesimbra (Terminal) (Via Sampaio)",
+                    "stop-id": "043343"
+                }
+            ],
+            "tcb": [
+                {
+                    "type": "bus",
+                    "operator": "Transportes Coletivos do Barreiro"
+                },
+                { 
+                    "line": "6"
+                },
+                { 
+                    "line": "10"
+                },
+                { 
+                    "line": "16"
+                }
+            ]
+        }
+    },
+    "9417186": {
+        "name" : "Fogueteiro",
+        "ligacoes": {
+            "cm": [
+                {
+                    "type": "bus",
+                    "operator": "Carris Metropolitana"
+                },
+                {
+                    "line": 3535
+                },
+                {
+                    "line": 3546
+                },
+                {
+                    "line": 3547
+                },
+                {
+                    "line": 3109
+                },
+                {
+                    "line": 3110
+                },
+                {
+                    "line": 3122
+                },
+                {
+                    "line": 3105,
+                    "name": "Fernão Ferro",
+                    "stop-id": 140555
+                },
+                {
+                    "line": 3111
+                },
+                {
+                    "line": 3509
+                },
+                {
+                    "line": 3112
+                },
+                {
+                    "line": 4621
+                },
+                {
+                    "line": 3113,
+                    "name": "Seixal (Terminal Fluvial)",
+                    "stop-id": 149992
+                },
+                {
+                    "line": 3119
+                },
+                {
+                    "line": 3601
+                },
+                {
+                    "line": 3605
+                }
+            ]
+        }
+    },
+    "9417152": {
+        "name" : "Foros da Amora",
+        "ligacoes": {
+            "cm": [
+                {
+                    "type": "bus",
+                    "operator": "Carris Metropolitana"
+                },
+                {
+                    "line": 3101,
+                    "name": "Amora",
+                    "stop-id": 140167
+                },
+                {
+                    "line": 3108,
+                    "name": "Fogueteiro (Q. da Mata)",
+                    "stop-id": 149991
+                },
+                {
+                    "line": 3114
+                },
+                {
+                    "line": 3119
+                },
+                {
+                    "line": 3508
+                },
+                {
+                    "line": 3536
+                },
+                {
+                    "line": 3118
+                },
+                {
+                    "line": 3512
+                },
+                {
+                    "line": 3521
+                },
+                {
+                    "line": 3523
+                }
+            ]
+        }
+    },
+    "9417137": {
+        "name" : "Corroios",
+        "ligacoes": {
+            "cm": [
+                {
+                    "type": "bus",
+                    "operator": "Carris Metropolitana"
+                },
+                {
+                    "line": 3509
+                },
+                {
+                    "line": 3511
+                },
+                {
+                    "line": 3526
+                },
+                {
+                    "line": 3506
+                },
+                {
+                    "line": 3517
+                },
+                {
+                    "line": 3525
+                },
+                {
+                    "line": 3104
+                },
+                {
+                    "line": 3514
+                },
+                {
+                    "line": 3518
+                },
+                {
+                    "line": 3515
+                },
+                {
+                    "line": 3516
+                },
+                {
+                    "line": 3519
+                },
+                {
+                    "line": 3103
+                },
+                {
+                    "line": 3116
+                },
+                {
+                    "line": 3508
+                }
+            ],
+            "mts": [
+                {
+                    "type": "metro",
+                    "operator": "MTS"
+                },
+                { 
+                    "line": "Linha 1 - Cacilhas"
+                },
+                { 
+                    "line": "Linha 2 - Pragal"
+                }
+            ]
+        }
+    },
+    "9417087": {
+        "name" : "Pragal",
+        "ligacoes": {
+            "cm": [
+                {
+                    "type": "bus",
+                    "operator": "Carris Metropolitana"
+                },
+                {
+                    "line": 3017
+                },
+                {
+                    "line": 3024
+                },
+                {
+                    "line": 3025
+                },
+                {
+                    "line": 3503
+                },
+                {
+                    "line": 3007
+                },
+                {
+                    "line": 3022
+                },
+                {
+                    "line": 3027
+                },
+                {
+                    "line": 3524
+                },
+                {
+                    "line": 3601
+                },
+                {
+                    "line": 3009
+                },
+                {
+                    "line": 3012
+                },
+                {
+                    "line": 3504
+                },
+                {
+                    "line": 3507
+                }
+            ],
+            "mts": [
+                {
+                    "type": "metro",
+                    "operator": "MTS"
+                },
+                { 
+                    "line": "Linha 2 - Corroios"
+                },
+                { 
+                    "line": "Linha 3 - Cacilhas/FCT Universidade"
+                }
+            ],
+            "cp": [
+                {
+                    "type": "train",
+                    "operator": "CP"
+                },
+                { 
+                    "line": "Comboios Intercidades"
+                }
+            ]
+        }
+    },
+    "9467033": {
+        "name" : "Campolide",
+        "ligacoes": {
+            "cp": [
+                {
+                    "type": "train",
+                    "operator": "CP"
+                },
+                { 
+                    "line": "Azambuja"
+                },
+                { 
+                    "line": "Sintra (Rossio)"
+                }
+            ],
+            "carris": [
+                {
+                    "type": "bus",
+                    "operator": "Carris"
+                },
+                { 
+                    "line": "702"
+                },
+                { 
+                    "line": "713"
+                },
+                { 
+                    "line": "751"
+                },
+                { 
+                    "line": "756"
+                }
+            ]
+        }
+    },
+    "9466076": {
+        "name" : "Sete Rios",
+        "ligacoes": {
+            "cp": [
+                {
+                    "type": "train",
+                    "operator": "CP"
+                },
+                { 
+                    "line": "Azambuja"
+                },
+                { 
+                    "line": "Sintra (Oriente)"
+                },
+                { 
+                    "line": "Comboios Intercidades"
+                }
+            ],
+            "metro": [
+                {
+                    "type": "metro",
+                    "operator": "Metro Lisboa"
+                },
+                { 
+                    "line": "Linha Azul - Jardim Zoológico"
+                }
+            ],
+            "carris": [
+                {
+                    "type": "bus",
+                    "operator": "Carris"
+                },
+                { 
+                    "line": "701"
+                },
+                { 
+                    "line": "202"
+                },
+                { 
+                    "line": "716"
+                },
+                { 
+                    "line": "731"
+                },
+                { 
+                    "line": "746"
+                },
+                { 
+                    "line": "758"
+                },
+                { 
+                    "line": "770"
+                }
+            ],
+            "re": [
+                {
+                    "type": "bus",
+                    "operator": "Rede Expresso"
+                }
+            ]
+        }
+    },
+    "9466050": {
+        "name" : "Entrecampos",
+        "ligacoes": {
+            "cp": [
+                {
+                    "type": "train",
+                    "operator": "CP"
+                },
+                { 
+                    "line": "Azambuja"
+                },
+                { 
+                    "line": "Sintra (Oriente)"
+                },
+                { 
+                    "line": "Comboios Intercidades"
+                }
+            ],
+            "metro": [
+                {
+                    "type": "metro",
+                    "operator": "Metro Lisboa"
+                },
+                { 
+                    "line": "Linha Amarela - Entrecampos"
+                }
+            ],
+            "carris": [
+                {
+                    "type": "bus",
+                    "operator": "Carris"
+                },
+                { 
+                    "line": "207"
+                },
+                { 
+                    "line": "727"
+                },
+                { 
+                    "line": "736"
+                },
+                { 
+                    "line": "738"
+                },
+                { 
+                    "line": "744"
+                },
+                { 
+                    "line": "749"
+                },
+                { 
+                    "line": "754"
+                },
+                { 
+                    "line": "783"
+                }
+            ]
+        }
+    },
+    "9466035": {
+        "name" : "Roma Areeiro",
+        "ligacoes": {
+            "cp": [
+                {
+                    "type": "train",
+                    "operator": "CP"
+                },
+                { 
+                    "line": "Azambuja"
+                },
+                { 
+                    "line": "Sintra (Oriente)"
+                }
+            ],
+            "cm": [
+                {
+                    "type": "bus",
+                    "operator": "Carris Metropolitana"
+                },
+                { 
+                    "line": "2722",
+                    "name": "Via Rara",
+                    "stop-id": "061206"
+                },
+                { 
+                    "line": "2790",
+                    "name": "Alverca (Estação)",
+                    "stop-id": "061206"
+                }
+            ],
+            "metro": [
+                {
+                    "type": "metro",
+                    "operator": "Metro Lisboa"
+                },
+                { 
+                    "line": "Linha Verde - Roma | Areeiro"
+                }
+            ],
+            "carris": [
+                {
+                    "type": "bus",
+                    "operator": "Carris"
+                },
+                { 
+                    "line": "49B"
+                },
+                { 
+                    "line": "727"
+                },
+                { 
+                    "line": "718"
+                },
+                { 
+                    "line": "793"
+                },
+                { 
+                    "line": "705"
+                }
+            ]
+        }
+    }
+}

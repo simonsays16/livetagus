@@ -84,6 +84,24 @@
     },
   };
 
+  // Estações onde o código no feed da CP não é o mesmo que o código da IP
+  // usado no ligacoes.json. São a mesma estação, com dois números diferentes.
+  // Chave: código do feed da CP (só dígitos). Valor: chave no ligacoes.json.
+  const CP_ID_ALIASES = {
+    9460004: "9467033", // Campolide  (CP 94_60004 · IP 9467033)
+    9468080: "9468098", // Palmela    (CP 94_68080 · IP 9468098)
+  };
+
+  // Código de 7 dígitos de uma paragem da CP, já com as equivalências
+  // aplicadas. As paragens de plataforma trazem sufixo ("94_60004_1"), por
+  // isso ficam só os primeiros 7 dígitos.
+  function cpIpId(stopId) {
+    const digits = String(stopId == null ? "" : stopId).replace(/\D/g, "");
+    if (digits.length < 7) return null;
+    const id = digits.slice(0, 7);
+    return CP_ID_ALIASES[id] || id;
+  }
+
   // Tempo real da CP: https://www.cp.pt/pt/pesquisa-estacao-detalhe/94-66035
   // O 94-66035 é o stop_id 9466035 partido a seguir aos dois primeiros dígitos.
   const CP_REALTIME_BASE = "https://www.cp.pt/pt/pesquisa-estacao-detalhe/";
@@ -160,13 +178,16 @@
     );
   }
 
-  function fmtEta(sec) {
+  // Contagem decrescente só na próxima hora. A partir daí a hora da partida diz
+  // mais do que "3h20" — é o que o Google Maps faz, e é o que uma pessoa quer
+  // saber quando o comboio ainda está longe.
+  const ETA_LIMIT_SEC = 3600;
+
+  function fmtEta(sec, at) {
     const min = Math.floor(sec / 60);
-    if (min <= 0) return { big: "agora", small: "" };
-    if (min < 60) return { big: String(min), small: "min" };
-    const h = Math.floor(min / 60);
-    const m = min % 60;
-    return { big: h + "h" + (m ? String(m).padStart(2, "0") : ""), small: "" };
+    if (min <= 0) return { big: "agora", small: "", isClock: false };
+    if (sec < ETA_LIMIT_SEC) return { big: String(min), small: "min", isClock: false };
+    return { big: secToClock(at), small: "", isClock: true };
   }
 
   // Agora em Europe/Lisbon → { ymd:"YYYYMMDD", dow:0-6 (0=Dom), sec }
@@ -236,17 +257,53 @@
     return ligacoesPromise;
   }
 
+  // Estações que a Fertagus e a CP partilham: as chaves do ligacoes.json são
+  // ids da IP/CP, por isso basta cruzá-las com as estações da CP QUE ESTÃO
+  // DESENHADAS no mapa. Assim o símbolo da CP só aparece onde a CP realmente
+  // pára e está visível, em vez de em todas as 14 estações da Fertagus.
+  // → Map(nomeFertagusNormalizado → { stopId, name, fertagus })
+  let sharedPromise = null;
+  function sharedFertagusCp() {
+    return loadLigacoes().then(() => {
+      const out = new Map();
+      const stations =
+        window.MapaCP && typeof window.MapaCP.getStations === "function"
+          ? window.MapaCP.getStations()
+          : [];
+      const byId = new Map();
+      for (const st of stations) {
+        const id = cpIpId(st.stop_id);
+        if (id) byId.set(id, st);
+      }
+      for (const id in ligacoes) {
+        const hit = byId.get(id);
+        if (!hit) continue;
+        const nome = ligacoes[id].name || "";
+        out.set(norm(nome), { stopId: hit.stop_id, name: hit.name, fertagus: nome });
+      }
+      // Preenche sempre a cache: o cpStationFor() é síncrono e é chamado pelo
+      // mapa-station.js ao abrir a sheet da Fertagus. Antes só era preenchida
+      // dentro do loadBundle(), portanto quem clicasse numa estação da Fertagus
+      // sem nunca ter aberto um painel do Metro ou da CP não via o botão.
+      sharedCache = out;
+      return out;
+    });
+  }
+
+  // Versão síncrona, para quem já tem os dados carregados.
+  let sharedCache = null;
+  function cpStationFor(fertagusName) {
+    if (!sharedCache) return null;
+    return sharedCache.get(norm(fertagusName)) || null;
+  }
+
   // Devolve o nome da estação Fertagus que serve esta paragem, ou null.
   function fertagusLinkFor(op, stopId, stopName) {
     if (!ligacoes) return null;
     let key = null;
     if (op === "cp") {
-      // O stop_id da CP é o próprio id da estação; as plataformas podem trazer
-      // sufixo, por isso ficam só os dígitos.
-      const digits = String(stopId == null ? "" : stopId).replace(/\D/g, "");
-      if (ligacoes[digits]) key = digits;
-      else if (digits.length > 7 && ligacoes[digits.slice(0, 7)])
-        key = digits.slice(0, 7);
+      key = cpIpId(stopId);
+      if (key && !ligacoes[key]) key = null;
     } else {
       const table = LINK_BY_NAME[op];
       if (table) key = table[norm(stopName)] || null;
@@ -283,6 +340,7 @@
     // As ligações são carregadas em paralelo com o bundle: são precisas logo
     // que se abra uma viagem.
     loadLigacoes();
+    sharedFertagusCp();
 
     const p = getJSON(`${base}/manifest.json`)
       .then((manifest) => {
@@ -613,7 +671,29 @@
   //  novo vive aqui em CSS próprio; as classes zinc reutilizadas já existem)
   // ═══════════════════════════════════════════════════════════════════
 
+  // Botão de troca de operador. Fica num bloco à parte, com id próprio, porque
+  // o mapa-station.js injecta exactamente o mesmo — quem chegar primeiro ganha
+  // e o segundo não faz nada.
+  function injectSwapStyles() {
+    if (document.getElementById("lt-swap-styles")) return;
+    const el = document.createElement("style");
+    el.id = "lt-swap-styles";
+    el.textContent = `
+    .ltg-swap{position:absolute;right:3.5rem;top:.75rem;width:40px;height:40px;
+      display:inline-flex;align-items:center;justify-content:center;padding:0;
+      border-radius:9999px;border:1px solid rgba(0,0,0,.55);background:#fff;
+      cursor:pointer;transition:transform .12s ease,box-shadow .16s ease;}
+    html.dark .ltg-swap{border-color:rgba(255,255,255,.5);}
+    .ltg-swap img{width:20px;height:20px;object-fit:contain;display:block;}
+    .ltg-swap:hover{box-shadow:0 2px 10px rgba(0,0,0,.18);}
+    .ltg-swap:active{transform:scale(.9);}
+    .ltg-swap:focus-visible{outline:2px solid rgb(59 130 246);outline-offset:2px;}
+    @media (min-width:768px){.ltg-swap{top:1.25rem;}}`;
+    document.head.appendChild(el);
+  }
+
   function injectStyles() {
+    injectSwapStyles();
     if (document.getElementById("lt-gtfs-hor-styles")) return;
     const css = `
     .ltg-pill{display:inline-flex;align-items:center;justify-content:center;
@@ -848,6 +928,7 @@
     const pills = (opts.pills || []).join("");
     return `
       <div class="dp-header relative shrink-0 px-6 pt-3 md:pt-safe-ios md:pt-5 pb-5 border-b border-zinc-100 dark:border-zinc-900" data-drag-area="1">
+        ${opts.swap || ""}
         <button data-ltg-action="close"
           class="absolute right-4 top-3 md:top-5 w-10 h-10 flex items-center justify-center text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"
           aria-label="Fechar">${ICON_X}</button>
@@ -929,9 +1010,12 @@
     view.deps = deps; // guardado para o clique resolver o índice
     return deps
       .map((d, i) => {
-        const eta = fmtEta(d.eta);
+        const eta = fmtEta(d.eta, d.at);
         const svc = serviceLabel(bundle, d.service_id);
-        const meta = [secToClock(d.at), svc].filter(Boolean).join(" · ");
+        // Com a hora já em destaque, repeti-la na linha de baixo era ruído.
+        const meta = [eta.isClock ? "" : secToClock(d.at), svc]
+          .filter(Boolean)
+          .join(" · ");
         return `
         <button class="ltg-row" data-ltg-action="trip" data-ltg-i="${i}" aria-label="Ver viagem de ${escapeHtml(d.trip_headsign || "")} às ${secToClock(d.at)}">
           ${pillHtml(bundle, d.route_id, d.route_short_name)}
@@ -940,7 +1024,7 @@
             <p class="text-[11px] uppercase tracking-[0.15em] text-zinc-400 dark:text-zinc-500 mt-0.5">${escapeHtml(meta)}</p>
           </div>
           <div class="text-right shrink-0 ltg-eta">
-            <span class="text-xl font-light text-zinc-900 dark:text-white">${eta.big}</span>${eta.small ? `<span class="text-[10px] text-zinc-400 ml-0.5">${eta.small}</span>` : ""}
+            <span class="${eta.isClock ? "text-lg" : "text-xl"} font-light text-zinc-900 dark:text-white">${eta.big}</span>${eta.small ? `<span class="text-[10px] text-zinc-400 ml-0.5">${eta.small}</span>` : ""}
           </div>
           ${ICON_CHEV}
         </button>`;
@@ -989,9 +1073,12 @@
           // ligação. A linha é um <div>: um <button> dentro de outro é HTML
           // inválido e o clique deixava de funcionar.
           const fert = fertagusLinkFor(bundle.op, s.stop_id, s.stop_name);
+          // A hora de chegada a ESTA paragem viaja com o botão: a sheet da
+          // Fertagus abre a mostrar só o que se apanha a partir dela.
+          const chegada = s.at == null ? "" : ` data-ltg-fertagus-at="${s.at}"`;
           const action = fert
-            ? `<button type="button" class="ltg-link" data-ltg-fertagus="${escapeHtml(fert)}"
-                 title="Ligação à Fertagus: ${escapeHtml(fert)}"
+            ? `<button type="button" class="ltg-link" data-ltg-fertagus="${escapeHtml(fert)}"${chegada}
+                 title="Ligação à Fertagus: ${escapeHtml(fert)}${s.at == null ? "" : " · chegada às " + secToClock(s.at)}"
                  aria-label="Abrir a estação ${escapeHtml(fert)} da Fertagus">
                  <img src="${FERTAGUS_LOGO}" alt="" data-ltg-logo></button>`
             : here
@@ -1036,7 +1123,18 @@
           ? [pillHtml(bundle, lines[0].routeIds[0], lines[0].label)]
           : [];
       const active = activeLineOf(view);
+      // Estação partilhada com a Fertagus: botão ao lado da cruz para trocar
+      // de operador sem fechar e voltar a abrir.
+      const paraFertagus =
+        view.primary &&
+        fertagusLinkFor(bundle.op, view.primary.stop_id, view.name);
       header = headerHtml(bundle, {
+        swap: paraFertagus
+          ? `<button type="button" class="ltg-swap" data-ltg-swap="${escapeHtml(paraFertagus)}"
+               title="Ver ${escapeHtml(paraFertagus)} na Fertagus"
+               aria-label="Trocar para a estação ${escapeHtml(paraFertagus)} da Fertagus">
+               <img src="${FERTAGUS_LOGO}" alt="" data-ltg-logo></button>`
+          : "",
         title: view.name,
         subtitle: active
           ? `Próximas partidas · ${active.label}`
@@ -1086,6 +1184,22 @@
     hookLogo();
     const sc = panel.querySelector('[data-details-scroll="1"]');
     if (sc) sc.scrollTop = view.scrollTop || 0;
+    // O corpo é novo a cada render, mas o #details-panel e os antepassados dele
+    // também rolam, e esses sobrevivem. Sem os repor, trocar de vista deixava a
+    // pessoa a meio da lista anterior.
+    if (!view.scrollTop) scrollAoTopo(panel);
+  }
+
+  // Qual é o elemento que faz scroll depende do sítio: o painel tem overflow
+  // próprio, a sheet interior também, e na página é a janela. Sobe-se a árvore.
+  function scrollAoTopo(el) {
+    let n = el;
+    let saltos = 0;
+    while (n && n.nodeType === 1 && saltos < 12) {
+      if (n.scrollTop > 0) n.scrollTop = 0;
+      n = n.parentElement;
+      saltos++;
+    }
   }
 
   // Sem onerror inline (CSP): o handler é ligado aqui. São vários — o do
@@ -1231,6 +1345,11 @@
   function back() {
     if (stack.length <= 1) return close();
     stack.pop();
+    // Também ao voltar: trocar de vista devolve sempre ao topo. A posição
+    // guardada continua a servir os redesenhos no mesmo sítio — filtro de linha
+    // e actualização dos minutos —, que não podem saltar.
+    const v = top();
+    if (v) v.scrollTop = 0;
     render();
   }
 
@@ -1259,12 +1378,22 @@
       return;
     }
 
+    // Trocar para a Fertagus a partir do cabeçalho.
+    const swapBtn = e.target.closest("[data-ltg-swap]");
+    if (swapBtn && panel.contains(swapBtn)) {
+      e.preventDefault();
+      e.stopPropagation();
+      openFertagus(swapBtn.getAttribute("data-ltg-swap"));
+      return;
+    }
+
     // Ligação à Fertagus: abre a sheet da estação correspondente.
     const fertBtn = e.target.closest("[data-ltg-fertagus]");
     if (fertBtn && panel.contains(fertBtn)) {
       e.preventDefault();
       e.stopPropagation();
-      openFertagus(fertBtn.getAttribute("data-ltg-fertagus"));
+      const at = parseInt(fertBtn.getAttribute("data-ltg-fertagus-at") || "", 10);
+      openFertagus(fertBtn.getAttribute("data-ltg-fertagus"), at);
       return;
     }
 
@@ -1296,7 +1425,11 @@
   // O nome vem do ligacoes_atualizado.json e pode não bater ao carácter com o
   // do MAPA.STATIONS ("Roma Areeiro" vs "Roma-Areeiro"), por isso compara-se
   // normalizado.
-  function openFertagus(name) {
+  // atSec: hora de chegada em segundos do dia de HOJE (a mesma escala do
+  // lisbonNow().sec), ou NaN se não houver. Converte-se para epoch pela
+  // diferença até agora, o que evita depender do fuso do dispositivo: os dois
+  // valores estão na mesma escala, e a diferença é tempo real decorrido.
+  function openFertagus(name, atSec) {
     const stations = (window.MAPA && window.MAPA.STATIONS) || [];
     const target = norm(name);
     const station =
@@ -1307,9 +1440,16 @@
       console.warn(`[GtfsHorarios] estação Fertagus "${name}" não encontrada.`);
       return;
     }
+    let fromTime = null;
+    if (typeof atSec === "number" && isFinite(atSec)) {
+      const ts = Date.now() + (atSec - lisbonNow().sec) * 1000;
+      // Uma chegada já passada não filtra nada; passar o valor só poria um
+      // aviso inútil por cima da lista.
+      if (ts > Date.now() + 60000) fromTime = ts;
+    }
     close();
     setTimeout(() => {
-      if (window.MapaStation) window.MapaStation.open(station);
+      if (window.MapaStation) window.MapaStation.open(station, { fromTime });
     }, 140);
   }
 
@@ -1576,6 +1716,9 @@
   }
 
   window.GtfsHorarios = {
+    // Cruzamento Fertagus/CP, para o mapa-render.js e o mapa-station.js.
+    sharedFertagusCp,
+    cpStationFor,
     open,
     openStop,
     close,
@@ -1594,7 +1737,9 @@
       logoFor,
       fertagusLinkFor,
       cpRealtimeUrl,
+      cpIpId,
       loadLigacoes,
+      sharedFertagusCp,
       serviceRunsOn,
       serviceLabel,
       resolveStops,
