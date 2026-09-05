@@ -433,11 +433,39 @@
         source: "fertagus-line",
         layout: { "line-join": "round", "line-cap": "round" },
         paint: {
-          "line-color": "#000000",
+          "line-color": LINHA_CLARO,
           "line-width": ["interpolate", ["linear"], ["zoom"], 8, 1.5, 16, 5],
           "line-opacity": 0.95,
         },
       });
+    }
+    aplicarTemaLinha(map);
+    // O mapa-tema.js dispara "styledata" quando o tema muda, e é também o que
+    // acontece numa troca de estilo a sério. Serve para os dois casos.
+    if (!map._ltLinhaTema) {
+      map._ltLinhaTema = true;
+      map.on("styledata", () => aplicarTemaLinha(map));
+    }
+  }
+
+  // ─── COR DA LINHA CONFORME O TEMA ────────────────────────────────────
+  // Só o traço da linha muda: sobre o basemap invertido, preto sobre escuro
+  // desaparecia. O casing (o contorno largo e translúcido, #1e293b a 35%)
+  // fica como está — é ele que dá volume ao traço nos dois temas.
+  const LINHA_CLARO = "#000000";
+  const LINHA_ESCURO = "#ffffff";
+
+  function aplicarTemaLinha(map) {
+    if (!map || !map.getLayer("fertagus-line")) return;
+    const escuro = document.documentElement.classList.contains("dark");
+    try {
+      map.setPaintProperty(
+        "fertagus-line",
+        "line-color",
+        escuro ? LINHA_ESCURO : LINHA_CLARO,
+      );
+    } catch (e) {
+      console.warn("[MapaRender] cor da linha:", e && e.message);
     }
   }
 
@@ -547,11 +575,7 @@
     if (!map || !map.getLayer(CP_BADGE_LAYER)) return;
     const on = !window.MapaView || window.MapaView.isVisible("cp");
     try {
-      map.setLayoutProperty(
-        CP_BADGE_LAYER,
-        "visibility",
-        on ? "visible" : "none",
-      );
+      map.setLayoutProperty(CP_BADGE_LAYER, "visibility", on ? "visible" : "none");
     } catch (_) {}
   }
 
@@ -577,16 +601,10 @@
         if (!shared || !map.getSource("fertagus-stations")) return;
         // O filtro compara pelo nome tal como está no geojson das estações.
         const nomes = [];
-        for (const st of window.MAPA && window.MAPA.STATIONS
-          ? window.MAPA.STATIONS
-          : [])
+        for (const st of window.MAPA && window.MAPA.STATIONS ? window.MAPA.STATIONS : [])
           if (shared.has(normName(st.name))) nomes.push(st.name);
         if (!map.getLayer(CP_BADGE_LAYER)) map.addLayer(cpBadgeLayerDef());
-        map.setFilter(CP_BADGE_LAYER, [
-          "in",
-          ["get", "name"],
-          ["literal", nomes],
-        ]);
+        map.setFilter(CP_BADGE_LAYER, ["in", ["get", "name"], ["literal", nomes]]);
         applyCpBadgeVisibility(map);
         // Clicar no selo abre a Fertagus, tal como o resto do marcador.
         if (!map._ltCpBadgeClick) {

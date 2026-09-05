@@ -176,6 +176,7 @@
             Object.keys(e.ligacoes).filter((t) => (e.ligacoes[t] || []).length),
           );
         }
+        ligacoesRaw = data || {};
         ligacoesPorEstacao = m;
         return m;
       })
@@ -187,18 +188,26 @@
     return ligacoesPromise;
   }
 
-  function ligacoesHtml(stationKey) {
+  // Os logótipos ficam encostados à direita da linha e são um BOTÃO: abrem a
+  // lista de ligações daquela estação, de onde se pode saltar para o mapa.
+  function ligacoesHtml(stationKey, stationName) {
     if (!ligacoesPorEstacao || !stationKey) return "";
-    const tipos = ligacoesPorEstacao.get(stationKey) || [];
+    const tipos = (ligacoesPorEstacao.get(stationKey) || []).filter(
+      (t) => LIG_LOGOS[t],
+    );
+    if (!tipos.length) return "";
     const imgs = tipos
-      .map((t) => LIG_LOGOS[t])
-      .filter(Boolean)
       .map(
-        (l) =>
-          `<img class="ltp-lig-logo" src="${esc(l.src)}" alt="${esc(l.nome)}" title="${esc(l.nome)}" data-ltp-lig>`,
+        (t) =>
+          `<img class="ltp-lig-logo" src="${esc(LIG_LOGOS[t].src)}" alt="${esc(LIG_LOGOS[t].nome)}" data-ltp-lig>`,
       )
       .join("");
-    return imgs ? `<span class="ltp-lig">${imgs}</span>` : "";
+    // Uma pastilha com contorno e seta: sem isto, os logótipos liam-se como
+    // decoração e ninguém percebia que se podia carregar neles.
+    return `<button type="button" class="ltp-lig" data-ltp-lig-open="${esc(stationKey)}"
+      data-ltp-lig-name="${esc(stationName || "")}"
+      title="Ligações em ${esc(stationName || "")}"
+      aria-label="Ver ligações em ${esc(stationName || "")}">${imgs}<svg class="ltp-lig-seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" width="9" height="9"><path d="m9 18 6-6-6-6"/></svg></button>`;
   }
 
   // Sem onerror inline (CSP): um logótipo em falta desaparece em vez de deixar
@@ -207,6 +216,121 @@
     (root || document).querySelectorAll("[data-ltp-lig]").forEach((img) => {
       img.addEventListener("error", function () { this.remove(); }, { once: true });
     });
+  }
+
+  // ── VISTA DE LIGAÇÕES ────────────────────────────────────────────────────
+  // O que se pode apanhar numa estação, e — quando o mapa está por perto — a
+  // possibilidade de abrir cada paragem lá.
+  let ligacoesRaw = null; // o JSON tal como veio, para os nomes das linhas
+
+  // Comparar nomes de estação sem depender de acentos, maiúsculas ou hífenes.
+  function normNome(v) {
+    return String(v == null ? "" : v)
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+  }
+
+  const LIG_ORDEM = ["cp", "metro", "mts", "cm", "carris", "tcb", "re"];
+
+  function linhasDe(entrada) {
+    return (entrada || [])
+      .map((x) => x && x.line)
+      .filter(Boolean);
+  }
+
+  // Paragens que se podem abrir no mapa a partir daqui. Só existem quando os
+  // módulos do mapa estão carregados — na página /estacao a lista é informativa.
+  function alvosNoMapa(tipo, nomeEstacao) {
+    const out = [];
+    if (tipo === "cm" && window.MapaCM && window.MapaCM.getStops) {
+      const alvo = normNome(nomeEstacao);
+      for (const st of window.MapaCM.getStops() || []) {
+        if (normNome(st.station || "") !== alvo) continue;
+        out.push({ label: st.name, run: () => window.MapaCM.open(st) });
+      }
+      return out;
+    }
+    if (window.GtfsHorarios && window.GtfsHorarios.interchangesFor) {
+      const op = tipo === "metro" ? "ml" : tipo;
+      for (const x of window.GtfsHorarios.interchangesFor(nomeEstacao)) {
+        if (x.op !== op) continue;
+        out.push({
+          label: x.name,
+          run: () =>
+            x.stopId
+              ? window.GtfsHorarios.openStop(x.op, x.stopId, { name: x.name })
+              : window.GtfsHorarios.open({ name: x.name }, { operator: x.op }),
+        });
+      }
+    }
+    return out;
+  }
+
+  function renderLigacoes(stationKey, nomeEstacao) {
+    const st = BY_KEY[stationKey];
+    const nome = nomeEstacao || (st ? st.name : "");
+    let id = null;
+    for (const k in ligacoesRaw || {}) {
+      if (normNome((ligacoesRaw[k] || {}).name || "") === normNome(nome)) {
+        id = k;
+        break;
+      }
+    }
+    const lig = (id && ligacoesRaw[id] && ligacoesRaw[id].ligacoes) || {};
+    const tipos = LIG_ORDEM.filter((t) => (lig[t] || []).length);
+
+    const blocos = tipos
+      .map((t, i) => {
+        const meta = LIG_LOGOS[t] || { nome: t, src: "" };
+        const linhas = linhasDe(lig[t]);
+        const alvos = alvosNoMapa(t, nome);
+        return `<div class="ltp-lg-bloco">
+          <div class="ltp-lg-cab">
+            ${meta.src ? `<img class="ltp-lig-logo" src="${esc(meta.src)}" alt="" data-ltp-lig>` : ""}
+            <span class="ltp-lg-op">${esc(meta.nome)}</span>
+          </div>
+          ${
+            linhas.length
+              ? `<p class="ltp-lg-linhas">${linhas.map(esc).join(" · ")}</p>`
+              : ""
+          }
+          ${alvos
+            .map(
+              (a, j) =>
+                `<button type="button" class="ltp-lg-alvo" data-ltp-lg-go="${i}:${j}">
+                   <span>${esc(a.label)}</span>
+                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="m9 18 6-6-6-6"/></svg>
+                 </button>`,
+            )
+            .join("")}
+        </div>`;
+      })
+      .join("");
+
+    return {
+      html: `
+        <div class="ltp-sh-head inline" style="position:relative">
+          <button class="ltp-back" data-ltp-lg-back>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="m15 18-6-6 6-6"/></svg>
+            <span>Percurso</span></button>
+          <p class="ltp-sh-title">${esc(nome)}</p>
+          <p class="ltp-sh-sub">Ligações nesta estação</p>
+        </div>
+        <div class="ltp-sh-body">
+          ${blocos || `<p style="font-size:11px;color:rgb(161,161,170)">Sem ligações registadas.</p>`}
+          ${
+            tipos.some((t) => alvosNoMapa(t, nome).length)
+              ? ""
+              : `<p class="ltp-lg-nota">Abre o mapa para ver estas paragens.</p>`
+          }
+        </div>`,
+      // A ordem das secções e dos alvos é a mesma do HTML: o índice "i:j" do
+      // botão devolve o alvo certo sem precisar de guardar nada no DOM.
+      alvos: tipos.map((t) => alvosNoMapa(t, nome)),
+    };
   }
 
   function resolveStationByApiId(id) {
@@ -821,21 +945,58 @@ html.dark .ltp-grab span{background:rgb(63,63,70)}
 .ltp-sh-head.inline{padding:0 0 1rem}
 .ltp-back{display:inline-flex;align-items:center;gap:6px;background:none;border:0;padding:0;margin-bottom:.7rem;font:inherit;font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgb(113,113,122);cursor:pointer}
 .ltp-back:hover{color:rgb(9,9,11)}
+.ltp-sh-title{font-size:18px;font-weight:300;letter-spacing:-.02em;color:rgb(24,24,27)}
+html.dark .ltp-sh-title{color:#fff}
+.ltp-sh-sub{font-size:9px;font-weight:800;letter-spacing:.24em;text-transform:uppercase;color:rgb(161,161,170);margin-top:.3rem}
+.ltp-lg-bloco{padding:.85rem 0;border-bottom:1px solid rgb(244,244,245)}
+html.dark .ltp-lg-bloco{border-bottom-color:rgb(24,24,27)}
+.ltp-lg-bloco:last-child{border-bottom:0}
+.ltp-lg-cab{display:flex;align-items:center;gap:.5rem}
+.ltp-lg-op{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:rgb(63,63,70)}
+html.dark .ltp-lg-op{color:rgb(212,212,216)}
+.ltp-lg-linhas{font-size:12px;color:rgb(113,113,122);margin-top:.35rem;line-height:1.5}
+.ltp-lg-alvo{display:flex;align-items:center;justify-content:space-between;gap:.6rem;width:100%;margin-top:.5rem;padding:.55rem .7rem;border:1px solid rgb(228,228,231);border-radius:8px;background:none;font:inherit;font-size:13px;color:rgb(24,24,27);cursor:pointer}
+html.dark .ltp-lg-alvo{border-color:rgb(39,39,42);color:#fff}
+.ltp-lg-alvo:hover{background:rgba(0,0,0,.03)}
+html.dark .ltp-lg-alvo:hover{background:rgba(255,255,255,.05)}
+.ltp-lg-alvo svg{opacity:.4;flex-shrink:0}
+.ltp-lg-nota{font-size:10px;color:rgb(161,161,170);margin-top:.9rem}
+/* Cabeçalho da lista de paragens: título à esquerda, resumo à direita. */
+.ltp-pc-cab{display:flex;align-items:baseline;justify-content:space-between;gap:.75rem;margin-bottom:.35rem}
+.ltp-pc-tit{font-size:9px;font-weight:800;letter-spacing:.28em;text-transform:uppercase;color:rgb(161,161,170)}
+.ltp-pc-res{font-size:11px;color:rgb(113,113,122);font-variant-numeric:tabular-nums}
+.ltp-pc-dica{font-size:10px;color:rgb(161,161,170);margin-bottom:.75rem;line-height:1.4}
+/* A lista ganha respiro e uma linha de base para as horas alinharem. */
+.ltp-pc-lista{margin-top:.5rem}
+.ltp-stop-time{font-variant-numeric:tabular-nums;text-align:right}
 html.dark .ltp-back:hover{color:#fff}
 .ltp-route .ltp-sh-body{padding:1.2rem 0 .5rem;overflow:visible}
 html.dark .ltp-sh-head{border-bottom-color:rgb(24,24,27)}
 .ltp-sh-close{position:absolute;right:1rem;top:.9rem;width:38px;height:38px;display:flex;align-items:center;justify-content:center;color:rgb(161,161,170);background:transparent;border:0;cursor:pointer}
 .ltp-sh-body{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:1.2rem 1.4rem 2rem}
-.ltp-stop{display:grid;grid-template-columns:auto 14px 1fr auto;align-items:center;gap:.7rem;padding:.45rem 0;position:relative}
-/* Trilho vertical: cinzento no que já passou, a cor do comboio no que falta. */
-.ltp-stop::before{content:"";position:absolute;left:calc(var(--ltp-time-w,3.1rem) + .7rem + 6px);top:0;bottom:0;width:2px;background:rgb(228,228,231);z-index:0}
-html.dark .ltp-stop::before{background:rgb(39,39,42)}
-.ltp-stop.todo::before{background:var(--ltp-trip,#10b981)}
-.ltp-stop:first-child::before{top:50%}
-.ltp-stop:last-child::before{bottom:50%}
+.ltp-stop{display:grid;grid-template-columns:3.2rem 16px 1fr auto auto;align-items:center;gap:.75rem;padding:.5rem 0;position:relative}
+/* O trilho vive DENTRO da coluna do ponto, e não numa posição calculada à mão:
+   assim fica sempre alinhado com as bolas, seja qual for a largura das horas. */
+.ltp-stop-dot{position:relative;justify-self:center}
+.ltp-stop-dot::before{content:"";position:absolute;left:50%;top:-1.1rem;bottom:-1.1rem;width:2px;margin-left:-1px;background:rgb(228,228,231);z-index:-1}
+html.dark .ltp-stop-dot::before{background:rgb(39,39,42)}
+.ltp-stop.todo .ltp-stop-dot::before{background:var(--ltp-trip,#10b981)}
+.ltp-stop.first .ltp-stop-dot::before{top:50%}
+.ltp-stop.last .ltp-stop-dot::before{bottom:50%}
 .ltp-stop.todo .ltp-stop-dot{border-color:var(--ltp-trip,#10b981)}
+/* Origem e destino com mais peso: são as pontas da viagem. */
+.ltp-stop.first .ltp-stop-dot,.ltp-stop.last .ltp-stop-dot{width:11px;height:11px;border-width:2.5px}
+.ltp-stop.first .ltp-nm,.ltp-stop.last .ltp-nm{font-weight:600}
 /* Logótipos das ligações, à frente do nome. */
-.ltp-lig{display:inline-flex;align-items:center;gap:4px;margin-left:.45rem;vertical-align:middle}
+/* Última coluna da linha: sempre no extremo direito, mesmo quando não há
+   atraso a mostrar na coluna anterior. */
+.ltp-lig{display:inline-flex;align-items:center;gap:4px;justify-self:end;padding:3px 5px 3px 6px;margin:0;border:1px solid rgb(228,228,231);background:#fff;cursor:pointer;border-radius:999px;color:rgb(113,113,122);transition:border-color .15s ease,box-shadow .15s ease,transform .1s ease}
+html.dark .ltp-lig{background:rgb(24,24,27);border-color:rgb(39,39,42)}
+.ltp-lig:hover{border-color:rgb(161,161,170);box-shadow:0 1px 6px rgba(0,0,0,.1)}
+.ltp-lig:active{transform:scale(.94)}
+.ltp-lig:focus-visible{outline:2px solid #3b82f6;outline-offset:2px}
+.ltp-lig-seta{flex-shrink:0;opacity:.55;margin-left:1px}
+.ltp-stop.past .ltp-lig{opacity:.5}
 .ltp-lig-logo{width:14px;height:14px;object-fit:contain;display:block;border-radius:3px;background:#fff;padding:1px;box-shadow:0 0 0 1px rgba(0,0,0,.12)}
 .ltp-stop.past .ltp-lig{opacity:.45}
 .ltp-stop-time{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:13px;font-variant-numeric:tabular-nums;color:rgb(82,82,91)}
@@ -1214,7 +1375,8 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
     // ficam com a bola azul: o trilho colorido diz o que falta ao comboio, a
     // bola azul diz o que falta a quem o vai apanhar aqui.
     let depoisDaMinha = false;
-    (nodes || []).forEach((nd) => {
+    const listaNodes = nodes || [];
+    listaNodes.forEach((nd, idx) => {
       const st = resolveStationByApiName(nd.NomeEstacao);
       const servedOrder = st ? orderIdx(st.key) : -1;
       // Intercalar saltadas (que não vêm nos nodes) ANTES desta servida.
@@ -1251,13 +1413,16 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
       if (!past) restante = true;
       const minhaViagem = depoisDaMinha;
       if (cur) depoisDaMinha = true; // a partir da SEGUINTE
+      const ponta =
+        idx === 0 ? "first" : idx === listaNodes.length - 1 ? "last" : "";
       stops += `<div class="ltp-stop ${past ? "past" : ""} ${cur ? "cur" : ""} ${
         restante ? "todo" : ""
-      } ${minhaViagem ? "after" : ""}">
+      } ${minhaViagem ? "after" : ""} ${ponta}">
           <span class="ltp-stop-time">${esc(time)}</span>
           <span class="ltp-stop-dot"></span>
-          <span class="ltp-stop-name"><span class="ltp-nm">${esc(nm)}</span>${ligacoesHtml(st && st.key)}</span>
+          <span class="ltp-stop-name"><span class="ltp-nm">${esc(nm)}</span></span>
           ${dh}
+          ${ligacoesHtml(st && st.key, nm)}
         </div>`;
     });
     // Saltadas que sobram (cortadas no fim do trajeto).
@@ -1290,6 +1455,17 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
       gray: "#d4d4d8",
     };
     const cor = ACCENT[dep.dotStatus] || ACCENT.green;
+    // Resumo curto no topo da lista: quantas paragens e a que horas chega.
+    const nParagens = listaNodes.length;
+    const chegada = nParagens
+      ? nodeTimeStr(listaNodes[nParagens - 1])
+      : null;
+    const resumo = nParagens
+      ? `${nParagens} ${nParagens === 1 ? "paragem" : "paragens"}${
+          chegada ? ` · chega às ${chegada}` : ""
+        }`
+      : "";
+    const temLigacoes = /data-ltp-lig-open/.test(stops);
 
     return `
       ${inline ? "" : `<div class="ltp-grab" data-ltp-grab><span></span></div>`}
@@ -1317,8 +1493,18 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
         ${warnHtml(dep)}
       </div>
       <div class="ltp-sh-body" style="--ltp-trip:${esc(cor)}">
-        <p style="font-size:9px;font-weight:800;letter-spacing:.28em;text-transform:uppercase;color:rgb(161,161,170);margin-bottom:.85rem">Percurso</p>
-        ${stops || `<p style="font-size:11px;color:rgb(161,161,170)">Sem paragens disponíveis.</p>`}
+        <div class="ltp-pc-cab">
+          <span class="ltp-pc-tit">Percurso</span>
+          ${resumo ? `<span class="ltp-pc-res">${esc(resumo)}</span>` : ""}
+        </div>
+        ${
+          temLigacoes
+            ? `<p class="ltp-pc-dica">Toca nos logótipos para ver as ligações de cada estação.</p>`
+            : ""
+        }
+        <div class="ltp-pc-lista">
+          ${stops || `<p style="font-size:11px;color:rgb(161,161,170)">Sem paragens disponíveis.</p>`}
+        </div>
       </div>`;
   }
 
@@ -1416,6 +1602,19 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
     { id: "setubal", label: "Setúbal" },
   ];
 
+  // Que botões fazem sentido nesta estação.
+  //
+  // Nas estações a sul de Coina — Penalva, Pinhal Novo, Venda do Alcaide,
+  // Palmela e Setúbal — o botão Coina não filtra nada de útil: dali para sul o
+  // único destino é Setúbal, e um comboio que TERMINE em Coina vai no sentido
+  // de Lisboa, portanto já está no botão Lisboa. Ficam só Lisboa e Setúbal.
+  function destBtnsFor(station) {
+    const i = station ? ORDER_KEYS.indexOf(station.key) : -1;
+    if (i >= 0 && i < COINA_IDX)
+      return DEST_BTNS.filter((b) => b.id !== "coina");
+    return DEST_BTNS;
+  }
+
   function mount(opts) {
     injectStyles();
     const container = opts.container;
@@ -1433,8 +1632,9 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
       // Um destino selecionado de cada vez (null = todos). O "strict" só tem
       // significado em Coina, que é o único com dois níveis: primeiro toque =
       // tudo o que vai para sul, segundo = só os que terminam em Coina.
-      dest: initialDest(opts.directionFilter),
+      dest: null, // ajustado logo abaixo, quando os botões já são conhecidos
       destStrict: false,
+      btns: destBtnsFor(station),
       // Filtro "a partir de": epoch em ms, ou null. Vem de quem abriu o painel
       // — por exemplo, ao tocar na ligação à Fertagus a meio de uma viagem da
       // CP, para mostrar só o que se apanha à chegada.
@@ -1445,6 +1645,9 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
       // Percurso a ocupar o painel, em vez da lista de partidas.
       routeHtml: null,
       _routeBuilt: false,
+      // Ligações de uma estação do percurso, um nível acima deste.
+      ligacoes: null,
+      _ligBuilt: false,
       _timer: null,
       _destroyed: false,
       _built: false,
@@ -1476,6 +1679,8 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
     function backToList() {
       ctrl.routeHtml = null;
       ctrl._routeBuilt = false;
+      ctrl.ligacoes = null;
+      ctrl._ligBuilt = false;
       paint();
       scrollAoTopo(container);
     }
@@ -1485,6 +1690,50 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
       ctrl._routeBuilt = true;
       const b = container.querySelector("[data-ltp-route-back]");
       if (b) b.addEventListener("click", backToList);
+      // Logótipos de uma estação → lista de ligações dessa estação.
+      container.querySelectorAll("[data-ltp-lig-open]").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          abrirLigacoes(
+            btn.getAttribute("data-ltp-lig-open"),
+            btn.getAttribute("data-ltp-lig-name"),
+          );
+        });
+      });
+      bindLigacaoLogos(container);
+      scrollAoTopo(container);
+    }
+
+    function abrirLigacoes(stationKey, nome) {
+      const r = renderLigacoes(stationKey, nome);
+      ctrl.ligacoes = r;
+      ctrl._ligBuilt = false;
+      paintLigacoes();
+    }
+
+    function paintLigacoes() {
+      container.innerHTML = `<div class="ltp-wrap ltp-route">${ctrl.ligacoes.html}</div>`;
+      ctrl._ligBuilt = true;
+      const b = container.querySelector("[data-ltp-lg-back]");
+      if (b)
+        b.addEventListener("click", () => {
+          ctrl.ligacoes = null;
+          ctrl._ligBuilt = false;
+          ctrl._routeBuilt = false;
+          paint();
+        });
+      container.querySelectorAll("[data-ltp-lg-go]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const [i, j] = btn.getAttribute("data-ltp-lg-go").split(":").map(Number);
+          const alvo = ((ctrl.ligacoes.alvos || [])[i] || [])[j];
+          if (!alvo) return;
+          // Abrir a paragem no mapa fecha este painel: quem manda passa a ser
+          // a sheet do outro operador.
+          if (window.MapaStation && window.MapaStation.isOpen())
+            window.MapaStation.close({ silent: true });
+          setTimeout(() => alvo.run(), 140);
+        });
+      });
       bindLigacaoLogos(container);
       scrollAoTopo(container);
     }
@@ -1520,7 +1769,7 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
           <div data-ltp-from></div>
           <div data-ltp-state></div>
           <div class="ltp-filter" role="group" aria-label="Filtrar por destino">
-            ${DEST_BTNS.map(
+            ${ctrl.btns.map(
               (b) =>
                 `<button class="ltp-dir" data-ltp-dir-btn="${b.id}" aria-pressed="false">
                    <span data-ltp-dir-label>${esc(b.label)}</span>
@@ -1668,6 +1917,10 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
 
     function paint() {
       if (ctrl._destroyed) return;
+      if (ctrl.ligacoes) {
+        if (!ctrl._ligBuilt) paintLigacoes();
+        return;
+      }
       if (ctrl.routeHtml) {
         if (!ctrl._routeBuilt) paintRoute();
         return;
@@ -1739,12 +1992,18 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
 
     // Auto-refresh opcional (página). O mapa controla via ctrl.refresh().
     const autoMs = opts.autoRefresh == null ? 30000 : opts.autoRefresh;
+    // O directionFilter antigo pode pedir "sul", que nas estações a sul de
+    // Coina não tem botão: aí o equivalente é Setúbal.
+    ctrl.dest = initialDest(opts.directionFilter);
+    if (ctrl.dest && !ctrl.btns.some((b) => b.id === ctrl.dest))
+      ctrl.dest = ctrl.dest === "coina" ? "setubal" : null;
+
     if (autoMs > 0) {
       ctrl._timer = setInterval(() => {
         if (document.hidden) return;
         // Com o percurso aberto, actualizar em silêncio: um repaint da lista
         // por cima dele tirava a pessoa de onde estava.
-        if (ctrl.routeHtml) return;
+        if (ctrl.routeHtml || ctrl.ligacoes) return;
         refresh(false);
       }, autoMs);
     }

@@ -33,8 +33,8 @@ Plano de disponibilidade:
 | --------------------------------- | ----------------- | -------------------------- |
 | Fertagus                          | ✅                | (Em Resolução)             |
 | Carris Metropolitana (Área 3 e 4) | ✅                | ✅                         |
-| Carris Metropolitana (Área 1 e 2) | ⌛                | ⌛                         |
-| Metro de Lisboa                   | ✅                | ⌛                         |
+| Carris Metropolitana (Área 1 e 2) | ✅                | ✅                         |
+| Metro de Lisboa                   | ✅                | Em Análise                 |
 | Metro Transportes do Sul          | ✅                | ❌                         |
 | CP                                | ✅                | (Atalho para Site Oficial) |
 | TCB                               | ⌛                | ⌛                         |

@@ -1715,10 +1715,48 @@
     );
   }
 
+  // Estações de outros operadores que servem uma estação da Fertagus.
+  // Inverte o LINK_BY_NAME: "Sete Rios" → [{ op:"ml", name:"Jardim Zoológico" }].
+  // O painel de partidas usa isto para poder abrir a ligação no mapa.
+  function interchangesFor(fertagusName) {
+    if (!ligacoes) return [];
+    const alvo = norm(fertagusName);
+    let id = null;
+    for (const k in ligacoes) {
+      if (norm(ligacoes[k].name || "") === alvo) {
+        id = k;
+        break;
+      }
+    }
+    if (!id) return [];
+    const out = [];
+    for (const op in LINK_BY_NAME) {
+      for (const nome in LINK_BY_NAME[op]) {
+        if (LINK_BY_NAME[op][nome] !== id) continue;
+        // A chave está normalizada; o rótulo bonito vem do bundle se estiver
+        // carregado, senão fica a chave com as iniciais em maiúscula.
+        out.push({ op, key: nome, name: labelFromKey(op, nome) });
+      }
+    }
+    const cp = cpStationFor(fertagusName);
+    if (cp) out.push({ op: "cp", stopId: cp.stopId, name: cp.name });
+    return out;
+  }
+
+  function labelFromKey(op, key) {
+    const b = bundles.get(op);
+    if (b) {
+      const hit = b.byName.get(key);
+      if (hit && hit.length) return hit[0].stop_name;
+    }
+    return key.replace(/(^|\s)\S/g, (c) => c.toUpperCase());
+  }
+
   window.GtfsHorarios = {
     // Cruzamento Fertagus/CP, para o mapa-render.js e o mapa-station.js.
     sharedFertagusCp,
     cpStationFor,
+    interchangesFor,
     open,
     openStop,
     close,
