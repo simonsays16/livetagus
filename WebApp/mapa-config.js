@@ -46,15 +46,15 @@
     // ─── MAPA ──────────────────────────────────────────────────────────
     CENTER: [-9.05, 38.65],
     ZOOM: 10,
-    MIN_ZOOM: 8,
+    MIN_ZOOM: 6,
     MAX_ZOOM: 17,
     ZOOM_DETAIL_CUTOFF: 15,
     ROUTE_FOCUS_MAX_ZOOM: 13.5,
     ROUTE_FOCUS_DURATION_MS: 900,
 
     MAX_BOUNDS: [
-      [-15.0, 38.2],
-      [-8.3, 39.0],
+      [-10.0, 36.7], // sudoeste (abaixo de Sagres)
+      [-6.0, 42.3], // nordeste (acima de Melgaço)
     ],
 
     // ─── PATHS DOS JSON ────────────────────────────────────────────────

@@ -1110,18 +1110,11 @@ function injectCustomMenuElements() {
     }
   }
 
-  // 3. Mover o Botão de Refresh para junto do status "Última Atualização"
-  const statusContainer = document.querySelector("#next-train-header .ml-auto");
-  if (statusContainer && !document.getElementById("btn-manual-refresh")) {
-    const refreshBtn = document.createElement("button");
-    refreshBtn.id = "btn-manual-refresh";
-    refreshBtn.className =
-      "ml-2 p-1.5 rounded-full bg-black/5 dark:bg-white/5 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors active:scale-90 group cursor-pointer outline-none";
-    refreshBtn.setAttribute("aria-label", "Atualizar estado");
-    refreshBtn.innerHTML = `<i data-lucide="refresh-cw" id="refresh-icon-menu" class="w-3 h-3 transition-transform group-active:scale-90"></i>`;
-    refreshBtn.addEventListener("click", manualRefresh);
-    statusContainer.appendChild(refreshBtn);
-  }
+  // 3. O botão de Refresh deixou de ser injetado aqui: passou a ser estático
+  //    no app.html, centrado por baixo do botão de troca de sentido e com a
+  //    auréola de estado (cinzenta/verde/amarela). O listener é ligado em
+  //    app-init.js. Mantém-se este bloco removido de propósito — reintroduzi-lo
+  //    criaria um segundo botão com o mesmo id.
 
   if (window.lucide) lucide.createIcons();
 

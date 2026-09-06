@@ -142,12 +142,33 @@
     if (!train || !mainMap) return;
     if (typeof maplibregl === "undefined") return;
     const subtle = opts && opts.subtle;
-    const pos = window.MapaGeo
-      ? window.MapaGeo.computeTrainPosition(train, new Date())
-      : null;
+
+    // A âncora é onde o comboio está DESENHADO, não um recálculo da posição.
+    // O computeTrainPosition pode discordar do marcador — devolve null se o
+    // MapaGeo ainda não estiver iniciado, usa um "agora" diferente do da
+    // animação, e não sabe da interpolação em curso. Enquadrar por ele fazia
+    // o mapa começar na estação seguinte em vez de no comboio.
+    const entry = markers.get(train.id);
+    let pos = null;
+    if (entry && entry.marker && entry.marker.getLngLat) {
+      try {
+        const ll = entry.marker.getLngLat();
+        if (ll && isFinite(ll.lng) && isFinite(ll.lat)) pos = ll;
+      } catch (_) {}
+    }
+    if (!pos && window.MapaGeo) {
+      pos = window.MapaGeo.computeTrainPosition(train, new Date());
+    }
     if (!pos) return;
+
     let remaining = remainingNodes(train);
-    if (remaining.length === 0) return;
+    // Sem estações em falta (comboio no fim do percurso, ou ComboioPassou mal
+    // marcado) o enquadramento não pode desistir: fica ao menos o último nó,
+    // para haver sempre um par comboio → terminal.
+    if (remaining.length === 0) {
+      const todos = train.nodes || [];
+      if (todos.length) remaining = [todos[todos.length - 1]];
+    }
 
     // Quando há filtro de rota do utilizador, limita o enquadramento
     // entre a posição actual do comboio e a estação de destino do user
@@ -166,9 +187,28 @@
       [pos.lng, pos.lat],
       [pos.lng, pos.lat],
     );
+    let apanhouEstacao = false;
     for (const node of remaining) {
       const st = MAPA.resolveStationByApiId(node.EstacaoID);
+      if (st) {
+        bounds.extend([st.lng, st.lat]);
+        apanhouEstacao = true;
+      }
+    }
+    // Se nenhum nó foi reconhecido, o enquadramento seria um ponto só — e o
+    // fitBounds de um ponto salta para o zoom máximo. Melhor ficar pela
+    // terminal do percurso, mesmo que venha por nome em vez de id.
+    if (!apanhouEstacao && !userDestKey) {
+      const todos = train.nodes || [];
+      const ult = todos[todos.length - 1];
+      const st =
+        ult &&
+        (MAPA.resolveStationByApiId(ult.EstacaoID) ||
+          (MAPA.resolveStationByApiName
+            ? MAPA.resolveStationByApiName(ult.NomeEstacao)
+            : null));
       if (st) bounds.extend([st.lng, st.lat]);
+      else return; // sem par não vale a pena mexer o mapa
     }
 
     const padding = getRouteFocusPadding();

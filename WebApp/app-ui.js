@@ -490,13 +490,17 @@ window.buildOfflineTrainList = function () {
  * O espaço do header está sempre reservado (ver app.html: sem classe "hidden").
  */
 window.updateNextCountdown = function () {
-  const header = document.getElementById("next-train-header");
+  // A pílula do countdown é o único elemento que desvanece: o cabeçalho
+  // aloja agora o botão de refresh e o de filtro, sempre visíveis.
+  const pill =
+    document.getElementById("next-countdown-pill") ||
+    document.getElementById("next-train-header");
   const display = document.getElementById("countdown-display");
-  if (!header || !display) return;
+  if (!pill || !display) return;
 
   if (!nextTrainDate) {
     // Torna invisível mas mantém o espaço reservado
-    header.classList.add("opacity-0");
+    pill.classList.add("opacity-0");
     return;
   }
 
@@ -508,31 +512,79 @@ window.updateNextCountdown = function () {
   display.innerText =
     min > 60 ? "+ 1h" : `${min} min ${sec.toString().padStart(2, "0")} s`;
 
-  header.classList.remove("opacity-0");
+  pill.classList.remove("opacity-0");
+};
+
+/**
+ * Estado da ligação, agora comunicado pela AURÉOLA à volta do botão de refresh
+ * (o antigo ponto + "última atualização" deu lugar ao botão de filtro de hora):
+ *   cinzenta → offline / horário estático
+ *   verde    → dados em tempo real
+ *   amarela  → a API respondeu com erro
+ * A hora da última atualização passou para o tooltip do próprio botão.
+ */
+const AURA_COLORS = {
+  offline: { ring: "rgb(161,161,170)", glow: "transparent", live: false },
+  success: {
+    ring: "rgb(16,185,129)",
+    glow: "rgba(16,185,129,0.45)",
+    live: true,
+  },
+  error: {
+    ring: "rgb(245,158,11)",
+    glow: "rgba(245,158,11,0.45)",
+    live: false,
+  },
 };
 
 window.setStatus = function (s) {
-  const ping = document.getElementById("status-ping");
+  const ping = document.getElementById("status-ping"); // legado (pode não existir)
   const icon = document.getElementById("refresh-icon-menu");
-  const lastUpd = document.getElementById("last-updated");
+  const lastUpd = document.getElementById("last-updated"); // legado
+  const btn = document.getElementById("btn-manual-refresh");
+
+  const paintAura = (key, title) => {
+    if (!btn) return;
+    const c = AURA_COLORS[key] || AURA_COLORS.offline;
+    btn.style.setProperty("--aura", c.ring);
+    btn.style.setProperty("--aura-glow", c.glow);
+    btn.classList.toggle("aura-live", c.live);
+    btn.setAttribute("title", title);
+    btn.setAttribute("aria-label", title);
+  };
 
   if (s === "loading") {
     if (icon) icon.classList.add("animate-spin");
-  } else if (s === "error" || s === "offline") {
+    return; // mantém a cor anterior enquanto carrega
+  }
+
+  if (icon) icon.classList.remove("animate-spin");
+
+  if (s === "offline") {
     if (ping)
-      ping.className = `relative inline-flex h-1.5 w-1.5 rounded-full ${s === "offline" ? "bg-zinc-500" : "bg-red-500"}`;
+      ping.className =
+        "relative inline-flex h-1.5 w-1.5 rounded-full bg-zinc-500";
     if (lastUpd) lastUpd.innerText = "Offline";
-    if (icon) icon.classList.remove("animate-spin");
+    paintAura(
+      "offline",
+      typeof TimeFilter !== "undefined" && TimeFilter.isOtherDay()
+        ? "Horário programado — sem tempo real"
+        : "Offline — a mostrar horário programado",
+    );
+  } else if (s === "error") {
+    if (ping)
+      ping.className =
+        "relative inline-flex h-1.5 w-1.5 rounded-full bg-red-500";
+    if (lastUpd) lastUpd.innerText = "Offline";
+    paintAura("error", "A API devolveu um erro — toca para tentar de novo");
   } else {
     // success
+    const hora = new Date().toLocaleTimeString("pt-PT").substring(0, 5);
     if (ping)
       ping.className =
         "relative inline-flex h-1.5 w-1.5 rounded-full bg-blue-500 dot-ping";
-    if (lastUpd)
-      lastUpd.innerText = new Date()
-        .toLocaleTimeString("pt-PT")
-        .substring(0, 5);
-    if (icon) icon.classList.remove("animate-spin");
+    if (lastUpd) lastUpd.innerText = hora;
+    paintAura("success", `Em tempo real · atualizado às ${hora}`);
   }
 };
 
@@ -542,6 +594,26 @@ window.setStatus = function (s) {
 
 window.loadData = async function (silent = false) {
   if (isLoading) return;
+
+  // ── FILTRO DE HORA ATIVO ────────────────────────────────────────────
+  // A lista passa a vir do horário estático do dia escolhido. Não se toca
+  // na API: ela só serve o dia operacional corrente em tempo real.
+  // (Com o filtro INATIVO nada disto corre — caminho original intacto.)
+  if (typeof TimeFilter !== "undefined" && TimeFilter.isActive()) {
+    isLoading = true;
+    try {
+      renderList(TimeFilter.buildFiltered());
+      setStatus("offline");
+    } catch (e) {
+      console.error("[loadData/filtro]", e);
+      setStatus("error");
+    } finally {
+      isLoading = false;
+      if (window.lucide) lucide.createIcons();
+    }
+    return;
+  }
+
   isLoading = true;
   if (!silent) setStatus("loading");
 
@@ -610,8 +682,15 @@ window.switchTab = function (t) {
 
   window.hasScrolledNext = false;
   // Só esconde com opacity (sem display:none → sem CLS)
-  const header = document.getElementById("next-train-header");
-  if (header) header.classList.add("opacity-0");
+  const pill = document.getElementById("next-countdown-pill");
+  if (pill) pill.classList.add("opacity-0");
+
+  // Com filtro de hora ativo, reconstrói para o novo sentido em vez de
+  // ir à API (que só serve o dia corrente / tempo real).
+  if (typeof TimeFilter !== "undefined" && TimeFilter.isActive()) {
+    TimeFilter.refresh();
+    return;
+  }
 
   loadData(false);
 };

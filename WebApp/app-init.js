@@ -39,14 +39,25 @@ async function init() {
   // Remove a classe "hidden" (display:none) ANTES de qualquer paint,
   // para que o espaço esteja sempre reservado. Apenas opacity muda depois.
   // Isto elimina o CLS causado pelo header fixo que crescia ao aparecer.
+  //
+  // O cabeçalho aloja agora o botão de refresh (com auréola de estado) e o
+  // botão de filtro de hora, que têm de estar SEMPRE visíveis. Por isso a
+  // opacidade aplica-se apenas à pílula do countdown.
   const nextHeader = document.getElementById("next-train-header");
-  if (nextHeader) {
-    nextHeader.classList.remove("hidden");
-    // Mantém invisível até haver dados
-    if (!nextHeader.classList.contains("opacity-0")) {
-      nextHeader.classList.add("opacity-0");
-    }
+  if (nextHeader) nextHeader.classList.remove("hidden");
+
+  const countdownPill = document.getElementById("next-countdown-pill");
+  if (countdownPill && !countdownPill.classList.contains("opacity-0")) {
+    countdownPill.classList.add("opacity-0"); // invisível até haver dados
   }
+
+  // ── FILTRO DE HORA ─────────────────────────────────────────────────
+  // Liga os controlos do painel. Arranca INATIVO ("Partir Agora"), pelo
+  // que o resto do arranque decorre exatamente como antes.
+  if (window.TimeFilter) TimeFilter.bind();
+
+  // Estado inicial da auréola: cinzenta até haver resposta.
+  if (typeof setStatus === "function") setStatus("offline");
 
   // Aguarda que o menu.js construa o DOM do menu
   setTimeout(injectCustomMenuElements, 100);
@@ -148,6 +159,11 @@ window.onload = function () {
 
   const backdrop = document.getElementById("modal-backdrop");
   if (backdrop) backdrop.addEventListener("click", closeDetails);
+
+  // Refresh manual — o botão passou a ser estático no app.html (centrado por
+  // baixo do swap), já não é injetado pelo injectCustomMenuElements().
+  const refreshBtn = document.getElementById("btn-manual-refresh");
+  if (refreshBtn) refreshBtn.addEventListener("click", manualRefresh);
 })();
 
 // ─── DELEGAÇÃO DE EVENTOS (elementos dinâmicos) ───────────────────────

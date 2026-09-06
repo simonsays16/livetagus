@@ -321,6 +321,17 @@
       padding-bottom: env(safe-area-inset-bottom, 0px);
     }
     html.dark .lt-search-results { border-top-color: rgb(24 24 27); }
+    .lt-sr-hidden {
+      display: block; width: 100%; margin: .5rem 0 .25rem; padding: .7rem .9rem;
+      border: 1px dashed rgb(228 228 231); border-radius: 10px;
+      background: none; font: inherit; font-size: 11px; color: rgb(113 113 122);
+      text-align: left; cursor: pointer;
+    }
+    html.dark .lt-sr-hidden { border-color: rgb(39 39 42); color: rgb(161 161 170); }
+    .lt-sr-hidden b { color: rgb(9 9 11); }
+    html.dark .lt-sr-hidden b { color: #fff; }
+    .lt-sr-hidden:hover { border-style: solid; }
+
     .lt-search-hint {
       padding: .875rem 1.25rem .5rem;
       font-size: 9px; font-weight: 700; letter-spacing: .28em; text-transform: uppercase;
@@ -691,13 +702,22 @@
     }));
   }
 
+  // Um operador escondido no menu do olho não é descarregado por causa da
+  // pesquisa. Abrir a pesquisa chegava para puxar os ficheiros do Metro, do
+  // MTS e da CP, o que anulava o carregamento preguiçoso das camadas.
+  function visivel(grupo) {
+    return !window.MapaView || window.MapaView.isVisible(grupo);
+  }
+
+  function escondidos() {
+    return ["ml", "mts", "cp"].filter((g) => !visivel(g));
+  }
+
   function ensureSources() {
     return Promise.all([
-      ensureMts(),
-      ensureMl(),
-      // O CP carrega os dados de forma preguiçosa; a pesquisa força-o para as
-      // estações estarem no índice.
-      window.MapaCP && window.MapaCP.ensureLoaded
+      visivel("mts") ? ensureMts() : Promise.resolve(null),
+      visivel("ml") ? ensureMl() : Promise.resolve(null),
+      visivel("cp") && window.MapaCP && window.MapaCP.ensureLoaded
         ? window.MapaCP.ensureLoaded()
         : Promise.resolve(),
     ]);
@@ -904,12 +924,14 @@
     // vezes; fica só a versão "guardada".
     const seen = new Set(guardadas.map((i) => String(i.fav.id)));
     const cm = cmItems().filter((i) => !seen.has(String(i.fav.id)));
+    // Os caches sobrevivem a esconder a camada, por isso não basta não
+    // carregar: é preciso também não mostrar o que já se tinha carregado.
     return [].concat(
       guardadas,
       fertagusItems(),
-      mlCache || [],
-      mtsCache || [],
-      cpItems(),
+      visivel("ml") ? mlCache || [] : [],
+      visivel("mts") ? mtsCache || [] : [],
+      visivel("cp") ? cpItems() : [],
       cm,
     );
   }
@@ -1314,17 +1336,49 @@
     curResults = query(index, q, curFilter);
 
     if (!curResults.length) {
-      resultsEl.innerHTML = q
-        ? emptyHtml(inputEl.value)
-        : `<div class="lt-sr-empty"><p>Nada disponível de momento.</p></div>`;
+      resultsEl.innerHTML =
+        (q
+          ? emptyHtml(inputEl.value)
+          : `<div class="lt-sr-empty"><p>Nada disponível de momento.</p></div>`) +
+        escondidosHtml();
+      hookEscondidos();
       return;
     }
 
     const hint = q ? "" : `<p class="lt-search-hint">Sugestões</p>`;
     resultsEl.innerHTML =
-      hint + curResults.map((it, i) => rowHtml(it, i)).join("");
+      hint + curResults.map((it, i) => rowHtml(it, i)).join("") + escondidosHtml();
     hookLogos(resultsEl);
+    hookEscondidos();
     resultsEl.scrollTop = 0;
+  }
+
+  // Sem isto, esconder o Metro tornava-o impossível de encontrar e a pessoa
+  // não tinha como perceber porquê. O aviso só aparece quando há mesmo algo
+  // escondido, e mostrar a camada carrega os dados nesse momento.
+  const NOMES = { ml: "Metro de Lisboa", mts: "Metro Sul", cp: "CP" };
+
+  function escondidosHtml() {
+    const g = escondidos();
+    if (!g.length) return "";
+    const nomes = g.map((x) => NOMES[x] || x);
+    const lista =
+      nomes.length === 1
+        ? nomes[0]
+        : nomes.slice(0, -1).join(", ") + " e " + nomes[nomes.length - 1];
+    return `<button type="button" class="lt-sr-hidden" data-show-hidden="1">
+      ${escapeHtml(lista)} ${nomes.length === 1 ? "está escondido" : "estão escondidos"} no mapa · <b>Mostrar</b>
+    </button>`;
+  }
+
+  function hookEscondidos() {
+    const b = resultsEl.querySelector("[data-show-hidden]");
+    if (!b) return;
+    b.addEventListener("click", () => {
+      if (!window.MapaView) return;
+      for (const g of escondidos()) window.MapaView.set(g, true);
+      ensureSources().then(render);
+    });
   }
 
   function choose(item) {

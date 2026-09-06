@@ -620,21 +620,32 @@
     };
   }
 
-  function initML(map) {
-    // Posições em tempo real das viaturas (agência "2").
-    startMetroVehicles(map);
+  // Definida dentro do initML, quando o mapa já é conhecido.
+  let carregar = () => {};
+  let mlLoading = null;
 
-    // Reagir às mudanças de visibilidade.
+  function initML(map) {
+    // Reagir às mudanças de visibilidade. É também aqui que os dados são
+    // pedidos pela PRIMEIRA vez: quem tem o Metro escondido não descarrega
+    // ficheiro nenhum do Metro nem contacta a API de tempo real.
     if (window.MapaView) {
       window.MapaView.onChange((vis) => {
-        applyMlLayerVisibility(map, vis.has("ml"));
-        if (vis.has("ml")) {
+        const on = vis.has("ml");
+        if (on) carregar(map);
+        applyMlLayerVisibility(map, on);
+        if (on) {
+          startMetroVehicles(map); // arranca à primeira vez que for ligado
           refreshMetroVehicles();
         } else {
+          stopMetroVehicles();
           clearMetroVehicles();
           closeMetroPopup();
         }
       });
+    } else {
+      // Sem menu de camadas não há como esconder nada: carrega tudo.
+      carregar(map);
+      startMetroVehicles(map);
     }
 
     const addLayers = () => {
@@ -806,7 +817,10 @@
       );
     };
 
-    Promise.all([
+    // Só é chamada quando a camada é ligada, e só corre uma vez.
+    carregar = function () {
+      if (mlLoading) return mlLoading;
+      mlLoading = Promise.all([
       fetch(ML_SHAPE_PATH).then((r) => r.json()),
       fetch(ML_STATIONS_PATH).then((r) => r.json()),
       // Os ícones entram na mesma espera, para o addLayers já saber se os pode
@@ -820,9 +834,16 @@
         if (map.isStyleLoaded()) addLayers();
         else map.once("styledata", addLayers);
       })
-      .catch((err) =>
-        console.error("[Metro Lisboa] Erro ao carregar dados:", err),
-      );
+      .catch((err) => {
+        mlLoading = null; // deixa tentar outra vez ao religar a camada
+        console.error("[Metro Lisboa] Erro ao carregar dados:", err);
+      });
+      return mlLoading;
+    };
+
+    // Se a camada já estava ligada quando a página abriu, o onChange acima já
+    // disparou antes de o carregar existir — daí esta segunda tentativa.
+    if (!window.MapaView || window.MapaView.isVisible("ml")) carregar(map);
   }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -1062,9 +1083,20 @@
     }
   }
 
+  // Parar mesmo, e não só ignorar as respostas: com a camada escondida não
+  // faz sentido continuar a contactar a API de tempo real de 5 em 5 segundos.
+  // É rede e bateria gastas em dados que ninguém vai ver.
+  function stopMetroVehicles() {
+    if (metroPollTimer) {
+      clearInterval(metroPollTimer);
+      metroPollTimer = null;
+    }
+    metroStarted = false;
+  }
+
   function startMetroVehicles(map) {
-    metroMap = map;
-    if (metroStarted) return;
+    if (map) metroMap = map;
+    if (metroStarted) return; // não duplicar o temporizador ao religar
     metroStarted = true;
     refreshMetroVehicles();
     metroPollTimer = setInterval(refreshMetroVehicles, METRO_POLL_MS);

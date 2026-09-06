@@ -268,9 +268,18 @@
     };
   }
 
+  // Definida dentro do init, quando o mapa já é conhecido.
+  let carregar = () => {};
+  let mtsLoading = null;
+
   function initMTS(map) {
     whenMapaView((MV) => {
-      MV.onChange((vis) => applyVisibility(map, vis.has("mts")));
+      MV.onChange((vis) => {
+        // É aqui que os dados são pedidos pela primeira vez: quem tem o MTS
+        // escondido não descarrega os ficheiros do MTS.
+        if (vis.has("mts")) carregar();
+        applyVisibility(map, vis.has("mts"));
+      });
     });
 
     const addLayers = () => {
@@ -434,7 +443,11 @@
       );
     };
 
-    Promise.all([
+    // Só corre quando a camada é ligada: quem tem o MTS escondido não
+    // descarrega os ficheiros do MTS.
+    carregar = function () {
+      if (mtsLoading) return mtsLoading;
+      mtsLoading = Promise.all([
       fetch(LINES_PATH).then((r) => r.json()),
       fetch(STATIONS_PATH).then((r) => r.json()),
       // Os ícones entram na mesma espera, para o addLayers já saber se os pode
@@ -448,6 +461,15 @@
         if (map.isStyleLoaded()) addLayers();
         else map.once("styledata", addLayers);
       })
-      .catch((err) => console.error("[MTS] Erro ao carregar dados:", err));
+      .catch((err) => {
+        mtsLoading = null; // deixa tentar outra vez ao religar a camada
+        console.error("[MTS] Erro ao carregar dados:", err);
+      });
+      return mtsLoading;
+    };
+
+    // Se a camada já estava ligada quando a página abriu, o onChange acima
+    // disparou antes de o carregar existir — daí esta segunda tentativa.
+    if (!window.MapaView || window.MapaView.isVisible("mts")) carregar();
   }
 })();
