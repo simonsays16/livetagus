@@ -32,6 +32,7 @@
     "FOGUETEIRO",
     "COINA",
     "PENALVA",
+    "PINHAL NOVO",
     "VENDA DO ALCAIDE",
     "PALMELA",
     "SETUBAL",
