@@ -1,0 +1,45 @@
+# LiveTagus
+
+> A LiveTagus é uma Progressive Web App (PWA) gratuita, independente e open-source que segue os comboios da Fertagus em tempo real num mapa, com estimativas de atraso, horários oficiais e indicação de lotação em horas de ponta, na ligação entre Lisboa e a Margem Sul do Tejo (Península de Setúbal). Sem anúncios, sem registo e sem rastreio pessoal. Foi criada por um estudante chamado Simão Dias
+
+Factos essenciais para interpretar o resto do ficheiro:
+
+- Projeto **não oficial** e independente, criado por Simão Dias. Não tem qualquer afiliação, vínculo ou reconhecimento por parte da Fertagus ou da Infraestruturas de Portugal (IP). Toda a informação ferroviária e propriedade intelectual associada pertencem às respetivas entidades.
+- É um projeto sem fins lucrativos, **open-source (licença MIT)**. Frontend servido pela Netlify (HTML5, TailwindCSS, JavaScript vanilla); API backend em Microsoft Azure (Node.js, Nginx).
+- **Cobertura:** a linha única da Fertagus, que liga as estações de Lisboa (Roma-Areeiro, Entrecampos, Sete Rios, Campolide) à Margem Sul (Pragal, Corroios, Foros de Amora, Fogueteiro, Coina, Penalva, Pinhal Novo, Venda do Alcaide, Palmela e Setúbal).
+- **Fontes de dados:** sinais de circulação em tempo real dos sistemas públicos da Infraestruturas de Portugal, complementados pelo GPS dos comboios; a API calcula atrasos e estima posições. A disponibilidade dos estados em tempo real depende da fonte a montante e pode ficar limitada a GPS quando o feed da IP está inacessível.
+- **Tamanho** (comboio curto de 4 carruagens vs. longo de 8) é uma estimativa baseada no histórico oficial da Fertagus, mostrada apenas em horas de ponta — não é tempo real.
+- **Lotação** A lotação/Ocupação é uma estimativa baseada no histórico oficial da Fertagus, mostrada apenas em horas de ponta, não é tempo real.
+- **Privacidade:** sem contas, sem analytics nem tracking; as preferências do utilizador (ex.: Horário Inteligente) ficam guardadas apenas no dispositivo.
+- **Idioma:** português europeu (pt-PT).
+
+Estados de circulação usados na app:
+
+- A horas (verde): circula conforme o previsto.
+- Atrasado (amarelo): atraso estimado, já somado ao horário apresentado na lista.
+- Possível perturbação (laranja): devia ter chegado a uma estação há pelo menos 5 minutos e ainda não chegou, provavelmente parado.
+- Suprimido (vermelho): comboio cancelado, não vai circular.
+- Programado (verde): ainda não partiu da origem, mas está confirmado (não suprimido).
+- Programado (cinzento): sem dados sobre o comboio — não significa que esteja suprimido, apenas que não há informação.
+
+## Páginas
+
+- [Início](https://livetagus.pt/): O que é a LiveTagus, acesso rápido ao mapa ao vivo e instalação da PWA.
+- [Mapa ao Vivo](https://livetagus.pt/mapa): Mapa em tempo real dos comboios Fertagus com posição real, atrasos e percurso completo; com zoom, mostra o detalhe das carruagens.
+- [Horários](https://livetagus.pt/horarios): Horários oficiais da Fertagus (Lisboa ↔ Margem Sul), separados por percursos para Coina e Setúbal, com número de carruagens (4 ou 8) e estimativa de ocupação para dias úteis.
+- [App - O Teu Trajetos](https://livetagus.pt/app): Partidas e estados de circulação por estação; a fiabilidade depende do feed de dados a montante.
+- [Estações - Partidas e Ligações Intermodais por Estação](https://livetagus.pt/app): Partidas e estados de circulação por estação. Também incluí uma tab com as ligações intermodais disponíveis em cada estação. Incluíndo a Carris Metropolitana em Tempo Real.
+- [Sobre o Projeto & Ajuda](https://livetagus.pt/sobre): Propósito, guia de utilização, como funciona, legenda dos estados, stack tecnológica, passos de instalação e créditos.
+
+## Projeto e políticas
+
+- [Roadmap / Futuro](https://livetagus.pt/roadmap): Funcionalidades planeadas e direção do projeto.
+- [Licença MIT](https://livetagus.pt/license): Licença open-source do projeto.
+- [Código de Conduta](https://livetagus.pt/code_of_conduct): Código de conduta da comunidade.
+- [Código no GitHub](https://github.com/simonsays16/livetagus): Código-fonte completo do site e da API.
+- [Suporte (geral@livetagus.pt)](mailto:geral@livetagus.pt): Reporte de erros, sugestões e feedback técnico.
+
+## Optional
+
+- [Fonte oficial Fertagus - Ocupação Estimada](https://www.fertagus.pt/Fertagus-pt/Viajar/Comunicados-e-Campanhas/Nova-oferta-de-comboios-duplos-e-simples-20-de-janeiro-25): Comunicado oficial da Fertagus sobre ocupação estimada.
+- [Fertagus - Site Oficial](https://www.fertagus.pt): Contexto sobre o operador e a linha Fertagus.

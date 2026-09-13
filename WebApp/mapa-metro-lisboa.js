@@ -92,7 +92,12 @@
       try {
         const raw = localStorage.getItem(KEY_KNOWN);
         return raw
-          ? new Set(raw.split(",").map((x) => x.trim().toLowerCase()).filter(Boolean))
+          ? new Set(
+              raw
+                .split(",")
+                .map((x) => x.trim().toLowerCase())
+                .filter(Boolean),
+            )
           : new Set();
       } catch (_) {
         return new Set();
@@ -109,7 +114,9 @@
     // Permite a outros módulos (mapa-cp.js, por ex.) acrescentarem uma camada
     // ao menu do olho sem editar este ficheiro.
     function register(group, opts) {
-      const g = String(group == null ? "" : group).trim().toLowerCase();
+      const g = String(group == null ? "" : group)
+        .trim()
+        .toLowerCase();
       if (!g) return;
       if (!TOGGLEABLE.includes(g)) TOGGLEABLE.push(g);
       LABELS[g] = (opts && opts.label) || LABELS[g] || g;
@@ -124,7 +131,10 @@
           const raw = localStorage.getItem(KEY);
           inPref =
             raw != null &&
-            raw.split(",").map((x) => x.trim().toLowerCase()).includes(g);
+            raw
+              .split(",")
+              .map((x) => x.trim().toLowerCase())
+              .includes(g);
         } catch (_) {}
         if (inPref) visible.add(g);
         else visible.delete(g);
@@ -258,12 +268,14 @@
       host.appendChild(btn);
       host.appendChild(menuEl);
       // Entra na pilha de botões flutuantes; o MapaPerto decide as posições.
-      if (window.MapaPerto && window.MapaPerto.layout) window.MapaPerto.layout();
+      if (window.MapaPerto && window.MapaPerto.layout)
+        window.MapaPerto.layout();
 
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
         // Reposiciona antes de mostrar: o header pode ter mudado de altura.
-        if (window.MapaPerto && window.MapaPerto.layout) window.MapaPerto.layout();
+        if (window.MapaPerto && window.MapaPerto.layout)
+          window.MapaPerto.layout();
         menuEl.classList.toggle("lt-hidden");
       });
       menuEl.querySelectorAll("[data-view-group]").forEach((row) => {
@@ -431,14 +443,9 @@
       if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", v);
     });
     // Esconder a camada fecha a sheet, mas só se for a do Metro de Lisboa.
-    if (
-      !on &&
-      window.GtfsHorarios &&
-      window.GtfsHorarios.operator() === "ml"
-    )
+    if (!on && window.GtfsHorarios && window.GtfsHorarios.operator() === "ml")
       window.GtfsHorarios.close();
   }
-
 
   // ─── ORDEM DAS CAMADAS ──────────────────────────────────────────────
   //
@@ -524,7 +531,7 @@
     "Open Sans Semibold",
   ];
   const LABEL_MINZOOM = 14;
-    // Os operadores intermodais só aparecem a partir daqui. Abaixo disto o mapa
+  // Os operadores intermodais só aparecem a partir daqui. Abaixo disto o mapa
   // fica limpo e as paragens não são sequer clicáveis — o minzoom trata das
   // duas coisas, porque o MapLibre não consulta uma camada que não desenha.
   // (Opacidade a zero não servia: as features continuavam a responder ao rato.)
@@ -610,7 +617,19 @@
       source: "ml-stations",
       minzoom: STATIONS_MINZOOM,
       paint: {
-        "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 3.5, 12, 5.5, 15, 8, 18, 11],
+        "circle-radius": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          8,
+          3.5,
+          12,
+          5.5,
+          15,
+          8,
+          18,
+          11,
+        ],
         "circle-color": "#FFFFFF",
         "circle-stroke-width": 2,
         "circle-stroke-color": "#000000",
@@ -744,7 +763,6 @@
         });
       }
 
-
       // Selecção: aplica já o estado actual e volta a aplicar sempre que muda.
       // O unsubscribe não é preciso — a camada vive tanto quanto a página.
       if (window.MapaSelecao && !map._ltSel_ml) {
@@ -821,23 +839,23 @@
     carregar = function () {
       if (mlLoading) return mlLoading;
       mlLoading = Promise.all([
-      fetch(ML_SHAPE_PATH).then((r) => r.json()),
-      fetch(ML_STATIONS_PATH).then((r) => r.json()),
-      // Os ícones entram na mesma espera, para o addLayers já saber se os pode
-      // usar. São dois: fundo branco e fundo verde (seleccionada).
-      ensureIcons(map),
-    ])
-      .then(([mlShape, mlStations, hasIcon]) => {
-        mlShapeData = mlShape;
-        mlStationsData = mlStations;
-        iconReady = !!hasIcon;
-        if (map.isStyleLoaded()) addLayers();
-        else map.once("styledata", addLayers);
-      })
-      .catch((err) => {
-        mlLoading = null; // deixa tentar outra vez ao religar a camada
-        console.error("[Metro Lisboa] Erro ao carregar dados:", err);
-      });
+        fetch(ML_SHAPE_PATH).then((r) => r.json()),
+        fetch(ML_STATIONS_PATH).then((r) => r.json()),
+        // Os ícones entram na mesma espera, para o addLayers já saber se os pode
+        // usar. São dois: fundo branco e fundo verde (seleccionada).
+        ensureIcons(map),
+      ])
+        .then(([mlShape, mlStations, hasIcon]) => {
+          mlShapeData = mlShape;
+          mlStationsData = mlStations;
+          iconReady = !!hasIcon;
+          if (map.isStyleLoaded()) addLayers();
+          else map.once("styledata", addLayers);
+        })
+        .catch((err) => {
+          mlLoading = null; // deixa tentar outra vez ao religar a camada
+          console.error("[Metro Lisboa] Erro ao carregar dados:", err);
+        });
       return mlLoading;
     };
 
@@ -865,7 +883,7 @@
 
   const TML_POSITIONS_URL =
     "https://go.tmlmobilidade.pt/hub/api/v1/realtime/vehicles/positions";
-  const METRO_AGENCY_ID = "2";
+  const METRO_AGENCY_ID = "2"; //"IA2N9";
   const METRO_POLL_MS = 5000;
   const METRO_FETCH_TIMEOUT_MS = 4000;
 

@@ -6,7 +6,7 @@
 
 document.addEventListener("DOMContentLoaded", () => {
   const CM_API_BASE = "https://api.carrismetropolitana.pt/v2";
-  const STOPS_JSON_PATH = "./json/stops_cm.json";
+  const STOPS_JSON_PATH = "/resources/data/json/stops_cm.json";
   const STORAGE_KEY = "cm_saved_stops";
   const MAX_STOPS = 10;
   const REFRESH_INTERVAL = 30000;

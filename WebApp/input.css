@@ -207,3 +207,315 @@
   70% { box-shadow: 0 0 0 6px transparent; opacity: 1; }
   to { box-shadow: 0 0 0 0 transparent; opacity: 1; }
 }
+/* ═══════════════════════════════════════════════════════════════════════════
+   AVISOS DE OCUPAÇÃO  (app-occupancy.js)
+   Caixa que aparece no cartão do comboio: âmbar quando vai cheio, verde nas
+   alternativas mais confortáveis. Definidas aqui e não com utilitários
+   Tailwind porque várias das opacidades necessárias (emerald/30, emerald/5)
+   não constam do build e falhavam em silêncio.
+   ═══════════════════════════════════════════════════════════════════════════ */
+@layer components {
+  .occ-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    margin-top: 0.75rem;
+    padding: 0.7rem 0.8rem;
+    border: 1px solid;
+    border-radius: 0.75rem;
+  }
+
+  .occ-note__icon {
+    display: flex;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .occ-note__body {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .occ-note__title {
+    font-size: 0.625rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 0.25rem;
+    color: #27272a;
+  }
+  html.dark .occ-note__title {
+    color: #e4e4e7;
+  }
+
+  .occ-note__text {
+    font-size: 0.625rem;
+    line-height: 1.45;
+    color: #71717a;
+  }
+  html.dark .occ-note__text {
+    color: #a1a1aa;
+  }
+
+  .occ-note--warn {
+    border-color: rgba(245, 158, 11, 0.3);
+    background-color: rgba(245, 158, 11, 0.08);
+  }
+  .occ-note--warn .occ-note__icon {
+    color: #d97706;
+  }
+  html.dark .occ-note--warn .occ-note__icon {
+    color: #fbbf24;
+  }
+
+  .occ-note--good {
+    border-color: rgba(16, 185, 129, 0.3);
+    background-color: rgba(16, 185, 129, 0.08);
+  }
+  .occ-note--good .occ-note__icon {
+    color: #059669;
+  }
+  html.dark .occ-note--good .occ-note__icon {
+    color: #34d399;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PAINEL DE HORA / DIA NA APP  (planear-searchbar.js com data-theme="app")
+   Reveste a marcação partilhada com a linguagem da app: controlo segmentado
+   arredondado como o .tabs-container, hora em mono grande como os cartões,
+   e a data numa linha discreta por baixo.
+   ═══════════════════════════════════════════════════════════════════════════ */
+@layer components {
+  /* Hora primeiro, data depois — a ordem que interessa a quem consulta. */
+  .lt-sb-app .lt-sb-dt {
+    gap: 1.5rem !important;
+  }
+  .lt-sb-app [data-lt="time-block"] {
+    order: 1;
+  }
+  .lt-sb-app [data-lt="date-block"] {
+    order: 2;
+  }
+
+  .lt-sb-app .lt-sb-lbl {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: #a1a1aa;
+  }
+  html.dark .lt-sb-app .lt-sb-lbl {
+    color: #71717a;
+  }
+
+  /* ── Segmentado Partir / Chegar ── */
+  .lt-sb-app .lt-sb-row {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
+  }
+  .lt-sb-app .lt-sb-toggle {
+    flex: 1 0 100%;
+    order: -1;
+    display: flex;
+    padding: 3px;
+    margin-bottom: 0.35rem;
+    border-radius: 999px;
+    background-color: #f4f4f5;
+    border: 1px solid #e4e4e7;
+  }
+  html.dark .lt-sb-app .lt-sb-toggle {
+    background-color: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+  .lt-sb-app .lt-sb-mode {
+    flex: 1;
+    height: 30px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background-color: transparent;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    color: #71717a;
+    transition:
+      background-color 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+      color 0.25s ease;
+  }
+  html.dark .lt-sb-app .lt-sb-mode {
+    color: #a1a1aa;
+  }
+  .lt-sb-app .lt-sb-mode[aria-pressed="true"] {
+    background-color: #3b82f6;
+    color: #fff;
+    box-shadow: 0 0 18px rgba(59, 130, 246, 0.3);
+  }
+
+  /* ── Hora: número grande em mono, setas discretas ── */
+  .lt-sb-app .lt-sb-step {
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    border: 1px solid #e4e4e7;
+    background-color: transparent;
+    color: #a1a1aa;
+  }
+  html.dark .lt-sb-app .lt-sb-step {
+    border-color: rgba(255, 255, 255, 0.08);
+    color: #71717a;
+  }
+  .lt-sb-app .lt-sb-step:hover {
+    border-color: #3b82f6;
+    color: #3b82f6;
+  }
+
+  .lt-sb-app [data-lt="time-block"] .lt-sb-val {
+    flex: 0 1 auto;
+    min-width: 7rem;
+    height: auto;
+    border: 0;
+    background-color: transparent;
+  }
+  .lt-sb-app .lt-sb-val-mono {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 2.5rem;
+    font-weight: 500;
+    letter-spacing: -0.05em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: #18181b;
+  }
+  html.dark .lt-sb-app .lt-sb-val-mono {
+    color: #fafafa;
+  }
+
+  /* ── Data: linha discreta, tocável de ponta a ponta ── */
+  .lt-sb-app [data-lt="date-block"] .lt-sb-val {
+    height: 40px;
+    border: 0;
+    border-top: 1px solid #f4f4f5;
+    border-bottom: 1px solid #f4f4f5;
+    border-radius: 0;
+    background-color: transparent;
+  }
+  html.dark .lt-sb-app [data-lt="date-block"] .lt-sb-val {
+    border-top-color: rgba(255, 255, 255, 0.06);
+    border-bottom-color: rgba(255, 255, 255, 0.06);
+  }
+  .lt-sb-app .lt-sb-val-txt {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    color: #27272a;
+  }
+  html.dark .lt-sb-app .lt-sb-val-txt {
+    color: #e4e4e7;
+  }
+  .lt-sb-app .lt-sb-badge {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: none;
+    color: #3b82f6;
+  }
+
+  /* ── Aviso de dia sem tempo real ── */
+  .lt-sb-app .lt-sb-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.45rem;
+    margin-top: 1rem;
+    font-size: 10px;
+    line-height: 1.45;
+    color: #a1a1aa;
+  }
+  html.dark .lt-sb-app .lt-sb-note {
+    color: #71717a;
+  }
+  .lt-sb-app .lt-sb-note.hidden {
+    display: none;
+  }
+
+  /* ── Acções ── */
+  .lt-sb-app .lt-sb-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+  }
+  .lt-sb-app .lt-sb-reset,
+  .lt-sb-app .lt-sb-actions .lt-sb-cta {
+    flex: 1;
+    margin-top: 0;
+    padding: 0.85rem 1rem;
+    border-radius: 0.625rem;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease,
+      border-color 0.2s ease;
+  }
+  .lt-sb-app .lt-sb-reset {
+    border: 1px solid #e4e4e7;
+    background-color: transparent;
+    color: #71717a;
+  }
+  html.dark .lt-sb-app .lt-sb-reset {
+    border-color: rgba(255, 255, 255, 0.08);
+    color: #a1a1aa;
+  }
+  .lt-sb-app .lt-sb-reset:hover {
+    color: #18181b;
+    border-color: #a1a1aa;
+  }
+  html.dark .lt-sb-app .lt-sb-reset:hover {
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+  .lt-sb-app .lt-sb-actions .lt-sb-cta {
+    border: 1px solid #3b82f6;
+    background-color: #3b82f6;
+    color: #fff;
+  }
+  .lt-sb-app .lt-sb-actions .lt-sb-cta:hover {
+    background-color: #2563eb;
+    border-color: #2563eb;
+  }
+
+  /* ── Browsers sem showPicker(): revela o campo nativo em vez de deixar
+        uma pílula que não responde ao clique (era o caso no Windows). ── */
+  .lt-sb-native .lt-native-overlay {
+    opacity: 1;
+    color: inherit;
+    font: inherit;
+    text-align: center;
+  }
+  .lt-sb-native .lt-sb-val-mono,
+  .lt-sb-native .lt-sb-val-txt {
+    visibility: hidden;
+  }
+  .lt-sb-native [data-lt="time-block"] .lt-native-overlay {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 1.75rem;
+    font-weight: 500;
+    letter-spacing: -0.04em;
+    color: #18181b;
+  }
+  html.dark .lt-sb-native [data-lt="time-block"] .lt-native-overlay {
+    color: #fafafa;
+  }
+  .lt-sb-native [data-lt="date-block"] .lt-native-overlay {
+    font-size: 12px;
+    font-weight: 600;
+    color: #27272a;
+  }
+  html.dark .lt-sb-native [data-lt="date-block"] .lt-native-overlay {
+    color: #e4e4e7;
+  }
+}

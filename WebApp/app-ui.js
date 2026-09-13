@@ -164,6 +164,7 @@ function _cardInnerHTML(t) {
       </div>
     </div>
     <div data-field="cars">${_carsHtml(t)}</div>
+    <div data-field="occnote">${typeof OccAdvisor !== "undefined" ? OccAdvisor.noteHtml(t) : ""}</div>
     <div data-field="ctx">${_ctxHtml(t)}</div>
     <div data-field="abnormal">${_abnormalHtml(t)}</div>
   `;
@@ -257,6 +258,15 @@ function _patchCard(el, t, isPassed) {
 
   const carsEl = el.querySelector("[data-field='cars']");
   if (carsEl) carsEl.innerHTML = _carsHtml(t);
+
+  // Aviso de ocupação: recalculado a cada render, tem de ser repintado aqui
+  // ou fica preso ao estado do primeiro desenho do cartão.
+  const occEl = el.querySelector("[data-field='occnote']");
+  if (occEl) {
+    const html =
+      typeof OccAdvisor !== "undefined" ? OccAdvisor.noteHtml(t) : "";
+    if (occEl.innerHTML !== html) occEl.innerHTML = html;
+  }
 
   const ctxEl = el.querySelector("[data-field='ctx']");
   if (ctxEl) ctxEl.innerHTML = _ctxHtml(t);
@@ -600,18 +610,24 @@ window.loadData = async function (silent = false) {
   // na API: ela só serve o dia operacional corrente em tempo real.
   // (Com o filtro INATIVO nada disto corre — caminho original intacto.)
   if (typeof TimeFilter !== "undefined" && TimeFilter.isActive()) {
-    isLoading = true;
-    try {
-      renderList(TimeFilter.buildFiltered());
-      setStatus("offline");
-    } catch (e) {
-      console.error("[loadData/filtro]", e);
-      setStatus("error");
-    } finally {
-      isLoading = false;
-      if (window.lucide) lucide.createIcons();
+    // Outro dia: a API só serve o dia operacional corrente, por isso a lista
+    // vem do horário estático e o estado é forçado a offline.
+    if (TimeFilter.isOtherDay()) {
+      isLoading = true;
+      try {
+        renderList(TimeFilter.buildFiltered());
+        setStatus("offline");
+      } catch (e) {
+        console.error("[loadData/filtro]", e);
+        setStatus("error");
+      } finally {
+        isLoading = false;
+        if (window.lucide) lucide.createIcons();
+      }
+      return;
     }
-    return;
+    // Hoje: segue o caminho normal (tempo real incluído) e só se reancora a
+    // lista à hora escolhida — não se perde estado nem atrasos em direto.
   }
 
   isLoading = true;
@@ -624,22 +640,37 @@ window.loadData = async function (silent = false) {
     // erro de rede
     if (data === null) {
       setStatus("offline");
-      renderList(buildOfflineTrainList());
+      renderList(
+        typeof TimeFilter !== "undefined" && TimeFilter.isActive()
+          ? TimeFilter.buildFiltered()
+          : buildOfflineTrainList(),
+      );
       return;
     }
 
     // API marcada como em baixo → popup de aviso + lista offline
     if (window.apiIsDown) {
-      renderList(buildOfflineTrainList());
+      renderList(
+        typeof TimeFilter !== "undefined" && TimeFilter.isActive()
+          ? TimeFilter.buildFiltered()
+          : buildOfflineTrainList(),
+      );
       setStatus("offline");
       showIpDownPopup();
       return;
     }
 
     await updateAlertsSystem(data);
-    renderList(data);
 
-    if (data.length > 0) setStatus("success");
+    // Filtro para hoje: reancora a lista à hora escolhida, preservando os
+    // dados em tempo real (estado, atrasos, ocupação) de cada comboio.
+    const lista =
+      typeof TimeFilter !== "undefined" && TimeFilter.isActive()
+        ? TimeFilter.anchor(data)
+        : data;
+    renderList(lista);
+
+    if (lista.length > 0) setStatus("success");
     else setStatus("offline");
   } catch (e) {
     console.error("[loadData]", e);
@@ -1132,81 +1163,19 @@ function closeDetails() {
 let ipPopupDismissed = false;
 
 function showIpDownPopup() {
-  if (ipPopupDismissed) return;
-  if (document.getElementById("ip-down-popup")) return;
-
-  const overlay = document.createElement("div");
-  overlay.id = "ip-down-popup";
-
-  overlay.className =
-    "fixed inset-0 z-30 bg-zinc-50 dark:bg-[#09090b] w-full h-[100dvh] overflow-y-auto animate-fade-in supports-[height:100svh]:h-[100svh]";
-
-  overlay.innerHTML = `
-    <div class="relative w-full max-w-3xl mx-auto flex flex-col px-6 pb-12" style="padding-top: calc(6rem + env(safe-area-inset-top)); min-h: 100%;">
-      
-      <div class="relative bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/5 shadow-xl rounded-3xl p-6 md:p-10 w-full flex flex-col items-center text-center">
-        
-        <button data-action="dismiss-ip-popup" class="absolute top-4 right-4 md:top-6 md:right-6 p-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-full text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white transition-all active:scale-95" aria-label="Fechar comunicado">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-
-        <div class="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-6 shrink-0 mt-2">
-          <i data-lucide="wifi-off" class="w-8 h-8 text-zinc-700 dark:text-zinc-300"></i>
-        </div>
-
-        <div class="text-sm md:text-base text-zinc-500 dark:text-zinc-400 mb-6 leading-relaxed space-y-2 text-left w-full">
-          <p>Esta página encontra-se bloqueada em modo offline sem perspetiva de regresso a curto prazo. <b class="text-zinc-800 dark:text-zinc-200">O mapa continua com os GPS em Tempo Real.</b></p>
-        </div>
-
-        <a href="/mapa" class="w-full py-4 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-bold tracking-widest uppercase transition-all active:scale-95 mb-6 flex justify-center items-center shadow-lg">
-          Abrir Mapa
-        </a>
-
-        <h2 class="text-2xl font-bold text-zinc-900 dark:text-white mb-6 mt-2 leading-tight">Comunicado LiveTagus</h2>
-
-        <div class="w-full text-left mb-6 bg-amber-500/10 dark:bg-amber-500/5 rounded-xl p-5 border border-amber-500/30">
-          <p class="text-sm text-amber-800 dark:text-amber-200 leading-relaxed">
-            <strong class="font-bold text-black dark:text-white">ESCLARECIMENTO:</strong> A Fertagus não está envolvida em qualquer sentido no bloqueio do nosso servidor. A LiveTagus usava pontos não-oficiais da IP, que devido a uma compreensiva medida de segurança por parte deles, foi bloqueado.
-          </p>
-        </div>
-
-        <div class="text-sm text-zinc-500 dark:text-zinc-400 mb-6 leading-relaxed space-y-4 text-left w-full">
-          <p>Infelizmente, a LiveTagus (projeto independente) perdeu o acesso aos dados que alimentam os estados de circulação em tempo real desde sexta-feira, dia 12 de junho.</p>
-          
-          <p>A causa é uma alteração técnica do lado da fonte de dados. Mesmo sem certezas, acredito que se trata de uma medida de segurança abrangente, e não algo direcionado à LiveTagus.</p>
-          
-          <p>Neste momento, a aplicação mantém apenas acesso ao sinal de GPS dos comboios. Estes sinais, por si só, não são suficiente para garantir o funcionamento fiável das páginas da App e das partidas por estações da LiveTagus.</p>
-
-          <p>Lamento profundamente ter de limitar estas páginas, mas não é possível assegurar a fiabilidade da informação aqui partilhada.</p>
-          
-          <p><b class="text-zinc-800 dark:text-zinc-200">A página do Mapa continua disponível</b>, e estou a focar os meus esforços para melhorar a informação lá apresentada. Vou continuar a trabalhar de forma proativa para resolver e ultrapassar esta limitação.</p>
-        </div>
-
-        <div class="w-full text-left mb-8 bg-zinc-50 dark:bg-zinc-800/40 rounded-xl p-5 border border-zinc-100 dark:border-zinc-800/50">
-          <p class="text-[11px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-4">Neste momento, a LiveTagus não consegue:</p>
-          <ul class="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed space-y-3">
-            <li class="flex gap-3"><span class="text-zinc-300 dark:text-zinc-600 shrink-0 mt-0.5">—</span> Mostrar comboios suprimidos;</li>
-            <li class="flex gap-3"><span class="text-zinc-300 dark:text-zinc-600 shrink-0 mt-0.5">—</span> Detetar comboios extra e indicar corretamente a sua circulação;</li>
-            <li class="flex gap-3"><span class="text-zinc-300 dark:text-zinc-600 shrink-0 mt-0.5">—</span> Identificar trajetos anormais ou alterações operacionais;</li>
-            <li class="flex gap-3"><span class="text-zinc-300 dark:text-zinc-600 shrink-0 mt-0.5">—</span> Mostrar o estado atualizado dos comboios futuros do dia;</li>
-            <li class="flex gap-3"><span class="text-zinc-300 dark:text-zinc-600 shrink-0 mt-0.5">—</span> Validar a informação obtida por GPS.</li>
-          </ul>
-        </div>
-        
-        <div class="text-sm text-zinc-500 dark:text-zinc-400 mb-6 leading-relaxed space-y-4 text-left w-full">
-          <p class="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400 italic bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-xl border border-zinc-100 dark:border-zinc-700/50 my-4">
-            <span class="font-bold text-zinc-700 dark:text-zinc-300">Última Atualização:</span> 17 Jun 26
-          </p>
-        </div>
-
-        <button data-action="dismiss-ip-popup" class="w-full py-4 rounded-xl border-2 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-sm font-bold tracking-widest uppercase transition-all active:scale-95 text-center">
-          Ver Horários Offline
-        </button>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(overlay);
+  // COMUNICADO REMOVIDO.
+  // Esta função mostrava um ecrã inteiro com o comunicado sobre o bloqueio da
+  // fonte de dados (junho). O tempo real está reposto e o texto ficou
+  // desatualizado, pelo que deixou de aparecer.
+  //
+  // Mantém-se como stub de propósito: continua a ser chamada pelo loadData()
+  // e o botão data-action="dismiss-ip-popup" ainda existe na delegação de
+  // eventos do app-init.js. Removê-la por completo obrigaria a mexer nesses
+  // dois sítios sem ganho nenhum.
+  //
+  // A app já degrada bem sem ela: sem API, renderiza o horário estático e a
+  // auréola do refresh fica cinzenta (ou amarela, se a API devolver erro).
+  return;
 }
 
 window.dismissIpDownPopup = function () {
@@ -1273,18 +1242,28 @@ window.renderList = function (list) {
   // tudo bem agora, limpar contador
   sessionStorage.removeItem("livetagus_empty_reload");
 
-  // ── 2. Limite de exibição ──────────────────────────────────────────
-  const visibleList = list.slice(0, displayLimit);
-  if (list.length > displayLimit) loadMoreBtn.classList.remove("hidden");
-  else loadMoreBtn.classList.add("hidden");
-
-  // ── 3. Índice do próximo comboio ───────────────────────────────────
+  // ── 2. Índice do próximo comboio ───────────────────────────────────
   let nextIdx = list.findIndex((t) => t.isEffectiveFuture && !t.isSuppressed);
   if (nextIdx === -1 && list.some((t) => !t.isSuppressed))
     nextIdx = list.length - 1;
   if (nextIdx === -1) nextIdx = 0;
   nextTrainDate = list[nextIdx]?.effectiveDate;
   updateNextCountdown();
+
+  // ── 3. Avisos de ocupação ──────────────────────────────────────────
+  // Anota o comboio cheio e as alternativas mais confortáveis. A janela
+  // visível é esticada para que a alternativa seguinte apareça mesmo que
+  // caia para lá do limite de exibição — de nada serve sugeri-la escondida.
+  let limit = displayLimit;
+  if (typeof OccAdvisor !== "undefined") {
+    const adv = OccAdvisor.annotate(list, nextIdx);
+    if (adv.laterIdx > -1) limit = Math.max(limit, adv.laterIdx + 1);
+  }
+
+  // ── 4. Limite de exibição ──────────────────────────────────────────
+  const visibleList = list.slice(0, limit);
+  if (list.length > limit) loadMoreBtn.classList.remove("hidden");
+  else loadMoreBtn.classList.add("hidden");
 
   // ── 4. Sequência desejada ──────────────────────────────────────────
   // O divisor e os alertas fazem SEMPRE parte da sequência, na posição correcta.

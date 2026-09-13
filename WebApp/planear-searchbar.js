@@ -7,7 +7,7 @@
  * Modos (via dataset do elemento de montagem):
  *   data-inline="true"   → emite CustomEvent("lt:search") em vez de navegar
  *                          (usado na própria página do planeador).
- *   data-target="/planear" → destino da navegação quando NÃO é inline.
+ *   data-target="/app" → destino da navegação quando NÃO é inline.
  *   data-read-url="true" → lê o estado inicial dos parâmetros do URL.
  *   data-compact="true"  → esconde os controlos de data/hora (widget leve).
  *
@@ -219,6 +219,36 @@ html.dark .lt-sb-cta:hover{background:rgb(212,212,216)}
     arrow: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>`,
   };
 
+  // ─── PICKERS NATIVOS ────────────────────────────────────────────────────
+  // O <input> transparente cobre a pílula e intercepta o clique. Em Android e
+  // iOS tocar num input de data/hora abre logo o seletor nativo, mas no
+  // desktop (Windows/Linux) não abre nada: o utilizador clica e não acontece
+  // rigorosamente nada, porque o campo está invisível.
+  //
+  // Solução em dois tempos:
+  //   1) chamar showPicker() explicitamente no clique (Chrome/Edge 99+,
+  //      Safari 16+, Firefox 101+ — cobre praticamente todo o desktop atual);
+  //   2) se o browser não tiver showPicker(), revelar o input nativo para que
+  //      seja pelo menos utilizável em vez de invisível.
+  const HAS_PICKER =
+    typeof HTMLInputElement !== "undefined" &&
+    typeof HTMLInputElement.prototype.showPicker === "function";
+
+  function openNativePicker(input) {
+    if (!input) return;
+    if (HAS_PICKER) {
+      try {
+        input.showPicker();
+        return;
+      } catch (e) {
+        // NotAllowedError (fora de gesto do utilizador) ou já aberto.
+      }
+    }
+    try {
+      input.focus();
+    } catch (e) {}
+  }
+
   // ─── COMPONENTE ─────────────────────────────────────────────────────────
   function mount(root) {
     if (!root || root.dataset.ltMounted === "1") return;
@@ -227,11 +257,30 @@ html.dark .lt-sb-cta:hover{background:rgb(212,212,216)}
 
     const inline = root.dataset.inline === "true";
     const compact = root.dataset.compact === "true";
-    const target = root.dataset.target || "/planear";
+    // Tema visual: "app" reveste os mesmos elementos com o estilo do app.html.
+    const appTheme = root.dataset.theme === "app";
+    // Na app.html as estações já estão no cabeçalho da página; aqui só se
+    // escolhe hora e dia, por isso o bloco de estações pode ser omitido.
+    const showStations = root.dataset.stations !== "false";
+    // Botão "Agora" para limpar o filtro (só faz sentido embutido na app).
+    const showReset = root.dataset.reset === "true";
+    // Por omissão o modo embutido pesquisa ao montar e a cada alteração.
+    // Na app.html isso ativaria o filtro logo no arranque, por isso é
+    // desligável: aí só se pesquisa ao carregar em "Aplicar".
+    const autoSearch = root.dataset.autosearch !== "false";
+    const target = root.dataset.target || "/app";
     const readUrl = root.dataset.readUrl === "true";
 
     // ── Estado inicial ──
-    const url = new URLSearchParams(readUrl ? location.search : "");
+    // Lê primeiro do fragmento; a query fica aceite para não partir links
+    // antigos que ainda usem "?".
+    const url = new URLSearchParams(
+      readUrl
+        ? location.hash && location.hash.length > 1
+          ? location.hash.slice(1)
+          : location.search
+        : "",
+    );
     const smartOrg = smartConfigured() ? ls("smart_lisboa_org") : null;
     const smartDst = smartConfigured() ? ls("smart_lisboa_dest") : null;
 
@@ -256,8 +305,12 @@ html.dark .lt-sb-cta:hover{background:rgb(212,212,216)}
 
     // ── HTML base ──
     root.classList.add("lt-sb");
+    if (appTheme) root.classList.add("lt-sb-app");
+    // Browser sem showPicker(): os campos nativos passam a visíveis, senão o
+    // utilizador ficava com uma pílula que não responde a nada.
+    if (!HAS_PICKER) root.classList.add("lt-sb-native");
     root.innerHTML = `
-      <div class="lt-sb-stations">
+      <div class="lt-sb-stations" data-lt="stations"${showStations ? "" : ' style="display:none"'}>
         <div class="lt-sb-field">
           <span class="lt-sb-lbl">De</span>
           <select data-lt="org" class="lt-sb-select" aria-label="Estação de partida"></select>
@@ -274,8 +327,8 @@ html.dark .lt-sb-cta:hover{background:rgb(212,212,216)}
       </div>
 
       <div data-lt="datetime" class="${compact ? "hidden" : ""}" style="${compact ? "" : "margin-top:2rem"}">
-        <div style="display:flex;flex-direction:column;gap:1.4rem">
-          <div>
+        <div class="lt-sb-dt" style="display:flex;flex-direction:column;gap:1.4rem">
+          <div data-lt="date-block">
             <span class="lt-sb-lbl" style="margin-bottom:.6rem">Data</span>
             <div class="lt-sb-row">
               <button data-lt="day-prev" class="lt-sb-step" type="button" aria-label="Dia anterior">${svg.left}</button>
@@ -290,7 +343,7 @@ html.dark .lt-sb-cta:hover{background:rgb(212,212,216)}
             </div>
           </div>
 
-          <div>
+          <div data-lt="time-block">
             <span class="lt-sb-lbl" style="margin-bottom:.6rem">Hora</span>
             <div class="lt-sb-row">
               <div class="lt-sb-toggle">
@@ -310,10 +363,24 @@ html.dark .lt-sb-cta:hover{background:rgb(212,212,216)}
         </div>
       </div>
 
-      <button data-lt="submit" class="lt-sb-cta" type="button" style="margin-top:2rem">
-        <span>Pesquisar viagens</span>
-        ${svg.arrow}
-      </button>`;
+      <p data-lt="offline-note" class="lt-sb-note hidden">
+        ${svg.chevron.replace("m6 9 6 6 6-6", "M12 9v4M12 17h.01M10.3 4l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3l-8-14a2 2 0 0 0-3.4 0Z")}
+        <span>Noutros dias só há horário programado — sem tempo real nem atrasos.</span>
+      </p>
+
+      ${
+        showReset
+          ? `<div class="lt-sb-actions">
+               <button data-lt="reset" class="lt-sb-reset" type="button">Agora</button>
+               <button data-lt="submit" class="lt-sb-cta" type="button">
+                 <span>Aplicar</span>
+               </button>
+             </div>`
+          : `<button data-lt="submit" class="lt-sb-cta" type="button" style="margin-top:2rem">
+               <span>Pesquisar viagens</span>
+               ${svg.arrow}
+             </button>`
+      }`;
 
     // ── Referências ──
     const $ = (sel) => root.querySelector(`[data-lt="${sel}"]`);
@@ -376,7 +443,8 @@ html.dark .lt-sb-cta:hover{background:rgb(212,212,216)}
       const holiday = feriados ? feriados[state.dateStr] : null;
       let label = null;
       if (holiday && holiday !== "FDS") label = "Feriado";
-      else if (wd === 0 || wd === 6 || holiday === "FDS") label = "Fim de semana";
+      else if (wd === 0 || wd === 6 || holiday === "FDS")
+        label = "Fim de semana";
       if (label) {
         dayBadge.textContent = label;
         dayBadge.classList.remove("hidden");
@@ -384,6 +452,9 @@ html.dark .lt-sb-cta:hover{background:rgb(212,212,216)}
         dayBadge.textContent = "";
         dayBadge.classList.add("hidden");
       }
+      const note = $("offline-note");
+      if (note) note.classList.toggle("hidden", state.dateStr === todayYMD());
+
       dayPrev.classList.toggle("off", state.dateStr <= todayYMD());
       dayNext.classList.toggle("off", state.dateStr >= maxYMD());
     }
@@ -396,8 +467,14 @@ html.dark .lt-sb-cta:hover{background:rgb(212,212,216)}
       .catch(() => {});
 
     function refreshMode() {
-      modeDep.setAttribute("aria-pressed", state.mode === "dep" ? "true" : "false");
-      modeArr.setAttribute("aria-pressed", state.mode === "arr" ? "true" : "false");
+      modeDep.setAttribute(
+        "aria-pressed",
+        state.mode === "dep" ? "true" : "false",
+      );
+      modeArr.setAttribute(
+        "aria-pressed",
+        state.mode === "arr" ? "true" : "false",
+      );
     }
     function refreshTime() {
       timeText.textContent = state.timeStr;
@@ -435,10 +512,13 @@ html.dark .lt-sb-cta:hover{background:rgb(212,212,216)}
         mode: state.mode,
         time: state.timeStr,
       });
-      location.href = `${target}?${p.toString()}`;
+      // Fragmento (#) em vez de query (?): o browser nunca o envia ao
+      // servidor, pelo que a viagem do utilizador não passa por logs de
+      // acesso, cabeçalhos Referer nem proxies intermédios.
+      location.href = `${target}#${p.toString()}`;
     }
     function liveEmit() {
-      if (!inline) return; // na página inicial só pesquisa ao carregar no botão
+      if (!inline || !autoSearch) return; // só pesquisa ao carregar no botão
       clearTimeout(emitTimer);
       emitTimer = setTimeout(() => emit(false), 250);
     }
@@ -477,15 +557,14 @@ html.dark .lt-sb-cta:hover{background:rgb(212,212,216)}
       refreshDayBadge();
       liveEmit();
     });
-    $("day-label").addEventListener("click", () => {
-      if (typeof dayInput.showPicker === "function") {
-        try {
-          dayInput.showPicker();
-        } catch (e) {
-          dayInput.focus();
-        }
-      }
-    });
+    // O clique cai no input sobreposto, não no rótulo — por isso liga-se aos
+    // dois. Sem isto, no desktop clicar na pílula não fazia nada.
+    const openDay = (ev) => {
+      if (ev) ev.preventDefault();
+      openNativePicker(dayInput);
+    };
+    $("day-label").addEventListener("click", openDay);
+    if (HAS_PICKER) dayInput.addEventListener("click", openDay);
     dayInput.addEventListener("change", () => {
       if (dayInput.value) {
         state.dateStr = clampYMD(dayInput.value);
@@ -514,15 +593,12 @@ html.dark .lt-sb-cta:hover{background:rgb(212,212,216)}
       refreshTime();
       liveEmit();
     });
-    $("time-label").addEventListener("click", () => {
-      if (typeof timeInput.showPicker === "function") {
-        try {
-          timeInput.showPicker();
-        } catch (e) {
-          timeInput.focus();
-        }
-      }
-    });
+    const openTime = (ev) => {
+      if (ev) ev.preventDefault();
+      openNativePicker(timeInput);
+    };
+    $("time-label").addEventListener("click", openTime);
+    if (HAS_PICKER) timeInput.addEventListener("click", openTime);
     timeInput.addEventListener("change", () => {
       if (timeInput.value) {
         state.timeStr = timeInput.value;
@@ -530,6 +606,21 @@ html.dark .lt-sb-cta:hover{background:rgb(212,212,216)}
         liveEmit();
       }
     });
+
+    const resetBtn = $("reset");
+    if (resetBtn) {
+      resetBtn.addEventListener("click", () => {
+        state.dateStr = todayYMD();
+        state.timeStr = nowHM();
+        state.mode = "dep";
+        refreshDayBadge();
+        refreshTime();
+        refreshMode();
+        document.dispatchEvent(
+          new CustomEvent("lt:reset", { bubbles: true, cancelable: true }),
+        );
+      });
+    }
 
     $("submit").addEventListener("click", () => {
       if (typeof window.sa_event === "function")
@@ -544,7 +635,9 @@ html.dark .lt-sb-cta:hover{background:rgb(212,212,216)}
     refreshTime();
 
     // Na página do planeador, dispara a pesquisa inicial automaticamente.
-    if (inline) {
+    // Na app.html (autosearch="false") não: o ecrã já arranca em "Partir
+    // Agora" e o filtro só se aplica por acção explícita do utilizador.
+    if (inline && autoSearch) {
       requestAnimationFrame(() => emit(false));
     }
 
@@ -556,7 +649,9 @@ html.dark .lt-sb-cta:hover{background:rgb(212,212,216)}
   }
 
   function mountAll() {
-    const nodes = document.querySelectorAll("#lt-searchbar, [data-lt-searchbar]");
+    const nodes = document.querySelectorAll(
+      "#lt-searchbar, [data-lt-searchbar]",
+    );
     nodes.forEach(mount);
   }
 

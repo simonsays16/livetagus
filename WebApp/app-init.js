@@ -92,6 +92,11 @@ async function init() {
   activeTab = targetTab;
   loadStationPrefs(activeTab);
 
+  // ── LINK PARTILHADO (/app#org=...&time=...) ─────────────────────────
+  // Aplicado depois das preferências (sobrepõe-se a elas) e ANTES de
+  // popular os selects, para o primeiro render já sair correto.
+  const fromLink = window.TimeFilter ? TimeFilter.applyHash() : false;
+
   // Popula os selects iniciais
   populateOriginSelect();
   populateDestSelect(fertagusOrigin);
@@ -106,7 +111,9 @@ async function init() {
   // Renderiza cartões com status "OFFLINE" antes de qualquer fetch à API.
   // Quando a API responder, o reconciliador faz patch in-place → ZERO CLS.
   const offlineList =
-    typeof buildOfflineTrainList === "function" ? buildOfflineTrainList() : [];
+    !fromLink && typeof buildOfflineTrainList === "function"
+      ? buildOfflineTrainList()
+      : [];
 
   if (offlineList.length > 0) {
     renderList(offlineList);
@@ -121,7 +128,7 @@ async function init() {
   if (refreshInterval) clearInterval(refreshInterval);
   refreshInterval = setInterval(() => {
     if (!isLoading) loadData(true);
-  }, 30000);
+  }, 15000);
 
   // Countdown do próximo comboio a cada 1 segundo
   if (nextTrainInterval) clearInterval(nextTrainInterval);

@@ -1,6 +1,7 @@
 # Configurações de Build (Standard)
 [build]
   publish = "."
+  command = "node bootup.js"
 
 # 1. Redirecionar /status.html para o novo domínio
 [[redirects]]

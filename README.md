@@ -62,11 +62,7 @@ se resolvem com código:
 - **Os horários do Metro de Lisboa não são horários.** O feed publica
   frequências ("de 4 em 4 minutos"), não partidas. As horas mostradas são
   interpoladas a partir desse intervalo, por isso ainda estamos a averiguar a situação.
-- **A CP só cobre a região de Lisboa** nesta versão, e os horários são os
-  programados. Para tempo real há um atalho para o site da CP.
 - **Só a Fertagus e a Carris Metropolitana têm tempo real.**
-- Etiquetas de estação podem desaparecer: as fontes do mapa vêm de um servidor
-  de demonstração, sem garantias de disponibilidade.
 - Alguns ecrãs carregam bastantes dados. Ainda não está optimizado.
 
 ## FAQ

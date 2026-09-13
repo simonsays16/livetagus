@@ -240,7 +240,7 @@
 
   function refreshButtonLabel() {
     const el = $("tf-btn-label");
-    if (el) el.innerText = label();
+    if (el) el.textContent = label();
     const btn = $("btn-time-filter");
     if (btn) {
       btn.setAttribute(
@@ -253,46 +253,6 @@
     }
   }
 
-  // Classes base + estados. Usa APENAS classes já presentes no output.css
-  // compilado (as variantes aria-pressed:* não existem nesse build).
-  const TF_MODE_BASE =
-    "tf-mode flex-1 py-2 rounded-lg text-[9px] font-bold uppercase tracking-widest border transition-colors";
-  const TF_MODE_OFF =
-    " border-zinc-200 dark:border-white/5 bg-zinc-100 dark:bg-white/5 text-zinc-500 dark:text-zinc-400";
-  const TF_MODE_ON = " border-blue-500 bg-blue-500 text-white";
-
-  function setModeBtn(el, on) {
-    if (!el) return;
-    el.className = TF_MODE_BASE + (on ? TF_MODE_ON : TF_MODE_OFF);
-    el.setAttribute("aria-pressed", on ? "true" : "false");
-  }
-
-  function refreshPanelFields() {
-    const dateStr = state.dateStr || todayYMD();
-    const timeStr = state.time || nowHM();
-
-    setModeBtn($("tf-mode-dep"), state.mode === "dep");
-    setModeBtn($("tf-mode-arr"), state.mode === "arr");
-
-    const tTxt = $("tf-time-text");
-    if (tTxt) tTxt.innerText = timeStr;
-    const tInp = $("tf-time-input");
-    if (tInp) tInp.value = timeStr;
-
-    const dTxt = $("tf-date-text");
-    if (dTxt) dTxt.innerText = dayLabel(dateStr) || "Hoje";
-    const dInp = $("tf-date-input");
-    if (dInp) {
-      dInp.value = dateStr;
-      dInp.min = todayYMD();
-      dInp.max = maxYMD();
-    }
-
-    // Aviso de modo offline para dias diferentes de hoje
-    const warn = $("tf-offline-note");
-    if (warn) warn.classList.toggle("hidden", dateStr === todayYMD());
-  }
-
   function openPanel() {
     const panel = $("time-filter-panel");
     if (!panel) return;
@@ -302,10 +262,9 @@
       state.dateStr = todayYMD();
       state.mode = "dep";
     }
-    refreshPanelFields();
     panel.classList.remove("hidden");
     requestAnimationFrame(() => {
-      panel.classList.remove("opacity-0", "-translate-y-1");
+      panel.classList.remove("opacity-0");
     });
     state.panelOpen = true;
     if (window.lucide) lucide.createIcons();
@@ -314,7 +273,7 @@
   function closePanel() {
     const panel = $("time-filter-panel");
     if (!panel) return;
-    panel.classList.add("opacity-0", "-translate-y-1");
+    panel.classList.add("opacity-0");
     state.panelOpen = false;
     setTimeout(() => {
       if (!state.panelOpen) panel.classList.add("hidden");
@@ -345,7 +304,6 @@
     state.time = nowHM();
     state.dateStr = todayYMD();
     refreshButtonLabel();
-    refreshPanelFields();
     closePanel();
     if (typeof window.sa_event === "function")
       window.sa_event("app_time_filter_reset");
@@ -370,7 +328,12 @@
     if (typeof setStatus === "function") setStatus("offline");
   }
 
-  // ─── LIGAÇÃO AOS CONTROLOS ─────────────────────────────────────────────────
+  // ─── LIGAÇÃO À SEARCHBAR (planear-searchbar.js) ────────────────────────
+  // O painel é servido pelo componente partilhado, montado em #lt-searchbar
+  // com data-theme="app" (estilo do app.html), data-stations="false" (as
+  // estações vivem no cabeçalho da página) e data-reset="true" (botão Agora).
+  // O componente emite "lt:search"; nós tratamos e cancelamos, para que ele
+  // não navegue para lado nenhum.
 
   function bind() {
     const btn = $("btn-time-filter");
@@ -378,101 +341,101 @@
       btn.dataset.tfBound = "1";
       btn.addEventListener("click", togglePanel);
     }
-
-    const dep = $("tf-mode-dep");
-    if (dep && !dep.dataset.tfBound) {
-      dep.dataset.tfBound = "1";
-      dep.addEventListener("click", () => {
-        state.mode = "dep";
-        refreshPanelFields();
-      });
-    }
-    const arr = $("tf-mode-arr");
-    if (arr && !arr.dataset.tfBound) {
-      arr.dataset.tfBound = "1";
-      arr.addEventListener("click", () => {
-        state.mode = "arr";
-        refreshPanelFields();
-      });
-    }
-
-    const tInp = $("tf-time-input");
-    if (tInp && !tInp.dataset.tfBound) {
-      tInp.dataset.tfBound = "1";
-      tInp.addEventListener("change", (e) => {
-        if (e.target.value) state.time = e.target.value;
-        refreshPanelFields();
-      });
-    }
-
-    const dInp = $("tf-date-input");
-    if (dInp && !dInp.dataset.tfBound) {
-      dInp.dataset.tfBound = "1";
-      dInp.addEventListener("change", (e) => {
-        if (!e.target.value) return;
-        let v = e.target.value;
-        if (v < todayYMD()) v = todayYMD();
-        if (v > maxYMD()) v = maxYMD();
-        state.dateStr = v;
-        refreshPanelFields();
-      });
-    }
-
-    const minus = $("tf-time-minus");
-    if (minus && !minus.dataset.tfBound) {
-      minus.dataset.tfBound = "1";
-      minus.addEventListener("click", () => shiftTime(-10));
-    }
-    const plus = $("tf-time-plus");
-    if (plus && !plus.dataset.tfBound) {
-      plus.dataset.tfBound = "1";
-      plus.addEventListener("click", () => shiftTime(10));
-    }
-
-    const applyBtn = $("tf-apply");
-    if (applyBtn && !applyBtn.dataset.tfBound) {
-      applyBtn.dataset.tfBound = "1";
-      applyBtn.addEventListener("click", apply);
-    }
-    const nowBtn = $("tf-now");
-    if (nowBtn && !nowBtn.dataset.tfBound) {
-      nowBtn.dataset.tfBound = "1";
-      nowBtn.addEventListener("click", reset);
-    }
-
     refreshButtonLabel();
   }
 
-  function shiftTime(delta) {
-    const [h, m] = String(state.time || nowHM())
-      .split(":")
-      .map(Number);
-    let total = h * 60 + m + delta;
-    if (total < 0) total = 0;
-    if (total > 23 * 60 + 59) total = 23 * 60 + 59;
-    state.time = `${pad(Math.floor(total / 60))}:${pad(total % 60)}`;
-    refreshPanelFields();
+  document.addEventListener("lt:search", function (e) {
+    // Impede a navegação do componente: aqui o tratamento é local.
+    e.preventDefault();
+    const d = e.detail || {};
+
+    // As estações vêm SEMPRE do cabeçalho da app, nunca da searchbar
+    // (o bloco de estações está oculto nesta montagem).
+    state.mode = d.mode === "arr" ? "arr" : "dep";
+    if (d.timeStr) state.time = d.timeStr;
+    if (d.dateStr) {
+      let v = d.dateStr;
+      if (v < todayYMD()) v = todayYMD();
+      if (v > maxYMD()) v = maxYMD();
+      state.dateStr = v;
+    }
+    apply();
+  });
+
+  document.addEventListener("lt:reset", function (e) {
+    e.preventDefault();
+    reset();
+  });
+
+  // ─── LINKS PARTILHADOS (fragmento #) ───────────────────────────────────
+  /**
+   * Lê os parâmetros do fragmento e aplica-os ANTES do primeiro render.
+   * Formato: /app#org=corroios&dst=roma_areeiro&date=2026-09-15&mode=dep&time=08:28
+   *
+   * A searchbar também lê o fragmento (data-read-url), mas apenas para
+   * pré-preencher os seus campos: com data-autosearch="false" ela nunca
+   * emite sozinha, pelo que sem isto o link chegava e não activava nada.
+   *
+   * Devolve true se alguma coisa foi aplicada.
+   */
+  function applyHash() {
+    const raw =
+      typeof location !== "undefined" &&
+      location.hash &&
+      location.hash.length > 1
+        ? location.hash.slice(1)
+        : "";
+    if (!raw) return false;
+
+    let p;
+    try {
+      p = new URLSearchParams(raw);
+    } catch (e) {
+      return false;
+    }
+
+    let changed = false;
+    const isStation = (k) =>
+      !!k && FERTAGUS_STATIONS.some((st) => st.key === k);
+
+    // ── Estações ──
+    const org = p.get("org");
+    const dst = p.get("dst");
+    if (isStation(org) && isStation(dst) && org !== dst) {
+      fertagusOrigin = org;
+      fertagusDest = dst;
+      activeTab = calculateDirection(org, dst);
+      changed = true;
+    }
+
+    // ── Hora / dia / modo ──
+    const time = p.get("time");
+    const date = p.get("date");
+    const mode = p.get("mode");
+    const timeOk = /^\d{1,2}:\d{2}$/.test(time || "");
+    const dateOk = /^\d{4}-\d{2}-\d{2}$/.test(date || "");
+
+    if (timeOk || dateOk) {
+      state.mode = mode === "arr" ? "arr" : "dep";
+      state.time = timeOk ? time : nowHM();
+      let d = dateOk ? date : todayYMD();
+      if (d < todayYMD()) d = todayYMD();
+      if (d > maxYMD()) d = maxYMD();
+      state.dateStr = d;
+      state.active = true;
+      changed = true;
+    }
+
+    if (changed) refreshButtonLabel();
+    return changed;
   }
-
-  // Fecha o painel ao tocar fora dele
-  document.addEventListener("click", (e) => {
-    if (!state.panelOpen) return;
-    const panel = $("time-filter-panel");
-    const btn = $("btn-time-filter");
-    if (!panel || !btn) return;
-    if (panel.contains(e.target) || btn.contains(e.target)) return;
-    closePanel();
-  });
-
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && state.panelOpen) closePanel();
-  });
 
   // ─── API PÚBLICA ───────────────────────────────────────────────────────────
 
   window.TimeFilter = {
     state,
     bind,
+    applyHash,
     isActive: () => state.active,
     isOtherDay,
     label,
