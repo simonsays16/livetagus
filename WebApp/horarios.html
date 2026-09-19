@@ -125,10 +125,54 @@
         text-underline-offset: 3px;
         text-decoration-color: currentColor;
       }
+
+      .lt-section {
+        padding: 56px 0 110px;
+        position: relative;
+      }
+      .lt-section-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 26px;
+      }
+      .lt-section-title {
+        font-size: clamp(1.6rem, 4vw, 2.6rem);
+        font-weight: 300;
+        letter-spacing: -0.03em;
+        line-height: 1;
+        margin: 0;
+      }
+      .lt-section-title b {
+        font-weight: 600;
+      }
+
+      /* ---------- LAYOUT SHELL ---------- */
+      .lt-wrap {
+        width: 100%;
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 0 22px;
+      }
+      @media (min-width: 768px) {
+        .lt-wrap {
+          padding: 0 36px;
+        }
+      }
+      /* folga ligeira à direita p/ o comboio (desktop); o mobile usa uma
+         barra de 4px colada à margem, por isso não precisa de goteira */
+      @media (min-width: 768px) and (max-width: 1340px) {
+        .lt-wrap {
+          padding-right: 44px;
+        }
+      }
     </style>
 
     <script src="./menu.js" defer></script>
     <script src="./horarios.js" defer></script>
+    <script src="./planear-searchbar.js" defer></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -256,6 +300,19 @@
             </p>
           </div>
         </div>
+
+        <div class="lt-section">
+          <div class="lt-wrap">
+            <div class="lt-section-head">
+              <h2 class="lt-section-title">
+                Planeia a tua
+                <b>viagem.</b>
+              </h2>
+            </div>
+            <div id="lt-searchbar"></div>
+          </div>
+        </div>
+
         <div class="text-center">
           <a
             href="./app"

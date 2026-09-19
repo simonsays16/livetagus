@@ -1,7 +1,7 @@
 // --- BEGIN VERSIONS ---
-const GLOBAL_VERSION = "livetagus-v.rc3.13092026";
+const GLOBAL_VERSION = "livetagus-v.rc10.14092026";
 const ASSETS_VERSIONS = {
-  "./index.html": "v.rc11.12092026",
+  "./index.html": "v.rc1.14092026",
   "./index.js": "v.rc3.21062026",
   "./index-home.js": "v.rc1.22062026",
   "./home-map.js": "v.rc6.22062026",
@@ -19,7 +19,7 @@ const ASSETS_VERSIONS = {
   "./sudoku.html": "v.rc2.07062026",
   "./sudoku.js": "v.rc1.24052026",
   "./sudoku-train.js": "v.rc2.28052026",
-  "./horarios.html": "v.rc1.24052026",
+  "./horarios.html": "v.rc9.14092026",
   "./horarios.js": "v.rc1.24052026",
   "./privacidade.html": "v.rc1.16082026",
   "./tabs.js": "v.rc1.24052026",

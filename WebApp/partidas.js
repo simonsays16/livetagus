@@ -150,9 +150,15 @@
     metro: { src: "/imagens/lig-logos/metro.svg", nome: "Metro de Lisboa" },
     mts: { src: "/imagens/lig-logos/mts.svg", nome: "Metro Sul do Tejo" },
     cp: { src: "/imagens/lig-logos/cp.svg", nome: "CP" },
-    cm: { src: "/imagens/lig-logos/cm-light.svg", nome: "Carris Metropolitana" },
+    cm: {
+      src: "/imagens/lig-logos/cm-light.svg",
+      nome: "Carris Metropolitana",
+    },
     carris: { src: "/imagens/lig-logos/carris.svg", nome: "Carris" },
-    re: { src: "/imagens/lig-logos/rede-expressos.svg", nome: "Rede Expressos" },
+    re: {
+      src: "/imagens/lig-logos/rede-expressos.svg",
+      nome: "Rede Expressos",
+    },
     tcb: { src: "/imagens/lig-logos/tcb.svg", nome: "TCB" },
   };
 
@@ -214,7 +220,13 @@
   // o ícone partido do browser.
   function bindLigacaoLogos(root) {
     (root || document).querySelectorAll("[data-ltp-lig]").forEach((img) => {
-      img.addEventListener("error", function () { this.remove(); }, { once: true });
+      img.addEventListener(
+        "error",
+        function () {
+          this.remove();
+        },
+        { once: true },
+      );
     });
   }
 
@@ -236,9 +248,7 @@
   const LIG_ORDEM = ["cp", "metro", "mts", "cm", "carris", "tcb", "re"];
 
   function linhasDe(entrada) {
-    return (entrada || [])
-      .map((x) => x && x.line)
-      .filter(Boolean);
+    return (entrada || []).map((x) => x && x.line).filter(Boolean);
   }
 
   // Paragens que se podem abrir no mapa a partir daqui. Só existem quando os
@@ -674,8 +684,7 @@
       if (res.status === 503) {
         model.ipDown = true;
       } else if (res.ok) {
-        // PROVISORIO
-        //const data = await res.json();
+        const data = await res.json();
         if (data && data.error) {
           if (data.error === "IP_DOWN") model.ipDown = true;
         } else {
@@ -1457,9 +1466,7 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
     const cor = ACCENT[dep.dotStatus] || ACCENT.green;
     // Resumo curto no topo da lista: quantas paragens e a que horas chega.
     const nParagens = listaNodes.length;
-    const chegada = nParagens
-      ? nodeTimeStr(listaNodes[nParagens - 1])
-      : null;
+    const chegada = nParagens ? nodeTimeStr(listaNodes[nParagens - 1]) : null;
     const resumo = nParagens
       ? `${nParagens} ${nParagens === 1 ? "paragem" : "paragens"}${
           chegada ? ` · chega às ${chegada}` : ""
@@ -1566,7 +1573,6 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
     if (onRoute) onRoute(html);
     else openSheet(html);
   }
-
 
   // Ao trocar de vista, o painel tem de voltar ao topo. O elemento que faz
   // scroll não é sempre o mesmo — no mapa é a sheet, na página /estacao é a
@@ -1724,7 +1730,10 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
         });
       container.querySelectorAll("[data-ltp-lg-go]").forEach((btn) => {
         btn.addEventListener("click", () => {
-          const [i, j] = btn.getAttribute("data-ltp-lg-go").split(":").map(Number);
+          const [i, j] = btn
+            .getAttribute("data-ltp-lg-go")
+            .split(":")
+            .map(Number);
           const alvo = ((ctrl.ligacoes.alvos || [])[i] || [])[j];
           if (!alvo) return;
           // Abrir a paragem no mapa fecha este painel: quem manda passa a ser
@@ -1769,12 +1778,14 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
           <div data-ltp-from></div>
           <div data-ltp-state></div>
           <div class="ltp-filter" role="group" aria-label="Filtrar por destino">
-            ${ctrl.btns.map(
-              (b) =>
-                `<button class="ltp-dir" data-ltp-dir-btn="${b.id}" aria-pressed="false">
+            ${ctrl.btns
+              .map(
+                (b) =>
+                  `<button class="ltp-dir" data-ltp-dir-btn="${b.id}" aria-pressed="false">
                    <span data-ltp-dir-label>${esc(b.label)}</span>
                  </button>`,
-            ).join("")}
+              )
+              .join("")}
           </div>
           <div class="ltp-list" data-ltp-list></div>
           <div class="ltp-foot" data-ltp-foot></div>
@@ -1875,7 +1886,9 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
         const strict = escolhido && id === "coina" && ctrl.destStrict;
         const lbl = b.querySelector("[data-ltp-dir-label]");
         if (lbl) {
-          const txt = strict ? "Só Coina" : DEST_BTNS.find((x) => x.id === id).label;
+          const txt = strict
+            ? "Só Coina"
+            : DEST_BTNS.find((x) => x.id === id).label;
           if (lbl.textContent !== txt) lbl.textContent = txt;
         }
         b.classList.toggle("ltp-dir-strict", !!strict);
