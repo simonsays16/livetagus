@@ -8,7 +8,11 @@
 const fs = require("fs");
 const path = require("path");
 
-const avisosPath = path.join(__dirname, "avisos.json");
+// [PATH] Este modulo esta em src/extra/, o avisos.json canonico esta na
+// raiz do projeto (e onde o routes.js le e grava). Sem os "..", isto
+// resolvia para src/extra/avisos.json — um ficheiro vazio criado pelo
+// ensureFileExists() que ninguem escrevia, e o /avisos servia sempre {}.
+const avisosPath = path.join(__dirname, "..", "..", "avisos.json");
 let avisosCache = {};
 
 function ensureFileExists() {

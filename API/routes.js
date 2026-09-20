@@ -9,19 +9,14 @@ const path = require("path");
 const { exec } = require("child_process");
 const crypto = require("crypto");
 // [AZURE KV] Os segredos NAO podem ser destruturados: o config.js expoe-os como
-// getters e a destruturacao avalia-os no instante do require — antes de
-// getKeysFromVault() ter corrido. O API_KEY ficava congelado a null e o
-// protectRoute rejeitava toda a gente; o ADMIN_ROUTE ficava null e as rotas de
-// admin eram registadas como "null/ping". Lemos sempre via config.X, e o
+// getters e a destruturacao avalia-os no require — antes de getKeysFromVault().
+// API_KEY ficava null (protectRoute rejeitava todos) e ADMIN_ROUTE ficava null
+// (rotas de admin registadas como "null/ping"). Lemos via config.X, e o
 // registerRoutes() so pode ser chamado DEPOIS do vault carregar.
 const config = require("./config.js");
 const { GPS_AUTONOMOUS_MODE } = config; // constante pura: seguro destruturar
 
-/**
- * Comparacao de chaves em tempo constante. A comparacao com !== termina no
- * primeiro byte diferente, o que deixa o tempo de resposta correlacionado com
- * o prefixo correto — explorável com pedidos suficientes.
- */
+/** Comparacao em tempo constante: o !== sai no primeiro byte diferente. */
 const keyMatches = (recebida, esperada) => {
   if (typeof recebida !== "string" || typeof esperada !== "string")
     return false;
@@ -44,16 +39,10 @@ const normalizeAdminRoute = (raw) => {
 module.exports = function registerRoutes(app, ctx) {
   // Avaliados AQUI (no arranque, ja com o vault carregado), nao no require.
   const ADMIN_BASE = normalizeAdminRoute(config.ADMIN_ROUTE);
-  if (!ADMIN_BASE) {
+  if (!ADMIN_BASE || !config.API_KEY) {
     throw new Error(
-      "[ROUTES] ADMIN_ROUTE indisponivel — registerRoutes() foi chamado " +
-        "antes de getKeysFromVault()?",
-    );
-  }
-  if (!config.API_KEY) {
-    throw new Error(
-      "[ROUTES] API_KEY indisponivel — registerRoutes() foi chamado antes " +
-        "de getKeysFromVault()?",
+      "[ROUTES] ADMIN_ROUTE/API_KEY indisponiveis — registerRoutes() foi " +
+        "chamado antes de getKeysFromVault()?",
     );
   }
 
@@ -219,9 +208,7 @@ module.exports = function registerRoutes(app, ctx) {
   // Avisos
   app.get(`${ADMIN_BASE}/avisos`, adminAuth, (req, res) => {
     try {
-      // [PATH FIX] Caminho vindo do AvisosManager: garante que admin e runtime
-      // leem e escrevem exatamente o mesmo ficheiro.
-      const data = fs.readFileSync(AvisosManager.AVISOS_PATH, "utf8");
+      const data = fs.readFileSync(path.join(__dirname, "avisos.json"), "utf8");
       res.json(JSON.parse(data));
     } catch (err) {
       res.status(500).json({ error: "Erro ao ler avisos.json" });
@@ -240,13 +227,8 @@ module.exports = function registerRoutes(app, ctx) {
           .status(400)
           .json({ error: "Payload inválido: esperado objeto JSON." });
       }
-      // [PATH FIX] Mesmo ficheiro que o AvisosManager le. O tmp fica no MESMO
-      // diretorio: o rename so e atomico dentro do mesmo sistema de ficheiros.
-      const target = AvisosManager.AVISOS_PATH;
-      const tmp = path.join(
-        path.dirname(target),
-        `.avisos.json.${process.pid}.tmp`,
-      );
+      const target = path.join(__dirname, "avisos.json");
+      const tmp = path.join(__dirname, `.avisos.json.${process.pid}.tmp`);
       fs.writeFileSync(tmp, JSON.stringify(newAvisos, null, 2), "utf8");
       fs.renameSync(tmp, target);
       if (typeof AvisosManager.reload === "function") {
