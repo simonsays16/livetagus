@@ -31,12 +31,12 @@ const secrets = {
 };
 
 async function getKeysFromVault() {
-  PORT = (await client.getSecret("PORT")).value;
-  API_KEY = (await client.getSecret("API-KEY")).value;
-  API_BASE = (await client.getSecret("API-BASE")).value;
-  ADMIN_API_KEY = (await client.getSecret("ADMIN-API-KEY")).value;
-  ADMIN_ROUTE = (await client.getSecret("ADMIN-ROUTE")).value;
-  API_LOCATION = (await client.getSecret("API-LOCATION")).value;
+  secrets.PORT = (await client.getSecret("PORT")).value;
+  secrets.API_KEY = (await client.getSecret("API-KEY")).value;
+  secrets.API_BASE = (await client.getSecret("API-BASE")).value;
+  secrets.ADMIN_API_KEY = (await client.getSecret("ADMIN-API-KEY")).value;
+  secrets.ADMIN_ROUTE = (await client.getSecret("ADMIN-ROUTE")).value;
+  secrets.API_LOCATION = (await client.getSecret("API-LOCATION")).value;
 }
 
 // Mapeamento de nomes / ordem / headers
