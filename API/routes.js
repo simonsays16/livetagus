@@ -219,7 +219,9 @@ module.exports = function registerRoutes(app, ctx) {
   // Avisos
   app.get(`${ADMIN_BASE}/avisos`, adminAuth, (req, res) => {
     try {
-      const data = fs.readFileSync(path.join(__dirname, "avisos.json"), "utf8");
+      // [PATH FIX] Caminho vindo do AvisosManager: garante que admin e runtime
+      // leem e escrevem exatamente o mesmo ficheiro.
+      const data = fs.readFileSync(AvisosManager.AVISOS_PATH, "utf8");
       res.json(JSON.parse(data));
     } catch (err) {
       res.status(500).json({ error: "Erro ao ler avisos.json" });
@@ -238,8 +240,13 @@ module.exports = function registerRoutes(app, ctx) {
           .status(400)
           .json({ error: "Payload inválido: esperado objeto JSON." });
       }
-      const target = path.join(__dirname, "avisos.json");
-      const tmp = path.join(__dirname, `.avisos.json.${process.pid}.tmp`);
+      // [PATH FIX] Mesmo ficheiro que o AvisosManager le. O tmp fica no MESMO
+      // diretorio: o rename so e atomico dentro do mesmo sistema de ficheiros.
+      const target = AvisosManager.AVISOS_PATH;
+      const tmp = path.join(
+        path.dirname(target),
+        `.avisos.json.${process.pid}.tmp`,
+      );
       fs.writeFileSync(tmp, JSON.stringify(newAvisos, null, 2), "utf8");
       fs.renameSync(tmp, target);
       if (typeof AvisosManager.reload === "function") {
