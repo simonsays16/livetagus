@@ -51,7 +51,7 @@ const fetch = require("node-fetch");
 // ─── CONSTANTES ──────────────────────────────────────────────────────────────
 
 const CORROIOS_NODE_ID = 9417137;
-const STATION_API_BASE = process.env.API_BASE_STATION;
+const { STATION_API_BASE } = require("./config.js");
 const SERVICE_FILTER_RAW = "URB|SUBUR, ESPECIAL";
 const FETCH_HEADERS = {
   "User-Agent":

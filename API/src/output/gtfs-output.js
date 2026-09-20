@@ -1,6 +1,6 @@
 /**
  * gtfs-output.js
- * Camada de EXTENSÃO GTFS-RT do contrato público da LiveTagus API.
+ * Camada de EXTENSÃO GTFS-RT da LiveTagus API.
  *
  * REGRA DE OURO — RETROCOMPATIBILIDADE TOTAL:
  * ─────────────────────────────────────────────────────────────────────────────
@@ -24,6 +24,10 @@
 "use strict";
 
 const DWELL_S = 60; // dwell técnico UQE 3500 (partida = chegada + 60 s)
+
+// Identificador de agência da TML. Mudou de "15" para "7NTB1" (2026-07).
+// Tem de coincidir com o AGENCY_ID do get-location.js e do gtfs-geo.js.
+const AGENCY_ID = "7NTB1";
 
 // ─── REFERÊNCIAS INJETADAS ───────────────────────────────────────────────────
 
@@ -91,16 +95,32 @@ const init = (ctx) => {
 
 // ─── NORMALIZAÇÃO DE IDENTIFICADORES TML ─────────────────────────────────────
 
-/** "[15]14281" → "14281" */
-const cleanVehicleId = (raw) => String(raw || "").replace(/^\[\d+\]/, "");
+/**
+ * Remove os prefixos entre parênteses rectos do início de um identificador.
+ * A agência da TML passou de numérica para alfanumérica e alguns campos
+ * trazem prefixos ENCADEADOS, daí o quantificador no grupo:
+ *   "[15]14281"           → "14281"   (formato antigo)
+ *   "[7NTB1]14308"        → "14308"   (formato atual)
+ *   "[2XUL7][7NTB1]3109"  → "3109"    (trip_id, dois prefixos)
+ *   "14308"               → "14308"   (já normalizado, inalterado)
+ */
+const cleanVehicleId = (raw) =>
+  String(raw || "").replace(/^(?:\[[^\]]+\])+/, "");
 
 /**
- * Extrai o nº de SERVIÇO do trip_id da TML.
- * Formatos observados: "[H47YT][15]3278", "[Z7SSD][42]2533_0_1|3|1|1900".
- * Regra: último bloco "[NN]" seguido dos dígitos até `_` ou `|`.
+ * Extrai o número do trip_id da TML (usado só como último recurso).
+ * Formatos observados:
+ *   "[H47YT][15]3278"               (antigo, agência numérica)
+ *   "[Z7SSD][42]2533_0_1|3|1|1900"  (antigo, com sufixos)
+ *   "[2XUL7][7NTB1]3109"            (atual, agência alfanumérica)
+ * Regra: dígitos que seguem o último prefixo "[...]", até `_` ou `|`.
+ *
+ * ATENÇÃO: no formato ATUAL este número é o trip GTFS (ex. 3109) e NÃO o nº de
+ * serviço do comboio (ex. 14308). Só o vehicle_id dá o nº de serviço, por isso
+ * este fallback raramente resolve — mantém-se por retrocompatibilidade.
  */
 const serviceFromTripId = (tripId) => {
-  const m = String(tripId || "").match(/\]\[\d+\](\d+)/);
+  const m = String(tripId || "").match(/^(?:\[[^\]]+\])+(\d+)/);
   return m ? m[1] : null;
 };
 
@@ -114,8 +134,10 @@ const resolveTmlVehicle = (veh) => {
   const tripId = String(veh.trip_id || "").trim();
   const vehicleId = String(veh.vehicle_id || "").trim();
 
-  // O nº de serviço vem do trip_id (join key correta); o vehicle_id é apenas
-  // a composição física e serve de fallback de último recurso.
+  // O nº de serviço vem do VEHICLE_ID (é a join key correta com o
+  // RICH_SCHEDULE: "[7NTB1]14308" → "14308"). O trip_id serve apenas de
+  // fallback de último recurso — no formato atual dá o trip GTFS, não o
+  // nº de serviço, pelo que quase nunca corresponde ao horário estático.
   const serviceId = cleanVehicleId(vehicleId) || serviceFromTripId(tripId);
   if (!serviceId) {
     console.warn(
@@ -291,7 +313,7 @@ const decorateTrain = (train, opts = {}) => {
     if (gpsFresh && veh && veh.lastPing) {
       gtfs = {
         trip_id: tml.trip_id || null,
-        vehicle_id: tml.vehicle_id || `[15]${trainId}`,
+        vehicle_id: tml.vehicle_id || `[${AGENCY_ID}]${trainId}`,
         current_status: veh.status ? veh.status.current : "IN_TRANSIT_TO",
         current_stop_sequence: veh.status ? veh.status.routeIdx : nextIdx,
         active_stop_id:
@@ -315,7 +337,7 @@ const decorateTrain = (train, opts = {}) => {
       // sinalizados. Sem coordenadas (não inventamos posição no servidor).
       gtfs = {
         trip_id: tml.trip_id || null,
-        vehicle_id: tml.vehicle_id || `[15]${trainId}`,
+        vehicle_id: tml.vehicle_id || `[${AGENCY_ID}]${trainId}`,
         current_status: nextIdx >= 0 ? "IN_TRANSIT_TO" : null,
         current_stop_sequence: nextIdx >= 0 ? nextIdx : newNodes.length,
         active_stop_id: (activeNode && activeNode.stop_id) || null,

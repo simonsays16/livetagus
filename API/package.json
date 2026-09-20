@@ -1,6 +1,6 @@
 {
   "name": "livetagus-api",
-  "version": "6.2.5",
+  "version": "6.4.0",
   "description": "API Backend para o LiveTagus",
   "main": "index.js",
   "scripts": {
@@ -11,9 +11,14 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "node-fetch": "^2.7.0"
+    "node-fetch": "^2.7.0",
+    "@azure/identity": "^4.13.1",
+    "@azure/keyvault-secrets": "^4.11.2"
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "overrides": {
+    "qs": "^6.16.0"
   }
 }

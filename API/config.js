@@ -1,11 +1,43 @@
 "use strict";
 require("dotenv").config();
+const { DefaultAzureCredential } = require("@azure/identity");
+const { SecretClient } = require("@azure/keyvault-secrets");
+
+const az_kv_link = process.env.AZ_KV_LINK;
+
+const credential = new DefaultAzureCredential();
+const client = new SecretClient(az_kv_link, credential);
+
+/*
+client
+  .getSecret("PORT")
+  .then((res) => {
+    console.log(res.value);
+  })
+  .catch((err) => {
+    console.log(err);
+  });
+*/
 
 // --- CONFIGURAÇÃO ---
-const PORT = process.env.PORT || 3000;
-const API_KEY = process.env.API_KEY;
-const API_BASE = process.env.API_BASE;
 const IP_BLOCKED = true;
+
+const secrets = {
+  PORT: 3000,
+  API_KEY: null,
+  API_BASE: null,
+  ADMIN_API_KEY: null,
+  ADMIN_ROUTE: null,
+};
+
+async function getKeysFromVault() {
+  PORT = (await client.getSecret("PORT")).value;
+  API_KEY = (await client.getSecret("API-KEY")).value;
+  API_BASE = (await client.getSecret("API-BASE")).value;
+  ADMIN_API_KEY = (await client.getSecret("ADMIN-API-KEY")).value;
+  ADMIN_ROUTE = (await client.getSecret("ADMIN-ROUTE")).value;
+  API_LOCATION = (await client.getSecret("API-LOCATION")).value;
+}
 
 // Mapeamento de nomes / ordem / headers
 const STATION_MAP_JSON_TO_IP = {
@@ -103,14 +135,26 @@ const DIRECTION_DETECTION_ENABLED = false;
 
 const GPS_AUTONOMOUS_MODE = true; // desligar quando IP
 
-// Admin
-const ADMIN_API_KEY = process.env.ADMIN_API_KEY;
-const ADMIN_ROUTE = process.env.ADMIN_ROUTE;
-
 module.exports = {
-  PORT,
-  API_KEY,
-  API_BASE,
+  getKeysFromVault,
+  get PORT() {
+    return secrets.PORT;
+  },
+  get API_KEY() {
+    return secrets.API_KEY;
+  },
+  get API_BASE() {
+    return secrets.API_BASE;
+  },
+  get ADMIN_API_KEY() {
+    return secrets.ADMIN_API_KEY;
+  },
+  get ADMIN_ROUTE() {
+    return secrets.ADMIN_ROUTE;
+  },
+  get API_LOCATION() {
+    return secrets.API_LOCATION;
+  },
   IP_BLOCKED,
   STATION_MAP_JSON_TO_IP,
   STATION_MAP_IP_TO_JSON,
@@ -121,6 +165,4 @@ module.exports = {
   GPS_CALCULATIONS_ENABLED,
   DIRECTION_DETECTION_ENABLED,
   GPS_AUTONOMOUS_MODE,
-  ADMIN_API_KEY,
-  ADMIN_ROUTE,
 };
