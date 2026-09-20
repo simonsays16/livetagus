@@ -51,7 +51,10 @@ const fetch = require("node-fetch");
 // ─── CONSTANTES ──────────────────────────────────────────────────────────────
 
 const CORROIOS_NODE_ID = 9417137;
-const { STATION_API_BASE } = require("../../config.js");
+// [AZURE KV] Leitura LAZY: o segredo so existe depois de
+// getKeysFromVault(). Destruturar aqui congelava o valor a undefined ->
+// "Only absolute URLs are supported" dentro do node-fetch.
+const config = require("../../config.js");
 const SERVICE_FILTER_RAW = "URB|SUBUR, ESPECIAL";
 const FETCH_HEADERS = {
   "User-Agent":
@@ -87,10 +90,17 @@ const formatTimeHM = (d) => `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 const formatDateTimeForApi = (d) => `${formatDate(d)} ${formatTimeHM(d)}`;
 
 const buildUrl = (startDateTimeStr, endDateTimeStr) => {
+  const base = config.STATION_API_BASE;
+  if (!/^https?:\/\//i.test(String(base || ""))) {
+    throw new Error(
+      "STATION_API_BASE indisponivel (Key Vault nao carregado ou segredo " +
+        "STATION-API-BASE em falta).",
+    );
+  }
   const startEnc = encodeURIComponent(startDateTimeStr);
   const endEnc = encodeURIComponent(endDateTimeStr);
   const filterEnc = encodeURIComponent(SERVICE_FILTER_RAW);
-  return `${STATION_API_BASE}/${CORROIOS_NODE_ID}/${startEnc}/${endEnc}/${filterEnc}`;
+  return `${base}/${CORROIOS_NODE_ID}/${startEnc}/${endEnc}/${filterEnc}`;
 };
 
 // ─── PARSING DA RESPOSTA ─────────────────────────────────────────────────────
