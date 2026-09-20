@@ -1990,30 +1990,33 @@ const scheduleNextTick = () => {
 };
 
 // --- ROTAS (extraídas para ./routes.js) ---
-registerRoutes(app, {
-  AvisosManager,
-  EstacaoEndpoint,
-  GtfsOutput,
-  ServiceDayManager,
-  AnalyticsManager,
-  GhostManager,
-  VerifyManager,
-  GetLocation,
-  MapAuthority,
-  parseSmartTime,
-  getOperationalInfo,
-  formatDateStr,
-  getState: () => ({
-    OUTPUT_CACHE,
-    EXTRA_TRAINS_CACHE,
-    FUTURE_TRAINS_CACHE,
-    ABNORMAL_ROUTES_CACHE,
-    RICH_SCHEDULE,
-    DYNAMIC_EXTRA_SCHEDULE,
-    SUPPRESSED_ACTIVE,
-    IP_IS_DOWN,
-  }),
-});
+// [AZURE KV] Registo ADIADO: o routes.js le ADMIN_ROUTE/API_KEY no momento do
+// registo. Chamado pelo boot(), depois de getKeysFromVault().
+const wireRoutes = () =>
+  registerRoutes(app, {
+    AvisosManager,
+    EstacaoEndpoint,
+    GtfsOutput,
+    ServiceDayManager,
+    AnalyticsManager,
+    GhostManager,
+    VerifyManager,
+    GetLocation,
+    MapAuthority,
+    parseSmartTime,
+    getOperationalInfo,
+    formatDateStr,
+    getState: () => ({
+      OUTPUT_CACHE,
+      EXTRA_TRAINS_CACHE,
+      FUTURE_TRAINS_CACHE,
+      ABNORMAL_ROUTES_CACHE,
+      RICH_SCHEDULE,
+      DYNAMIC_EXTRA_SCHEDULE,
+      SUPPRESSED_ACTIVE,
+      IP_IS_DOWN,
+    }),
+  });
 
 const startServer = () =>
   app.listen(config.PORT, () => {
@@ -2120,6 +2123,7 @@ const startServer = () =>
 // URLs nulos e inundar os logs de "Only absolute URLs are supported".
 const boot = async () => {
   await config.getKeysFromVault();
+  wireRoutes(); // rotas SO depois dos segredos (ADMIN_ROUTE, API_KEY)
   startServer();
 };
 
