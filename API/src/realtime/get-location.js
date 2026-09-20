@@ -17,7 +17,7 @@
 // =============================================================================
 require("dotenv").config();
 const fetch = require("node-fetch");
-const { API_LOCATION } = require("../config.js");
+const { API_LOCATION } = require("../../config.js");
 
 const TML_URL = API_LOCATION;
 const AGENCY_ID = "7NTB1"; // Fertagus
