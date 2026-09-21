@@ -14,11 +14,16 @@
 // O endpoint /mapa serve sempre a ÚLTIMA versão do cache (refrescada pelo poller,
 // nunca pelo pedido do cliente). Em caso de erro a obter/parsear a resposta da
 // TML, o módulo passa a devolver { erro: "down" }.
+//
+// [AZURE KV] O URL da TML vem do Key Vault e SÓ existe depois de
+// getKeysFromVault() ter corrido. Por isso é lido LAZY (config.API_LOCATION a
+// cada poll) e nunca destruturado no topo do ficheiro — destruturar congela o
+// valor a null e o node-fetch rebenta com "Only absolute URLs are supported".
 // =============================================================================
 require("dotenv").config();
 const fetch = require("node-fetch");
+const config = require("../../config.js");
 
-const TML_URL = process.env.API_LOCATION;
 const AGENCY_ID = "7NTB1"; // Fertagus
 const POLL_INTERVAL_MS = 3000; // refresh de 3 s
 const FETCH_TIMEOUT_MS = 2500; // < intervalo, para não acumular pedidos pendurados
@@ -38,10 +43,9 @@ let IS_DOWN = true; // arranca "down" até existir a 1ª resposta válida
 let pollTimer = null;
 let isFetching = false; // evita sobreposição se a TML demorar a responder
 let onPayloadCb = null;
+let warnedNoUrl = false;
 
 // Remove os prefixos entre parênteses rectos do início do identificador.
-// A TML mudou o formato da agência de numérico para alfanumérico e alguns
-// campos trazem prefixos ENCADEADOS, daí o quantificador no grupo:
 //   "[15]14297"           -> "14297"   (formato antigo)
 //   "[7NTB1]14308"        -> "14308"   (formato atual)
 //   "[2XUL7][7NTB1]3109"  -> "3109"    (trip_id, dois prefixos)
@@ -52,6 +56,22 @@ const stripAgencyPrefix = (vehicleId) =>
 const pollPositions = async () => {
   // Se o poll anterior ainda não terminou, salta este tick (não empilha pedidos).
   if (isFetching) return;
+
+  // [AZURE KV] Leitura lazy: o segredo pode ainda não estar carregado.
+  const TML_URL = config.API_LOCATION;
+  if (!/^https?:\/\//i.test(String(TML_URL || ""))) {
+    IS_DOWN = true;
+    if (!warnedNoUrl) {
+      warnedNoUrl = true;
+      console.error(
+        "[MAPA/TML] API_LOCATION ainda não disponível (Key Vault não carregado " +
+          "ou segredo API-LOCATION inválido). Poll suspenso até haver URL.",
+      );
+    }
+    return;
+  }
+  warnedNoUrl = false;
+
   isFetching = true;
 
   try {
@@ -103,10 +123,19 @@ const pollPositions = async () => {
   }
 };
 
-// Arranca o poller de fundo (chamado uma vez no boot do index.js).
+// Arranca o poller de fundo (chamado uma vez no boot do index.js, DEPOIS de
+// await getKeysFromVault()).
 const init = (onPayload) => {
   if (typeof onPayload === "function") onPayloadCb = onPayload;
   if (pollTimer) return;
+
+  if (!/^https?:\/\//i.test(String(config.API_LOCATION || ""))) {
+    console.error(
+      "[MAPA] Poller TML arrancado SEM API_LOCATION válido" +
+        "getKeysFromVault() correu antes do init?",
+    );
+  }
+
   pollPositions(); // primeira recolha imediata
   pollTimer = setInterval(pollPositions, POLL_INTERVAL_MS);
   console.log(

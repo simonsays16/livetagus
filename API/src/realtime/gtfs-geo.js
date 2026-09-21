@@ -36,7 +36,7 @@ const DelaysRT = require("./delays-rt.js");
 // Identificador de agência da TML. Mudou de "15" para "7NTB1" (2026-07).
 // Lido do ambiente para que uma futura alteração da TML não exija deploy;
 // tem de coincidir com o AGENCY_ID do get-location.js.
-const AGENCY_ID = process.env.TML_AGENCY_ID || "7NTB1"; // Fertagus — tudo o resto é ignorado.
+const AGENCY_ID = "7NTB1"; // Fertagus — tudo o resto é ignorado.
 
 const VMAX_MPS = 140 / 3.6; // 38.89 m/s — teto físico UQE 3500
 const OUTLIER_SPEED_MPS = VMAX_MPS * 1.5; // salto implica >210 km/h → lixo

@@ -1,11 +1,117 @@
 "use strict";
 require("dotenv").config();
+const { DefaultAzureCredential } = require("@azure/identity");
+const { SecretClient } = require("@azure/keyvault-secrets");
+
+const az_kv_link = process.env.AZ_KV_LINK;
+
+if (!az_kv_link) {
+  throw new Error("[CONFIG] AZ_KV_LINK em falta no ambiente (.env).");
+}
+
+const credential = new DefaultAzureCredential();
+const client = new SecretClient(az_kv_link, credential);
 
 // --- CONFIGURAÇÃO ---
-const PORT = process.env.PORT || 3000;
-const API_KEY = process.env.API_KEY;
-const API_BASE = process.env.API_BASE;
 const IP_BLOCKED = true;
+
+const secrets = {
+  PORT: 3000,
+  API_KEY: null,
+  API_BASE: null,
+  ADMIN_API_KEY: null,
+  ADMIN_ROUTE: null,
+  API_LOCATION: null,
+  STATION_API_BASE: null,
+};
+
+let VAULT_LOADED = false;
+let loadingPromise = null;
+
+const isAbsoluteUrl = (v) => /^https?:\/\//i.test(String(v || ""));
+
+/**
+ * Lê TODOS os segredos do Key Vault. Idempotente: chamadas concorrentes
+ * partilham a mesma promise, chamadas posteriores são no-op.
+ *
+ * TEM de ser AWAITED antes de qualquer módulo tocar nos getters abaixo.
+ */
+async function getKeysFromVault() {
+  if (VAULT_LOADED) return secrets;
+  if (loadingPromise) return loadingPromise;
+
+  loadingPromise = (async () => {
+    const wanted = {
+      PORT: "PORT",
+      API_KEY: "API-KEY",
+      API_BASE: "API-BASE",
+      ADMIN_API_KEY: "ADMIN-API-KEY",
+      ADMIN_ROUTE: "ADMIN-ROUTE",
+      API_LOCATION: "API-LOCATION",
+      STATION_API_BASE: "STATION-API-BASE",
+    };
+
+    const entries = await Promise.all(
+      Object.entries(wanted).map(async ([key, secretName]) => {
+        try {
+          const res = await client.getSecret(secretName);
+          return [key, res.value];
+        } catch (e) {
+          console.error(
+            `[CONFIG] Falha a ler o segredo "${secretName}": ${e.message}`,
+          );
+          return [key, null];
+        }
+      }),
+    );
+
+    for (const [key, value] of entries) {
+      if (value != null && value !== "") secrets[key] = value;
+    }
+
+    // Fallback: se STATION-API-BASE ainda não existir no vault, reutiliza
+    // API_BASE (é o mesmo host da IP). Remover quando o segredo estiver criado.
+    if (!secrets.STATION_API_BASE && secrets.API_BASE) {
+      secrets.STATION_API_BASE = secrets.API_BASE;
+      console.warn(
+        "[CONFIG] STATION-API-BASE ausente no vault — a usar API-BASE como fallback.",
+      );
+    }
+
+    // Validação dura: URLs relativas/nulas rebentam mais tarde dentro do
+    // node-fetch com "Only absolute URLs are supported", longe da causa.
+    const urlKeys = ["API_BASE", "API_LOCATION", "STATION_API_BASE"];
+    const bad = urlKeys.filter((k) => !isAbsoluteUrl(secrets[k]));
+    if (bad.length) {
+      throw new Error(
+        `[CONFIG] Segredos de URL inválidos ou em falta: ${bad.join(", ")}. ` +
+          `Têm de ser URLs absolutos (http:// ou https://).`,
+      );
+    }
+
+    const missing = ["API_KEY", "ADMIN_API_KEY", "ADMIN_ROUTE"].filter(
+      (k) => !secrets[k],
+    );
+    if (missing.length) {
+      console.warn(`[CONFIG] Segredos em falta: ${missing.join(", ")}`);
+    }
+
+    secrets.PORT = Number(secrets.PORT) || 3000;
+    VAULT_LOADED = true;
+    console.log("[CONFIG] Segredos carregados do Azure Key Vault.");
+    return secrets;
+  })();
+
+  try {
+    return await loadingPromise;
+  } catch (e) {
+    loadingPromise = null; // permite retry
+    throw e;
+  }
+}
+
+/** true depois de getKeysFromVault() ter corrido com sucesso. */
+const isVaultLoaded = () => VAULT_LOADED;
 
 // Mapeamento de nomes / ordem / headers
 const STATION_MAP_JSON_TO_IP = {
@@ -85,32 +191,34 @@ const FETCH_HEADERS = {
 };
 
 // --- [GPS AUTONOMY] / [SENTIDO INVERTIDO] FLAGS (partilhadas motor+rotas+mapa) ---
-// ─── [GPS AUTONOMY] MODO AUTÓNOMO DA IP ─────────────────────────────────────
-// Qualquer comboio com GPS fresco na TML é FORÇADO a Live:true e as
-// HoraPrevista dos nós futuros são recalculadas pelo motor cinemático
-// (posição real na linha), ignorando os atrasos da IP.
-// [ENVIO URGENTE] Cálculos por GPS DESLIGADOS — demasiado instáveis. O GPS
-// fica APENAS a alimentar a posição no mapa (ingestTmlPayload no poller).
-// Não recalcula atrasos, não infere passagens, não reatribui números por
-// sentido. Religar gradualmente quando estabilizar.
 const GPS_CALCULATIONS_ENABLED = true;
-
-// [SENTIDO INVERTIDO] Interruptor MESTRE da deteção de sentido contrário.
-// false = COMPLETAMENTE DESLIGADO: nunca reatribui números, nunca cria
-// fantasmas 99xxx, nunca desvia pings. Os comboios mantêm SEMPRE o número e
-// sentido originais da IP/horário. Religar só quando a deteção estiver fiável.
 const DIRECTION_DETECTION_ENABLED = false;
-
 const GPS_AUTONOMOUS_MODE = true; // desligar quando IP
 
-// Admin
-const ADMIN_API_KEY = process.env.ADMIN_API_KEY;
-const ADMIN_ROUTE = process.env.ADMIN_ROUTE;
-
 module.exports = {
-  PORT,
-  API_KEY,
-  API_BASE,
+  getKeysFromVault,
+  isVaultLoaded,
+  get PORT() {
+    return secrets.PORT;
+  },
+  get API_KEY() {
+    return secrets.API_KEY;
+  },
+  get API_BASE() {
+    return secrets.API_BASE;
+  },
+  get ADMIN_API_KEY() {
+    return secrets.ADMIN_API_KEY;
+  },
+  get ADMIN_ROUTE() {
+    return secrets.ADMIN_ROUTE;
+  },
+  get API_LOCATION() {
+    return secrets.API_LOCATION;
+  },
+  get STATION_API_BASE() {
+    return secrets.STATION_API_BASE;
+  },
   IP_BLOCKED,
   STATION_MAP_JSON_TO_IP,
   STATION_MAP_IP_TO_JSON,
@@ -121,6 +229,4 @@ module.exports = {
   GPS_CALCULATIONS_ENABLED,
   DIRECTION_DETECTION_ENABLED,
   GPS_AUTONOMOUS_MODE,
-  ADMIN_API_KEY,
-  ADMIN_ROUTE,
 };

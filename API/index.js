@@ -21,10 +21,14 @@ const GtfsOutput = require("./src/output/gtfs-output.js");
 const ServiceDayManager = require("./src/schedule/serviceDayManager.js");
 
 // --- MÓDULOS EXTRAÍDOS DO index.js (refatoração — ver estrutura) ---
+// [AZURE KV] Os SEGREDOS (PORT, API_KEY, API_BASE, ADMIN_*) sao lidos SEMPRE
+// via `config.X` — nunca destruturados. O config.js expoe-os como getters e a
+// destruturacao avalia o getter no instante do require, antes de
+// getKeysFromVault() ter corrido: o valor fica congelado a null para todo o
+// processo (e o node-fetch responde "Only absolute URLs are supported").
+// So as constantes puras (mapas, ordens, flags) podem ser destruturadas.
+const config = require("./config.js");
 const {
-  PORT,
-  API_KEY,
-  API_BASE,
   IP_BLOCKED,
   STATION_MAP_JSON_TO_IP,
   STATION_MAP_IP_TO_JSON,
@@ -35,9 +39,7 @@ const {
   GPS_CALCULATIONS_ENABLED,
   DIRECTION_DETECTION_ENABLED,
   GPS_AUTONOMOUS_MODE,
-  ADMIN_API_KEY,
-  ADMIN_ROUTE,
-} = require("./config.js");
+} = config;
 const {
   formatDateStr,
   parseSmartTime,
@@ -175,7 +177,7 @@ const fetchDetails = async (tid, dateStr) => {
   // PROVISORIO
   if (IP_BLOCKED) return null;
 
-  const url = `${API_BASE}/horarios-ncombio/${tid}/${dateStr}`;
+  const url = `${config.API_BASE}/horarios-ncombio/${tid}/${dateStr}`;
   try {
     const r = await fetch(url, { headers: FETCH_HEADERS, timeout: 10000 });
     if (!r.ok) {
@@ -1988,125 +1990,147 @@ const scheduleNextTick = () => {
 };
 
 // --- ROTAS (extraídas para ./routes.js) ---
-registerRoutes(app, {
-  AvisosManager,
-  EstacaoEndpoint,
-  GtfsOutput,
-  ServiceDayManager,
-  AnalyticsManager,
-  GhostManager,
-  VerifyManager,
-  GetLocation,
-  MapAuthority,
-  parseSmartTime,
-  getOperationalInfo,
-  formatDateStr,
-  getState: () => ({
-    OUTPUT_CACHE,
-    EXTRA_TRAINS_CACHE,
-    FUTURE_TRAINS_CACHE,
-    ABNORMAL_ROUTES_CACHE,
-    RICH_SCHEDULE,
-    DYNAMIC_EXTRA_SCHEDULE,
-    SUPPRESSED_ACTIVE,
-    IP_IS_DOWN,
-  }),
-});
+// [AZURE KV] Registo ADIADO: o routes.js le ADMIN_ROUTE/API_KEY no momento do
+// registo. Chamado pelo boot(), depois de getKeysFromVault().
+const wireRoutes = () =>
+  registerRoutes(app, {
+    AvisosManager,
+    EstacaoEndpoint,
+    GtfsOutput,
+    ServiceDayManager,
+    AnalyticsManager,
+    GhostManager,
+    VerifyManager,
+    GetLocation,
+    MapAuthority,
+    parseSmartTime,
+    getOperationalInfo,
+    formatDateStr,
+    getState: () => ({
+      OUTPUT_CACHE,
+      EXTRA_TRAINS_CACHE,
+      FUTURE_TRAINS_CACHE,
+      ABNORMAL_ROUTES_CACHE,
+      RICH_SCHEDULE,
+      DYNAMIC_EXTRA_SCHEDULE,
+      SUPPRESSED_ACTIVE,
+      IP_IS_DOWN,
+    }),
+  });
 
-app.listen(PORT, () => {
-  console.log(`LiveTagus API vb6.3.0 ativa na porta ${PORT}`);
-  console.log(`Endpoint /fertagus protegido com API_KEY.`);
+const startServer = () =>
+  app.listen(config.PORT, () => {
+    console.log(`LiveTagus API vb6.3.0 ativa na porta ${config.PORT}`);
+    console.log(`Endpoint /fertagus protegido com API_KEY.`);
 
-  // NÃO usar await aqui: checkOfflineTrains() faz station-poll com timeouts
-  // longos e, se a IP estiver lenta/inacessível, bloquearia o arranque do
-  // motor (updateCycle/scheduleNextTick) → /fertagus serviria {} para sempre.
-  // Disparamos em paralelo, tal como na versão estável.
-  checkOfflineTrains();
-  updateCycle();
-  scheduleNextTick();
-  try {
-    Geo.init(
-      path.join(__dirname, "/data/geo/fertagus_line_detailed.json"),
-      path.join(__dirname, "/data/geo/fertagus_stations_detailed.json"),
-    );
-    GtfsOutput.init({
-      Geo,
-      DelaysRT,
-      parseSmartTime,
+    // NÃO usar await aqui: checkOfflineTrains() faz station-poll com timeouts
+    // longos e, se a IP estiver lenta/inacessível, bloquearia o arranque do
+    // motor (updateCycle/scheduleNextTick) → /fertagus serviria {} para sempre.
+    // Disparamos em paralelo, tal como na versão estável.
+    checkOfflineTrains();
+    updateCycle();
+    scheduleNextTick();
+    try {
+      Geo.init(
+        path.join(__dirname, "/data/geo/fertagus_line_detailed.json"),
+        path.join(__dirname, "/data/geo/fertagus_stations_detailed.json"),
+      );
+      GtfsOutput.init({
+        Geo,
+        DelaysRT,
+        parseSmartTime,
+        stationsDetailed: JSON.parse(
+          fs.readFileSync(
+            path.join(__dirname, "/data/geo/fertagus_stations_detailed.json"),
+            "utf8",
+          ),
+        ),
+        getRichById: (id) =>
+          RICH_SCHEDULE.find((t) => String(t.id) === String(id)) ||
+          DYNAMIC_EXTRA_SCHEDULE[String(id)] ||
+          null,
+        getDepartureById: (id) =>
+          DEPARTURE_SCHEDULE.find((t) => String(t.id) === String(id)) || null,
+      });
+    } catch (e) {
+      // GTFS-RT é camada opcional: sem geometria, a API serve só o legado.
+      console.error(
+        "[GTFS-RT] Init falhou — a servir apenas pipeline legada:",
+        e.message,
+      );
+    }
+    GetLocation.init((data) => {
+      // Ingestão TML → snap/bearing/estados/atrasos. resolveTmlVehicle loga
+      // claramente trip_id/vehicle_id sem correspondência (ping descartado,
+      // comboio fica em fallback estático).
+      Geo.ingestTmlPayload(data, (veh) => {
+        const meta = GtfsOutput.resolveTmlVehicle(veh);
+        if (!meta) return meta;
+        GtfsOutput.rememberTmlMeta(meta.trainId, meta.tml);
+        // [SENTIDO INVERTIDO] Só desvia pings se a deteção estiver ATIVA. Com ela
+        // desligada, o ping segue sempre com o número original (sem fantasmas).
+        if (DIRECTION_DETECTION_ENABLED) {
+          const rerouted = MapAuthority.getReversedId(meta.trainId);
+          if (rerouted) return { ...meta, trainId: rerouted };
+        }
+        return meta;
+      });
+    });
+
+    // ServiceDayManager: restaura cache do disco, faz warm-up imediato e
+    // agenda o cron diário das 04:00. RICH_SCHEDULE/HOLIDAYS via getters
+    // (sobrevivem a reloads do loadDataFiles).
+    ServiceDayManager.init({
+      getRichSchedule: () => RICH_SCHEDULE,
+      getHolidays: () => HOLIDAYS,
+      VerifyManager,
+      // PROVISORIO
+      StationPoller: IP_BLOCKED
+        ? {
+            pollFutureDay: async () => {
+              throw new Error("IP_BLOCKED");
+            },
+          }
+        : StationPoller,
+      ExtrasHelpers,
+      STATION_MAP_IP_TO_JSON,
       stationsDetailed: JSON.parse(
         fs.readFileSync(
           path.join(__dirname, "/data/geo/fertagus_stations_detailed.json"),
           "utf8",
         ),
       ),
-      getRichById: (id) =>
-        RICH_SCHEDULE.find((t) => String(t.id) === String(id)) ||
-        DYNAMIC_EXTRA_SCHEDULE[String(id)] ||
-        null,
-      getDepartureById: (id) =>
-        DEPARTURE_SCHEDULE.find((t) => String(t.id) === String(id)) || null,
+
+      // Snapshot do Motor Live para a fusão do dia de hoje (getters: as caches
+      // globais são reassigned, nunca passar referências diretas).
+      getLiveState: () => ({
+        FUTURE_TRAINS_CACHE,
+        OUTPUT_CACHE,
+        EXTRA_TRAINS_CACHE,
+        DYNAMIC_EXTRA_SCHEDULE,
+        ABNORMAL_ROUTES_CACHE,
+      }),
+      STATION_MAP_JSON_TO_IP,
+      dir: __dirname,
     });
-  } catch (e) {
-    // GTFS-RT é camada opcional: sem geometria, a API serve só o legado.
-    console.error(
-      "[GTFS-RT] Init falhou — a servir apenas pipeline legada:",
-      e.message,
-    );
-  }
-  GetLocation.init((data) => {
-    // Ingestão TML → snap/bearing/estados/atrasos. resolveTmlVehicle loga
-    // claramente trip_id/vehicle_id sem correspondência (ping descartado,
-    // comboio fica em fallback estático).
-    Geo.ingestTmlPayload(data, (veh) => {
-      const meta = GtfsOutput.resolveTmlVehicle(veh);
-      if (!meta) return meta;
-      GtfsOutput.rememberTmlMeta(meta.trainId, meta.tml);
-      // [SENTIDO INVERTIDO] Só desvia pings se a deteção estiver ATIVA. Com ela
-      // desligada, o ping segue sempre com o número original (sem fantasmas).
-      if (DIRECTION_DETECTION_ENABLED) {
-        const rerouted = MapAuthority.getReversedId(meta.trainId);
-        if (rerouted) return { ...meta, trainId: rerouted };
-      }
-      return meta;
-    });
+
+    setInterval(checkOfflineTrains, 15 * 60 * 1000); // considerar troca para 20 -> poupados cerca de 2000 pedidos por dia
   });
 
-  // ServiceDayManager: restaura cache do disco, faz warm-up imediato e
-  // agenda o cron diário das 04:00. RICH_SCHEDULE/HOLIDAYS via getters
-  // (sobrevivem a reloads do loadDataFiles).
-  ServiceDayManager.init({
-    getRichSchedule: () => RICH_SCHEDULE,
-    getHolidays: () => HOLIDAYS,
-    VerifyManager,
-    // PROVISORIO
-    StationPoller: IP_BLOCKED
-      ? {
-          pollFutureDay: async () => {
-            throw new Error("IP_BLOCKED");
-          },
-        }
-      : StationPoller,
-    ExtrasHelpers,
-    STATION_MAP_IP_TO_JSON,
-    stationsDetailed: JSON.parse(
-      fs.readFileSync(
-        path.join(__dirname, "/data/geo/fertagus_stations_detailed.json"),
-        "utf8",
-      ),
-    ),
+// [AZURE KV] ARRANQUE ASSINCRONO
+// Nada pode tocar nos segredos antes de getKeysFromVault() resolver. Se o Key
+// Vault falhar, morremos aqui com uma mensagem clara em vez de arrancar com
+// URLs nulos e inundar os logs de "Only absolute URLs are supported".
+const boot = async () => {
+  await config.getKeysFromVault();
+  wireRoutes(); // rotas SO depois dos segredos (ADMIN_ROUTE, API_KEY)
+  startServer();
+};
 
-    // Snapshot do Motor Live para a fusão do dia de hoje (getters: as caches
-    // globais são reassigned, nunca passar referências diretas).
-    getLiveState: () => ({
-      FUTURE_TRAINS_CACHE,
-      OUTPUT_CACHE,
-      EXTRA_TRAINS_CACHE,
-      DYNAMIC_EXTRA_SCHEDULE,
-      ABNORMAL_ROUTES_CACHE,
-    }),
-    STATION_MAP_JSON_TO_IP,
-    dir: __dirname,
-  });
-
-  setInterval(checkOfflineTrains, 15 * 60 * 1000); // considerar troca para 20 -> poupados cerca de 2000 pedidos por dia
+boot().catch((e) => {
+  console.error(
+    "[BOOT FATAL] Falha a carregar segredos do Key Vault:",
+    e.message,
+  );
+  process.exit(1);
 });
