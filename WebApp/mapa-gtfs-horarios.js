@@ -563,8 +563,14 @@
   // allowRoutes: Set de route_id, ou null para todas. O filtro tem de ser
   // aplicado ANTES do limite — filtrar depois de cortar às 14 podia devolver
   // zero partidas de uma linha que afinal tem muitas.
-  function collectUpcoming(bundle, entries, limit, allowRoutes) {
+  // fromSec: segundos do dia de Lisboa a partir dos quais interessa (ou null).
+  // O ETA continua a ser contado a partir de AGORA; só o corte muda.
+  function collectUpcoming(bundle, entries, limit, allowRoutes, fromSec) {
     const now = lisbonNow();
+    const corte =
+      typeof fromSec === "number" && isFinite(fromSec)
+        ? Math.max(now.sec, fromSec)
+        : now.sec;
     const yYmd = ymdShift(now.ymd, -1);
     const yDow = (now.dow + 6) % 7;
     const out = [];
@@ -577,12 +583,12 @@
         const sec = timeToSec(dep.departure_time);
         if (sec == null) continue;
 
-        if (sec >= now.sec && serviceRunsOn(bundle, dep.service_id, now.ymd, now.dow)) {
+        if (sec >= corte && serviceRunsOn(bundle, dep.service_id, now.ymd, now.dow)) {
           out.push(makeDep(dep, entry, sec, now.sec, now.ymd));
         }
         if (sec >= 86400) {
           const off = sec - 86400; // madrugada de hoje, serviço de ontem
-          if (off >= now.sec && serviceRunsOn(bundle, dep.service_id, yYmd, yDow)) {
+          if (off >= corte && serviceRunsOn(bundle, dep.service_id, yYmd, yDow)) {
             out.push(makeDep(dep, entry, off, now.sec, yYmd));
           }
         }
@@ -735,6 +741,14 @@
     .ltg-ext:hover{border-color:rgba(0,0,0,.5);color:rgb(9 9 11);}
     html.dark .ltg-ext:hover{border-color:rgba(255,255,255,.5);color:#fff;}
     .ltg-ext-ic{width:11px;height:11px;flex-shrink:0;}
+    .ltg-from{display:flex;align-items:center;gap:.5rem;margin-top:12px;padding:.5rem .5rem .5rem .8rem;
+      border-radius:8px;border:1px solid rgba(59,130,246,.35);background:rgba(59,130,246,.08);
+      color:rgb(29,78,216);font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;}
+    html.dark .ltg-from{color:rgb(147,197,253);background:rgba(59,130,246,.12);border-color:rgba(59,130,246,.3);}
+    .ltg-from span{flex:1;min-width:0;}
+    .ltg-from-x{flex-shrink:0;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;
+      border:0;background:transparent;color:inherit;opacity:.7;cursor:pointer;border-radius:999px;}
+    .ltg-from-x:hover{opacity:1;background:rgba(59,130,246,.14);}
     html.dark .ltg-linereset:hover{color:#fff;}
     .ltg-chev{width:14px;height:14px;flex-shrink:0;opacity:.28;}
     .ltg-back{display:inline-flex;align-items:center;gap:6px;background:none;border:0;
@@ -839,6 +853,8 @@
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>';
   const ICON_CHEV =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="ltg-chev"><path d="m9 18 6-6-6-6"/></svg>';
+  const ICON_X_SMALL =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" width="12" height="12"><path d="M18 6 6 18M6 6l12 12"/></svg>';
   const ICON_EXT =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ltg-ext-ic"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>';
   const ICON_MOON =
@@ -950,6 +966,15 @@
 
   // Os horários que mostramos para a CP são os programados. O tempo real está
   // no site da CP, e o id da estação no GTFS é o mesmo que o site usa.
+  function fromBarHtml(view) {
+    if (view.fromSec == null) return "";
+    return `<div class="ltg-from" data-no-drag="1">
+      <span>Partidas a partir das ${escapeHtml(secToClock(view.fromSec))}</span>
+      <button type="button" class="ltg-from-x" data-ltg-from-clear="1"
+        aria-label="Mostrar todas as partidas" title="Mostrar todas">${ICON_X_SMALL}</button>
+    </div>`;
+  }
+
   function realtimeHtml(bundle, view) {
     if (!bundle || bundle.op !== "cp" || !view.primary) return "";
     // O parent_station é o código da estação; o stop_id pode ser da plataforma.
@@ -995,8 +1020,15 @@
       view.entries,
       SHOW,
       active ? new Set(active.routeIds) : null,
+      view.fromSec,
     );
     if (!deps.length) {
+      if (view.fromSec != null) {
+        return messageHtml(
+          `Sem partidas depois das ${secToClock(view.fromSec)}.`,
+          "Fecha o aviso em cima para ver todas as de hoje.",
+        );
+      }
       return active
         ? messageHtml(
             `Sem partidas em ${active.label}.`,
@@ -1140,7 +1172,7 @@
           ? `Próximas partidas · ${active.label}`
           : "Próximas partidas",
         pills,
-        filters: lineFilterHtml(view) + realtimeHtml(bundle, view),
+        filters: fromBarHtml(view) + lineFilterHtml(view) + realtimeHtml(bundle, view),
         back: hasBack ? "Voltar" : null,
       });
       body =
@@ -1238,6 +1270,14 @@
     if (sc) view.scrollTop = sc.scrollTop;
   }
 
+  // Epoch em ms → segundos do dia de Lisboa, pela diferença até agora: não
+  // depende do fuso do dispositivo. Uma hora já passada não filtra nada.
+  function fromSecDe(fromTime) {
+    if (typeof fromTime !== "number" || !isFinite(fromTime)) return null;
+    if (fromTime <= Date.now() + 60000) return null;
+    return Math.round(lisbonNow().sec + (fromTime - Date.now()) / 1000);
+  }
+
   function pushStopView(bundle, station, opts) {
     const resolved = resolveStops(bundle, station);
     const view = {
@@ -1252,6 +1292,10 @@
       routeIds: [],
       lines: [],
       activeLine: null,
+      // Filtro "a partir de", em segundos do dia de Lisboa. Vem de quem abriu
+      // o painel — por exemplo o percurso de um comboio da Fertagus, para
+      // mostrar só o que se apanha à chegada.
+      fromSec: fromSecDe(opts && opts.fromTime),
       state: resolved.entries.length ? "loading" : "unmatched",
       scrollTop: 0,
     };
@@ -1373,6 +1417,14 @@
     }
     if (e.target.closest("[data-ltg-line-reset]") && view0) {
       view0.activeLine = null;
+      rememberScroll();
+      render();
+      return;
+    }
+
+    // Cruz do aviso "a partir de": volta a mostrar tudo.
+    if (e.target.closest("[data-ltg-from-clear]") && view0) {
+      view0.fromSec = null;
       rememberScroll();
       render();
       return;
@@ -1599,6 +1651,7 @@
         return pushStopView(bundle, station, {
           replace: true,
           recenter: !!(opts && opts.recenter),
+          fromTime: opts && opts.fromTime,
         });
       })
       .catch(() => {
@@ -1649,6 +1702,7 @@
       return pushStopView(bundle, station, {
         replace: false,
         recenter: !!(opts && opts.recenter),
+        fromTime: opts && opts.fromTime,
       });
     });
   }
@@ -1757,6 +1811,9 @@
     sharedFertagusCp,
     cpStationFor,
     interchangesFor,
+    // Para quem precisa do interchangesFor antes de algum painel deste
+    // módulo ter sido aberto (o painel do comboio da Fertagus, por exemplo).
+    loadLigacoes,
     open,
     openStop,
     close,
@@ -1777,6 +1834,7 @@
       cpRealtimeUrl,
       cpIpId,
       loadLigacoes,
+      fromSecDe,
       sharedFertagusCp,
       serviceRunsOn,
       serviceLabel,
