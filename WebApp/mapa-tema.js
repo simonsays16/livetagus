@@ -52,7 +52,11 @@
   };
 
   let map = null;
-  let aplicado = null; // "dark" | "light"
+  let aplicado = null; // "dark" | "light" — o que está pintado no basemap
+  // O último tema anunciado às outras camadas. É separado do "aplicado" de
+  // propósito: se o basemap ainda não existir, ou a pintura falhar, as linhas
+  // da CP, do Metro e as etiquetas têm de mudar na mesma.
+  let ultimoAnunciado = null;
   let observando = false;
 
   function isDark() {
@@ -90,9 +94,12 @@
   }
 
   function onTemaMudou() {
-    const antes = aplicado;
     aplicar();
-    if (aplicado !== antes) avisarCamadas();
+    const tema = isDark() ? "dark" : "light";
+    if (tema !== ultimoAnunciado) {
+      ultimoAnunciado = tema;
+      avisarCamadas();
+    }
   }
 
   // Não há evento de mudança de tema no site: o interruptor mexe na classe do
@@ -120,6 +127,7 @@
 
   function init(m) {
     map = m;
+    ultimoAnunciado = isDark() ? "dark" : "light";
     if (map.isStyleLoaded()) aplicar(true);
     else map.once("styledata", () => aplicar(true));
     // Uma troca de estilo repõe a paint por omissão; volta a aplicar.

@@ -136,17 +136,21 @@
   function horaDoNo(n) {
     const prog = (n.HoraProgramada || n.HoraPrevista || "").substring(0, 5);
     const prev = (n.HoraPrevista || "").substring(0, 5);
-    const atraso =
-      prog && prev && !prev.startsWith("HH") && prev !== prog;
-    return { mostrar: atraso ? prev : prog, riscada: atraso ? prog : "", atraso };
+    const atraso = prog && prev && !prev.startsWith("HH") && prev !== prog;
+    return {
+      mostrar: atraso ? prev : prog,
+      riscada: atraso ? prog : "",
+      atraso,
+    };
   }
 
   // A hora de chegada como epoch, para o filtro dos outros painéis. Usa a
   // prevista quando existe: é a que vale para quem vai lá mudar de comboio.
   function chegadaEpoch(n) {
-    const str = n.HoraPrevista && !n.HoraPrevista.startsWith("HH")
-      ? n.HoraPrevista
-      : n.HoraProgramada;
+    const str =
+      n.HoraPrevista && !n.HoraPrevista.startsWith("HH")
+        ? n.HoraPrevista
+        : n.HoraProgramada;
     if (!str) return null;
     if (window.MapaGeo && window.MapaGeo.parseTimeHHMMSS) {
       try {
@@ -261,7 +265,9 @@
         </button>`;
       if (aberto) {
         html += `<div class="dp-past">${passadas
-          .map((i) => linhaHtml(train, nodes[i], i, nodes, { semLigacoes: true }))
+          .map((i) =>
+            linhaHtml(train, nodes[i], i, nodes, { semLigacoes: true }),
+          )
           .join("")}</div>`;
       }
     }
@@ -709,7 +715,14 @@
         const nome = b.dataset.name;
         const stop = b.dataset.stop;
         const ts = Number(b.dataset.ts);
-        const opts = { fromTime: isFinite(ts) && ts > 0 ? ts : undefined, name: nome };
+        // recenter: o mapa aproxima-se da estação do outro operador, com o
+        // desvio do painel. Sem isto o painel abria sobre um mapa que ainda
+        // mostrava o comboio, e não se via onde era a ligação.
+        const opts = {
+          fromTime: isFinite(ts) && ts > 0 ? ts : undefined,
+          name: nome,
+          recenter: true,
+        };
         close();
         setTimeout(() => {
           if (stop) G.openStop(op, stop, opts);
@@ -857,7 +870,8 @@
       const id = train.id;
       G.loadLigacoes()
         .then(() => {
-          if (isOpen() && currentTrainId === id) refresh(getCurrentTrain() || train);
+          if (isOpen() && currentTrainId === id)
+            refresh(getCurrentTrain() || train);
         })
         .catch(() => {});
     }

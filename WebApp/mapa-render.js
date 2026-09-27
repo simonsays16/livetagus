@@ -367,14 +367,104 @@
 
   // ─── ANIMAÇÃO SUAVE DOS MARKERS ──────────────────────────────────────
 
+  // O ciclo corria a 60 fps para sempre, mesmo com todos os comboios parados:
+  // reposicionava cada marcador no sítio onde já estava, a cada frame. Num
+  // telemóvel isso mantém o CPU e o compositor acordados e gasta bateria sem
+  // mostrar nada de novo. Agora dorme quando todos os deslizes acabaram, e
+  // acorda quando chega uma posição nova (acordarCiclo). Os movimentos do mapa
+  // não precisam dele: o MapLibre reposiciona os marcadores sozinho.
+  // Para voltar ao comportamento antigo: PARAR_QUANDO_QUIETO = false.
+  const PARAR_QUANDO_QUIETO = true;
+
+  // Comboios fora do ecrã não são redesenhados a meio do deslize. Com zoom
+  // vêem-se dois ou três de vinte, e os outros eram reposicionados a cada
+  // frame para ninguém os ver — 95% do trabalho dos marcadores.
+  // Para voltar ao comportamento antigo: SALTAR_FORA_DO_ECRA = false.
+  const SALTAR_FORA_DO_ECRA = true;
+
+  // A margem tem de cobrir um comboio inteiro: a posição do GPS é a FRENTE,
+  // e com a frente fora do ecrã a cauda pode estar dentro. Uma unidade dupla
+  // tem 400 m. Também absorve o que o mapa anda entre dois frames num gesto
+  // rápido, para um comboio não aparecer já tarde ao entrar no ecrã.
+  const MARGEM_VISTA_M = 600;
+
+  // Os limites do ecrã com folga, em graus. null quer dizer "não sei a vista"
+  // — e aí trata-se tudo como visível, que é o comportamento antigo e seguro.
+  function vistaComMargem() {
+    if (!SALTAR_FORA_DO_ECRA || !mainMap) return null;
+    let b = null;
+    try {
+      b = mainMap.getBounds();
+    } catch (_) {
+      return null;
+    }
+    if (!b || typeof b.getNorth !== "function") return null;
+    const n = b.getNorth();
+    const s = b.getSouth();
+    const e = b.getEast();
+    const w = b.getWest();
+    if (![n, s, e, w].every(isFinite)) return null;
+    const lat = (n + s) / 2;
+    const dLat = Math.max((n - s) * 0.25, MARGEM_VISTA_M / 111320);
+    const dLng = Math.max(
+      (e - w) * 0.25,
+      MARGEM_VISTA_M /
+        (111320 * Math.max(0.1, Math.cos((lat * Math.PI) / 180))),
+    );
+    return { n: n + dLat, s: s - dLat, e: e + dLng, w: w - dLng };
+  }
+
+  function naVista(v, lng, lat) {
+    return !v || (lat <= v.n && lat >= v.s && lng <= v.e && lng >= v.w);
+  }
+
+  function acordarCiclo() {
+    if (!animationFrameId)
+      animationFrameId = requestAnimationFrame(animateMarkers);
+  }
+
   function animateMarkers(time) {
     const glideMs = MAPA.TRAIN_GLIDE_MS || MAPA.POSITION_UPDATE_MS;
+    let algumAMover = false;
+    // Uma vez por frame, não uma por comboio.
+    const vista = vistaComMargem();
     for (const entry of markers.values()) {
       if (entry.startPos && entry.targetPos) {
         let t = (time - entry.animationStartTime) / glideMs;
         if (t > 1) t = 1;
-        const lng = lerp(entry.startPos.lng, entry.targetPos.lng, t);
-        const lat = lerp(entry.startPos.lat, entry.targetPos.lat, t);
+        // Já no destino e já desenhado lá: não há nada a fazer por ele.
+        if (t >= 1 && entry._assente) continue;
+        let lng = lerp(entry.startPos.lng, entry.targetPos.lng, t);
+        let lat = lerp(entry.startPos.lat, entry.targetPos.lat, t);
+        // A posição crua fica guardada: é por ela que se decide se o comboio
+        // está perto o suficiente da via para ser encaixado. Se a decisão
+        // fosse tomada sobre a posição já encaixada, a distância seria sempre
+        // zero e um comboio que se afastasse nunca se soltava. É actualizada
+        // mesmo para os comboios fora do ecrã: são duas contas, e o
+        // atualizarCarruagens precisa dela fresca.
+        entry.rawLngLat = { lng, lat };
+        if (t >= 1) {
+          // O FIM do deslize aplica-se sempre, visível ou não. É um só frame
+          // por deslize, e é o que garante que, ao arrastar o mapa até um
+          // comboio mais tarde — com o ciclo já a dormir —, ele está onde deve.
+          entry._assente = true;
+        } else {
+          algumAMover = true;
+          // A meio do deslize e fora do ecrã: ninguém o vê. Salta-se o
+          // trabalho no DOM — encaixe, reposicionamento, rotação. O comboio
+          // seguido nunca é saltado: é a ele que a câmara está presa.
+          if (
+            vista &&
+            followModeTrainId !== entry.train.id &&
+            !naVista(vista, lng, lat)
+          )
+            continue;
+        }
+        const enc = encaixarNaLinha(entry, lng, lat);
+        if (enc) {
+          lng = enc[0];
+          lat = enc[1];
+        }
         entry.marker.setLngLat([lng, lat]);
 
         // NOVO: Interpolar Rotação em vez de "Snap" a cada 5 segundos
@@ -413,7 +503,414 @@
         }
       }
     }
+    // Ao adormecer, uma última actualização desenha as posições finais.
+    if (time - ultimaLinha >= LINHA_UPDATE_MS || !algumAMover) {
+      ultimaLinha = time;
+      atualizarCarruagens();
+    }
+    if (PARAR_QUANDO_QUIETO && !algumAMover) {
+      animationFrameId = null;
+      return;
+    }
     animationFrameId = requestAnimationFrame(animateMarkers);
+  }
+
+  // ─── CARRUAGENS NA LINHA ─────────────────────────────────────────────
+  //
+  // Com zoom, cada carruagem é desenhada como uma FATIA da geometria da
+  // linha (mapa-linha.js), numa camada da GPU, em vez de uma coluna de divs
+  // rodada em bloco. Uma coluna rodada só pode ser recta: numa curva o
+  // comboio inteiro tomava o ângulo de um ponto e as carruagens das pontas
+  // saíam dos carris. Uma fatia da linha curva por construção, porque É a
+  // linha.
+  //
+  // A posição da API é a FRENTE do comboio: as carruagens estendem-se para
+  // trás dela, e o sinal de sentido do marcador HTML fica em cima da posição.
+  // O resto do marcador (a coluna de carruagens) é escondido enquanto a camada
+  // as desenha; os cliques no corpo do comboio passam a ser apanhados por ela.
+  //
+  // Para voltar ao comportamento antigo: CARRUAGENS_NA_LINHA = false.
+  const CARRUAGENS_NA_LINHA = true;
+  // Igual ao que o scaleCarriagesToRealWorld já usava, para o comboio manter
+  // o comprimento que tinha. Com fatias da geometria a curva vem dos vértices
+  // da linha, não do número de peças, por isso não é preciso subdividir.
+  const CARRUAGEM_M = 50;
+  const CARRUAGEM_GAP_M = 1.6;
+  // A posição da API pode vir desviada da via. Até aqui encaixa-se na linha;
+  // para lá disto é um dado mau e fica o desenho antigo, sem inventar.
+  const MAX_DESVIO_M = 150;
+  // 10 Hz chega: a esta escala o comboio anda dois ou três píxeis entre
+  // actualizações. Fazer setData() a cada frame é que pesaria.
+  const LINHA_UPDATE_MS = 100;
+
+  const SRC_CARR = "fertagus-carriages";
+  const LYR_CARR = "fertagus-carriages-fill";
+  const LYR_CARR_CASING = "fertagus-carriages-casing";
+  const VAZIO = { type: "FeatureCollection", features: [] };
+  let ultimaLinha = 0;
+  let carrVazio = true;
+  // Resumo do que está desenhado. Se não mudou, não há setData — que é o mais
+  // caro de tudo (serializa o GeoJSON, envia ao worker, refaz os tiles e
+  // recarrega os buffers da GPU). Antes corria 9 vezes por segundo com os
+  // comboios parados.
+  let ultimaAssinatura = "";
+
+  // Largura real de 10 m, com mínimo de 6 px — os mesmos números do
+  // scaleCarriagesToRealWorld. A 38,6° de latitude, 10 m são
+  // 10 × 2^z / 122 340 px; entre pontos a curva é exponencial de base 2,
+  // que é como os metros por píxel variam com o zoom.
+  function larguraCarr(extra) {
+    return [
+      "interpolate",
+      ["exponential", 2],
+      ["zoom"],
+      16,
+      6 + extra,
+      17,
+      10.71 + extra,
+      18,
+      21.43 + extra,
+      20,
+      85.7 + extra,
+    ];
+  }
+
+  function corVazia() {
+    try {
+      const v = getComputedStyle(document.documentElement)
+        .getPropertyValue("--car-empty")
+        .trim();
+      if (v) return v;
+    } catch (_) {}
+    return "#3b82f6";
+  }
+
+  function carriageLayerDefs() {
+    return [
+      {
+        id: LYR_CARR_CASING,
+        type: "line",
+        source: SRC_CARR,
+        minzoom: MAPA.ZOOM_DETAIL_CUTOFF,
+        layout: { "line-cap": "butt", "line-join": "round" },
+        paint: {
+          "line-color": "rgba(0,0,0,0.35)",
+          "line-width": larguraCarr(1.5),
+        },
+      },
+      {
+        id: LYR_CARR,
+        type: "line",
+        source: SRC_CARR,
+        minzoom: MAPA.ZOOM_DETAIL_CUTOFF,
+        layout: { "line-cap": "butt", "line-join": "round" },
+        paint: {
+          // Igual ao HTML: as primeiras N carruagens com a cor da ocupação,
+          // as restantes com a cor de "vazia".
+          "line-color": [
+            "case",
+            ["==", ["get", "cheia"], 1],
+            ["get", "cor"],
+            corVazia(),
+          ],
+          "line-width": larguraCarr(0),
+        },
+      },
+    ];
+  }
+
+  // As carruagens são desenhadas pela camada; no marcador HTML ficam só o
+  // anel, a seta e o wifi. A barra transparente continua a apanhar cliques.
+  function injectCarriageCss() {
+    if (document.getElementById("lt-carr-linha-css")) return;
+    const el = document.createElement("style");
+    el.id = "lt-carr-linha-css";
+    // Com as carruagens na camada, do marcador HTML sobra só o sinal de
+    // sentido. Sem a coluna de carruagens, o corpo passa a ser só esse sinal
+    // — e como o corpo está centrado na âncora do marcador, o sinal fica
+    // exactamente na posição do GPS, que é a frente do comboio.
+    el.textContent =
+      `.train-marker[data-linha="1"] .train-cars-wrapper{display:none}` +
+      `.train-marker[data-linha="1"] .train-wifi-badge{margin-bottom:0}`;
+    document.head.appendChild(el);
+  }
+
+  // Os comboios em HTML ficavam sempre por cima de tudo. A camada tem de
+  // ficar no topo para o comboio não desaparecer debaixo da estação quando
+  // está parado no cais.
+  function carruagensAoTopo(map) {
+    if (!map) return;
+    try {
+      if (map.getLayer(LYR_CARR_CASING)) map.moveLayer(LYR_CARR_CASING);
+      if (map.getLayer(LYR_CARR)) map.moveLayer(LYR_CARR);
+    } catch (_) {}
+  }
+
+  function ensureCarriageLayers(map) {
+    if (!CARRUAGENS_NA_LINHA || !map) return;
+    injectCarriageCss();
+    if (!map.getSource(SRC_CARR)) {
+      map.addSource(SRC_CARR, { type: "geojson", data: VAZIO });
+      carrVazio = true;
+    }
+    for (const def of carriageLayerDefs()) {
+      if (!map.getLayer(def.id)) map.addLayer(def);
+    }
+    if (!map._ltCarrClick) {
+      map._ltCarrClick = true;
+      // As zonas curvas ficam fora da barra HTML (transparente) que apanha
+      // os cliques; aqui apanham-se esses.
+      map.on("click", LYR_CARR, (e) => {
+        const f = e.features && e.features[0];
+        const entry = f && markers.get(f.properties.id);
+        if (entry && typeof clickHandler === "function")
+          clickHandler(entry.train);
+      });
+      // Com o ciclo a dormir, é o fim de cada gesto que actualiza: um comboio
+      // que entra no ecrã ao arrastar, ou o zoom que passa o corte. Dispara
+      // uma vez por gesto, não por frame. A geometria em si não muda com o
+      // zoom — é geográfica —, e o minzoom da camada trata da visibilidade.
+      map.on("moveend", () => atualizarCarruagens());
+      map.on(
+        "mouseenter",
+        LYR_CARR,
+        () => (map.getCanvas().style.cursor = "pointer"),
+      );
+      map.on("mouseleave", LYR_CARR, () => (map.getCanvas().style.cursor = ""));
+      // A cor de "vazia" vem do CSS e muda com o tema.
+      map.on("styledata", () => {
+        if (map.getLayer(LYR_CARR)) {
+          try {
+            map.setPaintProperty(LYR_CARR, "line-color", [
+              "case",
+              ["==", ["get", "cheia"], 1],
+              ["get", "cor"],
+              corVazia(),
+            ]);
+          } catch (_) {}
+        }
+      });
+    }
+  }
+
+  // Sentido do comboio ao longo da linha: +1 se avança para metros maiores
+  // (Roma-Areeiro → Setúbal), −1 no sentido contrário. Decide-se pelo
+  // DESTINO, que está sempre à frente; a estação seguinte falhava quando o
+  // comboio estava parado nela. Guarda-se por objecto de comboio, porque
+  // só muda quando chegam dados novos.
+  function sentido(entry, m) {
+    const t = entry.train;
+    if (entry._dirTrain === t && entry._dir) return entry._dir;
+    let dir = 0;
+    const nodes = (t && t.nodes) || [];
+    const ult = nodes[nodes.length - 1];
+    const st =
+      ult &&
+      (MAPA.resolveStationByApiId(ult.EstacaoID) ||
+        (MAPA.resolveStationByApiName
+          ? MAPA.resolveStationByApiName(ult.NomeEstacao)
+          : null));
+    if (st) {
+      const p = window.MapaLinha.projectar(st.lng, st.lat);
+      if (p && Math.abs(p.m - m) > 20) dir = p.m > m ? 1 : -1;
+    }
+    if (!dir) dir = entry._dir || 1;
+    entry._dir = dir;
+    entry._dirTrain = t;
+    return dir;
+  }
+
+  // Rumo da linha num ponto, no sentido do comboio (0 = norte, horário — a
+  // mesma convenção do applyRotation).
+  //
+  // O rumo que vinha do GPS é a corda entre duas posições sucessivas: numa
+  // curva corta por dentro, e o sinal de sentido apontava para fora dos
+  // carris. A tangente da própria linha não tem esse problema. Mede-se entre
+  // 12 m para trás e 12 m para a frente, para uma curva apertada não o fazer
+  // saltar entre vértices.
+  function rumoNaLinha(m, dir) {
+    const L = window.MapaLinha;
+    let a = L.ponto(m - dir * 12);
+    let b = L.ponto(m + dir * 12);
+    if (!a || !b) return null;
+    let dx = (b[0] - a[0]) * Math.cos((((a[1] + b[1]) / 2) * Math.PI) / 180);
+    let dy = b[1] - a[1];
+    // Na ponta da linha as duas projecções podem colapsar no mesmo ponto;
+    // aí usa-se só o troço de trás.
+    if (Math.abs(dx) < 1e-12 && Math.abs(dy) < 1e-12) {
+      a = L.ponto(m - dir * 24);
+      b = L.ponto(m);
+      dx = (b[0] - a[0]) * Math.cos((((a[1] + b[1]) / 2) * Math.PI) / 180);
+      dy = b[1] - a[1];
+      if (Math.abs(dx) < 1e-12 && Math.abs(dy) < 1e-12) return null;
+    }
+    return ((Math.atan2(dx, dy) * 180) / Math.PI + 360) % 360;
+  }
+
+  // Põe o marcador em cima da linha. O GPS vem desviado da via (dezenas de
+  // metros não é raro), e as carruagens já eram desenhadas na projecção —
+  // mas o marcador ficava na coordenada crua, com o sinal de sentido ao lado
+  // dos carris em vez de na frente do comboio. Custa uma projecção com pista
+  // por frame, ~0,5 µs.
+  function encaixarNaLinha(entry, lng, lat) {
+    if (!CARRUAGENS_NA_LINHA || entry.el.dataset.linha !== "1") return null;
+    const L = window.MapaLinha;
+    if (!L || !L.pronta()) return null;
+    const p = L.projectar(lng, lat, entry.linhaM);
+    if (!p || p.dist > MAX_DESVIO_M) return null;
+    entry.linhaM = p.m;
+    return L.ponto(p.m);
+  }
+
+  // Escrever um atributo, mesmo com o mesmo valor, invalida os estilos que
+  // dependem dele (o CSS usa [data-linha="1"]). Antes eram 73 escritas por
+  // segundo com os comboios parados.
+  function definirLinha(entry, v) {
+    if (entry.el.dataset.linha !== v) entry.el.dataset.linha = v;
+  }
+
+  // Põe o marcador onde deve estar para o estado actual, SEM depender do
+  // ciclo de animação. Com o ciclo a dormir, um comboio já parado que passasse
+  // a ser encaixável (ou deixasse de o ser) ficava na posição antiga: o ciclo
+  // salta os comboios assentes. Só escreve se a diferença se notar.
+  function posicionarMarcador(entry, alvo) {
+    if (!alvo) return;
+    let atual = null;
+    try {
+      atual = entry.marker.getLngLat();
+    } catch (_) {}
+    if (
+      atual &&
+      window.MapaLinha &&
+      window.MapaLinha._internals.metros(
+        atual.lng,
+        atual.lat,
+        alvo[0],
+        alvo[1],
+      ) < 0.5
+    )
+      return;
+    entry.marker.setLngLat(alvo);
+  }
+
+  function corpoDe(entry) {
+    // O corpo é guardado para não haver um querySelector por comboio e por
+    // actualização. Se o HTML do marcador for refeito, é procurado de novo.
+    const b = entry._body;
+    if (b && entry.el.contains(b)) return b;
+    entry._body = entry.el.querySelector(".train-cars-body");
+    return entry._body;
+  }
+
+  function rodarCorpo(entry, rumo) {
+    // Menos de 0,2° não se vê; poupa a escrita no estilo.
+    const antes = entry._rumoAplicado;
+    if (typeof antes === "number") {
+      const d = Math.abs(antes - rumo) % 360;
+      if ((d > 180 ? 360 - d : d) < 0.2) return;
+    }
+    const body = corpoDe(entry);
+    if (body) {
+      body.style.transform = `translate(-50%, -50%) rotate(${rumo}deg)`;
+      entry._rumoAplicado = rumo;
+    }
+  }
+
+  function atualizarCarruagens() {
+    if (!CARRUAGENS_NA_LINHA || !mainMap) return;
+    const L = window.MapaLinha;
+    const src = mainMap.getSource(SRC_CARR);
+    if (!src || !L || !L.pronta()) return;
+
+    const zoom = mainMap.getZoom();
+    if (zoom < MAPA.ZOOM_DETAIL_CUTOFF) {
+      if (!carrVazio) {
+        src.setData(VAZIO);
+        carrVazio = true;
+      }
+      ultimaAssinatura = "";
+      for (const entry of markers.values()) {
+        if (entry.el.dataset.linha === "1" && entry.rawLngLat) {
+          posicionarMarcador(entry, [entry.rawLngLat.lng, entry.rawLngLat.lat]);
+        }
+        definirLinha(entry, "0");
+        entry.linhaBearing = null;
+      }
+      return;
+    }
+
+    // A mesma vista com margem do ciclo. Antes usava os limites exactos do
+    // ecrã e a posição da frente: com a frente mesmo fora e a cauda dentro,
+    // o comboio caía no desenho antigo, uma barra recta a meio do ecrã.
+    const vista = vistaComMargem();
+    const feats = [];
+    const partesAssinatura = [];
+    for (const entry of markers.values()) {
+      // A posição CRUA, não a do marcador: essa já vem encaixada, e projectá-la
+      // daria sempre distância zero.
+      let ll = entry.rawLngLat || null;
+      if (!ll) {
+        try {
+          ll = entry.marker.getLngLat();
+        } catch (_) {}
+      }
+      const visivel = ll && naVista(vista, ll.lng, ll.lat);
+      const proj = visivel ? L.projectar(ll.lng, ll.lat, entry.linhaM) : null;
+      if (!proj || proj.dist > MAX_DESVIO_M) {
+        if (entry.el.dataset.linha === "1") {
+          entry.linhaBearing = null;
+          if (typeof entry.bearing === "number")
+            rodarCorpo(entry, entry.bearing);
+          // Volta à posição do GPS: o encaixe já não se justifica.
+          if (ll) posicionarMarcador(entry, [ll.lng, ll.lat]);
+        }
+        definirLinha(entry, "0"); // fica o desenho HTML antigo
+        continue;
+      }
+      entry.linhaM = proj.m;
+      const dir = sentido(entry, proj.m);
+      const t = entry.train;
+      const n = t.carriages || 4;
+      const total = n * CARRUAGEM_M;
+      const cheias = filledCarriages(t);
+      const cor = carriageFillColor(t);
+      for (let i = 0; i < n; i++) {
+        // A posição que o GPS emite é a FRENTE do comboio, não o meio. As
+        // carruagens estendem-se para trás dela: i = 0 é a da frente, colada
+        // à posição, e a última fica a `total` metros atrás.
+        const a =
+          dir > 0 ? proj.m - (i + 1) * CARRUAGEM_M : proj.m + i * CARRUAGEM_M;
+        const coords = L.fatia(
+          a + CARRUAGEM_GAP_M / 2,
+          a + CARRUAGEM_M - CARRUAGEM_GAP_M / 2,
+        );
+        if (coords.length < 2) continue;
+        feats.push({
+          type: "Feature",
+          properties: { id: t.id, cheia: i < cheias ? 1 : 0, cor },
+          geometry: { type: "LineString", coordinates: coords },
+        });
+      }
+      // Meio metro de resolução: menos do que isso não se vê em nenhum zoom.
+      partesAssinatura.push(
+        `${t.id}:${Math.round(proj.m * 2)}:${dir}:${n}:${cheias}:${cor}`,
+      );
+      definirLinha(entry, "1");
+      // Com o comboio parado o ciclo não passa por aqui; o encaixe tem de
+      // acontecer já. A deslizar, o ciclo faz o mesmo e isto é um no-op.
+      posicionarMarcador(entry, L.ponto(proj.m));
+      // O sinal de sentido alinha com a linha na posição da frente.
+      const rumo = rumoNaLinha(proj.m, dir);
+      if (rumo != null) {
+        entry.linhaBearing = rumo;
+        rodarCorpo(entry, rumo);
+      }
+    }
+    const assinatura = partesAssinatura.join("|");
+    if (assinatura === ultimaAssinatura) return; // nada mudou: sem setData
+    ultimaAssinatura = assinatura;
+    src.setData({ type: "FeatureCollection", features: feats });
+    carrVazio = !feats.length;
   }
 
   // ─── HELPERS DE ESTILO ───────────────────────────────────────────────
@@ -450,6 +947,10 @@
 
   function drawLine(map, geojson) {
     if (!geojson) return;
+    // A mesma geometria que desenha a linha serve para pôr as carruagens nela.
+    if (CARRUAGENS_NA_LINHA && window.MapaLinha && !window.MapaLinha.pronta()) {
+      window.MapaLinha.carregar(geojson);
+    }
     if (!map.getSource("fertagus-line")) {
       map.addSource("fertagus-line", { type: "geojson", data: geojson });
     }
@@ -480,6 +981,7 @@
       });
     }
     aplicarTemaLinha(map);
+    ensureCarriageLayers(map);
     // O mapa-tema.js dispara "styledata" quando o tema muda, e é também o que
     // acontece numa troca de estilo a sério. Serve para os dois casos.
     if (!map._ltLinhaTema) {
@@ -615,7 +1117,11 @@
     if (!map || !map.getLayer(CP_BADGE_LAYER)) return;
     const on = !window.MapaView || window.MapaView.isVisible("cp");
     try {
-      map.setLayoutProperty(CP_BADGE_LAYER, "visibility", on ? "visible" : "none");
+      map.setLayoutProperty(
+        CP_BADGE_LAYER,
+        "visibility",
+        on ? "visible" : "none",
+      );
     } catch (_) {}
   }
 
@@ -641,10 +1147,16 @@
         if (!shared || !map.getSource("fertagus-stations")) return;
         // O filtro compara pelo nome tal como está no geojson das estações.
         const nomes = [];
-        for (const st of window.MAPA && window.MAPA.STATIONS ? window.MAPA.STATIONS : [])
+        for (const st of window.MAPA && window.MAPA.STATIONS
+          ? window.MAPA.STATIONS
+          : [])
           if (shared.has(normName(st.name))) nomes.push(st.name);
         if (!map.getLayer(CP_BADGE_LAYER)) map.addLayer(cpBadgeLayerDef());
-        map.setFilter(CP_BADGE_LAYER, ["in", ["get", "name"], ["literal", nomes]]);
+        map.setFilter(CP_BADGE_LAYER, [
+          "in",
+          ["get", "name"],
+          ["literal", nomes],
+        ]);
         applyCpBadgeVisibility(map);
         // Clicar no selo abre a Fertagus, tal como o resto do marcador.
         if (!map._ltCpBadgeClick) {
@@ -847,6 +1359,10 @@
     // D. Interacção no círculo de fundo, não no logótipo: a área de clique é um
     // círculo perfeito e funciona mesmo antes de o ícone carregar.
     map.on("click", "fertagus-stations-bg", onStationFeatureClick);
+    // As estações entram depois da linha: as carruagens voltam para cima.
+    ensureCarriageLayers(map);
+    carruagensAoTopo(map);
+
     // Selos da CP nas estações partilhadas, e a acompanhar o botão do olho.
     refreshCpBadges(map);
     if (window.MapaView && !map._ltCpBadgeWatch) {
@@ -1204,7 +1720,15 @@
       arrow.style.transform = `translate(-50%, -50%) rotate(${bearing - 90}deg) translateX(30px)`;
     }
     if (body) {
-      body.style.transform = `translate(-50%, -50%) rotate(${bearing}deg)`;
+      // Com o comboio encaixado na linha manda o rumo da linha. Sem isto, o
+      // animateMarkers repunha o rumo do GPS a cada frame de deslize, e o
+      // sinal voltava a desalinhar entre actualizações.
+      const b =
+        entry.el.dataset.linha === "1" && typeof entry.linhaBearing === "number"
+          ? entry.linhaBearing
+          : bearing;
+      body.style.transform = `translate(-50%, -50%) rotate(${b}deg)`;
+      entry._rumoAplicado = b;
     }
   }
 
@@ -1285,24 +1809,52 @@
     }
 
     entry.map = map;
-    const currentVisualPos = entry.marker.getLngLat();
-    entry.startPos = { lng: currentVisualPos.lng, lat: currentVisualPos.lat };
+    // O deslize novo começa onde o comboio ESTÁ — calculado a partir do
+    // deslize anterior —, e não onde está desenhado. Um comboio fora do ecrã
+    // não é redesenhado (ver animateMarkers); partir da posição desenhada
+    // deixava-o para trás, e ao arrastar o mapa até ele vias-o a correr para
+    // apanhar o atraso. Para um comboio visível é o mesmo ponto.
+    const glideMsU = MAPA.TRAIN_GLIDE_MS || MAPA.POSITION_UPDATE_MS;
+    const tAgora =
+      entry.startPos && entry.targetPos && glideMsU
+        ? Math.max(0, Math.min(1, (now - entry.animationStartTime) / glideMsU))
+        : 1;
+    let pontoLogico;
+    if (entry.startPos && entry.targetPos) {
+      pontoLogico = {
+        lng: lerp(entry.startPos.lng, entry.targetPos.lng, tAgora),
+        lat: lerp(entry.startPos.lat, entry.targetPos.lat, tAgora),
+      };
+    } else {
+      const v = entry.marker.getLngLat();
+      pontoLogico = { lng: v.lng, lat: v.lat };
+    }
+    // O mesmo para o rumo: o valor em entry.bearing é o último APLICADO, que
+    // fica parado enquanto o comboio está fora do ecrã.
+    const rumoLogico =
+      entry.startBearing !== undefined && entry.targetBearing !== undefined
+        ? lerp(entry.startBearing, entry.targetBearing, tAgora)
+        : entry.bearing || 0;
+    entry.startPos = pontoLogico;
     entry.targetPos = { lng: position.lng, lat: position.lat };
     entry.animationStartTime = now;
+    // Deslize novo: o ciclo pode estar a dormir, e este comboio volta a mexer.
+    entry._assente = false;
+    acordarCiclo();
 
     const newBearing = position.bearing || 0;
-    let delta = newBearing - (entry.bearing || 0);
+    let delta = newBearing - rumoLogico;
 
     // Contornar bloqueios de 360º para girar sempre pelo caminho mais curto
     if (delta > 180) delta -= 360;
     if (delta < -180) delta += 360;
 
     if (Math.abs(delta) > 0.5) {
-      entry.startBearing = entry.bearing || 0;
+      entry.startBearing = rumoLogico;
       entry.targetBearing = entry.startBearing + delta;
     } else {
-      entry.startBearing = entry.bearing || 0;
-      entry.targetBearing = entry.bearing || 0;
+      entry.startBearing = rumoLogico;
+      entry.targetBearing = rumoLogico;
     }
 
     if (
@@ -1491,6 +2043,8 @@
     isRealPosition,
     _ringColor: ringColor,
     _carriageFillColor: carriageFillColor,
+    _atualizarCarruagens: atualizarCarruagens,
+    _rumoNaLinha: rumoNaLinha,
     _filledCarriages: filledCarriages,
   };
 })();

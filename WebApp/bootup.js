@@ -3,11 +3,17 @@
  * bootup.js · LiveTagus
  * Preparação dos dados no deploy. Corre no Netlify, antes da publicação.
  *
- * Três passos, independentes uns dos outros:
+ * Quatro passos, independentes uns dos outros:
  *   1. Gerar os bundles GTFS (CP, MTS, Metro de Lisboa) com o gtfs-departures.
- *   2. Corrigir o calendário do MTS, que o feed publico acaba em 2025.
+ *   2. Corrigir o calendário do MTS, que o feed publica sempre a acabar em 2025.
  *   3. Actualizar as paragens da Carris Metropolitana: o stops_cm.json e, no
- *      ligacoes_atualizado.json, apenas o bloco "cm" de cada estação.
+ *      ligacoes_atualizado.json, APENAS o bloco "cm" de cada estação.
+ *   4. Minificar TODO o JavaScript do site, sw.js incluído. O Netlify
+ *      descontinuou a optimização de assets, por isso ia tudo para produção
+ *      com comentários e espaços.
+ *      SÓ corre no Netlify: o site é publicado a partir da raiz, e isto
+ *      reescreve os ficheiros de origem — localmente estragava a árvore de
+ *      trabalho.
  *
  * Filosofia de falha: um passo que corre mal não impede os outros, porque
  * ficar com dados de ontem é melhor do que não publicar. Mas o resumo final
@@ -18,6 +24,7 @@
  *   node bootup.js              tudo
  *   node bootup.js --skip-gtfs  só os passos 2 e 3 (útil a testar localmente)
  *   node bootup.js --strict     qualquer falha faz o build falhar
+ *   node bootup.js --minify     minifica mesmo fora do Netlify
  */
 
 const fs = require("fs");
@@ -142,7 +149,7 @@ function lerCSV(texto) {
 
 // ─── 1. BUNDLES GTFS ────────────────────────────────────────────────────────
 function passoGtfs() {
-  log("\n[1/3] Bundles GTFS");
+  log("\n[1/4] Bundles GTFS");
   if (process.argv.includes("--skip-gtfs")) {
     log("  saltado (--skip-gtfs)");
     return true;
@@ -177,7 +184,7 @@ function passoGtfs() {
 //   - a divisão Verão/Inverno nos dias úteis.
 // O que se estende são só os intervalos de validade.
 function passoCalendario() {
-  log("\n[2/3] Calendário do MTS");
+  log("\n[2/4] Calendário do MTS");
   if (!fs.existsSync(CAL_MTS)) {
     falhas.push("calendário do MTS não encontrado");
     aviso(`não existe: ${CAL_MTS}`);
@@ -313,7 +320,7 @@ function passoCalendario() {
 
 // ─── 3. CARRIS METROPOLITANA ────────────────────────────────────────────────
 async function passoCarris() {
-  log("\n[3/3] Carris Metropolitana");
+  log("\n[3/4] Carris Metropolitana");
   const [stopsRes, linesRes, csvRes] = await Promise.all([
     baixar(`${API_CM}/stops`),
     baixar(`${API_CM}/lines`),
@@ -425,6 +432,117 @@ async function passoCarris() {
   return semCorrespondencia === 0;
 }
 
+// ─── 4. MINIFICAÇÃO ─────────────────────────────────────────────────────────
+//
+// Porquê aqui e não num passo à parte: o site é publicado a partir da raiz
+// (publish = "."), portanto não há pasta de saída, ou seja minificar é reescrever os
+// ficheiros no sítio, no ambiente descartável do build.
+
+// Todos os ficheiros do site são minificados, sw.js incluído. O browser
+// detecta um service worker novo comparando bytes, mas com o terser numa
+// versão FIXA no package.json a saída é determinista: um sw.js que não mudou
+// sai byte a byte igual e não força ninguém a recarregar. Subir a versão do
+// terser causa um refresh — uma vez, e de propósito.
+//
+// De fora ficam só pastas que não são código do site: as dependências (com
+// milhares de ficheiros, incluindo o próprio terser), o repositório, a cache
+// do Netlify e os dados gerados, que são só JSON.
+const MIN_EXCLUIR_PASTAS = new Set([
+  "node_modules",
+  ".git",
+  ".netlify",
+  "resources",
+]);
+
+function listarJs(dir) {
+  const out = [];
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (e.name.startsWith(".") && e.name !== ".") {
+      if (e.isDirectory()) continue;
+    }
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) {
+      if (!MIN_EXCLUIR_PASTAS.has(e.name)) out.push(...listarJs(p));
+      continue;
+    }
+    // .min.js já vem minificado: correr outra vez não ganha nada.
+    if (!e.name.endsWith(".js") || e.name.endsWith(".min.js")) continue;
+    out.push(p);
+  }
+  return out;
+}
+
+async function passoMinify() {
+  log("\n[4/4] Minificação de JavaScript");
+  const noNetlify = process.env.NETLIFY === "true";
+  if (!noNetlify && !process.argv.includes("--minify")) {
+    log("  saltado fora do Netlify (reescreveria os ficheiros de origem)");
+    return true;
+  }
+
+  let terser;
+  try {
+    terser = require("terser");
+  } catch (_) {
+    falhas.push("terser não instalado; JS publicado sem minificar");
+    aviso(
+      'falta o terser. Acrescenta ao package.json: "devDependencies": { "terser": "5.51.2" }',
+    );
+    return false;
+  }
+
+  const ficheiros = listarJs(RAIZ);
+  let antes = 0;
+  let depois = 0;
+  let feitos = 0;
+  let falhados = 0;
+  for (const f of ficheiros) {
+    const rel = path.relative(RAIZ, f);
+    let src;
+    try {
+      src = fs.readFileSync(f, "utf8");
+    } catch (e) {
+      continue;
+    }
+    try {
+      const r = await terser.minify(src, {
+        // Scripts clássicos, não módulos: uma função no topo de um ficheiro é
+        // global e pode ser chamada por outro script. toplevel:false (o
+        // omissão) garante que esses nomes não são encurtados.
+        module: false,
+        toplevel: false,
+        compress: { passes: 2 },
+        mangle: true,
+        // As licenças de terceiros ficam: /*! … */, @license, @preserve.
+        format: { comments: /^!|@license|@preserve/i },
+      });
+      if (!r || typeof r.code !== "string" || !r.code.length) {
+        throw new Error("o minificador não devolveu código");
+      }
+      // Um ficheiro que não encolhe fica como está: não há nada a ganhar e
+      // perdia-se a legibilidade.
+      if (r.code.length >= src.length) continue;
+      fs.writeFileSync(f, r.code);
+      antes += Buffer.byteLength(src);
+      depois += Buffer.byteLength(r.code);
+      feitos++;
+    } catch (e) {
+      // O ficheiro fica intacto: só se escreve depois de a minificação correr
+      // bem. Um erro aqui nunca estraga o que estava a funcionar.
+      falhados++;
+      aviso(`${rel}: ${(e && e.message) || e} — publicado sem minificar`);
+    }
+  }
+  const kb = (n) => (n / 1024).toFixed(0) + " KB";
+  const pct = antes ? ((1 - depois / antes) * 100).toFixed(0) : "0";
+  log(
+    `  ${feitos} de ${ficheiros.length} ficheiros · ${kb(antes)} → ${kb(depois)} (−${pct}%)` +
+      (falhados ? ` · ${falhados} ficaram por minificar` : ""),
+  );
+  if (falhados) falhas.push(`${falhados} ficheiro(s) JS não minificado(s)`);
+  return falhados === 0;
+}
+
 // ─── VERIFICAÇÃO FINAL ──────────────────────────────────────────────────────
 //
 // O incidente do Metro (feed a começar no dia seguinte, app sem partidas
@@ -503,6 +621,13 @@ function verificarCobertura() {
     await passoCarris();
   } catch (e) {
     falhas.push(`Carris: ${e.message}`);
+    aviso(e.message);
+  }
+
+  try {
+    await passoMinify();
+  } catch (e) {
+    falhas.push(`minificação: ${e.message}`);
     aviso(e.message);
   }
 

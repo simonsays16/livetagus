@@ -198,7 +198,8 @@ function injectFooter() {
                     </p>                    
                     <a href="mailto:geral@livetagus.pt" class="text-xs underline text-zinc-500 hover:text-black dark:hover:text-white transition-colors">geral@livetagus.pt</a>
                     <p class="text-[10px] text-zinc-400 font-mono">
-                        Desenvolvido por Simão Dias.
+                        Desenvolvido por
+                         <a href="https://www.linkedin.com/in/simaopssdias/" target="_blank" aria-label="LinkedIn do Simão Dias/Criado da LiveTagus" class="underline hover:text-black dark:hover:text-white transition-colors">Simão Dias</a>.
                     </p>
                 </div>
 

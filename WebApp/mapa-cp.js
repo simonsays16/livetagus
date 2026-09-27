@@ -81,6 +81,18 @@
   // trazem "colour" em #RRGGBB.
   const LINE_COLOR = "#FFFFFF";
 
+  // Cores do traço por tema. No claro é branco com borda preta; no escuro
+  // inverte, para o traço ler contra o basemap invertido do mapa-tema.js.
+  // A largura não muda: a borda continua a ser o traço + LINE_BORDER.
+  const CORES_LINHA = {
+    claro: { traco: "#FFFFFF", borda: "#000000" },
+    escuro: { traco: "#000000", borda: "#FFFFFF" },
+  };
+  const coresAtuais = () =>
+    document.documentElement.classList.contains("dark")
+      ? CORES_LINHA.escuro
+      : CORES_LINHA.claro;
+
   // Largura do traço. Dois requisitos ao mesmo tempo:
   //
   // 1. Aparece e desaparece com o zoom, nos mesmos limiares do Metro de Lisboa
@@ -598,7 +610,7 @@
           source: SRC_LINES,
           layout: { "line-join": "round", "line-cap": "round" },
           paint: {
-            "line-color": "#000000",
+            "line-color": coresAtuais().borda,
             "line-width": LINE_WIDTH(LINE_BORDER),
             // Opaca: é ela que dá contraste ao branco, não pode ser translúcida.
             "line-opacity": 1,
@@ -617,7 +629,7 @@
           source: SRC_LINES,
           layout: { "line-join": "round", "line-cap": "round" },
           paint: {
-            "line-color": LINE_COLOR,
+            "line-color": coresAtuais().traco,
             "line-width": LINE_WIDTH(0),
             // A opacidade é constante: quem faz o fade é a largura, como no
             // Metro. Duas rampas ao mesmo tempo davam um desvanecimento duplo.
@@ -713,7 +725,17 @@
   }
 
   function applyTheme() {
-    if (!map || !map.getLayer(L_LABELS)) return;
+    if (!map) return;
+    // Linhas: corre sempre que o tema muda — o mapa-tema.js dispara
+    // "styledata", e é esse o evento que chama isto.
+    const c = coresAtuais();
+    try {
+      if (map.getLayer(L_COLOR))
+        map.setPaintProperty(L_COLOR, "line-color", c.traco);
+      if (map.getLayer(L_CASING))
+        map.setPaintProperty(L_CASING, "line-color", c.borda);
+    } catch (_) {}
+    if (!map.getLayer(L_LABELS)) return;
     const dark = document.documentElement.classList.contains("dark");
     try {
       map.setPaintProperty(

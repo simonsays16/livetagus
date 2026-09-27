@@ -269,10 +269,17 @@
         if (x.op !== op) continue;
         out.push({
           label: x.name,
+          // recenter: o mapa aproxima-se da estação do outro operador.
           run: () =>
             x.stopId
-              ? window.GtfsHorarios.openStop(x.op, x.stopId, { name: x.name })
-              : window.GtfsHorarios.open({ name: x.name }, { operator: x.op }),
+              ? window.GtfsHorarios.openStop(x.op, x.stopId, {
+                  name: x.name,
+                  recenter: true,
+                })
+              : window.GtfsHorarios.open(
+                  { name: x.name },
+                  { operator: x.op, recenter: true },
+                ),
         });
       }
     }
@@ -684,7 +691,8 @@
       if (res.status === 503) {
         model.ipDown = true;
       } else if (res.ok) {
-        const data = await res.json();
+        // PROVISORIO
+        //const data = await res.json();
         if (data && data.error) {
           if (data.error === "IP_DOWN") model.ipDown = true;
         } else {
