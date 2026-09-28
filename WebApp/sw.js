@@ -1,5 +1,5 @@
 // --- BEGIN VERSIONS ---
-const GLOBAL_VERSION = "livetagus-v.rc4.28092026";
+const GLOBAL_VERSION = "livetagus-v.rc5.28092026";
 const ASSETS_VERSIONS = {
   "./index.html": "v.rc1.14092026",
   "./index.js": "v.rc3.21062026",
@@ -36,7 +36,7 @@ const ASSETS_VERSIONS = {
   "./imagens/netlify-light.svg": "v.rc1.24052026",
   "./json/fertagus_sentido_lisboa.json": "v.rc1.24052026",
   "./json/fertagus_sentido_margem.json": "v.rc1.24052026",
-  "./json/feriados.json": "v.rc1.24052026"
+  "./json/feriados.json": "v.rc1.24052026",
 };
 // --- END VERSIONS ---
 

@@ -1570,7 +1570,11 @@
 
   function carregarPadrao(id) {
     if (!cachePadroes.has(id)) {
-      const pr = fetch(`${CM_API_BASE}/patterns/${encodeURIComponent(id)}`, {
+      const idLimpo = encodeURIComponent(id).replace(
+        /%5B(LA77N|BNA17|YA15B|A2L1N)%5D/,
+        "",
+      );
+      const pr = fetch(`${CM_API_BASE}/patterns/${idLimpo}`, {
         cache: "no-store",
       })
         .then((r) => {
