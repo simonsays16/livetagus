@@ -156,7 +156,27 @@ function lerCSV(texto) {
 }
 
 // ─── 0. BIBLIOTECAS ─────────────────────────────────────────────────────────
-
+//
+// O MapLibre vinha do unpkg por um proxy do netlify.toml. Passa a vir do
+// node_modules, na versão FIXADA no package.json, copiado para /vendor/ com a
+// versão no nome. Três ganhos:
+//   - o Netlify serve-o com a sua compressão (o proxy chegava maior do que o
+//     ficheiro comprimido em Brotli);
+//   - com a versão no URL pode ter cache imutável de um ano: quem volta ao
+//     mapa não o volta a descarregar, e uma versão nova é um URL novo;
+//   - o unpkg sai do caminho em produção.
+//
+// A versão e o hash SRI tinham de bater certo à mão em três sítios. Agora o
+// build CONFIRMA que o HTML aponta para o ficheiro e o hash certos, e FALHA se
+// não — com a tag exacta a copiar. Um mapa partido em produção passa a ser um
+// build vermelho, e o Netlify mantém o deploy anterior.
+//
+// O .min.js no nome não é enfeite: o passo 4 salta esses ficheiros. O
+// MapLibre já vem minificado, e reminificá-lo ganhava 2 KB e arriscava partir
+// o worker, que é construído a partir do texto das próprias funções.
+//
+// Este passo corre SEMPRE, também em localhost: só escreve em vendor/, que é
+// gerado (vai no .gitignore), e nunca toca nos ficheiros de origem.
 const BIBLIOTECAS = [
   {
     pacote: "maplibre-gl",
@@ -191,7 +211,7 @@ function tagQueAponta(html, caminho) {
     const tag = m[0];
     const url = /\b(?:src|href)\s*=\s*"([^"]+)"/i.exec(tag);
     if (!url || url[1] !== caminho) continue;
-    const integ = /\bintegrity\s*=\s*"([^"]+)"/i.exec(tag);
+    const integ = /\bintegrity\s*=\s*["']([^"']+)["']/i.exec(tag);
     return { tag, integrity: integ ? integ[1] : null };
   }
   return null;
@@ -256,17 +276,28 @@ function passoBibliotecas() {
           `  FALHA ${pag} não carrega ${e.caminho} (o package.json instala o ${e.pacote} ${e.versao}).\n` +
             `        Tag certa:\n        ${sugestao}`,
         );
+      } else if (!t.integrity) {
+        // Sem integrity: aceite. Para ficheiros servidos pelo próprio site o
+        // SRI protege pouco (quem alterasse o /vendor/ alterava o HTML), e a
+        // integridade do pacote já é verificada pelo package-lock.json. O que
+        // parte o mapa é a VERSÃO não bater, e isso continua a falhar acima.
+        // Com integrity o Mozilla Observatory dá +5; sem ele, fica neutro.
+        log(`  aviso: ${pag} carrega ${e.caminho} sem integrity (aceite).`);
       } else if (t.integrity !== e.hash) {
+        // Com integrity, tem de bater: senão o browser recusa o ficheiro e o
+        // mapa não arranca.
         ok = false;
         falhas.push(`${pag}: integrity errado em ${e.caminho}`);
         console.error(
           `  FALHA ${pag}: o integrity de ${e.caminho} não bate — o browser recusava o ficheiro.\n` +
-            `        Tag certa:\n        ${sugestao}`,
+            `        Encontrado: ${t.integrity}\n` +
+            `        Esperado:   ${e.hash}\n` +
+            `        Tag certa (ou tira o integrity):\n        ${sugestao}`,
         );
       }
     }
   }
-  if (ok) log("  o HTML aponta para os ficheiros e hashes certos");
+  if (ok) log("  o HTML aponta para as versões certas");
   return ok;
 }
 
