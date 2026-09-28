@@ -1,6 +1,8 @@
 # Dependências
 node_modules/
 android/
+maplibre-gl.css
+maplibre-gl.js
 
 # Dependencias package main
 /package.json

@@ -50,20 +50,13 @@
       rel="stylesheet"
     />
 
-    <!-- MapLibre GL -->
-    <!-- MapLibre por duas vias, de propósito: em cada ambiente uma falha e a
-         outra serve. Em localhost o /maplibre-gl.css dá 404 (o netlify.toml não
-         corre no Live Server) e vale o unpkg; em produção a CSP bloqueia o
-         unpkg e vale o proxy do netlify.toml. Nunca carregam as duas.
-         O integrity é o SHA-384 do maplibre-gl@4.7.1/dist/maplibre-gl.css. O
-         crossorigin é obrigatório no externo: sem CORS o browser não consegue
-         verificar o hash e recusa o ficheiro. -->
+    <!-- MapLibre GL
     <link
       rel="stylesheet"
       href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
       integrity="sha384-MinO0mNliZ3vwppuPOUnGa+iq619pfMhLVUXfC4LHwSCvF9H+6P/KO4Q7qBOYV5V"
       crossorigin="anonymous"
-    />
+    />-->
     <link
       href="/maplibre-gl.css"
       rel="stylesheet"
@@ -1458,20 +1451,13 @@
       </div>
     </main>
 
-    <!-- SCRIPTS-->
-    <!-- Bibliotecas externas, por duas vias de propósito (ver nota no <head>):
-         localhost usa o unpkg, produção usa o proxy do netlify.toml. Em cada
-         ambiente uma falha e a outra serve — nunca carregam as duas.
-         O integrity é o SHA-384 dos ficheiros publicados no npm para
-         maplibre-gl@4.7.1, e é o mesmo nas duas vias porque o proxy serve
-         exactamente o mesmo ficheiro. Ao mudar de versão, mudar o URL, o
-         netlify.toml E os hashes. -->
+    <!-- SCRIPTS
     <script
       src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"
       integrity="sha384-SYKAG6cglRMN0RVvhNeBY0r3FYKNOJtznwA0v7B5Vp9tr31xAHsZC0DqkQ/pZDmj"
       crossorigin="anonymous"
       defer
-    ></script>
+    ></script>-->
     <script
       src="/maplibre-gl.js"
       integrity="sha384-SYKAG6cglRMN0RVvhNeBY0r3FYKNOJtznwA0v7B5Vp9tr31xAHsZC0DqkQ/pZDmj"
