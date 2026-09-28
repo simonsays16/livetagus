@@ -182,15 +182,59 @@
     }, 180);
   }
 
+  // ─── partidas.js A PEDIDO ─────────────────────────────────────────────
+  // É o maior ficheiro do mapa (~15 KiB transferidos) e ~95% dele só serve
+  // quando se abre uma estação. Deixou de estar no mapa.html: carrega em
+  // fundo depois de a Fertagus estar desenhada — quando alguém tocar numa
+  // estação.
+  // Na página /estacao continua a ser carregado directamente pelo HTML.
+  const PARTIDAS_SRC = "./partidas.js";
+  let partidasPromise = null;
+
+  function carregarPartidas() {
+    if (window.Partidas) return Promise.resolve(true);
+    if (partidasPromise) return partidasPromise;
+    partidasPromise = new Promise((resolve) => {
+      const s = document.createElement("script");
+      s.src = PARTIDAS_SRC;
+      s.async = true;
+      s.onload = () => resolve(!!window.Partidas);
+      s.onerror = () => {
+        // Deixa tentar outra vez na próxima abertura (rede de volta, etc.).
+        partidasPromise = null;
+        resolve(false);
+      };
+      document.head.appendChild(s);
+    });
+    return partidasPromise;
+  }
+
+  // Em fundo, atrás do portão da Fertagus (ver mapa-render.js).
+  if (window.LTArranque) window.LTArranque.depois(() => carregarPartidas());
+
   function mountPartidas() {
     const host = panel.querySelector("[data-ltp-mount]");
-    if (!host || !window.Partidas) return;
+    if (!host) return;
+    if (!window.Partidas) {
+      // O toque chegou antes do ficheiro. Mostra que está a carregar, e monta
+      // quando chegar — se o painel ainda estiver aberto na MESMA estação.
+      const estacao = currentStation;
+      host.innerHTML = `<p class="text-[11px] text-zinc-400 text-center py-8" data-ltp-a-carregar="1">A carregar partidas…</p>`;
+      carregarPartidas().then((ok) => {
+        if (!isOpen() || currentStation !== estacao) return;
+        if (ok) mountPartidas();
+        else
+          host.innerHTML = `<p class="text-[11px] text-zinc-400 text-center py-8">Não foi possível carregar as partidas. Fecha e volta a abrir a estação para tentar outra vez.</p>`;
+      });
+      return;
+    }
     if (partidasCtrl) {
       try {
         partidasCtrl.destroy();
       } catch (_) {}
       partidasCtrl = null;
     }
+    host.innerHTML = "";
     partidasCtrl = window.Partidas.mount({
       container: host,
       station: currentStation,

@@ -563,19 +563,25 @@ const shouldIgnoreAnalytics = ignorePaths.some((path) =>
 
 if (!shouldIgnoreAnalytics) {
   // 100% privacy-first analytics (Simple Analytics)
-  const saScript = document.createElement("script");
-  saScript.src = "/api/sa.js";
-  saScript.async = true;
-  saScript.defer = true;
-  saScript.setAttribute("data-collect-dnt", "true");
-  saScript.setAttribute("data-api", "/api/sa-events");
-  document.head.appendChild(saScript);
-  window.sa_event =
-    window.sa_event ||
-    function () {
-      var a = [].slice.call(arguments);
-      window.sa_event.q ? window.sa_event.q.push(a) : (window.sa_event.q = [a]);
-    };
+  const injectarSA = () => {
+    const saScript = document.createElement("script");
+    saScript.src = "/api/sa.js";
+    saScript.async = true;
+    saScript.defer = true;
+    saScript.setAttribute("data-collect-dnt", "true");
+    saScript.setAttribute("data-api", "/api/sa-events");
+    document.head.appendChild(saScript);
+  };
+  // No mapa, o analytics espera que a Fertagus esteja desenhada (o portão
+  // LTArranque do mapa-render.js). Tem de ser no DOMContentLoaded: este
+  // ficheiro corre ANTES do mapa-render.js, e o portão ainda não existe
+  // nesse momento. Nas outras páginas não há portão e carrega logo.
+  // Os eventos disparados entretanto ficam na fila do sa_event (topo do
+  // ficheiro), que o Simple Analytics processa quando chega.
+  document.addEventListener("DOMContentLoaded", () => {
+    if (window.LTArranque) window.LTArranque.depois(injectarSA);
+    else injectarSA();
+  });
 } else {
   window.sa_event = function () {};
 }

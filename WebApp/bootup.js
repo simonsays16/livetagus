@@ -17,18 +17,22 @@
  *
  * Filosofia de falha: um passo que corre mal não impede os outros, porque
  * ficar com dados de ontem é melhor do que não publicar. Mas o resumo final
- * diz o que falhou, e o passo 1 faz o build falhar se rebentar pq sem bundles
+ * diz o que falhou, e o passo 1 faz o build falhar se rebentar — sem bundles
  * não vale a pena publicar.
  *
  * Uso:
  *   node bootup.js              tudo
  *   node bootup.js --skip-gtfs  só os passos 2 e 3 (útil a testar localmente)
  *   node bootup.js --strict     qualquer falha faz o build falhar
- *   node bootup.js --minify     minifica mesmo fora do Netlify
+ *   node bootup.js --so-bibliotecas   só o passo 0 (para correr em localhost
+ *                               depois de um npm install)
+ *   node bootup.js --minify     minifica mesmo fora do Netlify (cuidado:
+ *                               reescreve os ficheiros; só numa cópia)
  */
 
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 const { execSync } = require("child_process");
 
 // ─── CAMINHOS ───────────────────────────────────────────────────────────────
@@ -38,7 +42,10 @@ const CAL_MTS = path.join(
   DIR_GTFS,
   "metro-transportes-do-sul-gtfs-departures/calendar.json",
 );
-const STOPS_CM = path.join(RAIZ, "resources/data/json/stops_cm.json");
+// Onde a APP lê (mapa-guardadas.js, mapa-cm.js: /json/stops_cm.json). Antes
+// escrevia em resources/data/json/, que ninguém lia — a lista de paragens da
+// app nunca era actualizada pelo build.
+const STOPS_CM = path.join(RAIZ, "json/stops_cm.json");
 const LIGACOES = path.join(RAIZ, "json/ligacoes_atualizado.json");
 
 // ─── FONTES ─────────────────────────────────────────────────────────────────
@@ -76,7 +83,8 @@ const ESTACOES = [
   { id: "9466035", nome: "Roma-Areeiro" },
 ];
 
-// O CSV chama "Areeiro" ao que a Fertagus chama "Roma-Areeiro".
+// O CSV chama "Areeiro" ao que a Fertagus chama "Roma-Areeiro". É a única
+// divergência nas 14 — verificada contra o ficheiro, não adivinhada.
 const ALIAS_CSV = { "roma areeiro": "areeiro" };
 
 // ─── UTILITÁRIOS ────────────────────────────────────────────────────────────
@@ -147,6 +155,121 @@ function lerCSV(texto) {
     .map((l) => Object.fromEntries(cab.map((h, i) => [h, l[i] ?? ""])));
 }
 
+// ─── 0. BIBLIOTECAS ─────────────────────────────────────────────────────────
+
+const BIBLIOTECAS = [
+  {
+    pacote: "maplibre-gl",
+    origem: "dist/maplibre-gl.js",
+    destino: (v) => `vendor/maplibre-gl@${v}.min.js`,
+  },
+  {
+    pacote: "maplibre-gl",
+    origem: "dist/maplibre-gl.css",
+    destino: (v) => `vendor/maplibre-gl@${v}.css`,
+  },
+];
+const PAGINAS_COM_BIBLIOTECAS = ["mapa.html"];
+
+// O source map não vai: sem ele, a última linha fazia quem abrisse as
+// ferramentas de programador ver um 404.
+function semSourceMap(texto) {
+  return texto
+    .replace(/\n\/\/# sourceMappingURL=[^\n]*\s*$/, "\n")
+    .replace(/\n?\/\*# sourceMappingURL=[^*]*\*\/\s*$/, "\n");
+}
+
+function sri(buf) {
+  return "sha384-" + crypto.createHash("sha384").update(buf).digest("base64");
+}
+
+// A tag (script ou link) que aponta para `caminho`, e o integrity que tem.
+function tagQueAponta(html, caminho) {
+  const re = /<(script|link)\b[^>]*>/gis;
+  let m;
+  while ((m = re.exec(html))) {
+    const tag = m[0];
+    const url = /\b(?:src|href)\s*=\s*"([^"]+)"/i.exec(tag);
+    if (!url || url[1] !== caminho) continue;
+    const integ = /\bintegrity\s*=\s*"([^"]+)"/i.exec(tag);
+    return { tag, integrity: integ ? integ[1] : null };
+  }
+  return null;
+}
+
+function passoBibliotecas() {
+  log("\n[0/4] Bibliotecas");
+  let ok = true;
+  const esperado = [];
+  for (const b of BIBLIOTECAS) {
+    let versao;
+    try {
+      versao = lerJSON(
+        path.join(RAIZ, "node_modules", b.pacote, "package.json"),
+      ).version;
+    } catch (_) {
+      falhas.push(`${b.pacote} não instalado`);
+      aviso(
+        `falta o ${b.pacote} no node_modules. No package.json: "dependencies": { "${b.pacote}": "<versão>" }`,
+      );
+      ok = false;
+      continue;
+    }
+    const origem = path.join(RAIZ, "node_modules", b.pacote, b.origem);
+    const destinoRel = b.destino(versao);
+    const destino = path.join(RAIZ, destinoRel);
+    const buf = Buffer.from(
+      semSourceMap(fs.readFileSync(origem, "utf8")),
+      "utf8",
+    );
+    fs.mkdirSync(path.dirname(destino), { recursive: true });
+    fs.writeFileSync(destino, buf);
+    const hash = sri(buf);
+    esperado.push({
+      caminho: "/" + destinoRel.replace(/\\/g, "/"),
+      hash,
+      versao,
+      pacote: b.pacote,
+    });
+    log(
+      `  ${destinoRel} · ${(buf.length / 1024).toFixed(0)} KB · ${hash.slice(0, 22)}…`,
+    );
+  }
+
+  // O HTML aponta mesmo para estes ficheiros, com estes hashes?
+  for (const pag of PAGINAS_COM_BIBLIOTECAS) {
+    let html;
+    try {
+      html = fs.readFileSync(path.join(RAIZ, pag), "utf8");
+    } catch (_) {
+      continue;
+    }
+    for (const e of esperado) {
+      const t = tagQueAponta(html, e.caminho);
+      const sugestao = e.caminho.endsWith(".css")
+        ? `<link rel="stylesheet" href="${e.caminho}" integrity="${e.hash}" />`
+        : `<script src="${e.caminho}" integrity="${e.hash}" defer></script>`;
+      if (!t) {
+        ok = false;
+        falhas.push(`${pag} não aponta para ${e.caminho}`);
+        console.error(
+          `  FALHA ${pag} não carrega ${e.caminho} (o package.json instala o ${e.pacote} ${e.versao}).\n` +
+            `        Tag certa:\n        ${sugestao}`,
+        );
+      } else if (t.integrity !== e.hash) {
+        ok = false;
+        falhas.push(`${pag}: integrity errado em ${e.caminho}`);
+        console.error(
+          `  FALHA ${pag}: o integrity de ${e.caminho} não bate — o browser recusava o ficheiro.\n` +
+            `        Tag certa:\n        ${sugestao}`,
+        );
+      }
+    }
+  }
+  if (ok) log("  o HTML aponta para os ficheiros e hashes certos");
+  return ok;
+}
+
 // ─── 1. BUNDLES GTFS ────────────────────────────────────────────────────────
 function passoGtfs() {
   log("\n[1/4] Bundles GTFS");
@@ -177,7 +300,9 @@ function passoGtfs() {
 // ─── 2. CALENDÁRIO DO MTS ───────────────────────────────────────────────────
 //
 // O feed do MTS é um ficheiro fixo de 2024 e o calendário acaba em 2025. Sem
-// isto, a app não mostra partida nenhuma do MTS
+// isto, a app não mostra partida nenhuma do MTS — foi exactamente o que
+// aconteceu com o Metro quando o feed passou a começar no dia seguinte.
+//
 // O que se preserva do original, e é importante:
 //   - os feriados já lá estão listados até 2030 (added_dates no DOM,
 //     removed_dates nos restantes);
@@ -435,7 +560,7 @@ async function passoCarris() {
 // ─── 4. MINIFICAÇÃO ─────────────────────────────────────────────────────────
 //
 // Porquê aqui e não num passo à parte: o site é publicado a partir da raiz
-// (publish = "."), portanto não há pasta de saída, ou seja minificar é reescrever os
+// (publish = "."), portanto não há pasta de saída — minificar é reescrever os
 // ficheiros no sítio, no ambiente descartável do build.
 
 // Todos os ficheiros do site são minificados, sw.js incluído. O browser
@@ -608,6 +733,12 @@ function verificarCobertura() {
   const t0 = Date.now();
   log("bootup.js · preparação dos dados");
 
+  // Primeiro: se o MapLibre não bater certo com o HTML, o resto não interessa.
+  const okBibliotecas = passoBibliotecas();
+  if (process.argv.includes("--so-bibliotecas")) {
+    process.exit(okBibliotecas ? 0 : 1);
+  }
+
   const okGtfs = passoGtfs();
 
   try {
@@ -644,5 +775,7 @@ function verificarCobertura() {
   // Sem bundles não vale a pena publicar. O resto degrada para os ficheiros
   // que já estão no repositório, o que é preferível a não publicar.
   const estrito = process.argv.includes("--strict");
-  if (!okGtfs || (estrito && falhas.length)) process.exit(1);
+  // Sem bundles ou com o MapLibre desencontrado do HTML, não se publica: o
+  // mapa não funcionava. O Netlify mantém o deploy anterior.
+  if (!okGtfs || !okBibliotecas || (estrito && falhas.length)) process.exit(1);
 })();

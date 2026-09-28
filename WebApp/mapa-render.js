@@ -522,6 +522,80 @@
     animationFrameId = requestAnimationFrame(animateMarkers);
   }
 
+  // ─── ACESSIBILIDADE ──────────────────────────────────────────────────
+  function nomeDoComboio(train) {
+    const num = train && (train.numero || train.id);
+    const dest = train && train.destino;
+    let nome = num ? `Comboio ${num}` : "Comboio";
+    if (dest) nome += ` para ${dest}`;
+    if (train && train.isSuppressed) nome += ", suprimido";
+    return nome;
+  }
+
+  function tornarAcessivel(el, train) {
+    if (!el) return;
+    if (el.getAttribute("role") !== "button") el.setAttribute("role", "button");
+    if (el.tabIndex !== 0) el.tabIndex = 0;
+    const nome = nomeDoComboio(train);
+    // Só escreve se mudou: isto corre a cada actualização da API.
+    if (el.getAttribute("aria-label") !== nome)
+      el.setAttribute("aria-label", nome);
+  }
+
+  // O painel de detalhes é um role="dialog" partilhado por quatro módulos
+  // (comboio, estação, intermodais, Carris), e tinha dois problemas: não tinha
+  // nome, e ficava com aria-modal="true" mesmo fechado — um leitor de ecrã
+  // podia tratar a página como se o diálogo estivesse sempre aberto, e o Tab
+  // entrava nos botões de um painel fora do ecrã.
+  //
+  // Um só observador trata disto para todos, incluindo os que não sabem nada
+  // de acessibilidade: fechado → aria-hidden e inert; aberto → nome tirado do
+  // título que estiver lá dentro. Nenhum dos painéis faz focus() ao abrir, por
+  // isso o inert não lhes rouba nada.
+  function acessibilidadePainel() {
+    const p = document.getElementById("details-panel");
+    if (!p || p._ltA11y) return;
+    p._ltA11y = true;
+    const aplicar = () => {
+      const fechado =
+        p.classList.contains("translate-y-full") ||
+        p.dataset.state === "closed";
+      if (fechado) {
+        if (p.getAttribute("aria-hidden") !== "true")
+          p.setAttribute("aria-hidden", "true");
+        if (p.getAttribute("aria-modal") !== null)
+          p.removeAttribute("aria-modal");
+        if (!p.inert) p.inert = true;
+        return;
+      }
+      if (p.getAttribute("aria-hidden") !== null)
+        p.removeAttribute("aria-hidden");
+      if (p.getAttribute("aria-modal") !== "true")
+        p.setAttribute("aria-modal", "true");
+      if (p.inert) p.inert = false;
+      const titulo = p.querySelector("h1, h2, h3");
+      if (titulo) {
+        if (!titulo.id) titulo.id = "lt-painel-titulo";
+        if (p.getAttribute("aria-labelledby") !== titulo.id)
+          p.setAttribute("aria-labelledby", titulo.id);
+        if (p.getAttribute("aria-label") !== null)
+          p.removeAttribute("aria-label");
+      } else if (p.getAttribute("aria-label") !== "Detalhes") {
+        p.removeAttribute("aria-labelledby");
+        p.setAttribute("aria-label", "Detalhes");
+      }
+    };
+    try {
+      new MutationObserver(aplicar).observe(p, {
+        attributes: true,
+        attributeFilter: ["class", "data-state"],
+        childList: true,
+        subtree: true,
+      });
+    } catch (_) {}
+    aplicar();
+  }
+
   // ─── ARRANQUE: A FERTAGUS PRIMEIRO ───────────────────────────────────
   //
   // O mapa só precisa da Fertagus para aparecer. Metro, MTS, CP, Carris e as
@@ -1929,6 +2003,13 @@
         }
       };
       el.addEventListener("click", onPress);
+      // Teclado: Enter e Espaço abrem o comboio, como um botão.
+      el.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onPress(e);
+        }
+      });
 
       const marker = new maplibregl.Marker({
         element: el,
@@ -1938,6 +2019,7 @@
       })
         .setLngLat([position.lng, position.lat])
         .addTo(map);
+      tornarAcessivel(el, train);
 
       entry = {
         marker,
@@ -1949,7 +2031,10 @@
         map,
         startPos: { lng: position.lng, lat: position.lat },
         targetPos: { lng: position.lng, lat: position.lat },
-        animationStartTime: now,
+        animationStartTime:
+          now - (MAPA.TRAIN_GLIDE_MS || MAPA.POSITION_UPDATE_MS || 0),
+        _assente: true,
+        rawLngLat: { lng: position.lng, lat: position.lat },
         isRealPosition: !!position.isReal,
       };
       markers.set(train.id, entry);
@@ -1973,6 +2058,7 @@
     }
 
     entry.map = map;
+    tornarAcessivel(entry.el, train);
     // O deslize novo começa onde o comboio ESTÁ — calculado a partir do
     // deslize anterior —, e não onde está desenhado. Um comboio fora do ecrã
     // não é redesenhado (ver animateMarkers); partir da posição desenhada
@@ -2093,6 +2179,7 @@
   // ─── INTERAÇÃO MANUAL DO USER COM O MAPA ─────────────────────────────
   function setMap(mapInstance) {
     mainMap = mapInstance;
+    acessibilidadePainel();
     // Se a linha nunca chegar a ser desenhada (a rede falhou), o resto do mapa
     // não pode ficar à espera para sempre.
     setTimeout(() => LTArranque.abrir("limite de 6 s depois do mapa"), 6000);

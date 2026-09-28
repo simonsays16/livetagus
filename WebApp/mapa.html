@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
     <meta name="theme-color" content="#09090b" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -39,7 +39,11 @@
     <meta property="og:locale" content="pt_PT" />
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="./imagens/favicon.svg" />
+    <link
+      rel="shortcut icon"
+      href="./imagens/favicon-96x96.png"
+      type="image/x-icon"
+    />
     <link rel="apple-touch-icon" href="./imagens/apple-touch-icon.png" />
 
     <!-- Fonts -->
@@ -50,18 +54,8 @@
       rel="stylesheet"
     />
 
-    <!-- MapLibre GL
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
-      integrity="sha384-MinO0mNliZ3vwppuPOUnGa+iq619pfMhLVUXfC4LHwSCvF9H+6P/KO4Q7qBOYV5V"
-      crossorigin="anonymous"
-    />-->
-    <link
-      href="/maplibre-gl.css"
-      rel="stylesheet"
-      integrity="sha384-MinO0mNliZ3vwppuPOUnGa+iq619pfMhLVUXfC4LHwSCvF9H+6P/KO4Q7qBOYV5V"
-    />
+    <!-- MapLibre GL -->
+    <link rel="stylesheet" href="/vendor/maplibre-gl@4.7.1.css" />
 
     <!-- Tailwind compilado -->
     <link rel="stylesheet" href="./output.css" />
@@ -1287,6 +1281,64 @@
       html.dark .cm-logo-dark {
         display: block !important;
       }
+
+      /* ─── ATRIBUIÇÃO ESTÁTICA ─────────────────────────────────────────── */
+      .lt-atribuicao {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        z-index: 2;
+        max-width: calc(100% - 8px);
+        padding: 2px 6px calc(2px + env(safe-area-inset-bottom, 0px));
+        border-top-left-radius: 4px;
+        background: rgba(255, 255, 255, 0.72);
+        color: rgb(63, 63, 70);
+        font-size: 10px;
+        line-height: 1.4;
+      }
+      html.dark .lt-atribuicao {
+        background: rgba(9, 9, 11, 0.72);
+        color: rgb(161, 161, 170);
+      }
+      .lt-atribuicao a {
+        color: inherit;
+        text-decoration: underline;
+      }
+      /* O controlo do MapLibre deixa de ser preciso: a atribuição é a de cima. */
+      .maplibregl-ctrl-attrib {
+        display: none !important;
+      }
+
+      /* ─── ANIMAÇÕES DOS COMBOIOS ─────────────────────────────────────── */
+      .train-marker[data-view="cars"] .train-view-icon,
+      .train-marker[data-view="cars"] .train-view-icon *,
+      .train-marker:not([data-view="cars"]) .train-view-cars,
+      .train-marker:not([data-view="cars"]) .train-view-cars * {
+        animation: none !important;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .train-wifi .wifi-arc,
+        .train-wifi .wifi-dot,
+        .train-marker *,
+        .train-marker {
+          animation: none !important;
+        }
+        .train-wifi .wifi-arc {
+          stroke-dashoffset: 0;
+          opacity: 1;
+        }
+        .train-wifi .wifi-dot {
+          opacity: 1;
+        }
+      }
+
+      /* ─── ACESSIBILIDADE ─────────────────────────────────────────────── */
+      /* Os comboios passaram a ser botões focáveis com o teclado. */
+      .train-marker:focus-visible {
+        outline: 3px solid #3b82f6;
+        outline-offset: 3px;
+        border-radius: 999px;
+      }
     </style>
   </head>
 
@@ -1301,6 +1353,17 @@
       <div class="mapa-container relative w-full h-[100dvh]">
         <!-- Mapa -->
         <div id="map" class="absolute inset-0"></div>
+        <div id="lt-atribuicao" class="lt-atribuicao">
+          ©
+          <a
+            href="https://www.openstreetmap.org/copyright"
+            target="_blank"
+            rel="noopener"
+          >
+            OpenStreetMap
+          </a>
+          contributors · Dados Fertagus · Infraestruturas de Portugal
+        </div>
 
         <!-- ─── BOTÃO DE AVISOS (por cima da legenda) ───────────────── -->
         <!-- Estado controlado por mapa-alerts.js:
@@ -1451,18 +1514,10 @@
       </div>
     </main>
 
-    <!-- SCRIPTS
-    <script
-      src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"
-      integrity="sha384-SYKAG6cglRMN0RVvhNeBY0r3FYKNOJtznwA0v7B5Vp9tr31xAHsZC0DqkQ/pZDmj"
-      crossorigin="anonymous"
-      defer
-    ></script>-->
-    <script
-      src="/maplibre-gl.js"
-      integrity="sha384-SYKAG6cglRMN0RVvhNeBY0r3FYKNOJtznwA0v7B5Vp9tr31xAHsZC0DqkQ/pZDmj"
-      defer
-    ></script>
+    <!-- SCRIPTS-->
+    <!-- MapLibre, do próprio site (ver nota no <head>). O integrity é
+         verificado pelo bootup.js em cada build. -->
+    <script src="/vendor/maplibre-gl@4.7.1.min.js" defer></script>
     <!-- Em vez do turf completo (550 KB de JS, 139 KB em rede), só as funções
          que o mapa usa, com a mesma matemática do turf 7.2. Tem de vir antes
          do mapa-geo.js, que é quem precisa dele. -->
@@ -1488,7 +1543,6 @@
     <script src="./mapa-gtfs-horarios.js" defer></script>
     <script src="./mapa-live.js" defer></script>
     <script src="./mapa-details.js" defer></script>
-    <script src="./partidas.js" defer></script>
     <script src="./mapa-station.js" defer></script>
     <script src="./mapa-share.js" defer></script>
     <script src="./mapa-alerts.js" defer></script>

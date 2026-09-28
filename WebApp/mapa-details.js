@@ -406,12 +406,12 @@
         <!-- HEADER COMPACTO -->
         <div class="dp-header relative shrink-0 px-6 pt-3 md:pt-safe-ios md:pt-5 pb-4 border-b border-zinc-100 dark:border-zinc-900" data-drag-area="1">
           <div class="absolute right-3 flex items-center gap-1" style="top:35px">
-            <!--<button
+            <button
               data-details-action="follow"
-              class="w-9 h-9 flex items-center justify-center transition-colors rounded-full ${followColor}"
+              class="md:hidden w-9 h-9 flex items-center justify-center transition-colors rounded-full ${followColor}"
               aria-label="Seguir condução">
               <i data-lucide="locate-fixed" class="w-[18px] h-[18px]"></i>
-            </button>-->
+            </button>
             <button
               data-details-action="share"
               class="w-9 h-9 flex items-center justify-center text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors rounded-full"

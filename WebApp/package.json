@@ -1,8 +1,8 @@
 {
-  "name": "webapp",
+  "name": "livetagus",
   "version": "1.0.0",
+  "private": true,
   "description": "",
-  "main": "lucide.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -10,6 +10,9 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "dependencies": {
+    "maplibre-gl": "4.7.1"
+  },
   "devDependencies": {
     "tailwindcss": "^3.4.19",
     "terser": "5.51.2"
