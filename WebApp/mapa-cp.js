@@ -811,6 +811,11 @@
   // Os dados só são descarregados quando a camada é vista pela primeira vez —
   // um feed nacional tem geometrias grandes e não vale a pena pagá-las a quem
   // mantém a camada desligada.
+  // Arranque automático atrás do portão da Fertagus (ver mapa-render.js).
+  // Sem portão (outra página, ou ordem de scripts diferente), corre já.
+  const depoisDaFertagus = (fn) =>
+    window.LTArranque ? window.LTArranque.depois(fn) : fn();
+
   function ensureLoaded() {
     return load()
       .then(() => {
@@ -822,7 +827,7 @@
 
   function onVisibilityChange(vis) {
     const on = vis.has(VIEW_GROUP);
-    if (on && !lines) ensureLoaded();
+    if (on && !lines) depoisDaFertagus(() => ensureLoaded());
     else applyVisibility(on);
   }
 
@@ -853,7 +858,7 @@
       if (lines) applyTheme();
     });
     // Sem MapaView (ou sem register), carrega directamente.
-    if (!window.MapaView) ensureLoaded();
+    if (!window.MapaView) depoisDaFertagus(() => ensureLoaded());
   }
 
   function patchMapaRender() {

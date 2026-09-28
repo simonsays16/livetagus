@@ -1,7 +1,6 @@
 /**
  * mapa-metro-lisboa.js
- * Metro de Lisboa: linhas + estações (com popup de detalhe) e posições das
- * viaturas em tempo real (TML, agência "2").
+ * Metro de Lisboa: linhas + estações (com popup de detalhe).
  *
  * Visibilidade no mapa: este ficheiro define também o controlador partilhado
  * window.MapaView (botão do "olho" + menu) que liga/desliga "ml" e "mts" e
@@ -642,29 +641,25 @@
   // Definida dentro do initML, quando o mapa já é conhecido.
   let carregar = () => {};
   let mlLoading = null;
+  // Arranque automático atrás do portão da Fertagus (ver mapa-render.js).
+  // Sem portão (outra página, ou ordem de scripts diferente), corre já.
+  const depoisDaFertagus = (fn) =>
+    window.LTArranque ? window.LTArranque.depois(fn) : fn();
 
   function initML(map) {
     // Reagir às mudanças de visibilidade. É também aqui que os dados são
     // pedidos pela PRIMEIRA vez: quem tem o Metro escondido não descarrega
-    // ficheiro nenhum do Metro nem contacta a API de tempo real.
+    // ficheiro nenhum do Metro.
     if (window.MapaView) {
       window.MapaView.onChange((vis) => {
         const on = vis.has("ml");
-        if (on) carregar(map);
+        if (on) depoisDaFertagus(() => carregar(map));
         applyMlLayerVisibility(map, on);
-        if (on) {
-          startMetroVehicles(map); // arranca à primeira vez que for ligado
-          refreshMetroVehicles();
-        } else {
-          stopMetroVehicles();
-          clearMetroVehicles();
-          closeMetroPopup();
-        }
+        if (!on) closeMetroPopup();
       });
     } else {
       // Sem menu de camadas não há como esconder nada: carrega tudo.
-      carregar(map);
-      startMetroVehicles(map);
+      depoisDaFertagus(() => carregar(map));
     }
 
     const addLayers = () => {
@@ -861,273 +856,7 @@
 
     // Se a camada já estava ligada quando a página abriu, o onChange acima já
     // disparou antes de o carregar existir — daí esta segunda tentativa.
-    if (!window.MapaView || window.MapaView.isVisible("ml")) carregar(map);
+    if (!window.MapaView || window.MapaView.isVisible("ml"))
+      depoisDaFertagus(() => carregar(map));
   }
-
-  // ═══════════════════════════════════════════════════════════════════
-  //  VIATURAS DO METRO DE LISBOA EM TEMPO REAL (posições TML, agência 2)
-  // -------------------------------------------------------------------
-  //  Poll direto ao feed de posições da TML (o mesmo endpoint que o
-  //  get-location.js consome do lado servidor, aqui consumido no cliente).
-  //  Filtra-se agency_id "2" (Metro de Lisboa) e desenha-se um marcador
-  //  no estilo da Fertagus: imagem fixa (sempre direita) dentro do disco +
-  //  seta à frente orientada pelo bearing da API. O metro NÃO expõe atrasos,
-  //  por isso o anel E a seta tomam a cor da LINHA onde a viatura circula
-  //  (line_id: 1 Azul · 2 Amarela · 3 Verde · 4 Vermelha).
-  //
-  //  NOTA CORS: este fetch é feito a partir do browser. Se a TML não
-  //  devolver Access-Control-Allow-Origin, basta trocar TML_POSITIONS_URL
-  //  por um proxy próprio (ex.: um /metro à imagem do /mapa no backend,
-  //  com o get-location.js a filtrar agência "2" em vez de "15").
-  // ═══════════════════════════════════════════════════════════════════
-
-  const TML_POSITIONS_URL =
-    "https://go.tmlmobilidade.pt/hub/api/v1/realtime/vehicles/positions";
-  const METRO_AGENCY_ID = "2"; //"IA2N9";
-  const METRO_POLL_MS = 5000;
-  const METRO_FETCH_TIMEOUT_MS = 4000;
-
-  // Cores por linha (line_id começa por "[2]"; depois 1..4).
-  const METRO_LINE_COLORS = {
-    1: "#1f8fd6", // Azul
-    2: "#f2c500", // Amarela
-    3: "#1ba64a", // Verde
-    4: "#e2231a", // Vermelha
-  };
-  const METRO_LINE_DEFAULT = "#71717a";
-
-  function metroLineColor(rawLineId) {
-    const s = String(rawLineId || "").replace(/^\[\d+\]/, "");
-    const m = s.match(/[1-4]/);
-    return (m && METRO_LINE_COLORS[m[0]]) || METRO_LINE_DEFAULT;
-  }
-
-  // id-viatura -> { marker, el, lat, lng, bearing, color }
-  const metroMarkers = new Map();
-  let metroMap = null;
-  let metroPollTimer = null;
-  let metroFetching = false;
-  let metroStarted = false;
-
-  // CSS do marcador (auto-contido, não depende das classes da Fertagus).
-  const metroVehicleStyles = `
-    .metro-vehicle { position: relative; width: 0; height: 0; }
-    .metro-vehicle .mv-disc {
-      position: absolute; top: 0; left: 0;
-      width: 35px; height: 35px; margin: -17.5px 0 0 -17.5px;
-      border-radius: 50%;
-      background: #ffffff;
-      border: 3px solid var(--mv-color, ${METRO_LINE_DEFAULT});
-      box-shadow: 0 0 0 1px rgba(0,0,0,.18), 0 1px 5px rgba(0,0,0,.35);
-      display: flex; align-items: center; justify-content: center;
-      overflow: hidden;
-      z-index: 2;
-    }
-    .metro-vehicle .mv-front {
-      width: 95%; height: 95%; object-fit: contain; display: block;
-    }
-    .metro-vehicle .mv-arrow {
-      position: absolute; top: 0; left: 0;
-      width: 16px; height: 16px; margin: -8px 0 0 -8px;
-      transform-origin: 50% 50%;
-      transition: transform .4s ease-out;
-      color: var(--mv-color, ${METRO_LINE_DEFAULT});
-      pointer-events: none;
-      z-index: 1;
-    }
-    .metro-vehicle .mv-arrow svg { width: 16px; height: 16px; display: block; }
-  `;
-  (function injectMetroVehicleStyles() {
-    if (document.getElementById("lt-metro-vehicle-styles")) return;
-    const s = document.createElement("style");
-    s.id = "lt-metro-vehicle-styles";
-    s.innerHTML = metroVehicleStyles;
-    document.head.appendChild(s);
-  })();
-
-  function metroArrowSvg() {
-    return `
-      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <polygon points="12,2 21,22 12,17 3,22"
-                 fill="currentColor" stroke="#ffffff"
-                 stroke-width="1.5" stroke-linejoin="round" />
-      </svg>`;
-  }
-
-  // Bearing manual (fallback quando a API não traz bearing/heading).
-  function metroBearing(fromLng, fromLat, toLng, toLat) {
-    const toRad = (d) => (d * Math.PI) / 180;
-    const toDeg = (r) => (r * 180) / Math.PI;
-    const y = Math.sin(toRad(toLng - fromLng)) * Math.cos(toRad(toLat));
-    const x =
-      Math.cos(toRad(fromLat)) * Math.sin(toRad(toLat)) -
-      Math.sin(toRad(fromLat)) *
-        Math.cos(toRad(toLat)) *
-        Math.cos(toRad(toLng - fromLng));
-    return (toDeg(Math.atan2(y, x)) + 360) % 360;
-  }
-
-  function buildMetroMarkerEl(color) {
-    const el = document.createElement("div");
-    el.className = "metro-vehicle";
-    el.style.setProperty("--mv-color", color || METRO_LINE_DEFAULT);
-    // Seta primeiro (fica por baixo do disco), disco com a imagem fixa por cima.
-    el.innerHTML = `
-      <div class="mv-arrow">${metroArrowSvg()}</div>
-      <div class="mv-disc">
-        <img class="mv-front" src="./imagens/front_metro.svg" alt="" aria-hidden="true" />
-      </div>`;
-    return el;
-  }
-
-  // A imagem fica SEMPRE direita; só a seta roda (e desloca-se para a frente).
-  function applyMetroBearing(el, bearing) {
-    const arrow = el.querySelector(".mv-arrow");
-    if (arrow)
-      arrow.style.transform = `rotate(${bearing || 0}deg) translateY(-23px)`;
-  }
-
-  function upsertMetroVehicle(id, lat, lng, bearing, color) {
-    if (typeof maplibregl === "undefined" || !metroMap) return;
-
-    let entry = metroMarkers.get(id);
-    if (!entry) {
-      const el = buildMetroMarkerEl(color);
-      const marker = new maplibregl.Marker({ element: el, anchor: "center" })
-        .setLngLat([lng, lat])
-        .addTo(metroMap);
-      entry = { marker, el, lat, lng, bearing: bearing || 0, color };
-      metroMarkers.set(id, entry);
-      applyMetroBearing(el, entry.bearing);
-      return;
-    }
-
-    entry.marker.setLngLat([lng, lat]);
-
-    if (color && color !== entry.color) {
-      entry.el.style.setProperty("--mv-color", color);
-      entry.color = color;
-    }
-
-    let b = bearing;
-    if (b == null || !isFinite(b)) {
-      const moved = Math.abs(entry.lng - lng) + Math.abs(entry.lat - lat);
-      b =
-        moved > 1e-6
-          ? metroBearing(entry.lng, entry.lat, lng, lat)
-          : entry.bearing;
-    }
-
-    entry.lat = lat;
-    entry.lng = lng;
-    entry.bearing = b || 0;
-    applyMetroBearing(entry.el, entry.bearing);
-  }
-
-  function removeMissingMetroVehicles(seen) {
-    for (const id of Array.from(metroMarkers.keys())) {
-      if (seen.has(id)) continue;
-      const e = metroMarkers.get(id);
-      try {
-        e.marker.remove();
-      } catch (_) {}
-      metroMarkers.delete(id);
-    }
-  }
-
-  function clearMetroVehicles() {
-    for (const id of Array.from(metroMarkers.keys())) {
-      const e = metroMarkers.get(id);
-      try {
-        e.marker.remove();
-      } catch (_) {}
-      metroMarkers.delete(id);
-    }
-  }
-
-  async function refreshMetroVehicles() {
-    if (metroFetching || !metroMap) return;
-    // Respeitar o toggle de visibilidade: se "ml" estiver oculto, não desenhar.
-    if (window.MapaView && !window.MapaView.isVisible("ml")) {
-      clearMetroVehicles();
-      return;
-    }
-    metroFetching = true;
-
-    const ctrl = new AbortController();
-    const to = setTimeout(() => ctrl.abort(), METRO_FETCH_TIMEOUT_MS);
-
-    try {
-      const res = await fetch(TML_POSITIONS_URL + "?t=" + Date.now(), {
-        method: "GET",
-        headers: { Accept: "application/json" },
-        cache: "no-store",
-        signal: ctrl.signal,
-      });
-      if (!res.ok) throw new Error("HTTP " + res.status);
-
-      const json = await res.json();
-      const data = Array.isArray(json) ? json : json && json.data;
-      if (!Array.isArray(data)) throw new Error("payload inesperado");
-
-      const seen = new Set();
-      for (const v of data) {
-        if (!v || String(v.agency_id) !== METRO_AGENCY_ID) continue;
-        if (typeof v.latitude !== "number" || typeof v.longitude !== "number")
-          continue;
-
-        const id = String(v.vehicle_id || v.id || "").replace(/^\[\d+\]/, "");
-        if (!id) continue;
-
-        const bearing =
-          typeof v.bearing === "number"
-            ? v.bearing
-            : typeof v.heading === "number"
-              ? v.heading
-              : null;
-
-        const color = metroLineColor(v.line_id || v.route_id || v.line);
-
-        seen.add(id);
-        upsertMetroVehicle(id, v.latitude, v.longitude, bearing, color);
-      }
-
-      removeMissingMetroVehicles(seen);
-    } catch (e) {
-      console.warn("[Metro/TML] posições indisponíveis:", e.message);
-    } finally {
-      clearTimeout(to);
-      metroFetching = false;
-    }
-  }
-
-  // Parar mesmo, e não só ignorar as respostas: com a camada escondida não
-  // faz sentido continuar a contactar a API de tempo real de 5 em 5 segundos.
-  // É rede e bateria gastas em dados que ninguém vai ver.
-  function stopMetroVehicles() {
-    if (metroPollTimer) {
-      clearInterval(metroPollTimer);
-      metroPollTimer = null;
-    }
-    metroStarted = false;
-  }
-
-  function startMetroVehicles(map) {
-    if (map) metroMap = map;
-    if (metroStarted) return; // não duplicar o temporizador ao religar
-    metroStarted = true;
-    refreshMetroVehicles();
-    metroPollTimer = setInterval(refreshMetroVehicles, METRO_POLL_MS);
-  }
-
-  // Controlo manual a partir da consola, se precisares.
-  window.MapaMetroVehicles = {
-    refresh: refreshMetroVehicles,
-    clear: clearMetroVehicles,
-    stop() {
-      if (metroPollTimer) clearInterval(metroPollTimer);
-      metroPollTimer = null;
-    },
-    _markers: metroMarkers,
-  };
 })();

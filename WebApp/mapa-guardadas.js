@@ -160,7 +160,10 @@
       type: "FeatureCollection",
       features: resolved.map((s) => ({
         type: "Feature",
-        geometry: { type: "Point", coordinates: [s.location[1], s.location[0]] },
+        geometry: {
+          type: "Point",
+          coordinates: [s.location[1], s.location[0]],
+        },
         properties: { id: s.id, name: s.name },
       })),
     };
@@ -242,7 +245,15 @@
               "text-font": (window.MapaIcones && window.MapaIcones.FONT) || [
                 "Open Sans Semibold",
               ],
-              "text-size": ["interpolate", ["linear"], ["zoom"], 12.5, 10, 18, 13],
+              "text-size": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                12.5,
+                10,
+                18,
+                13,
+              ],
               "text-offset": [0, 1.25],
               "text-anchor": "top",
               "text-max-width": 9,
@@ -321,9 +332,14 @@
   // ─── ARRANQUE ────────────────────────────────────────────────────────
   function init(m) {
     map = m;
+    // Atrás do portão da Fertagus (ver mapa-render.js); sem ele, corre já.
     const start = () => {
-      refresh();
-      applyTheme();
+      const correr = () => {
+        refresh();
+        applyTheme();
+      };
+      if (window.LTArranque) window.LTArranque.depois(correr);
+      else correr();
     };
     if (map.isStyleLoaded()) start();
     else map.once("styledata", start);

@@ -39,11 +39,7 @@
     <meta property="og:locale" content="pt_PT" />
 
     <!-- Favicon -->
-    <link
-      rel="shortcut icon"
-      href="./imagens/favicon-96x96.png"
-      type="image/x-icon"
-    />
+    <link rel="icon" type="image/svg+xml" href="./imagens/favicon.svg" />
     <link rel="apple-touch-icon" href="./imagens/apple-touch-icon.png" />
 
     <!-- Fonts -->
@@ -1467,9 +1463,9 @@
          localhost usa o unpkg, produção usa o proxy do netlify.toml. Em cada
          ambiente uma falha e a outra serve — nunca carregam as duas.
          O integrity é o SHA-384 dos ficheiros publicados no npm para
-         maplibre-gl@4.7.1 e @turf/turf@7.2.0, e é o mesmo nas duas vias porque
-         o proxy serve exactamente o mesmo ficheiro. Ao mudar de versão, mudar
-         o URL, o netlify.toml E os hashes. -->
+         maplibre-gl@4.7.1, e é o mesmo nas duas vias porque o proxy serve
+         exactamente o mesmo ficheiro. Ao mudar de versão, mudar o URL, o
+         netlify.toml E os hashes. -->
     <script
       src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"
       integrity="sha384-SYKAG6cglRMN0RVvhNeBY0r3FYKNOJtznwA0v7B5Vp9tr31xAHsZC0DqkQ/pZDmj"
@@ -1481,17 +1477,10 @@
       integrity="sha384-SYKAG6cglRMN0RVvhNeBY0r3FYKNOJtznwA0v7B5Vp9tr31xAHsZC0DqkQ/pZDmj"
       defer
     ></script>
-    <script
-      src="https://unpkg.com/@turf/turf@7.2.0/turf.min.js"
-      integrity="sha384-ll8qH0IE3im19Dtlr1jtv5fdy+gm+0bx8T4+OYxPeJpc6PO1XLNFnyvdzaKJ78bU"
-      crossorigin="anonymous"
-      defer
-    ></script>
-    <script
-      src="/turf.min.js"
-      integrity="sha384-ll8qH0IE3im19Dtlr1jtv5fdy+gm+0bx8T4+OYxPeJpc6PO1XLNFnyvdzaKJ78bU"
-      defer
-    ></script>
+    <!-- Em vez do turf completo (550 KB de JS, 139 KB em rede), só as funções
+         que o mapa usa, com a mesma matemática do turf 7.2. Tem de vir antes
+         do mapa-geo.js, que é quem precisa dele. -->
+    <script src="./turf-lite.js" defer></script>
 
     <!-- Menu global -->
     <script src="./menu.js" defer></script>

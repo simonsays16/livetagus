@@ -78,14 +78,9 @@
       if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", v);
     });
     // Só fecha a sheet se for a do MTS — o painel é partilhado com o Metro.
-    if (
-      !on &&
-      window.GtfsHorarios &&
-      window.GtfsHorarios.operator() === "mts"
-    )
+    if (!on && window.GtfsHorarios && window.GtfsHorarios.operator() === "mts")
       window.GtfsHorarios.close();
   }
-
 
   // ─── ORDEM DAS CAMADAS ──────────────────────────────────────────────
   //
@@ -149,7 +144,6 @@
     map.on("load", check);
   }
 
-
   // ─── MARCADOR DAS ESTAÇÕES ──────────────────────────────────────────
   // Logótipo com fundo branco em vez do círculo branco. Os diâmetros são
   // exactamente os de antes (raio 3/5/8 → 6/10/16 px), e se o logótipo não
@@ -172,7 +166,7 @@
     "Open Sans Semibold",
   ];
   const LABEL_MINZOOM = 14;
-    // Os operadores intermodais só aparecem a partir daqui. Abaixo disto o mapa
+  // Os operadores intermodais só aparecem a partir daqui. Abaixo disto o mapa
   // fica limpo e as paragens não são sequer clicáveis — o minzoom trata das
   // duas coisas, porque o MapLibre não consulta uma camada que não desenha.
   // (Opacidade a zero não servia: as features continuavam a responder ao rato.)
@@ -258,7 +252,19 @@
       source: "mts-stations",
       minzoom: STATIONS_MINZOOM,
       paint: {
-        "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 3.5, 12, 5.5, 15, 8, 18, 11],
+        "circle-radius": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          8,
+          3.5,
+          12,
+          5.5,
+          15,
+          8,
+          18,
+          11,
+        ],
         "circle-color": "#FFFFFF",
         "circle-stroke-width": 2,
         "circle-stroke-color": "#000000",
@@ -271,13 +277,17 @@
   // Definida dentro do init, quando o mapa já é conhecido.
   let carregar = () => {};
   let mtsLoading = null;
+  // Arranque automático atrás do portão da Fertagus (ver mapa-render.js).
+  // Sem portão (outra página, ou ordem de scripts diferente), corre já.
+  const depoisDaFertagus = (fn) =>
+    window.LTArranque ? window.LTArranque.depois(fn) : fn();
 
   function initMTS(map) {
     whenMapaView((MV) => {
       MV.onChange((vis) => {
         // É aqui que os dados são pedidos pela primeira vez: quem tem o MTS
         // escondido não descarrega os ficheiros do MTS.
-        if (vis.has("mts")) carregar();
+        if (vis.has("mts")) depoisDaFertagus(() => carregar());
         applyVisibility(map, vis.has("mts"));
       });
     });
@@ -371,7 +381,15 @@
               // Mesmo par de fontes das etiquetas do Metro: é o que existe no
               // glyph set deste estilo.
               "text-font": LABEL_FONT,
-              "text-size": ["interpolate", ["linear"], ["zoom"], 14, 11, 18, 14],
+              "text-size": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                14,
+                11,
+                18,
+                14,
+              ],
               // AO LADO do logótipo. O offset é em ems do text-size: 1.2 em a
               // 14 px dá ~17 px, mais do que o raio do ícone (15 px ao zoom 18).
               "text-offset": [1.2, 0],
@@ -389,7 +407,6 @@
         }
       }
 
-
       // Selecção: aplica já o estado actual e volta a aplicar sempre que muda.
       // O unsubscribe não é preciso — a camada vive tanto quanto a página.
       if (window.MapaSelecao && !map._ltSel_mts) {
@@ -398,7 +415,10 @@
       } else if (window.MapaSelecao) {
         applySelection(map, window.MapaSelecao.current());
       }
-      applyVisibility(map, !window.MapaView || window.MapaView.isVisible("mts"));
+      applyVisibility(
+        map,
+        !window.MapaView || window.MapaView.isVisible("mts"),
+      );
 
       // --- CLIQUE NA ESTAÇÃO → SHEET DE PARTIDAS ---
       function onStationClick(e) {
@@ -448,28 +468,29 @@
     carregar = function () {
       if (mtsLoading) return mtsLoading;
       mtsLoading = Promise.all([
-      fetch(LINES_PATH).then((r) => r.json()),
-      fetch(STATIONS_PATH).then((r) => r.json()),
-      // Os ícones entram na mesma espera, para o addLayers já saber se os pode
-      // usar. São dois: fundo branco e fundo verde (seleccionada).
-      ensureIcons(map),
-    ])
-      .then(([lines, stations, hasIcon]) => {
-        linesData = lines;
-        stationsData = stations;
-        iconReady = !!hasIcon;
-        if (map.isStyleLoaded()) addLayers();
-        else map.once("styledata", addLayers);
-      })
-      .catch((err) => {
-        mtsLoading = null; // deixa tentar outra vez ao religar a camada
-        console.error("[MTS] Erro ao carregar dados:", err);
-      });
+        fetch(LINES_PATH).then((r) => r.json()),
+        fetch(STATIONS_PATH).then((r) => r.json()),
+        // Os ícones entram na mesma espera, para o addLayers já saber se os pode
+        // usar. São dois: fundo branco e fundo verde (seleccionada).
+        ensureIcons(map),
+      ])
+        .then(([lines, stations, hasIcon]) => {
+          linesData = lines;
+          stationsData = stations;
+          iconReady = !!hasIcon;
+          if (map.isStyleLoaded()) addLayers();
+          else map.once("styledata", addLayers);
+        })
+        .catch((err) => {
+          mtsLoading = null; // deixa tentar outra vez ao religar a camada
+          console.error("[MTS] Erro ao carregar dados:", err);
+        });
       return mtsLoading;
     };
 
     // Se a camada já estava ligada quando a página abriu, o onChange acima
     // disparou antes de o carregar existir — daí esta segunda tentativa.
-    if (!window.MapaView || window.MapaView.isVisible("mts")) carregar();
+    if (!window.MapaView || window.MapaView.isVisible("mts"))
+      depoisDaFertagus(() => carregar());
   }
 })();

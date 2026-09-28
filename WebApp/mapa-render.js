@@ -492,7 +492,14 @@
         ) {
           mainMap.jumpTo({
             center: [lng, lat],
-            bearing: entry.bearing,
+            // Com o comboio encaixado na linha, a câmara segue a tangente da
+            // via, como o sinal de sentido. O rumo do GPS é a corda entre duas
+            // posições e, numa curva, a câmara olhava para fora dos carris.
+            bearing:
+              entry.el.dataset.linha === "1" &&
+              typeof entry.linhaBearing === "number"
+                ? entry.linhaBearing
+                : entry.bearing,
             padding: {
               top: 0,
               bottom: Math.max(300, window.innerHeight * 0.42),
@@ -514,6 +521,58 @@
     }
     animationFrameId = requestAnimationFrame(animateMarkers);
   }
+
+  // ─── ARRANQUE: A FERTAGUS PRIMEIRO ───────────────────────────────────
+  //
+  // O mapa só precisa da Fertagus para aparecer. Metro, MTS, CP, Carris e as
+  // paragens guardadas arrancavam todos no mesmo instante e competiam com ela
+  // pela rede e pela thread principal — JSON para analisar, camadas para
+  // criar, logótipos para compor em canvas.
+  //
+  // Os módulos põem o seu trabalho AUTOMÁTICO de arranque atrás deste portão.
+  // Ele abre quando a linha e as estações da Fertagus estão desenhadas e o mapa
+  // pintou pela primeira vez. Aí, o que estava à espera corre um a um em
+  // momentos livres, para não engasgar as primeiras interacções.
+  //
+  // Depois de aberto, depois(fn) corre fn na hora: o que o utilizador pede
+  // (ligar uma camada, abrir a pesquisa) nunca fica à espera.
+  //
+  // Dois limites, para nada ficar bloqueado se algo correr mal: 2,5 s depois
+  // de as estações estarem desenhadas (os tiles do fundo podem demorar e o
+  // "idle" só vem com eles) e 6 s depois de o mapa existir (se a linha nunca
+  // chegar a ser desenhada).
+  const LTArranque = (function () {
+    let aberto = false;
+    let fila = [];
+    const agendar = (fn) =>
+      typeof window.requestIdleCallback === "function"
+        ? window.requestIdleCallback(fn, { timeout: 1200 })
+        : setTimeout(fn, 0);
+    function correr(fn) {
+      try {
+        fn();
+      } catch (e) {
+        console.error("[LTArranque]", e);
+      }
+    }
+    return {
+      depois(fn) {
+        if (aberto) correr(fn);
+        else fila.push(fn);
+      },
+      abrir(motivo) {
+        if (aberto) return;
+        aberto = true;
+        this.motivo = motivo;
+        const f = fila;
+        fila = [];
+        for (const fn of f) agendar(() => correr(fn));
+      },
+      aberto: () => aberto,
+      motivo: null,
+    };
+  })();
+  window.LTArranque = LTArranque;
 
   // ─── CARRUAGENS NA LINHA ─────────────────────────────────────────────
   //
@@ -559,20 +618,83 @@
   // scaleCarriagesToRealWorld. A 38,6° de latitude, 10 m são
   // 10 × 2^z / 122 340 px; entre pontos a curva é exponencial de base 2,
   // que é como os metros por píxel variam com o zoom.
+  const LARGURA_PONTOS = [
+    [16, 6],
+    [17, 10.71],
+    [18, 21.43],
+    [20, 85.7],
+  ];
+
   function larguraCarr(extra) {
-    return [
-      "interpolate",
-      ["exponential", 2],
-      ["zoom"],
-      16,
-      6 + extra,
-      17,
-      10.71 + extra,
-      18,
-      21.43 + extra,
-      20,
-      85.7 + extra,
-    ];
+    const e = ["interpolate", ["exponential", 2], ["zoom"]];
+    for (const [z, w] of LARGURA_PONTOS) e.push(z, w + extra);
+    return e;
+  }
+
+  // ─── VIA DUPLA ───────────────────────────────────────────────────────
+  // A linha da Fertagus é via dupla, e dois comboios em sentidos opostos
+  // ficavam desenhados um em cima do outro — nos terminais durante minutos.
+  // Cada sentido passa a ir para o seu lado do eixo.
+  //
+  // O afastamento é ESQUEMÁTICO: as vias reais estão a ~4 m e uma carruagem
+  // desenhada tem 10 m, portanto a distância real não separava nada. Meia
+  // largura de carruagem mais uma folga põe os dois comboios lado a lado.
+  //
+  // LADO_CIRCULACAO: de que lado do eixo vai cada comboio, visto no sentido
+  // em que anda. Confirma no OSM (via ascendente/descendente) — se o comboio
+  // aparecer na via errada em relação ao cais, é trocar para "direita".
+  const VIA_DUPLA = true;
+  const LADO_CIRCULACAO = "esquerda";
+  const SINAL_LADO = LADO_CIRCULACAO === "esquerda" ? -1 : 1;
+  const FOLGA_VIAS_PX = 0.5;
+
+  // Desvio em píxeis a partir do eixo, por zoom. A camada usa o line-offset
+  // (em píxeis, relativo ao sentido da geometria); o marcador HTML usa o
+  // mesmo número por uma variável CSS.
+  function desvioCarr(sinalExpr) {
+    const e = ["interpolate", ["exponential", 2], ["zoom"]];
+    for (const [z, w] of LARGURA_PONTOS) {
+      e.push(z, ["*", sinalExpr, w / 2 + FOLGA_VIAS_PX]);
+    }
+    return e;
+  }
+
+  // O mesmo em JS, para o marcador. Exponencial de base 2 entre pontos, como
+  // a camada — senão o sinal e as carruagens separavam-se a meio de um zoom.
+  function desvioPxEm(zoom) {
+    const P = LARGURA_PONTOS;
+    if (zoom <= P[0][0]) return P[0][1] / 2 + FOLGA_VIAS_PX;
+    for (let i = 1; i < P.length; i++) {
+      const [z0, w0] = P[i - 1];
+      const [z1, w1] = P[i];
+      if (zoom <= z1) {
+        const t = (Math.pow(2, zoom - z0) - 1) / (Math.pow(2, z1 - z0) - 1);
+        return (w0 + (w1 - w0) * t) / 2 + FOLGA_VIAS_PX;
+      }
+    }
+    return P[P.length - 1][1] / 2 + FOLGA_VIAS_PX;
+  }
+
+  let ultimoDesvio = null;
+  // Uma escrita por zoom, num só elemento — não uma por marcador.
+  function atualizarDesvioCss() {
+    if (!VIA_DUPLA || !mainMap || typeof mainMap.getContainer !== "function")
+      return;
+    const px = Math.round(desvioPxEm(mainMap.getZoom()) * 10) / 10;
+    if (px === ultimoDesvio) return;
+    ultimoDesvio = px;
+    try {
+      mainMap.getContainer().style.setProperty("--lt-desvio-via", px + "px");
+    } catch (_) {}
+  }
+
+  // Transformação do corpo do marcador. Em modo linha leva o desvio da via:
+  // o translateX vem DEPOIS do rotate, por isso anda no referencial do
+  // comboio — o lado dele, perpendicular à via, qualquer que seja o rumo.
+  function transformCorpo(entry, rumo) {
+    const base = `translate(-50%, -50%) rotate(${rumo}deg)`;
+    if (!VIA_DUPLA || entry.el.dataset.linha !== "1") return base;
+    return `${base} translateX(calc(var(--lt-desvio-via, 0px) * ${SINAL_LADO}))`;
   }
 
   function corVazia() {
@@ -596,6 +718,7 @@
         paint: {
           "line-color": "rgba(0,0,0,0.35)",
           "line-width": larguraCarr(1.5),
+          ...(VIA_DUPLA ? { "line-offset": desvioCarr(["get", "lado"]) } : {}),
         },
       },
       {
@@ -614,6 +737,7 @@
             corVazia(),
           ],
           "line-width": larguraCarr(0),
+          ...(VIA_DUPLA ? { "line-offset": desvioCarr(["get", "lado"]) } : {}),
         },
       },
     ];
@@ -671,6 +795,11 @@
       // uma vez por gesto, não por frame. A geometria em si não muda com o
       // zoom — é geográfica —, e o minzoom da camada trata da visibilidade.
       map.on("moveend", () => atualizarCarruagens());
+      // O desvio da via é em píxeis e muda com o zoom. O evento "zoom" dispara
+      // durante o gesto, para o sinal não se descolar das carruagens; a
+      // escrita só acontece quando o valor muda.
+      map.on("zoom", atualizarDesvioCss);
+      atualizarDesvioCss();
       map.on(
         "mouseenter",
         LYR_CARR,
@@ -766,7 +895,11 @@
   // dependem dele (o CSS usa [data-linha="1"]). Antes eram 73 escritas por
   // segundo com os comboios parados.
   function definirLinha(entry, v) {
-    if (entry.el.dataset.linha !== v) entry.el.dataset.linha = v;
+    if (entry.el.dataset.linha === v) return;
+    entry.el.dataset.linha = v;
+    // O desvio da via entra ou sai do transform: forçar a reescrita, que o
+    // rodarCorpo saltaria por o rumo não ter mudado.
+    entry._rumoAplicado = undefined;
   }
 
   // Põe o marcador onde deve estar para o estado actual, SEM depender do
@@ -811,7 +944,7 @@
     }
     const body = corpoDe(entry);
     if (body) {
-      body.style.transform = `translate(-50%, -50%) rotate(${rumo}deg)`;
+      body.style.transform = transformCorpo(entry, rumo);
       entry._rumoAplicado = rumo;
     }
   }
@@ -830,11 +963,15 @@
       }
       ultimaAssinatura = "";
       for (const entry of markers.values()) {
-        if (entry.el.dataset.linha === "1" && entry.rawLngLat) {
+        const estavaNaLinha = entry.el.dataset.linha === "1";
+        if (estavaNaLinha && entry.rawLngLat) {
           posicionarMarcador(entry, [entry.rawLngLat.lng, entry.rawLngLat.lat]);
         }
         definirLinha(entry, "0");
         entry.linhaBearing = null;
+        // Tira o desvio da via do transform.
+        if (estavaNaLinha && typeof entry.bearing === "number")
+          rodarCorpo(entry, entry.bearing);
       }
       return;
     }
@@ -857,14 +994,17 @@
       const visivel = ll && naVista(vista, ll.lng, ll.lat);
       const proj = visivel ? L.projectar(ll.lng, ll.lat, entry.linhaM) : null;
       if (!proj || proj.dist > MAX_DESVIO_M) {
-        if (entry.el.dataset.linha === "1") {
+        const estavaNaLinha = entry.el.dataset.linha === "1";
+        // Primeiro o estado, depois o transform: ao contrário, o transform era
+        // escrito ainda com o desvio da via e ficava com ele.
+        definirLinha(entry, "0"); // fica o desenho HTML antigo
+        if (estavaNaLinha) {
           entry.linhaBearing = null;
           if (typeof entry.bearing === "number")
             rodarCorpo(entry, entry.bearing);
           // Volta à posição do GPS: o encaixe já não se justifica.
           if (ll) posicionarMarcador(entry, [ll.lng, ll.lat]);
         }
-        definirLinha(entry, "0"); // fica o desenho HTML antigo
         continue;
       }
       entry.linhaM = proj.m;
@@ -887,13 +1027,21 @@
         if (coords.length < 2) continue;
         feats.push({
           type: "Feature",
-          properties: { id: t.id, cheia: i < cheias ? 1 : 0, cor },
+          // A fatia vai sempre no sentido dos metros a crescer. Um comboio
+          // com dir = +1 anda nesse sentido; com −1 anda ao contrário, e o
+          // "seu lado" fica do outro lado da geometria.
+          properties: {
+            id: t.id,
+            cheia: i < cheias ? 1 : 0,
+            cor,
+            lado: SINAL_LADO * dir,
+          },
           geometry: { type: "LineString", coordinates: coords },
         });
       }
       // Meio metro de resolução: menos do que isso não se vê em nenhum zoom.
       partesAssinatura.push(
-        `${t.id}:${Math.round(proj.m * 2)}:${dir}:${n}:${cheias}:${cor}`,
+        `${t.id}:${Math.round(proj.m * 2)}:${dir}:${n}:${cheias}:${cor}:${SINAL_LADO}`,
       );
       definirLinha(entry, "1");
       // Com o comboio parado o ciclo não passa por aqui; o encaixe tem de
@@ -1364,10 +1512,26 @@
     carruagensAoTopo(map);
 
     // Selos da CP nas estações partilhadas, e a acompanhar o botão do olho.
-    refreshCpBadges(map);
+    // Atrás do portão: com a camada da CP ligada, isto descarregava a CP
+    // inteira ao mesmo tempo que as estações da Fertagus eram desenhadas.
+    LTArranque.depois(() => refreshCpBadges(map));
+
+    // A Fertagus está desenhada. O portão abre no primeiro "idle" (o mapa
+    // acabou de pintar) ou ao fim de 2,5 s, o que vier primeiro.
+    if (!LTArranque.aberto()) {
+      const abrir = (m) => LTArranque.abrir(m);
+      try {
+        map.once("idle", () => abrir("fertagus desenhada"));
+      } catch (_) {}
+      setTimeout(() => abrir("limite de 2,5 s depois das estações"), 2500);
+    }
     if (window.MapaView && !map._ltCpBadgeWatch) {
       map._ltCpBadgeWatch = true;
-      window.MapaView.onChange(() => refreshCpBadges(map));
+      // O onChange chama o ouvinte logo ao registar, com o estado actual —
+      // era por aqui que a CP inteira escapava ao portão.
+      window.MapaView.onChange(() =>
+        LTArranque.depois(() => refreshCpBadges(map)),
+      );
     }
 
     map.on("mouseenter", "fertagus-stations-bg", () => {
@@ -1727,7 +1891,7 @@
         entry.el.dataset.linha === "1" && typeof entry.linhaBearing === "number"
           ? entry.linhaBearing
           : bearing;
-      body.style.transform = `translate(-50%, -50%) rotate(${b}deg)`;
+      body.style.transform = transformCorpo(entry, b);
       entry._rumoAplicado = b;
     }
   }
@@ -1929,6 +2093,9 @@
   // ─── INTERAÇÃO MANUAL DO USER COM O MAPA ─────────────────────────────
   function setMap(mapInstance) {
     mainMap = mapInstance;
+    // Se a linha nunca chegar a ser desenhada (a rede falhou), o resto do mapa
+    // não pode ficar à espera para sempre.
+    setTimeout(() => LTArranque.abrir("limite de 6 s depois do mapa"), 6000);
     const detachIfUser = (e) => {
       if (!routeFocusTrainId) return;
       if (isFlying) return; // movimento causado pelo nosso fitBounds

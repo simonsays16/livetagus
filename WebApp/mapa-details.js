@@ -131,6 +131,10 @@
     ml: { src: "/imagens/lig-logos/metro.svg", nome: "Metro de Lisboa" },
     mts: { src: "/imagens/lig-logos/mts.svg", nome: "Metro Sul do Tejo" },
     cp: { src: "/imagens/lig-logos/cp.svg", nome: "CP" },
+    cm: {
+      src: "/imagens/lig-logos/cm-light.svg",
+      nome: "Carris Metropolitana",
+    },
   };
 
   function horaDoNo(n) {
@@ -167,13 +171,25 @@
 
   function ligacoesHtml(nomeEstacao, n) {
     const G = window.GtfsHorarios;
-    if (!G || typeof G.interchangesFor !== "function") return "";
     let alvos = [];
-    try {
-      alvos = G.interchangesFor(nomeEstacao) || [];
-    } catch (_) {
-      return "";
+    if (G && typeof G.interchangesFor === "function") {
+      try {
+        alvos = G.interchangesFor(nomeEstacao) || [];
+      } catch (_) {
+        alvos = [];
+      }
     }
+    // A Carris não passa pelo painel dos intermodais: um botão só, que abre
+    // todas as paragens da estação de uma vez.
+    const CM = window.MapaCM;
+    if (CM && typeof CM.paragensDaEstacao === "function") {
+      try {
+        if (CM.paragensDaEstacao(nomeEstacao).length) {
+          alvos = alvos.concat([{ op: "cm", name: nomeEstacao }]);
+        }
+      } catch (_) {}
+    }
+    if (!alvos.length) return "";
     const ts = chegadaEpoch(n);
     return alvos
       .filter((a) => LIG_LOGO[a.op])
@@ -709,9 +725,23 @@
     panel.querySelectorAll("[data-dp-lig]").forEach((b) => {
       b.addEventListener("click", (e) => {
         e.stopPropagation();
+        const op = b.dataset.op;
+        // Carris: todas as paragens da estação, a partir da hora de chegada.
+        if (op === "cm") {
+          const CM = window.MapaCM;
+          if (!CM || typeof CM.openEstacao !== "function") return;
+          const tsCm = Number(b.dataset.ts);
+          const nomeCm = b.dataset.name;
+          close();
+          setTimeout(() => {
+            CM.openEstacao(nomeCm, {
+              fromTime: isFinite(tsCm) && tsCm > 0 ? tsCm : undefined,
+            });
+          }, 140);
+          return;
+        }
         const G = window.GtfsHorarios;
         if (!G) return;
-        const op = b.dataset.op;
         const nome = b.dataset.name;
         const stop = b.dataset.stop;
         const ts = Number(b.dataset.ts);

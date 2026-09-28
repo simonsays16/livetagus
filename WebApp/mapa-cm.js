@@ -32,7 +32,6 @@
     "FOGUETEIRO",
     "COINA",
     "PENALVA",
-    "PINHAL NOVO",
     "VENDA DO ALCAIDE",
     "PALMELA",
     "SETUBAL",
@@ -50,7 +49,7 @@
   const CM_LOGO_LIGHT = "/imagens/lig-logos/cm-light.svg";
   const CM_LOGO_DARK = "/imagens/lig-logos/cm-dark.svg";
   const CM_MARKER_COLOR = "#FFDD00";
-  const CM_SELECTED_COLOR = "#3b82f6"; // paragem selecionada (destaque)
+  const CM_SELECTED_COLOR = "#22C55E"; // paragem selecionada (destaque)
 
   // ─── ESTADO ──────────────────────────────────────────────────────────
   let map = null;
@@ -178,7 +177,14 @@
   // ─── MAP LAYER ─────────────────────────────────────────────────────────
   async function init(mapInstance) {
     if (!mapInstance) return;
+    // O mapa fica conhecido já: um toque nos primeiros segundos não pode
+    // encontrar map a null. O resto — descarregar as ligações e criar a camada
+    // das paragens — espera que a Fertagus esteja desenhada (mapa-render.js).
     map = mapInstance;
+    if (window.LTArranque && !window.LTArranque.aberto()) {
+      window.LTArranque.depois(() => init(mapInstance));
+      return;
+    }
     const data = await loadLigacoes();
     const geojson = buildFeatures(data);
     if (geojson.features.length === 0) return; // nada verificado → sem layer
@@ -490,7 +496,9 @@
       </div>`;
   }
 
-  function arrivalRowHtml(b, now, colorMap, withBorder) {
+  // `paragem` só vem no modo estação: acrescenta o botão da paragem antes da
+  // carreira e o nome dela por baixo do destino. Sem ele, a linha é igual.
+  function arrivalRowHtml(b, now, colorMap, withBorder, paragem) {
     const diff = Math.floor((b.ts - now) / 60);
     let timeStr;
     let timeCls = "text-zinc-900 dark:text-white font-bold";
@@ -522,9 +530,16 @@
     return `
       <div class="flex items-center justify-between px-1 py-3.5 ${border}">
         <div class="flex items-center gap-3 flex-1 min-w-0 pr-3">
-          <span class="text-white text-[10px] font-bold tracking-widest text-center px-1.5 py-1 rounded-[3px] shrink-0"
+          ${paragem ? paragemBtnHtml(paragem) + "\n          " : ""}<span class="text-white text-[10px] font-bold tracking-widest text-center px-1.5 py-1 rounded-[3px] shrink-0"
             style="background:${colour};min-width:42px">${escapeHtml(b.line_id)}</span>
-          <span class="truncate text-zinc-600 dark:text-zinc-400 text-[12px]">${escapeHtml(b.headsign || "—")}</span>
+          ${
+            paragem
+              ? `<span class="min-w-0 flex flex-col">
+                  <span class="truncate text-zinc-600 dark:text-zinc-400 text-[12px]">${escapeHtml(b.headsign || "—")}</span>
+                  <span class="truncate text-zinc-400 text-[10px]">${escapeHtml(paragem.nome)}</span>
+                </span>`
+              : `<span class="truncate text-zinc-600 dark:text-zinc-400 text-[12px]">${escapeHtml(b.headsign || "—")}</span>`
+          }
         </div>
         <div class="flex items-center shrink-0">
           ${pulse}${liveDot}
@@ -826,6 +841,7 @@
 
     currentStop = stop;
     activeLine = null;
+    hub = null;
     selectedId = stop.id;
     applySelectionPaint();
 
@@ -899,6 +915,7 @@
     }, 320);
     currentStop = null;
     activeLine = null;
+    hub = null;
     selectedId = null;
     applySelectionPaint();
 
@@ -909,7 +926,9 @@
     if (e.key === "Escape") close();
   }
   function isOpen() {
-    return !!currentStop;
+    // O modo estação não tem currentStop. Sem o hub aqui, os outros painéis
+    // perguntavam isto, achavam a Carris fechada e abriam-se por cima dela.
+    return !!currentStop || !!hub;
   }
 
   // Paragens verificadas já indexadas (após init) — usado pela pesquisa
@@ -918,5 +937,483 @@
     return Array.from(stopsById.values());
   }
 
-  window.MapaCM = { init, open, close, isOpen, getStops };
+  // ═══════════════════════════════════════════════════════════════════
+  //  MODO ESTAÇÃO — todas as paragens da Carris de uma estação da Fertagus
+  // ═══════════════════════════════════════════════════════════════════
+  //
+  // Aberto a partir das ligações no percurso de um comboio. Junta as partidas
+  // de todas as paragens da estação numa lista só, com filtro por carreira
+  // (várias ao mesmo tempo) e, em cada partida, um botão que mostra no mapa a
+  // paragem de onde sai.
+  //
+  // A API da Carris só dá partidas por paragem, uma de cada vez. Para não
+  // levar com o limite de pedidos:
+  //   - no máximo HUB_CONCORRENCIA pedidos em voo;
+  //   - cada paragem fica em cache HUB_CACHE_MS — mudar o filtro, voltar a
+  //     abrir ou mostrar uma paragem não pede nada à rede;
+  //   - um 429 pára o resto dessa ronda, e as paragens que falharam ficam com
+  //     as partidas que já tinham;
+  //   - com o separador em segundo plano, o refresh não corre.
+  // As paragens de cada estação vêm do ligacoes_atualizado.json (o bootup.js
+  // actualiza-as a partir do CSV da Carris), portanto saber QUAIS são não
+  // custa pedido nenhum.
+
+  const HUB_CONCORRENCIA = 2;
+  const HUB_CACHE_MS = 25_000;
+  const cacheChegadas = new Map(); // id da paragem → { t, dados }
+  let hub = null;
+
+  const normNome = (v) =>
+    String(v == null ? "" : v)
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+
+  function paragensDaEstacao(nome) {
+    const alvo = normNome(nome);
+    if (!alvo) return [];
+    return getStops().filter((s) => normNome(s.station) === alvo);
+  }
+
+  async function buscarParagem(id, signal) {
+    const c = cacheChegadas.get(id);
+    if (c && Date.now() - c.t < HUB_CACHE_MS) return c.dados;
+    const res = await fetch(
+      `${CM_API_BASE}/arrivals/by_stop/${encodeURIComponent(id)}`,
+      { cache: "no-store", signal },
+    );
+    if (!res.ok) {
+      const e = new Error("HTTP " + res.status);
+      e.status = res.status;
+      throw e;
+    }
+    const dados = await res.json();
+    const arr = Array.isArray(dados) ? dados : [];
+    cacheChegadas.set(id, { t: Date.now(), dados: arr });
+    return arr;
+  }
+
+  async function buscarTodas(ids, signal) {
+    const fila = ids.slice();
+    const res = new Map();
+    const falhas = new Set();
+    let limitado = false;
+    async function trabalhador() {
+      while (fila.length && !signal.aborted && !limitado) {
+        const id = fila.shift();
+        try {
+          res.set(id, await buscarParagem(id, signal));
+        } catch (e) {
+          if (signal.aborted) return;
+          if (e && e.status === 429) limitado = true;
+          falhas.add(id);
+        }
+      }
+    }
+    const n = Math.min(HUB_CONCORRENCIA, fila.length);
+    await Promise.all(Array.from({ length: n }, trabalhador));
+    // As que ficaram por pedir depois de um 429 também contam como falhadas.
+    for (const id of fila) falhas.add(id);
+    return { res, falhas, limitado };
+  }
+
+  // As carreiras do ficheiro (para o filtro existir antes de a API responder)
+  // MAIS as que aparecem nas partidas. Só do ficheiro, uma carreira nova da
+  // Carris que ainda lá não estivesse aparecia na lista mas não dava para
+  // filtrar.
+  function hubLinhas() {
+    const m = new Map();
+    for (const p of hub.paragens) {
+      for (const l of uniqueLines(p)) if (!m.has(l.id)) m.set(l.id, l);
+    }
+    for (const arr of hub.dados.values()) {
+      for (const b of arr) {
+        const id = b && b.line_id != null ? String(b.line_id) : "";
+        if (!id || m.has(id)) continue;
+        m.set(id, {
+          id,
+          name: id,
+          color: normColor(b.route_color || "#18181b"),
+        });
+      }
+    }
+    return Array.from(m.values()).sort((a, b) =>
+      a.name.localeCompare(b.name, "pt", { numeric: true }),
+    );
+  }
+
+  const PARAGEM_SVG =
+    '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6.5" y="2" width="11" height="8" rx="2"/><path d="M12 10v11"/><path d="M9 21h6"/></svg>';
+
+  function paragemBtnHtml(p) {
+    const ativa = hub && hub.paragemVista === p.id;
+    return `<button type="button" data-cm-paragem="${escapeHtml(p.id)}"
+      class="w-7 h-7 shrink-0 inline-flex items-center justify-center rounded-full border transition-colors ${
+        ativa
+          ? "bg-yellow-400 border-yellow-400 text-zinc-900"
+          : "border-zinc-300 dark:border-zinc-700 text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:border-zinc-500"
+      }"
+      title="Mostrar a paragem ${escapeHtml(p.nome)}" aria-label="Mostrar a paragem ${escapeHtml(p.nome)} no mapa">${PARAGEM_SVG}</button>`;
+  }
+
+  function hubChipsHtml() {
+    const linhas = hubLinhas();
+    if (!linhas.length) return "";
+    const sel = hub.sel;
+    const pills = linhas
+      .map((l) => {
+        const ativa = sel.has(l.id);
+        const apagada = sel.size && !ativa;
+        const style = ativa
+          ? `background:${l.color};color:#fff;border-color:${l.color}`
+          : `background:transparent;color:${l.color};border-color:${l.color}`;
+        return `<button type="button" data-cm-hub-line="${escapeHtml(l.id)}" aria-pressed="${ativa}"
+          class="px-2 py-1 text-[10px] font-extrabold tracking-widest border rounded-[3px] transition-all duration-150${apagada ? " opacity-35" : ""}"
+          style="${style}">${escapeHtml(l.name)}</button>`;
+      })
+      .join("");
+    const reset = sel.size
+      ? `<button type="button" data-cm-hub-reset="1"
+          class="px-2 py-1 text-[9px] font-bold uppercase tracking-widest text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors">Todas</button>`
+      : "";
+    const rotulo = sel.size
+      ? ` · ${sel.size} ${sel.size === 1 ? "seleccionada" : "seleccionadas"}`
+      : "";
+    return `
+      <div class="mt-4">
+        <p class="text-[9px] uppercase tracking-[0.25em] text-zinc-400 font-bold mb-2.5">Carreiras${rotulo}</p>
+        <div class="flex flex-wrap items-center gap-1.5">${pills}${reset}</div>
+      </div>`;
+  }
+
+  function hubHoraTxt() {
+    const d = new Date(hub.fromTs * 1000);
+    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  }
+
+  function hubFromBarHtml() {
+    if (!hub.fromTs) return "";
+    return `
+      <div class="mt-4 flex items-center gap-2 pl-3 pr-1 py-1.5 rounded-lg border border-blue-500/35 bg-blue-500/10 text-blue-700 dark:text-blue-300">
+        <span class="flex-1 text-[10px] font-bold uppercase tracking-[0.14em]">Partidas a partir das ${hubHoraTxt()}</span>
+        <button type="button" data-cm-hub-from-clear="1" aria-label="Mostrar todas as partidas"
+          class="w-6 h-6 inline-flex items-center justify-center rounded-full opacity-70 hover:opacity-100">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>`;
+  }
+
+  function shellHubHtml() {
+    const n = hub.paragens.length;
+    return `
+      <div class="flex flex-col h-full bg-white dark:bg-[#09090b]">
+        <div class="dp-handle md:hidden shrink-0" data-drag-area="1" aria-hidden="true">
+          <div class="dp-handle-pill"></div>
+        </div>
+        <div class="dp-header relative shrink-0 px-6 pt-3 md:pt-safe-ios md:pt-5 pb-5 border-b border-zinc-100 dark:border-zinc-900" data-drag-area="1">
+          <button data-cm-action="close"
+            class="absolute right-4 top-3 md:top-5 w-10 h-10 flex items-center justify-center text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"
+            aria-label="Fechar"><i data-lucide="x" class="w-5 h-5"></i></button>
+          <div class="flex items-center gap-2 mb-3">
+            <img src="${CM_LOGO_LIGHT}" alt="" class="w-5 h-5 object-contain cm-logo-light"/>
+            <img src="${CM_LOGO_DARK}" alt="" class="w-5 h-5 object-contain cm-logo-dark"/>
+            <span class="text-[9px] font-bold tracking-[0.3em] uppercase text-yellow-500">Carris Metropolitana</span>
+            <span class="h-px flex-1 max-w-16 bg-zinc-200 dark:bg-zinc-800"></span>
+          </div>
+          <h2 class="text-2xl font-light tracking-tighter text-zinc-900 dark:text-white leading-[1.1] pr-12">${escapeHtml(hub.nome)}</h2>
+          <p class="text-[9px] uppercase tracking-[0.25em] text-zinc-400 font-bold mt-2">${n} ${n === 1 ? "paragem" : "paragens"} da estação</p>
+          ${hubFromBarHtml()}
+          ${hubChipsHtml()}
+        </div>
+        <div class="px-5 pt-4 shrink-0">
+          <p class="text-[9px] uppercase tracking-[0.25em] text-zinc-400 font-bold mb-3 px-1">Próximas Partidas</p>
+          <div data-cm-arrivals="1">${skeletonHtml()}</div>
+        </div>
+      </div>`;
+  }
+
+  // Desenha a lista a partir do que já está em memória. Mudar o filtro, fechar
+  // o aviso da hora ou mostrar uma paragem passa por aqui — sem rede.
+  function hubDesenharLista() {
+    if (!hub || !panel) return;
+    const target = panel.querySelector("[data-cm-arrivals]");
+    if (!target) return;
+    const now = Math.floor(Date.now() / 1000);
+    const corte = Math.max(now - 30, hub.fromTs || 0);
+    const cores = {};
+    for (const l of hubLinhas()) cores[l.id] = l.color;
+    const porId = new Map(hub.paragens.map((p) => [p.id, p]));
+
+    let todas = [];
+    for (const [id, arr] of hub.dados) {
+      const p = porId.get(id);
+      if (!p) continue;
+      for (const b of arr) {
+        const ts = b.estimated_arrival_unix || b.scheduled_arrival_unix;
+        if (!ts || ts < corte) continue;
+        if (hub.sel.size && !hub.sel.has(String(b.line_id))) continue;
+        todas.push({
+          ...b,
+          ts,
+          live: !!b.estimated_arrival_unix,
+          _p: { id, nome: p.name },
+        });
+      }
+    }
+    todas = todas.sort((a, b) => a.ts - b.ts).slice(0, ARRIVALS_LIMIT);
+
+    const expanded = panel.dataset.state === "expanded";
+    const nota = hubNotaHtml();
+    if (!todas.length) {
+      const semNada = hub.dados.size === 0 && hub.falhas.size > 0;
+      target.innerHTML =
+        stateMsg(
+          semNada
+            ? "Sem ligação ao servidor"
+            : hub.sel.size
+              ? "Sem partidas nestas carreiras"
+              : hub.fromTs
+                ? `Sem partidas depois das ${hubHoraTxt()}`
+                : "Sem previsões",
+          semNada ? "wifi-off" : null,
+        ) +
+        nota +
+        `<div class="dp-expanded-content">${footerNoteHtml()}</div>`;
+      if (window.lucide) window.lucide.createIcons();
+      return;
+    }
+    const visiveis = todas.slice(0, MINI_ARRIVALS);
+    const resto = todas.slice(MINI_ARRIVALS);
+    let html = visiveis
+      .map((b, i) =>
+        arrivalRowHtml(
+          b,
+          now,
+          cores,
+          i < visiveis.length - 1 || resto.length > 0,
+          b._p,
+        ),
+      )
+      .join("");
+    if (resto.length) {
+      html += toggleWrapHtml(expanded);
+      html += `<div class="dp-expanded-content">`;
+      html += resto
+        .map((b, i) =>
+          arrivalRowHtml(b, now, cores, i < resto.length - 1, b._p),
+        )
+        .join("");
+      html += nota + footerNoteHtml() + `</div>`;
+    } else {
+      html += `<div class="dp-expanded-content">${nota}${footerNoteHtml()}</div>`;
+    }
+    target.innerHTML = html;
+    attachToggleListener();
+    target.querySelectorAll("[data-cm-paragem]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        mostrarParagem(btn.dataset.cmParagem);
+      });
+    });
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  function hubNotaHtml() {
+    if (!hub.falhas.size) return "";
+    const txt = hub.limitado
+      ? "A Carris está a limitar pedidos; algumas paragens mostram os dados anteriores."
+      : `${hub.falhas.size} ${hub.falhas.size === 1 ? "paragem sem resposta" : "paragens sem resposta"}; a mostrar o que chegou.`;
+    return `<p class="text-[10px] text-zinc-400 px-1 pt-3">${escapeHtml(txt)}</p>`;
+  }
+
+  async function hubAtualizar() {
+    if (!hub) return;
+    if (typeof document !== "undefined" && document.hidden) return;
+    if (arrivalsAbort) {
+      try {
+        arrivalsAbort.abort();
+      } catch (_) {}
+    }
+    arrivalsAbort = new AbortController();
+    const signal = arrivalsAbort.signal;
+    const eu = hub;
+    const r = await buscarTodas(
+      eu.paragens.map((p) => p.id),
+      signal,
+    );
+    if (signal.aborted || hub !== eu) return;
+    // Uma paragem que falhou fica com o que já tinha, em vez de desaparecer.
+    const antes = hubLinhas().length;
+    for (const [id, arr] of r.res) eu.dados.set(id, arr);
+    eu.falhas = r.falhas;
+    eu.limitado = r.limitado;
+    // Carreiras novas vindas da API: os chips também têm de as ter.
+    if (hubLinhas().length !== antes) hubRedesenharTudo();
+    else hubDesenharLista();
+  }
+
+  function hubRedesenharTudo() {
+    if (!panel || !hub) return;
+    const estado = panel.dataset.state;
+    panel.innerHTML = shellHubHtml();
+    panel.dataset.state = estado;
+    hubLigarCabecalho();
+    if (window.lucide) window.lucide.createIcons();
+    hubDesenharLista();
+  }
+
+  function hubLigarCabecalho() {
+    panel
+      .querySelectorAll("[data-cm-action='close']")
+      .forEach((b) => b.addEventListener("click", () => close()));
+    // Várias carreiras ao mesmo tempo: tocar acrescenta ou tira. Sem nenhuma
+    // escolhida, mostram-se todas.
+    panel.querySelectorAll("[data-cm-hub-line]").forEach((b) => {
+      b.addEventListener("click", () => {
+        const id = b.dataset.cmHubLine;
+        if (hub.sel.has(id)) hub.sel.delete(id);
+        else hub.sel.add(id);
+        hubRedesenharTudo();
+      });
+    });
+    const reset = panel.querySelector("[data-cm-hub-reset]");
+    if (reset)
+      reset.addEventListener("click", () => {
+        hub.sel.clear();
+        hubRedesenharTudo();
+      });
+    const semHora = panel.querySelector("[data-cm-hub-from-clear]");
+    if (semHora)
+      semHora.addEventListener("click", () => {
+        hub.fromTs = null;
+        hubRedesenharTudo();
+      });
+  }
+
+  // Mostra no mapa a paragem de uma partida, sem fechar a lista.
+  function mostrarParagem(id) {
+    const stop = stopsById.get(String(id));
+    if (!stop || !hub) return;
+    hub.paragemVista = stop.id;
+    const [lat, lng] = stop.location;
+    if (window.MapaSelecao) {
+      window.MapaSelecao.set({
+        op: "cm",
+        id: stop.id,
+        name: stop.name,
+        lat,
+        lng,
+      });
+    }
+    selectedId = stop.id;
+    applySelectionPaint();
+    if (map) {
+      map.flyTo({
+        center: [lng, lat],
+        zoom: Math.max(map.getZoom(), 17),
+        offset: isMobile() ? [0, -window.innerHeight * 0.2] : [-180, 0],
+        speed: 1.1,
+        essential: true,
+      });
+    }
+    hubDesenharLista(); // só para marcar o botão desta paragem
+  }
+
+  // Enquadra todas as paragens da estação, para se ver onde fica cada uma.
+  function hubEnquadrar() {
+    if (!map || typeof maplibregl === "undefined" || !hub.paragens.length)
+      return;
+    try {
+      const b = new maplibregl.LngLatBounds();
+      for (const p of hub.paragens) b.extend([p.location[1], p.location[0]]);
+      const mob = isMobile();
+      map.fitBounds(b, {
+        padding: {
+          top: 70,
+          left: 40,
+          right: mob ? 40 : 420,
+          bottom: mob ? Math.round(window.innerHeight * 0.45) : 60,
+        },
+        maxZoom: 17,
+        duration: 800,
+        essential: true,
+      });
+    } catch (_) {}
+  }
+
+  /**
+   * Abre as partidas de todas as paragens da Carris de uma estação.
+   * @param {string} nome  nome da estação da Fertagus
+   * @param {{fromTime?: number}} opts  fromTime em ms: só partidas a partir daí
+   * @returns {boolean} false se a estação não tiver paragens conhecidas
+   */
+  function openEstacao(nome, opts) {
+    ensureElements();
+    if (!panel || !backdrop) return false;
+    const paragens = paragensDaEstacao(nome);
+    if (!paragens.length) return false;
+
+    if (window.MapaDetails && window.MapaDetails.isOpen())
+      window.MapaDetails.close();
+    if (window.MapaStation && window.MapaStation.isOpen())
+      window.MapaStation.close({ silent: true });
+
+    const ft = opts && opts.fromTime;
+    currentStop = null;
+    activeLine = null;
+    hub = {
+      nome: paragens[0].station || nome,
+      paragens,
+      sel: new Set(),
+      // Uma hora já passada não filtra nada — como no painel dos intermodais.
+      fromTs:
+        typeof ft === "number" && isFinite(ft) && ft > Date.now() + 60000
+          ? Math.floor(ft / 1000)
+          : null,
+      dados: new Map(),
+      falhas: new Set(),
+      limitado: false,
+      paragemVista: null,
+    };
+    // O que já estiver em cache aparece logo, sem esperar pela rede.
+    for (const p of paragens) {
+      const c = cacheChegadas.get(p.id);
+      if (c && Date.now() - c.t < HUB_CACHE_MS) hub.dados.set(p.id, c.dados);
+    }
+    if (window.MapaSelecao) window.MapaSelecao.clear();
+    selectedId = null;
+    applySelectionPaint();
+
+    panel.innerHTML = shellHubHtml();
+    hubLigarCabecalho();
+    panel.dataset.state = "mini";
+    panel.classList.remove("translate-y-full");
+    panel.classList.add("translate-y-0");
+    backdrop.classList.remove("hidden");
+    updateBackdropForState();
+    document.addEventListener("keydown", onKey);
+    backdrop.addEventListener("click", onBackdropClick);
+    attachDragHandlers();
+    if (window.lucide) window.lucide.createIcons();
+
+    hubEnquadrar();
+    if (hub.dados.size) hubDesenharLista();
+    hubAtualizar();
+    if (refreshTimer) clearInterval(refreshTimer);
+    refreshTimer = setInterval(hubAtualizar, ARRIVALS_REFRESH_MS);
+    return true;
+  }
+
+  window.MapaCM = {
+    init,
+    open,
+    close,
+    isOpen,
+    getStops,
+    openEstacao,
+    paragensDaEstacao,
+    _hub: () => hub,
+  };
 })();
