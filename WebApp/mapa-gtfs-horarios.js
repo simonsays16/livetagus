@@ -7,7 +7,7 @@
  * mão). Toda a informação passa a vir do bundle — nada é hardcoded por
  * operador além do slug da agência:
  *
- *   /resources/data/gtfs/<slug>-gtfs-departures/
+ *   /data/gtfs/<slug>-gtfs-departures/
  *     manifest.json          → nome da agência, mapa de recursos, data do feed
  *     routes.json            → cor/nome das linhas (pills)
  *     calendar.json          → dias em que cada service_id circula
@@ -42,7 +42,7 @@
   //  CONFIGURAÇÃO
   // ═══════════════════════════════════════════════════════════════════
 
-  const BUNDLE_BASE = "/resources/data/gtfs";
+  const BUNDLE_BASE = "/data/gtfs";
   const LOGO_DIR = "/imagens/lig-logos";
   const SHOW = 14; // nº de partidas listadas
   const TICK_MS = 30000; // recálculo dos contadores
@@ -64,12 +64,12 @@
   };
 
   // ── LIGAÇÕES À FERTAGUS ────────────────────────────────────────────────────
-  // O /json/ligacoes_atualizado.json é indexado pelo id de estação da IP/CP,
+  // O /data/json/ligacoes_atualizado.json é indexado pelo id de estação da IP/CP,
   // que é exactamente o que a CP usa nos seus stop_id — por isso a CP casa por
   // id. O Metro e o MTS não têm esse id, e casam por nome: os nomes das suas
   // estações não são iguais aos da Fertagus (Jardim Zoológico é Sete Rios, e
   // Roma e Areeiro são duas estações de metro para uma só da Fertagus).
-  const LIGACOES_JSON = "/json/ligacoes_atualizado.json";
+  const LIGACOES_JSON = "/data/json/ligacoes_atualizado.json";
   const FERTAGUS_LOGO = "/imagens/lig-logos/fertagus.png";
   const LINK_BY_NAME = {
     mts: {
@@ -186,7 +186,8 @@
   function fmtEta(sec, at) {
     const min = Math.floor(sec / 60);
     if (min <= 0) return { big: "agora", small: "", isClock: false };
-    if (sec < ETA_LIMIT_SEC) return { big: String(min), small: "min", isClock: false };
+    if (sec < ETA_LIMIT_SEC)
+      return { big: String(min), small: "min", isClock: false };
     return { big: secToClock(at), small: "", isClock: true };
   }
 
@@ -221,9 +222,7 @@
     );
     d.setUTCDate(d.getUTCDate() + days);
     const z = (v) => String(v).padStart(2, "0");
-    return (
-      "" + d.getUTCFullYear() + z(d.getUTCMonth() + 1) + z(d.getUTCDate())
-    );
+    return "" + d.getUTCFullYear() + z(d.getUTCMonth() + 1) + z(d.getUTCDate());
   }
 
   function fmtFeedDate(iso) {
@@ -279,7 +278,11 @@
         const hit = byId.get(id);
         if (!hit) continue;
         const nome = ligacoes[id].name || "";
-        out.set(norm(nome), { stopId: hit.stop_id, name: hit.name, fertagus: nome });
+        out.set(norm(nome), {
+          stopId: hit.stop_id,
+          name: hit.name,
+          fertagus: nome,
+        });
       }
       // Preenche sempre a cache: o cpStationFor() é síncrono e é chamado pelo
       // mapa-station.js ao abrir a sheet da Fertagus. Antes só era preenchida
@@ -324,7 +327,10 @@
     if (LOGO_ALIASES[slug]) return `${LOGO_DIR}/${LOGO_ALIASES[slug]}`;
     if (slug.indexOf("sul") !== -1 && slug.indexOf("metro") !== -1)
       return `${LOGO_DIR}/mts.svg`;
-    if (slug.indexOf("metropolitano") !== -1 || slug.indexOf("metro-de-lisboa") !== -1)
+    if (
+      slug.indexOf("metropolitano") !== -1 ||
+      slug.indexOf("metro-de-lisboa") !== -1
+    )
       return `${LOGO_DIR}/metro.svg`;
     return `${LOGO_DIR}/${slug}.svg`; // palpite; o onerror esconde se não existir
   }
@@ -347,7 +353,9 @@
         const res = manifest.resources || {};
         return Promise.all([
           getJSON(`${base}/${res.stops_index || "stops/index.json"}`),
-          getJSON(`${base}/${res.calendar || "calendar.json"}`).catch(() => ({})),
+          getJSON(`${base}/${res.calendar || "calendar.json"}`).catch(
+            () => ({}),
+          ),
           getJSON(`${base}/${res.routes || "routes.json"}`).catch(() => []),
         ]).then(([stops, calendar, routes]) => {
           const agencyName =
@@ -362,7 +370,9 @@
             resources: res,
             agencyName,
             logo: logoFor(agencyName),
-            feedDate: fmtFeedDate(manifest.source && manifest.source.downloaded_at),
+            feedDate: fmtFeedDate(
+              manifest.source && manifest.source.downloaded_at,
+            ),
             stops,
             calendar: calendar || {},
             routes: new Map((routes || []).map((r) => [r.route_id, r])),
@@ -394,7 +404,10 @@
       })
       .catch((err) => {
         pending.delete(op);
-        console.error(`[GtfsHorarios] Bundle "${op}" indisponível:`, err.message);
+        console.error(
+          `[GtfsHorarios] Bundle "${op}" indisponível:`,
+          err.message,
+        );
         throw err;
       });
 
@@ -472,7 +485,8 @@
       candidates.push(norm(raw.split("/")[0]));
       candidates.push(norm(raw.replace(/\//g, " ")));
     }
-    if (raw.indexOf("(") !== -1) candidates.push(norm(raw.replace(/\(.*?\)/g, "")));
+    if (raw.indexOf("(") !== -1)
+      candidates.push(norm(raw.replace(/\(.*?\)/g, "")));
 
     for (const c of candidates) {
       if (c && bundle.byName.has(c)) return bundle.byName.get(c);
@@ -483,7 +497,11 @@
     if (target) {
       const hits = [];
       for (const [n, list] of bundle.byName) {
-        if (n === target || n.indexOf(target + " ") === 0 || target.indexOf(n + " ") === 0)
+        if (
+          n === target ||
+          n.indexOf(target + " ") === 0 ||
+          target.indexOf(n + " ") === 0
+        )
           hits.push(...list);
       }
       if (hits.length) return hits;
@@ -510,7 +528,8 @@
   function serviceRunsOn(bundle, serviceId, ymd, dow) {
     const svc = bundle.calendar[serviceId];
     if (!svc) return true; // service_id desconhecido: mostrar em vez de esconder
-    if (svc.removed_dates && svc.removed_dates.indexOf(ymd) !== -1) return false;
+    if (svc.removed_dates && svc.removed_dates.indexOf(ymd) !== -1)
+      return false;
     if (svc.added_dates && svc.added_dates.indexOf(ymd) !== -1) return true;
 
     const hasWeekly = DAYS.some((d) => svc[d] != null);
@@ -545,7 +564,9 @@
     ];
     const on = order.filter((d) => Number(svc[d]) === 1);
     if (!on.length)
-      return svc.added_dates && svc.added_dates.length ? "Datas específicas" : "";
+      return svc.added_dates && svc.added_dates.length
+        ? "Datas específicas"
+        : "";
     if (on.length === 7) return "Todos os dias";
     if (on.join() === "monday,tuesday,wednesday,thursday,friday")
       return "Dias úteis";
@@ -583,12 +604,18 @@
         const sec = timeToSec(dep.departure_time);
         if (sec == null) continue;
 
-        if (sec >= corte && serviceRunsOn(bundle, dep.service_id, now.ymd, now.dow)) {
+        if (
+          sec >= corte &&
+          serviceRunsOn(bundle, dep.service_id, now.ymd, now.dow)
+        ) {
           out.push(makeDep(dep, entry, sec, now.sec, now.ymd));
         }
         if (sec >= 86400) {
           const off = sec - 86400; // madrugada de hoje, serviço de ontem
-          if (off >= corte && serviceRunsOn(bundle, dep.service_id, yYmd, yDow)) {
+          if (
+            off >= corte &&
+            serviceRunsOn(bundle, dep.service_id, yYmd, yDow)
+          ) {
             out.push(makeDep(dep, entry, off, now.sec, yYmd));
           }
         }
@@ -864,7 +891,11 @@
     const r = bundle.routes.get(routeId) || {};
     const bg = r.route_color ? `#${r.route_color}` : "#18181b";
     const fg = r.route_text_color ? `#${r.route_text_color}` : "#ffffff";
-    return { bg, fg, label: r.route_short_name || r.route_long_name || routeId };
+    return {
+      bg,
+      fg,
+      label: r.route_short_name || r.route_long_name || routeId,
+    };
   }
 
   // Um feed nacional tem muitas route_id com o MESMO nome de linha (a CP tem
@@ -885,7 +916,13 @@
         const key = norm(st.label);
         if (!key) continue;
         if (!byLabel.has(key))
-          byLabel.set(key, { key, label: st.label, bg: st.bg, fg: st.fg, routeIds: [] });
+          byLabel.set(key, {
+            key,
+            label: st.label,
+            bg: st.bg,
+            fg: st.fg,
+            routeIds: [],
+          });
         byLabel.get(key).routeIds.push(rid);
       }
     }
@@ -1172,7 +1209,8 @@
           ? `Próximas partidas · ${active.label}`
           : "Próximas partidas",
         pills,
-        filters: fromBarHtml(view) + lineFilterHtml(view) + realtimeHtml(bundle, view),
+        filters:
+          fromBarHtml(view) + lineFilterHtml(view) + realtimeHtml(bundle, view),
         back: hasBack ? "Voltar" : null,
       });
       body =
@@ -1254,7 +1292,8 @@
   // Só a lista é redesenhada no tick, para não perder o scroll.
   function renderList() {
     const view = top();
-    if (!view || !panel || view.kind !== "stop" || view.state !== "ready") return;
+    if (!view || !panel || view.kind !== "stop" || view.state !== "ready")
+      return;
     const host = panel.querySelector("[data-ltg-body]");
     if (host) host.innerHTML = depListHtml(view.bundle, view);
   }
@@ -1335,7 +1374,12 @@
           id: station.id != null ? station.id : resolved.primary.stop_id,
           name: station.name || resolved.primary.stop_name,
         });
-      if (opts && opts.recenter && window.MapaRender && window.MapaRender.focusStation)
+      if (
+        opts &&
+        opts.recenter &&
+        window.MapaRender &&
+        window.MapaRender.focusStation
+      )
         window.MapaRender.focusStation({ lng: c[0], lat: c[1] });
     }
 
@@ -1444,7 +1488,10 @@
     if (fertBtn && panel.contains(fertBtn)) {
       e.preventDefault();
       e.stopPropagation();
-      const at = parseInt(fertBtn.getAttribute("data-ltg-fertagus-at") || "", 10);
+      const at = parseInt(
+        fertBtn.getAttribute("data-ltg-fertagus-at") || "",
+        10,
+      );
       openFertagus(fertBtn.getAttribute("data-ltg-fertagus"), at);
       return;
     }

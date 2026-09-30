@@ -143,7 +143,7 @@
   // ── LIGAÇÕES NAS ESTAÇÕES ────────────────────────────────────────────────
   // O percurso mostra, à frente de cada estação, os logótipos dos operadores
   // com que se pode fazer ligação ali. Vem do mesmo ficheiro que o mapa usa.
-  const LIGACOES_JSON = "/json/ligacoes_atualizado.json";
+  const LIGACOES_JSON = "/data/json/ligacoes_atualizado.json";
   // Um tipo sem logótipo conhecido simplesmente não aparece; e se o ficheiro
   // não existir, a imagem é removida (ver bindLigacaoLogos).
   const LIG_LOGOS = {

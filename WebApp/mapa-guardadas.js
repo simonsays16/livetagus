@@ -9,7 +9,7 @@
  *   1. window.MapaCM.getStops()  — paragens verificadas junto às estações
  *      Fertagus, já com a forma completa que a sheet Carris espera (lines com
  *      cor, gmapslink, estação de referência).
- *   2. /json/stops_cm.json       — catálogo completo da Carris Metropolitana,
+ *   2. /data/json/stops_cm.json       — catálogo completo da Carris Metropolitana,
  *      para paragens guardadas fora dessa área. A sheet abre igual; só os chips
  *      de linha ficam de fora, porque este ficheiro não traz as cores.
  *
@@ -27,7 +27,7 @@
   if (window.MapaGuardadas) return;
 
   const STORAGE_KEY = "cm_saved_stops"; // mesma chave que o paragens.js
-  const STOPS_JSON = "/json/stops_cm.json";
+  const STOPS_JSON = "/data/json/stops_cm.json";
   const SRC = "lt-saved";
   const L_HALO = "lt-saved-halo";
   const L_DOT = "lt-saved-dot";

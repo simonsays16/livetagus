@@ -26,8 +26,7 @@
  *   node bootup.js --strict     qualquer falha faz o build falhar
  *   node bootup.js --so-bibliotecas   só o passo 0 (para correr em localhost
  *                               depois de um npm install)
- *   node bootup.js --minify     minifica mesmo fora do Netlify (cuidado:
- *                               reescreve os ficheiros; só numa cópia)
+ *   node bootup.js --minify     minifica mesmo fora do Netlify (reescreve os ficheiroS)
  */
 
 const fs = require("fs");
@@ -37,16 +36,14 @@ const { execSync } = require("child_process");
 
 // ─── CAMINHOS ───────────────────────────────────────────────────────────────
 const RAIZ = process.cwd();
-const DIR_GTFS = path.join(RAIZ, "resources/data/gtfs");
+const DIR_GTFS = path.join(RAIZ, "data/gtfs");
 const CAL_MTS = path.join(
   DIR_GTFS,
   "metro-transportes-do-sul-gtfs-departures/calendar.json",
 );
-// Onde a APP lê (mapa-guardadas.js, mapa-cm.js: /json/stops_cm.json). Antes
-// escrevia em resources/data/json/, que ninguém lia — a lista de paragens da
-// app nunca era actualizada pelo build.
-const STOPS_CM = path.join(RAIZ, "json/stops_cm.json");
-const LIGACOES = path.join(RAIZ, "json/ligacoes_atualizado.json");
+// Inicio restruturação da app
+const STOPS_CM = path.join(RAIZ, "data/json/stops_cm.json");
+const LIGACOES = path.join(RAIZ, "data/json/ligacoes_atualizado.json");
 
 // ─── FONTES ─────────────────────────────────────────────────────────────────
 const FEEDS = [

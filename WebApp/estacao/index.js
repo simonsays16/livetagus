@@ -100,7 +100,7 @@
   // Busca silenciosa das ligações
   async function loadLigacoes() {
     try {
-      const res = await fetch("/json/ligacoes_atualizado.json");
+      const res = await fetch("/data/json/ligacoes_atualizado.json");
       if (res.ok) {
         ligacoesData = await res.json();
       }

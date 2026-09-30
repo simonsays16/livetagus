@@ -1,7 +1,7 @@
 /**
  * mapa-cm.js  ·  LiveTagus (mapa)
  * Paragens de autocarro Carris Metropolitana (CM) no mapa, a partir do
- * json/ligacoes_atualizado.json (ligações intermodais por estação Fertagus).
+ * data/json/ligacoes_atualizado.json (ligações intermodais por estação Fertagus).
  *
  * SÓ aparecem as paragens das estações VERIFICADAS (ver AVAILABLE_STATIONS).
  * Cada paragem (poste) é um marcador; ao clicar abre uma sheet (reaproveita
@@ -39,7 +39,7 @@
 
   // ─── CONFIG ──────────────────────────────────────────────────────────
   const CM_API_BASE = "https://api.carrismetropolitana.pt/v2";
-  const LIGACOES_JSON = "./json/ligacoes_atualizado.json";
+  const LIGACOES_JSON = "./data/json/ligacoes_atualizado.json";
   const ARRIVALS_REFRESH_MS = 30_000;
   const ARRIVALS_LIMIT = 15; // partidas no estado expandido
   const MINI_ARRIVALS = 3; // partidas visíveis no estado minimizado
@@ -1533,7 +1533,7 @@
   //
   // Tocar numa partida mostra o trajecto todo da viagem. A API dá o padrão
   // (/patterns/:id) com a sequência de paragens e o horário de cada viagem;
-  // os nomes vêm do catálogo que a app já tem (/json/stops_cm.json), porque o
+  // os nomes vêm do catálogo que a app já tem (/data/json/stops_cm.json), porque o
   // padrão só traz IDs.
   //
   // Quando uma paragem do percurso é uma das paragens de uma estação da
@@ -1545,7 +1545,7 @@
   // mesmo o dia todo); o catálogo uma vez por sessão. Enquanto o percurso
   // está aberto, a lista de partidas não se actualiza — nem pede nada.
 
-  const STOPS_CATALOGO = "/json/stops_cm.json";
+  const STOPS_CATALOGO = "/data/json/stops_cm.json";
   const cachePadroes = new Map(); // pattern_id → Promise<padrão>
   let catalogoPromise = null;
   let percurso = null;

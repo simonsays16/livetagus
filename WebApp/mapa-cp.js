@@ -6,7 +6,7 @@
  * (/geojson/metro-shape.geojson, /geojson/mts-shape-stops.geojson), aqui TUDO
  * vem do bundle gtfs-departures — é a única fonte:
  *
- *   /resources/data/gtfs/cp-comboios-de-portugal-gtfs-departures/
+ *   /data/gtfs/cp-comboios-de-portugal-gtfs-departures/
  *     manifest.json        → mapa de recursos
  *     routes.json          → cor, nome e tipo de cada linha
  *     shapes/index.json    → geometrias, com route_ids e bbox por shape
@@ -34,7 +34,7 @@
   if (window.MapaCP) return;
 
   // ═══ CONFIGURAÇÃO ══════════════════════════════════════════════════════
-  const BUNDLE = "/resources/data/gtfs/cp-comboios-de-portugal-gtfs-departures";
+  const BUNDLE = "/data/gtfs/cp-comboios-de-portugal-gtfs-departures";
   const VIEW_GROUP = "cp";
   const CP_COLOR = "#0075C9"; // cor de marca aproximada (o dot do menu do olho)
 

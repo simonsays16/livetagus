@@ -22,7 +22,7 @@
 
   // ═══ CONFIGURAÇÃO ═════════════════════════════════════════════════════
   const API_AVISOS = "https://api.livetagus.pt/avisos/";
-  const PATH_LIGACOES = "/json/ligacoes_atualizado.json";
+  const PATH_LIGACOES = "/data/json/ligacoes_atualizado.json";
 
   // ═══ ESTAÇÕES ═════════════════════════════════════════════════════════
   const STATIONS = [
