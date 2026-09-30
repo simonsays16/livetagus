@@ -1,5 +1,5 @@
 // --- BEGIN VERSIONS ---
-const GLOBAL_VERSION = "livetagus-v.rc7.30092026";
+const GLOBAL_VERSION = "livetagus-v.rc9.30092026";
 const ASSETS_VERSIONS = {
   "./index.html": "v.rc2.30092026",
   "./index.js": "v.rc3.21062026",

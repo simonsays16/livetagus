@@ -944,7 +944,7 @@
     currentStop = stop;
     activeLine = null;
     hub = null;
-    percurso = null;
+    pararPercurso();
     limparMini();
     selectedId = stop.id;
     applySelectionPaint();
@@ -993,7 +993,7 @@
     if (!panel || !backdrop) return;
     // O painel é partilhado: a altura medida não pode passar para o próximo.
     limparMini();
-    percurso = null;
+    pararPercurso();
 
     if (refreshTimer) {
       clearInterval(refreshTimer);
@@ -1481,7 +1481,7 @@
 
     const ft = opts && opts.fromTime;
     limparMini();
-    percurso = null;
+    pararPercurso();
     currentStop = null;
     activeLine = null;
     hub = {
@@ -1695,6 +1695,13 @@
       border-bottom:1px dashed rgba(0,0,0,.12);font:inherit;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.18em;
       text-transform:uppercase;color:rgb(113,113,122)}
     html.dark .cmr-ant{border-bottom-color:rgba(255,255,255,.1);color:rgb(161,161,170)}
+    @media (max-width: 767.98px){
+      .cmr-row.is-past{min-height:30px;padding:4px 2px;gap:10px}
+      .cmr-row.is-past .cmr-rail{margin:-4px 0}
+      .cmr-row.is-past .cmr-dot{width:7px;height:7px}
+      .cmr-row.is-past .cmr-nm,.cmr-row.is-past .cmr-time{font-size:11.5px}
+      .cmr-row.is-past:not(.is-here) .cmr-tag{display:none}
+    }
     .cmr-msg{font-size:12px;color:rgb(161,161,170);text-align:center;padding:28px 0}`;
     document.head.appendChild(el);
   }
@@ -1740,9 +1747,12 @@
 
     const padrao = percurso.padrao || {};
     const cat = percurso.catalogo || new Map();
+    const eta = (percurso.eta || [])
+      .slice()
+      .sort((x, y) => x.stop_sequence - y.stop_sequence);
     const caminho = (padrao.path || [])
       .slice()
-      .sort((a, b) => a.stop_sequence - b.stop_sequence);
+      .sort((x, y) => x.stop_sequence - y.stop_sequence);
     // A viagem certa dentro do padrão: a que inclui o trip_id da partida.
     const viagem = (padrao.trips || []).find((tr) =>
       (tr.trip_ids || []).includes(d.trip),
@@ -1754,84 +1764,154 @@
         if (sgs != null) horarioSeq.set(Number(h.stop_sequence), sgs);
       }
     }
-    // A tua paragem: pela sequência da partida; se não bater, pelo ID.
-    let aqui = caminho.findIndex(
-      (x) => String(x.stop_sequence) === String(d.seq),
-    );
-    if (aqui < 0)
-      aqui = caminho.findIndex((x) => String(x.stop_id) === String(d.stop));
-    // Horas: a partir da hora prevista NA TUA PARAGEM (vem da API, com data
-    // certa) mais as diferenças do horário. Nunca precisa de saber o dia.
+    // Horas programadas: a partir da hora da partida NA TUA PARAGEM (vem da
+    // API, com a data certa) mais as diferenças do horário.
+    const seqMinha =
+      (
+        caminho.find((x) => String(x.stop_sequence) === String(d.seq)) ||
+        caminho.find((x) => String(x.stop_id) === String(d.stop)) ||
+        {}
+      ).stop_sequence ?? Number(d.seq);
     const base = Number(d.sched) || Number(d.est) || 0;
-    const segAqui =
-      aqui >= 0 ? horarioSeq.get(Number(caminho[aqui].stop_sequence)) : null;
-    const unixDe = (x) => {
-      const sgs = horarioSeq.get(Number(x.stop_sequence));
+    const segAqui = horarioSeq.get(Number(seqMinha));
+    const programado = (seq) => {
+      const sgs = horarioSeq.get(Number(seq));
       if (!base || segAqui == null || sgs == null) return null;
       return base + (sgs - segAqui);
     };
-
-    const nomeDe = (id) => {
+    // O catálogo primeiro (os nomes da Carris, como no resto da app); o nome
+    // do ETA vem com maiúsculas misturadas.
+    const nomeDe = (id, alternativa) => {
       const c = cat.get(String(id));
-      return (c && (c.n || c.long_name || c.name)) || `Paragem ${id}`;
+      return (
+        (c && (c.n || c.long_name || c.name)) || alternativa || `Paragem ${id}`
+      );
     };
-    const linha = (x, i) => {
-      const passada = aqui >= 0 && i < aqui;
-      const eAqui = i === aqui;
-      let unix = unixDe(x);
-      let hora = unix ? horaDe(unix) : "";
-      // Na tua paragem, a hora prevista em tempo real, se houver.
-      if (eAqui && Number(d.est)) {
-        unix = Number(d.est);
-        hora = horaDe(unix);
-      }
+
+    // As linhas do percurso, por ordem.
+    //   Com tempo real: as que o autocarro JÁ PASSOU vêm do padrão (hora
+    //   programada, compactas); as que ainda vai passar vêm do ETA, com a hora
+    //   prevista. Assim vê-se onde o autocarro vem.
+    //   Sem tempo real (viagem por começar, sem veículo, rede): o padrão todo,
+    //   com as horas programadas — como antes.
+    const tempoReal = eta.length > 0;
+    const linhas = [];
+    if (tempoReal) {
+      const primeira = eta[0].stop_sequence;
+      const ultima = eta[eta.length - 1].stop_sequence;
+      for (const x of caminho)
+        if (x.stop_sequence < primeira)
+          linhas.push({
+            id: x.stop_id,
+            seq: x.stop_sequence,
+            unix: programado(x.stop_sequence),
+            passada: true,
+          });
+      for (const e of eta)
+        linhas.push({
+          id: e.stop_id,
+          seq: e.stop_sequence,
+          nome: e.stop_name,
+          unix: e.eta_at ? Math.round(e.eta_at / 1000) : null,
+          real: true,
+        });
+      // Se o ETA acabar antes do destino, o resto do padrão entra com o mesmo
+      // atraso que a última previsão tem sobre o horário.
+      const ultimaEta = linhas[linhas.length - 1];
+      const progUltima = programado(ultima);
+      const atraso =
+        ultimaEta.unix && progUltima ? ultimaEta.unix - progUltima : 0;
+      for (const x of caminho)
+        if (x.stop_sequence > ultima) {
+          const u = programado(x.stop_sequence);
+          linhas.push({
+            id: x.stop_id,
+            seq: x.stop_sequence,
+            unix: u ? u + atraso : null,
+          });
+        }
+    } else {
+      const iAqui = caminho.findIndex((x) => x.stop_sequence === seqMinha);
+      caminho.forEach((x, i) =>
+        linhas.push({
+          id: x.stop_id,
+          seq: x.stop_sequence,
+          unix: programado(x.stop_sequence),
+          passada: iAqui >= 0 && i < iAqui,
+        }),
+      );
+    }
+    let iAqui = linhas.findIndex((l) => Number(l.seq) === Number(seqMinha));
+    if (iAqui < 0)
+      iAqui = linhas.findIndex((l) => String(l.id) === String(d.stop));
+    // Na tua paragem, a previsão mais fresca que houver.
+    if (
+      iAqui >= 0 &&
+      !linhas[iAqui].real &&
+      Number(d.est) &&
+      !linhas[iAqui].passada
+    )
+      linhas[iAqui].unix = Number(d.est);
+    const iProxima = tempoReal ? linhas.findIndex((l) => l.real) : -1;
+
+    const linhaHtml = (l, i) => {
+      const eAqui = i === iAqui;
       const tag = eAqui
         ? "A tua paragem"
-        : i === caminho.length - 1
-          ? "Destino"
-          : i === 0
-            ? "Origem"
-            : "";
+        : i === iProxima
+          ? "Próxima do autocarro"
+          : i === linhas.length - 1
+            ? "Destino"
+            : i === 0
+              ? "Origem"
+              : "";
       const rail = [
         "cmr-rail",
         i === 0 ? "is-first" : "",
-        i === caminho.length - 1 ? "is-last" : "",
+        i === linhas.length - 1 ? "is-last" : "",
       ]
         .filter(Boolean)
         .join(" ");
-      // Ligações só onde ainda se vai passar: numa paragem já passada, o
-      // "a partir da chegada" não filtrava nada.
-      const lig = passada ? "" : ligacoesDaParagem(x.stop_id, unix);
-      return `<div class="cmr-row${passada ? " is-past" : ""}${eAqui ? " is-here" : ""}" data-cmr-stop="${escapeHtml(String(x.stop_id))}">
+      // Ligações só onde o autocarro ainda vai passar.
+      const lig = l.passada ? "" : ligacoesDaParagem(l.id, l.unix);
+      return `<div class="cmr-row${l.passada ? " is-past" : ""}${eAqui ? " is-here" : ""}${l.real ? " is-real" : ""}" data-cmr-stop="${escapeHtml(String(l.id))}">
         <span class="${rail}"><span class="cmr-dot"></span></span>
-        <div class="cmr-name"><p class="cmr-nm">${escapeHtml(nomeDe(x.stop_id))}</p>${tag ? `<span class="cmr-tag">${tag}</span>` : ""}</div>
+        <div class="cmr-name"><p class="cmr-nm">${escapeHtml(nomeDe(l.id, l.nome))}</p>${tag ? `<span class="cmr-tag">${tag}</span>` : ""}</div>
         ${lig}
-        <div class="cmr-time">${hora || "—"}</div>
+        <div class="cmr-time">${l.unix ? horaDe(l.unix) : "—"}</div>
       </div>`;
     };
 
     let corpo = "";
-    const anteriores = aqui > 0 ? caminho.slice(0, aqui) : [];
-    if (anteriores.length) {
+    const nAnt = linhas.filter((l) => l.passada).length;
+    if (nAnt) {
       const aberto = !!percurso.anterioresAbertas;
+      const rotulo = tempoReal ? "paragens já passadas" : "paragens anteriores";
       corpo += `<button type="button" class="cmr-ant" data-cm-percurso-ant="1" aria-expanded="${aberto}">
-        <span>${aberto ? "Esconder" : "Ver"} paragens anteriores (${anteriores.length})</span>
+        <span>${aberto ? "Esconder" : "Ver"} ${rotulo} (${nAnt})</span>
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" style="transform:rotate(${aberto ? 0 : 180}deg)"><path d="m18 15-6-6-6 6"/></svg>
       </button>`;
-      if (aberto) corpo += anteriores.map((x, i) => linha(x, i)).join("");
+      if (aberto)
+        corpo += linhas
+          .map((l, i) => (l.passada ? linhaHtml(l, i) : ""))
+          .join("");
     }
-    corpo += caminho
-      .slice(Math.max(0, aqui))
-      .map((x, k) => linha(x, Math.max(0, aqui) + k))
-      .join("");
-    if (!caminho.length)
+    corpo += linhas.map((l, i) => (l.passada ? "" : linhaHtml(l, i))).join("");
+    if (!linhas.length)
       corpo = `<p class="cmr-msg">A Carris não devolveu as paragens deste percurso.</p>`;
 
-    const ult = caminho[caminho.length - 1];
-    const fim = ult ? unixDe(ult) : null;
-    const resto = aqui >= 0 ? caminho.length - aqui - 1 : caminho.length;
-    const resumo = caminho.length
-      ? `${resto} ${resto === 1 ? "paragem" : "paragens"} até ao destino${fim ? ` · chega às ${horaDe(fim)}` : ""}${viagem ? "" : " · sem horário desta viagem"}`
+    const fim = linhas.length ? linhas[linhas.length - 1].unix : null;
+    const resto =
+      iAqui >= 0
+        ? linhas.length - iAqui - 1
+        : linhas.filter((l) => !l.passada).length;
+    const fonte = tempoReal
+      ? "tempo real"
+      : viagem
+        ? "horário programado"
+        : "sem horário desta viagem";
+    const resumo = linhas.length
+      ? `${resto} ${resto === 1 ? "paragem" : "paragens"} até ao destino${fim ? ` · chega às ${horaDe(fim)}` : ""} · ${fonte}`
       : "";
     target.innerHTML =
       `<div class="cmr" style="--cmr:${escapeHtml(d.cor)}">` +
@@ -1914,29 +1994,97 @@
     irAoTopo();
     desenharPercurso();
     const eu = percurso;
-    Promise.all([carregarPadrao(d.pattern), carregarCatalogo()])
-      .then(([padrao, catalogo]) => {
-        if (percurso !== eu) return; // entretanto voltou atrás ou fechou
-        eu.padrao = padrao;
-        eu.catalogo = catalogo;
-        eu.estado = "pronto";
-        desenharPercurso();
-      })
-      .catch((e) => {
-        if (percurso !== eu) return;
+    Promise.all([
+      // O padrão dá as paragens já passadas e o horário; o ETA, as seguintes
+      // em tempo real. Basta um dos dois para haver percurso.
+      carregarPadrao(d.pattern).catch((e) => ({ __erro: e })),
+      carregarCatalogo(),
+      carregarEta(d.trip),
+    ]).then(([padrao, catalogo, eta]) => {
+      if (percurso !== eu) return; // entretanto voltou atrás ou fechou
+      const erro = padrao && padrao.__erro;
+      if (erro && !(eta && eta.length)) {
         eu.estado = "erro";
         eu.erro =
-          e && e.status === 429
+          erro.status === 429
             ? "A Carris está a limitar pedidos. Tenta outra vez daqui a pouco."
             : "Não foi possível carregar o percurso.";
         desenharPercurso();
-      });
+        return;
+      }
+      eu.padrao = erro ? null : padrao;
+      eu.catalogo = catalogo;
+      eu.eta = eta || [];
+      eu.estado = "pronto";
+      desenharPercurso();
+      agendarEta(eu);
+    });
+  }
+
+  // ─── TEMPO REAL DA VIAGEM (TML) ────────────────────────────────────────
+  // O ETA por viagem só traz as paragens por onde o autocarro ainda não
+  // passou, cada uma com a hora prevista. O endereço leva o trip_id com os
+  // "|" codificados e os "[ ]" em claro, como o próprio exemplo da TML.
+  const TML_ETA_BASE = "https://go.tmlmobilidade.pt/hub/api/v1/eta/by-trip/";
+  const PERCURSO_REFRESH_MS = 30_000;
+
+  function urlEta(trip) {
+    return (
+      TML_ETA_BASE +
+      encodeURIComponent(trip).replace(/%5B/gi, "[").replace(/%5D/gi, "]")
+    );
+  }
+
+  // null = não se sabe (erro, rede); [] = a TML não tem previsões desta viagem.
+  async function carregarEta(trip) {
+    if (!trip) return null;
+    try {
+      const r = await fetch(urlEta(trip), { cache: "no-store" });
+      if (!r.ok) return null;
+      const j = await r.json();
+      const lista = Array.isArray(j)
+        ? j
+        : j && Array.isArray(j.data)
+          ? j.data
+          : null;
+      if (!lista) return null;
+      return lista.filter(
+        (e) =>
+          e &&
+          e.stop_id != null &&
+          isFinite(Number(e.stop_sequence)) &&
+          (!e.trip_id || e.trip_id === trip),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // Enquanto o percurso está aberto, a previsão actualiza-se. Um pedido a cada
+  // 30 s, e nenhum com a app em segundo plano.
+  function agendarEta(eu) {
+    clearInterval(eu.timer);
+    eu.timer = setInterval(async () => {
+      if (percurso !== eu) return clearInterval(eu.timer);
+      if (typeof document !== "undefined" && document.hidden) return;
+      const eta = await carregarEta(eu.d.trip);
+      // Uma falha momentânea, ou a viagem a acabar, não apaga o que já se viu.
+      if (percurso !== eu || !eta || !eta.length) return;
+      eu.eta = eta;
+      desenharPercurso();
+    }, PERCURSO_REFRESH_MS);
+  }
+
+  // Fechar, voltar atrás, abrir outra paragem: o percurso sai, e o relógio dele.
+  function pararPercurso() {
+    if (percurso && percurso.timer) clearInterval(percurso.timer);
+    percurso = null;
   }
 
   function fecharPercurso() {
     if (!percurso) return;
     const antes = percurso.estadoAnterior;
-    percurso = null;
+    pararPercurso();
     const titulo = panel && panel.querySelector("[data-cm-lista-titulo]");
     if (titulo) titulo.textContent = "Próximas Partidas";
     if (antes && antes !== panel.dataset.state) setState(antes);
