@@ -1,11 +1,11 @@
 // --- BEGIN VERSIONS ---
-const GLOBAL_VERSION = "livetagus-v.rc5.28092026";
+const GLOBAL_VERSION = "livetagus-v.rc7.30092026";
 const ASSETS_VERSIONS = {
-  "./index.html": "v.rc1.14092026",
+  "./index.html": "v.rc2.30092026",
   "./index.js": "v.rc3.21062026",
   "./index-home.js": "v.rc1.22062026",
   "./home-map.js": "v.rc6.22062026",
-  "./app.html": "v.rc2.12092026",
+  "./app.html": "v.rc2.30092026",
   "./app-alerts.js": "v.rc3.13062026",
   "./app-config.js": "v.rc2.13092026",
   "./app-occupancy.js": "v.rc1.12092026",
@@ -16,15 +16,22 @@ const ASSETS_VERSIONS = {
   "./app-trains.js": "v.rc3.28092026",
   "./app-ui.js": "v.rc5.12092026",
   "./lucide-icons.js": "v.rc1.25062026",
-  "./sudoku.html": "v.rc2.07062026",
+  "./sudoku.html": "v.rc2.30092026",
   "./sudoku.js": "v.rc1.24052026",
   "./sudoku-train.js": "v.rc2.28052026",
-  "./horarios.html": "v.rc9.14092026",
+  "./horarios.html": "v.rc2.30092026",
   "./horarios.js": "v.rc1.24052026",
-  "./privacidade.html": "v.rc1.16082026",
+  "./privacidade.html": "v.rc3.30092026",
   "./tabs.js": "v.rc1.24052026",
   "./train-scrollbar.js": "v.rc3.22062026",
   "./output.css": "v.rc12.12092026",
+  "./assets/fonts/fonts.css": "v.rc1.30092026",
+  "./assets/fonts/inter-normal-variavel-v20-latin.woff2": "v.rc1.30092026",
+  "./assets/fonts/inter-normal-variavel-v20-latin-ext.woff2": "v.rc1.30092026",
+  "./assets/fonts/jetbrains-mono-normal-variavel-v24-latin.woff2":
+    "v.rc1.30092026",
+  "./assets/fonts/jetbrains-mono-normal-variavel-v24-latin-ext.woff2":
+    "v.rc1.30092026",
   "./menu.js": "v.rc1.28092026",
   "./nav-tools.js": "v.rc9.08062026",
   "./offline.js": "v.rc1.24052026",
