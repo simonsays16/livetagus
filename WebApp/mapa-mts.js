@@ -2,8 +2,8 @@
  * mapa-mts.js
  * Metro Sul do Tejo (MTS / Almada): linhas + estações no mapa.
  *
- * - Linhas:    /geojson/mts-shape-stops.geojson  (apenas LineStrings)
- * - Estações:  /geojson/mts-stations.geojson     (Points: id/name/lines/line_colors)
+ * - Linhas:    /data/geojson/mts-shape-stops.geojson  (apenas LineStrings)
+ * - Estações:  /data/geojson/mts-stations.geojson     (Points: id/name/lines/line_colors)
  *
  * Clicar numa estação abre a sheet de PRÓXIMAS PARTIDAS (window.MtsHorarios,
  * hoje um alias de window.GtfsHorarios em mapa-gtfs-horarios.js, alimentado
@@ -16,8 +16,8 @@
 (function () {
   "use strict";
 
-  const LINES_PATH = "/geojson/mts-shape-stops.geojson";
-  const STATIONS_PATH = "/geojson/mts-stations.geojson";
+  const LINES_PATH = "/data/geojson/mts-shape-stops.geojson";
+  const STATIONS_PATH = "/data/geojson/mts-stations.geojson";
 
   let linesData = null;
   let stationsData = null;

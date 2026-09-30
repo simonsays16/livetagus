@@ -30,8 +30,8 @@
   if (window.MapaSearch) return;
 
   // ═══ CONFIG / FONTES ═════════════════════════════════════════════════════════
-  const MTS_STATIONS_PATH = "/geojson/mts-stations.geojson";
-  const ML_STATIONS_PATH = "/geojson/estacoes-metro.geojson";
+  const MTS_STATIONS_PATH = "/data/geojson/mts-stations.geojson";
+  const ML_STATIONS_PATH = "/data/geojson/estacoes-metro.geojson";
   const MAX_RESULTS = 60;
 
   // ── FAVORITOS ──────────────────────────────────────────────────────────────
@@ -501,7 +501,8 @@
 
   function hasFavourites() {
     return (
-      readList(CM_SAVED_KEY).length > 0 || readList(STATIONS_SAVED_KEY).length > 0
+      readList(CM_SAVED_KEY).length > 0 ||
+      readList(STATIONS_SAVED_KEY).length > 0
     );
   }
 
@@ -664,7 +665,10 @@
         return out;
       })
       .catch((e) => {
-        console.warn("[MapaSearch] Metro de Lisboa indisponível:", e && e.message);
+        console.warn(
+          "[MapaSearch] Metro de Lisboa indisponível:",
+          e && e.message,
+        );
         mlCache = [];
         return mlCache;
       });
@@ -885,7 +889,8 @@
   // Paragens guardadas pelo utilizador na página /paragens (mapa-guardadas.js).
   function guardadasItems() {
     const stops =
-      window.MapaGuardadas && typeof window.MapaGuardadas.getStops === "function"
+      window.MapaGuardadas &&
+      typeof window.MapaGuardadas.getStops === "function"
         ? window.MapaGuardadas.getStops()
         : [];
     return stops.map((stop) => ({
@@ -987,7 +992,9 @@
       list.sort((a, b) => norm(a.name).localeCompare(norm(b.name)));
 
     const ops = Array.from(groups.keys()).sort(
-      (a, b) => (OP_ORDER[a] == null ? 99 : OP_ORDER[a]) - (OP_ORDER[b] == null ? 99 : OP_ORDER[b]),
+      (a, b) =>
+        (OP_ORDER[a] == null ? 99 : OP_ORDER[a]) -
+        (OP_ORDER[b] == null ? 99 : OP_ORDER[b]),
     );
 
     const out = (groups.get("guardadas") || []).slice(0, MAX_RESULTS);
@@ -1200,7 +1207,9 @@
 
     // Foco visual do campo
     inputEl.addEventListener("focus", () => fieldEl.classList.add("is-focus"));
-    inputEl.addEventListener("blur", () => fieldEl.classList.remove("is-focus"));
+    inputEl.addEventListener("blur", () =>
+      fieldEl.classList.remove("is-focus"),
+    );
 
     // Input
     inputEl.addEventListener("input", () => {
@@ -1280,9 +1289,12 @@
     favCache = favSets();
     if (typeof window.sa_event === "function") {
       try {
-        window.sa_event(res.saved ? "map_search_fav_add" : "map_search_fav_remove", {
-          op: item.op,
-        });
+        window.sa_event(
+          res.saved ? "map_search_fav_add" : "map_search_fav_remove",
+          {
+            op: item.op,
+          },
+        );
       } catch (_) {}
     }
   }
@@ -1347,7 +1359,9 @@
 
     const hint = q ? "" : `<p class="lt-search-hint">Sugestões</p>`;
     resultsEl.innerHTML =
-      hint + curResults.map((it, i) => rowHtml(it, i)).join("") + escondidosHtml();
+      hint +
+      curResults.map((it, i) => rowHtml(it, i)).join("") +
+      escondidosHtml();
     hookLogos(resultsEl);
     hookEscondidos();
     resultsEl.scrollTop = 0;

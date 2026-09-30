@@ -23,6 +23,7 @@
   // ─── BLOQUEIO: estações já verificadas (nome em maiúsculas) ──────────
   // Acrescentar aqui à medida que forem validadas as restantes.
   const AVAILABLE_STATIONS = [
+    "ROMA AREEIRO",
     "ENTRECAMPOS",
     "SETE RIOS",
     "CAMPOLIDE",

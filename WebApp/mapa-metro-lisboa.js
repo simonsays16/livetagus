@@ -11,8 +11,8 @@
 (function () {
   "use strict";
 
-  const ML_SHAPE_PATH = "/geojson/metro-shape.geojson";
-  const ML_STATIONS_PATH = "/geojson/estacoes-metro.geojson";
+  const ML_SHAPE_PATH = "/data/geojson/metro-shape.geojson";
+  const ML_STATIONS_PATH = "/data/geojson/estacoes-metro.geojson";
 
   // Clicar numa estação abre a sheet de próximas partidas (mapa-gtfs-horarios.js)
   // em vez do popup. O popup fica no ficheiro como fallback: se o módulo não

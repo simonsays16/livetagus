@@ -522,8 +522,11 @@ async function passoCarris() {
       aviso(`${est.nome}: sem entrada no ligacoes_atualizado.json`);
       continue;
     }
-    const chave = ALIAS_CSV[norm(est.nome)] || norm(est.nome);
-    const linhaCsv = csvPorNome.get(chave);
+    // O nome da Fertagus primeiro, o alias a seguir: se a Carris um dia
+    // passar a chamar "Roma-Areeiro" ao "Areeiro", continua a funcionar.
+    const linhaCsv =
+      csvPorNome.get(norm(est.nome)) ||
+      csvPorNome.get(ALIAS_CSV[norm(est.nome)] || "");
     if (!linhaCsv) {
       semCorrespondencia++;
       aviso(

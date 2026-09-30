@@ -2,9 +2,7 @@
  * mapa-cp.js · LiveTagus (mapa)
  * CP — Comboios de Portugal: linhas e estações no mapa.
  *
- * Ao contrário do Metro de Lisboa e do Metro Sul, que usam geojson feitos à mão
- * (/geojson/metro-shape.geojson, /geojson/mts-shape-stops.geojson), aqui TUDO
- * vem do bundle gtfs-departures — é a única fonte:
+ * Fonte do shapes vem dos gtfs:
  *
  *   /data/gtfs/cp-comboios-de-portugal-gtfs-departures/
  *     manifest.json        → mapa de recursos
@@ -20,7 +18,7 @@
  * estão em SHAPE_GROUP e SHAPE_PICK, em baixo.
  *
  * Clicar numa estação abre o painel de partidas (window.GtfsHorarios) com o
- * stop_id directo — o CP não precisa da correspondência por nome que o ML e o
+ * stop_id directo, a CP não precisa da correspondência por nome que o ML e o
  * MTS precisam, porque as estações no mapa SÃO as paragens do GTFS.
  *
  * Visibilidade: registada no botão do olho via window.MapaView.register("cp").
@@ -39,7 +37,7 @@
   const CP_COLOR = "#0075C9"; // cor de marca aproximada (o dot do menu do olho)
 
   // De onde vem a GEOMETRIA das linhas:
-  //   "geojson" → /geojson/cp-lisboa-linhas.geojson: as quatro linhas da região
+  //   "geojson" → /data/geojson/cp-lisboa-linhas.geojson: as quatro linhas da região
   //               de Lisboa desenhadas no OpenStreetMap, já sem as plataformas.
   //               62 KB, e é o âmbito certo para esta app.
   //   "bundle"  → shapes do gtfs-departures. Mantido porque é a única forma de
@@ -47,7 +45,7 @@
   // As ESTAÇÕES vêm sempre do bundle: é lá que estão os stop_id de que o painel
   // de partidas precisa.
   const LINES_SOURCE = "geojson";
-  const LINES_GEOJSON = "/geojson/cp-lisboa-linhas.geojson";
+  const LINES_GEOJSON = "/data/geojson/cp-lisboa-linhas.geojson";
 
   // O geojson cobre só Lisboa e o bundle traz as estações do país inteiro. Sem
   // este filtro ficavam centenas de estações sem linha nenhuma por baixo.
