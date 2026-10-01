@@ -793,16 +793,105 @@ function passoMinifyJson() {
   );
 }
 
+// ─── HTML ───────────────────────────────────────────────────────────────────
+
+const HTML_EXCLUIR_PASTAS = new Set([
+  "node_modules",
+  ".git",
+  ".netlify",
+  "vendor",
+  "resources",
+]);
+const HTML_EXCLUIR_CAMINHOS = ["data/gtfs"];
+const HTML_OPCOES = {
+  collapseWhitespace: true,
+  conservativeCollapse: true,
+  removeComments: true,
+  // defer, async, crossorigin… na forma curta: sem isto saíam como defer="defer".
+  collapseBooleanAttributes: true,
+  minifyCSS: true,
+  minifyJS: false,
+  keepClosingSlash: true,
+  decodeEntities: false,
+};
+
+function listarHtml(dir, out = []) {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (e.name.startsWith(".") && e.isDirectory()) continue;
+    const p = path.join(dir, e.name);
+    const rel = path.relative(RAIZ, p).split(path.sep).join("/");
+    if (e.isDirectory()) {
+      if (HTML_EXCLUIR_PASTAS.has(e.name)) continue;
+      if (
+        HTML_EXCLUIR_CAMINHOS.some((c) => rel === c || rel.startsWith(c + "/"))
+      )
+        continue;
+      listarHtml(p, out);
+    } else if (/\.html?$/i.test(e.name)) {
+      out.push(p);
+    }
+  }
+  return out;
+}
+
+async function passoMinifyHtml() {
+  let minificar;
+  try {
+    ({ minify: minificar } = require("html-minifier-terser"));
+  } catch (_) {
+    falhas.push(
+      "html-minifier-terser não instalado; HTML publicado sem minificar",
+    );
+    aviso(
+      'falta o html-minifier-terser. Acrescenta ao package.json: "devDependencies": { "html-minifier-terser": "7.2.0" }',
+    );
+    return;
+  }
+  const ficheiros = listarHtml(RAIZ);
+  let antes = 0;
+  let depois = 0;
+  let feitos = 0;
+  for (const f of ficheiros) {
+    const rel = path.relative(RAIZ, f);
+    let src;
+    try {
+      src = fs.readFileSync(f, "utf8");
+    } catch (_) {
+      continue;
+    }
+    try {
+      const out = await minificar(src, HTML_OPCOES);
+      if (typeof out !== "string" || !out.length)
+        throw new Error("o minificador não devolveu HTML");
+      if (Buffer.byteLength(out) >= Buffer.byteLength(src)) continue;
+      fs.writeFileSync(f, out);
+      antes += Buffer.byteLength(src);
+      depois += Buffer.byteLength(out);
+      feitos++;
+    } catch (e) {
+      // O ficheiro fica intacto: só se escreve depois de correr bem.
+      aviso(`${rel}: ${(e && e.message) || e} — publicado sem minificar`);
+    }
+  }
+  const kb = (n) => (n / 1024).toFixed(0) + " KB";
+  const pct = antes ? ((1 - depois / antes) * 100).toFixed(0) : "0";
+  log(
+    `  HTML: ${feitos} de ${ficheiros.length} ficheiros · ${kb(antes)} → ${kb(depois)} (−${pct}%)`,
+  );
+}
+
 async function passoMinify() {
-  log("\n[4/4] Minificação de JavaScript e JSON");
+  log("\n[4/4] Minificação de JavaScript, JSON e HTML");
   const noNetlify = process.env.NETLIFY === "true";
   if (!noNetlify && !process.argv.includes("--minify")) {
     log("  saltado fora do Netlify (reescreveria os ficheiros de origem)");
     return true;
   }
 
-  // Primeiro o JSON: não precisa do terser, e não deve depender dele.
+  // Primeiro o JSON e o HTML: não precisam do terser, e não devem depender
+  // dele. O passo 0 já leu o mapa.html original para verificar o MapLibre.
   passoMinifyJson();
+  await passoMinifyHtml();
 
   let terser;
   try {

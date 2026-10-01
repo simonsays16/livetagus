@@ -3,7 +3,7 @@
  * Paragens de autocarro Carris Metropolitana (CM) no mapa, a partir do
  * data/json/ligacoes_atualizado.json (ligações intermodais por estação Fertagus).
  *
- * SÓ aparecem as paragens das estações VERIFICADAS (ver AVAILABLE_STATIONS).
+ * Aparecem as paragens de todas as estações do ficheiro de ligações.
  * Cada paragem (poste) é um marcador; ao clicar abre uma sheet (reaproveita
  * #details-panel/#details-backdrop, igual aos detalhes do mapa) com dois
  * estados — tal como o modal do comboio:
@@ -19,24 +19,6 @@
 
 (function () {
   "use strict";
-
-  // ─── BLOQUEIO: estações já verificadas (nome em maiúsculas) ──────────
-  // Acrescentar aqui à medida que forem validadas as restantes.
-  const AVAILABLE_STATIONS = [
-    "ROMA AREEIRO",
-    "ENTRECAMPOS",
-    "SETE RIOS",
-    "CAMPOLIDE",
-    "PRAGAL",
-    "CORROIOS",
-    "FOROS DE AMORA",
-    "FOGUETEIRO",
-    "COINA",
-    "PENALVA",
-    "VENDA DO ALCAIDE",
-    "PALMELA",
-    "SETUBAL",
-  ];
 
   // ─── CONFIG ──────────────────────────────────────────────────────────
   const CM_API_BASE = "https://api.carrismetropolitana.pt/v2";
@@ -128,32 +110,20 @@
     return ligacoesCache;
   }
 
-  function isStationAllowed(name) {
-    if (!name) return false;
-    const up = String(name)
-      .toUpperCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "");
-    return AVAILABLE_STATIONS.some(
-      (a) =>
-        a
-          .toUpperCase()
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "") === up,
-    );
-  }
-
-  // Constrói features GeoJSON só das estações permitidas e popula stopsById.
+  // Constrói as features GeoJSON de todas as estações e popula stopsById.
   function buildFeatures(data) {
     stopsById.clear();
     const features = [];
     for (const key in data) {
       if (key === "operador") continue;
       const station = data[key];
-      if (!station || !isStationAllowed(station.name)) continue;
+      if (!station) continue;
       const cm = (station.ligacoes && station.ligacoes.cm) || [];
       for (const stop of cm) {
         if (!stop || !stop.id || !Array.isArray(stop.location)) continue;
+        // Uma paragem que sirva duas estações entra uma vez: senão ficavam
+        // dois marcadores um em cima do outro.
+        if (stopsById.has(String(stop.id))) continue;
         const [lat, lng] = stop.location;
         if (typeof lat !== "number" || typeof lng !== "number") continue;
         const entry = {
@@ -1038,8 +1008,7 @@
     return !!currentStop || !!hub;
   }
 
-  // Paragens verificadas já indexadas (após init) — usado pela pesquisa
-  // (mapa-search.js) para não duplicar o gate AVAILABLE_STATIONS.
+  // Paragens já indexadas (após init) — usado pela pesquisa (mapa-search.js).
   function getStops() {
     return Array.from(stopsById.values());
   }
