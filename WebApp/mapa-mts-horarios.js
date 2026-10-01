@@ -20,7 +20,7 @@
   "use strict";
 
   const DATA_URL = "/json/mts-horarios.json";
-  const LOGO = "/imagens/lig-logos/mts.svg";
+  const LOGO = "/assets/img/logos/mts.png";
   const SHOW = 14; // nº de partidas a mostrar
   let SCH = null; // schedule carregado
   let loading = null; // promessa de fetch

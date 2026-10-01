@@ -58,40 +58,40 @@
       label: "Guardadas",
       dot: "#FFDD00",
       glyph: "bus",
-      logo: "/imagens/lig-logos/cm-light.svg",
-      logoDark: "/imagens/lig-logos/cm-dark.svg",
+      logo: "/assets/img/logos/cm-light.svg",
+      logoDark: "/assets/img/logos/cm-dark.svg",
       star: true,
     },
     fertagus: {
       label: "Fertagus",
       dot: "#7c3aed",
       glyph: "rail",
-      logo: "/imagens/lig-logos/fertagus.png",
+      logo: "/assets/img/logos/fertagus.png",
     },
     ml: {
       label: "Metro Lisboa",
       dot: "#e2231a",
       glyph: "metro",
-      logo: "/imagens/lig-logos/metro.svg",
+      logo: "/assets/img/logos/metro.png",
     },
     mts: {
       label: "Metro Sul",
       dot: "#6cc24a",
       glyph: "metro",
-      logo: "/imagens/lig-logos/mts.svg",
+      logo: "/assets/img/logos/mts.png",
     },
     cp: {
       label: "CP",
       dot: "#0075C9",
       glyph: "rail",
-      logo: "/imagens/lig-logos/cp.svg",
+      logo: "/assets/img/logos/cp.png",
     },
     cm: {
       label: "Carris Metropolitana",
       dot: "#f5b700",
       glyph: "bus",
-      logo: "/imagens/lig-logos/cm-light.svg",
-      logoDark: "/imagens/lig-logos/cm-dark.svg",
+      logo: "/assets/img/logos/cm-light.svg",
+      logoDark: "/assets/img/logos/cm-dark.svg",
     },
   };
   // As guardadas são do utilizador → primeiro nas sugestões.
@@ -164,6 +164,7 @@
     html.dark .lt-search-btn:hover { box-shadow: 0 4px 16px rgba(0,0,0,.5); }
     .lt-search-btn:active { transform: scale(.94); }
     .lt-search-btn svg { width: 1.15rem; height: 1.15rem; }
+    .lt-search-btn png { width: 1.15rem; height: 1.15rem; }
 
     /* Overlay */
     .lt-search-overlay {
@@ -233,6 +234,7 @@
     .lt-search-field.is-focus { border-color: #18181b; background: #fff; }
     html.dark .lt-search-field.is-focus { border-color: #fff; background: #09090b; }
     .lt-search-field > svg { width: 1.05rem; height: 1.05rem; color: #a1a1aa; flex-shrink: 0; }
+    .lt-search-field > png { width: 1.05rem; height: 1.05rem; color: #a1a1aa; flex-shrink: 0; }
     .lt-search-input {
       flex: 1; min-width: 0; border: 0; outline: 0; background: transparent;
       font-family: inherit; font-size: 16px; color: #18181b;
@@ -248,6 +250,7 @@
     html.dark .lt-search-clear { background: rgba(255,255,255,.1); color: #d4d4d8; }
     .lt-search-clear.is-on { display: inline-flex; }
     .lt-search-clear svg { width: .7rem; height: .7rem; }
+    .lt-search-clear png { width: .7rem; height: .7rem; }
     .lt-search-cancel {
       border: 0; background: transparent; cursor: pointer; padding: .25rem .25rem;
       font-family: inherit; font-size: 11px; font-weight: 700; letter-spacing: .12em;
@@ -304,6 +307,7 @@
     }
     /* Sem esta regra o SVG assumia o tamanho por omissão e esticava o chip. */
     .lt-chip .lt-chip-star svg { width: 100%; height: 100%; display: block; }
+    .lt-chip .lt-chip-star png { width: 100%; height: 100%; display: block; }
     /* Anel de foco por dentro: um outline por fora era recortado pelo
        overflow da linha. */
     .lt-chip:focus-visible { outline: 2px solid #3b82f6; outline-offset: -3px; }

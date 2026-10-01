@@ -43,7 +43,7 @@
   // ═══════════════════════════════════════════════════════════════════
 
   const BUNDLE_BASE = "/data/gtfs";
-  const LOGO_DIR = "/imagens/lig-logos";
+  const LOGO_DIR = "/assets/img/logos";
   const SHOW = 14; // nº de partidas listadas
   const TICK_MS = 30000; // recálculo dos contadores
 
@@ -57,9 +57,9 @@
   // Nome da agência → ficheiro do logótipo. A chave é o slug do nome que vem
   // no manifest, por isso um operador novo só precisa de uma linha aqui.
   const LOGO_ALIASES = {
-    "metro-transportes-do-sul": "mts.svg",
-    "metropolitano-de-lisboa-e-p-e": "metro.svg",
-    "cp-comboios-de-portugal": "cp.svg",
+    "metro-transportes-do-sul": "mts.png",
+    "metropolitano-de-lisboa-e-p-e": "metro.png",
+    "cp-comboios-de-portugal": "cp.png",
     fertagus: "fertagus.png",
   };
 
@@ -70,7 +70,7 @@
   // estações não são iguais aos da Fertagus (Jardim Zoológico é Sete Rios, e
   // Roma e Areeiro são duas estações de metro para uma só da Fertagus).
   const LIGACOES_JSON = "/data/json/ligacoes_atualizado.json";
-  const FERTAGUS_LOGO = "/imagens/lig-logos/fertagus.png";
+  const FERTAGUS_LOGO = "/assets/img/logos/fertagus.png";
   const LINK_BY_NAME = {
     mts: {
       pragal: "9417087",
@@ -326,13 +326,13 @@
     const slug = slugify(agencyName);
     if (LOGO_ALIASES[slug]) return `${LOGO_DIR}/${LOGO_ALIASES[slug]}`;
     if (slug.indexOf("sul") !== -1 && slug.indexOf("metro") !== -1)
-      return `${LOGO_DIR}/mts.svg`;
+      return `${LOGO_DIR}/mts.png`;
     if (
       slug.indexOf("metropolitano") !== -1 ||
       slug.indexOf("metro-de-lisboa") !== -1
     )
-      return `${LOGO_DIR}/metro.svg`;
-    return `${LOGO_DIR}/${slug}.svg`; // palpite; o onerror esconde se não existir
+      return `${LOGO_DIR}/metro.png`;
+    return `${LOGO_DIR}/${slug}.png`; // palpite; o onerror esconde se não existir
   }
 
   function loadBundle(op) {
@@ -785,6 +785,7 @@
     .ltg-back:hover{color:rgb(9 9 11);}
     html.dark .ltg-back:hover{color:#fff;}
     .ltg-back svg{width:13px;height:13px;}
+    .ltg-back png{width:13px;height:13px;}
     /* Trilho da viagem: a sequência é a informação, por isso é desenhada. */
     .ltg-rail{position:relative;width:14px;flex-shrink:0;align-self:stretch;
       display:flex;align-items:center;justify-content:center;}
@@ -1710,7 +1711,7 @@
               bundle: {
                 op: station.op,
                 agencyName: OPERATORS[station.op].label,
-                logo: `${LOGO_DIR}/${OPERATORS[station.op].slug}.svg`,
+                logo: `${LOGO_DIR}/${OPERATORS[station.op].slug}.png`,
                 routes: new Map(),
                 calendar: {},
                 feedDate: "",

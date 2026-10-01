@@ -513,7 +513,7 @@
   // Diâmetros idênticos aos do círculo anterior (raio 3/5/8 → 6/10/16 px). Se
   // o logótipo não carregar, volta ao círculo.
   const STATION_ICON = "ml-logo-icon";
-  const STATION_LOGO = "/imagens/lig-logos/metro.svg";
+  const STATION_LOGO = "/assets/img/logos/metro.png";
   // Hierarquia de tamanhos no mapa (diâmetro em px). A Fertagus é sempre a
   // maior — é a razão de ser da app e tem de ter destaque:
   //   zoom        8    12    15    18
@@ -794,7 +794,7 @@
           <div class="zara-top-bar" style="${gradient}"></div>
           <div class="zara-content">
             <div class="zara-icon-wrapper">
-              <img class="zara-icon" src="/imagens/lig-logos/metro.svg" alt="Metro" onerror="this.style.display='none'">
+              <img class="zara-icon" src="/assets/img/logos/metro.png" alt="Metro" onerror="this.style.display='none'">
             </div>
             <div class="zara-text">
               <h3 class="zara-title">${name}</h3>

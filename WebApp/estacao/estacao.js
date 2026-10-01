@@ -457,10 +457,10 @@
       let logoImg = "";
       if (op.key === "cm") {
         logoImg = `
-          <img src="/imagens/lig-logos/cm-light.svg" alt="Logo ${escapeHtml(op.label)}" class="w-4 h-4 object-contain shrink-0 cm-light" />
-          <img src="/imagens/lig-logos/cm-dark.svg" alt="Logo ${escapeHtml(op.label)}" class="w-4 h-4 object-contain shrink-0 cm-dark" />`;
+          <img src="/assets/img/logos/cm-light.svg" alt="Logo ${escapeHtml(op.label)}" class="w-4 h-4 object-contain shrink-0 cm-light" />
+          <img src="/assets/img/logos/cm-dark.svg" alt="Logo ${escapeHtml(op.label)}" class="w-4 h-4 object-contain shrink-0 cm-dark" />`;
       } else {
-        logoImg = `<img src="/imagens/lig-logos/${escapeHtml(op.key)}.svg" alt="Logo ${escapeHtml(op.label)}" class="w-4 h-4 object-contain shrink-0" />`;
+        logoImg = `<img src="/assets/img/logos/${escapeHtml(op.key)}.png" alt="Logo ${escapeHtml(op.label)}" class="w-4 h-4 object-contain shrink-0" />`;
       }
 
       html += `

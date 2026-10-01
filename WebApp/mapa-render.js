@@ -1281,7 +1281,7 @@
   }
 
   const FERTAGUS_ICON = "fertagus-logo-icon";
-  const FERTAGUS_LOGO = "/imagens/lig-logos/fertagus.png";
+  const FERTAGUS_LOGO = "/assets/img/logos/fertagus.png";
   let fertagusIconReady = false;
 
   // ─── SELO DA CP NAS ESTAÇÕES PARTILHADAS ─────────────────────────────
@@ -1290,7 +1290,7 @@
   // — caso contrário anunciava um operador que não está no mapa.
   // O clique continua a abrir a Fertagus: o selo é informação, não um atalho.
   const CP_BADGE_ICON = "cp-badge-icon";
-  const CP_BADGE_LOGO = "/imagens/lig-logos/cp.svg";
+  const CP_BADGE_LOGO = "/assets/img/logos/cp.png";
   const CP_BADGE_LAYER = "fertagus-cp-badge";
   const CP_BADGE_MINZOOM = 13; // igual ao dos restantes intermodais
 

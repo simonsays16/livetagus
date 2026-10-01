@@ -149,7 +149,7 @@
   // exactamente os de antes (raio 3/5/8 → 6/10/16 px), e se o logótipo não
   // carregar mantém-se o círculo, para o mapa nunca ficar sem estações.
   const STATION_ICON = "mts-logo-icon";
-  const STATION_LOGO = "/imagens/lig-logos/mts.svg";
+  const STATION_LOGO = "/assets/img/logos/mts.png";
   // Hierarquia de tamanhos no mapa (diâmetro em px). A Fertagus é sempre a
   // maior — é a razão de ser da app e tem de ter destaque:
   //   zoom        8    12    15    18

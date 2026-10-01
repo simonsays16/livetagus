@@ -128,11 +128,11 @@
   const passadasAbertas = new Set();
 
   const LIG_LOGO = {
-    ml: { src: "/imagens/lig-logos/metro.svg", nome: "Metro de Lisboa" },
-    mts: { src: "/imagens/lig-logos/mts.svg", nome: "Metro Sul do Tejo" },
-    cp: { src: "/imagens/lig-logos/cp.svg", nome: "CP" },
+    ml: { src: "/assets/img/logos/metro.png", nome: "Metro de Lisboa" },
+    mts: { src: "/assets/img/logos/mts.png", nome: "Metro Sul do Tejo" },
+    cp: { src: "/assets/img/logos/cp.png", nome: "CP" },
     cm: {
-      src: "/imagens/lig-logos/cm-light.svg",
+      src: "/assets/img/logos/cm-light.svg",
       nome: "Carris Metropolitana",
     },
   };

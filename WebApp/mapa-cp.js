@@ -324,7 +324,7 @@
           getJSON(`${BUNDLE}/${res.stops_index || "stops/index.json"}`),
           // Os ícones entram na mesma espera, para o addLayers já saber se os
           // pode usar. São dois: fundo branco e fundo verde (seleccionada). Se
-          // o /imagens/lig-logos/cp.svg não existir, fica o círculo.
+          // o /assets/img/logos/cp.png não existir, fica o círculo.
           ensureIcons(),
         ]).then(async ([routes, shapeIndex, stopsIndex, hasIcon]) => {
           iconReady = !!hasIcon;
@@ -462,7 +462,7 @@
   // Diâmetros idênticos aos do círculo anterior (raio 2,5/3,5/5/8 →
   // 5/7/10/16 px). Sem logótipo, mantém-se o círculo.
   const STATION_ICON = "cp-logo-icon";
-  const STATION_LOGO = "/imagens/lig-logos/cp.svg";
+  const STATION_LOGO = "/assets/img/logos/cp.png";
   // Hierarquia de tamanhos no mapa (diâmetro em px). A Fertagus é sempre a
   // maior — é a razão de ser da app e tem de ter destaque:
   //   zoom        8    12    15    18

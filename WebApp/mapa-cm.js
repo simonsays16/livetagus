@@ -47,8 +47,8 @@
 
   const SRC_ID = "cm-stops";
   const LAYER_ID = "cm-stops-layer";
-  const CM_LOGO_LIGHT = "/imagens/lig-logos/cm-light.svg";
-  const CM_LOGO_DARK = "/imagens/lig-logos/cm-dark.svg";
+  const CM_LOGO_LIGHT = "/assets/img/logos/cm-light.svg";
+  const CM_LOGO_DARK = "/assets/img/logos/cm-dark.svg";
   const CM_MARKER_COLOR = "#FFDD00";
   const CM_SELECTED_COLOR = "#22C55E"; // paragem selecionada (destaque)
 
@@ -231,7 +231,7 @@
   // aparecem a qualquer zoom — são as do utilizador.
   const STOPS_MINZOOM = 13;
   const STOP_ICON = "cm-logo-icon";
-  const STOP_LOGO = "/imagens/lig-logos/cm-light.svg";
+  const STOP_LOGO = "/assets/img/logos/cm-light.svg";
   const STOP_FADE = ["interpolate", ["linear"], ["zoom"], 13, 0.55, 15, 1];
   const STOP_ICON_SEL = STOP_ICON + "-sel";
   let stopIconReady = false;
@@ -1606,10 +1606,10 @@
   };
 
   const LIG_PERCURSO = {
-    fertagus: { src: "/imagens/lig-logos/fertagus.png", nome: "Fertagus" },
-    ml: { src: "/imagens/lig-logos/metro.svg", nome: "Metro de Lisboa" },
-    mts: { src: "/imagens/lig-logos/mts.svg", nome: "Metro Sul do Tejo" },
-    cp: { src: "/imagens/lig-logos/cp.svg", nome: "CP" },
+    fertagus: { src: "/assets/img/logos/fertagus.png", nome: "Fertagus" },
+    ml: { src: "/assets/img/logos/metro.png", nome: "Metro de Lisboa" },
+    mts: { src: "/assets/img/logos/mts.png", nome: "Metro Sul do Tejo" },
+    cp: { src: "/assets/img/logos/cp.png", nome: "CP" },
   };
 
   // Ligações de uma paragem do percurso: só se for uma paragem de estação.

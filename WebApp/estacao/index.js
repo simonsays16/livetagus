@@ -131,11 +131,11 @@
           .map((op) => {
             if (op === "cm") {
               return `
-              <img src="/imagens/lig-logos/cm-light.svg" alt="${escapeHtml(op)}" class="w-5 h-5 object-contain cm-light" />
-              <img src="/imagens/lig-logos/cm-dark.svg" alt="${escapeHtml(op)}" class="w-5 h-5 object-contain cm-dark" />
+              <img src="/assets/img/logos/cm-light.svg" alt="${escapeHtml(op)}" class="w-5 h-5 object-contain cm-light" />
+              <img src="/assets/img/logos/cm-dark.svg" alt="${escapeHtml(op)}" class="w-5 h-5 object-contain cm-dark" />
             `;
             }
-            return `<img src="/imagens/lig-logos/${escapeHtml(op)}.svg" alt="${escapeHtml(op)}" class="w-5 h-5 object-contain" />`;
+            return `<img src="/assets/img/logos/${escapeHtml(op)}.png" alt="${escapeHtml(op)}" class="w-5 h-5 object-contain" />`;
           })
           .join("");
 

@@ -147,19 +147,19 @@
   // Um tipo sem logótipo conhecido simplesmente não aparece; e se o ficheiro
   // não existir, a imagem é removida (ver bindLigacaoLogos).
   const LIG_LOGOS = {
-    metro: { src: "/imagens/lig-logos/metro.svg", nome: "Metro de Lisboa" },
-    mts: { src: "/imagens/lig-logos/mts.svg", nome: "Metro Sul do Tejo" },
-    cp: { src: "/imagens/lig-logos/cp.svg", nome: "CP" },
+    metro: { src: "/assets/img/logos/metro.png", nome: "Metro de Lisboa" },
+    mts: { src: "/assets/img/logos/mts.png", nome: "Metro Sul do Tejo" },
+    cp: { src: "/assets/img/logos/cp.png", nome: "CP" },
     cm: {
-      src: "/imagens/lig-logos/cm-light.svg",
+      src: "/assets/img/logos/cm-light.svg",
       nome: "Carris Metropolitana",
     },
-    carris: { src: "/imagens/lig-logos/carris.svg", nome: "Carris" },
+    carris: { src: "/assets/img/logos/carris.png", nome: "Carris" },
     re: {
-      src: "/imagens/lig-logos/rede-expressos.svg",
+      src: "/assets/img/logos/re.png",
       nome: "Rede Expressos",
     },
-    tcb: { src: "/imagens/lig-logos/tcb.svg", nome: "TCB" },
+    tcb: { src: "/assets/img/logos/tcb.png", nome: "TCB" },
   };
 
   let ligacoesPorEstacao = null; // Map(chaveEstacao → ["metro","cm",…])

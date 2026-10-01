@@ -54,7 +54,7 @@
   // Nas estações que a Fertagus partilha com a CP, um botão ao lado da cruz
   // para saltar para o painel da CP. O cruzamento vem do mapa-gtfs-horarios.js,
   // que já cruza o ligacoes.json com as estações da CP desenhadas no mapa.
-  const CP_LOGO = "/imagens/lig-logos/cp.svg";
+  const CP_LOGO = "/assets/img/logos/cp.png";
 
   function cpStationFor(station) {
     if (!station || !window.GtfsHorarios || !window.GtfsHorarios.cpStationFor)
@@ -139,7 +139,7 @@
           </button>
 
           <div class="flex items-center gap-2 mb-3">
-            <img src="./imagens/lig-logos/fertagus.png" alt="MTS" class="w-5 h-5 object-contain" onerror="this.style.display='none'">
+            <img src="./assets/img/logos/fertagus.png" alt="MTS" class="w-5 h-5 object-contain" onerror="this.style.display='none'">
             <span class="text-[9px] font-bold tracking-[0.3em] uppercase text-blue-600 dark:text-blue-400">Fertagus</span>
             <span class="h-px flex-1 max-w-16 bg-zinc-200 dark:bg-zinc-800"></span>
           </div>
