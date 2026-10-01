@@ -628,13 +628,181 @@ function listarJs(dir) {
   return out;
 }
 
+// ─── JSON E GEOJSON ─────────────────────────────────────────────────────────
+//
+// Minificar JSON quase não rende (os espaços desaparecem na compressão do
+// Netlify: medido, −5% no total). O ganho a sério está nos GeoJSON:
+//   - Coordenadas com 15+ casas decimais — precisão ao nível do átomo, e
+//     números aleatórios que a compressão não consegue apertar. 6 casas são
+//     cerca de 10 cm, muito mais do que o mapa precisa. Medido: −31% no total
+//     comprimido, e −67% na linha da Fertagus. Só dentro de
+//     geometry.coordinates: um número nas propriedades nunca é tocado.
+//   - Propriedades começadas por "@" (@id, @relations…): metadados da
+//     exportação do OpenStreetMap. Nenhum módulo as lê.
+//   - Pontos que, sem essas propriedades, ficam vazios, num ficheiro com
+//     linhas: são as paragens que a exportação de uma rota traz agarradas
+//     (56 no metro-shape.geojson). Os pontos com dados — estações — ficam.
+//
+// O data/gtfs fica de fora: o gtfs-departures já o escreve minificado, e são
+// milhares de ficheiros que só atrasavam o build.
+const JSON_EXCLUIR_PASTAS = new Set([
+  "node_modules",
+  ".git",
+  ".netlify",
+  "vendor",
+  "resources",
+]);
+const JSON_EXCLUIR_CAMINHOS = ["data/gtfs"];
+const JSON_EXCLUIR_FICHEIROS = new Set(["package.json", "package-lock.json"]);
+const CASAS_DECIMAIS = 6; // ≈ 10 cm
+
+function listarJson(dir, out = []) {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (e.name.startsWith(".") && e.isDirectory()) continue;
+    const p = path.join(dir, e.name);
+    const rel = path.relative(RAIZ, p).split(path.sep).join("/");
+    if (e.isDirectory()) {
+      if (JSON_EXCLUIR_PASTAS.has(e.name)) continue;
+      if (
+        JSON_EXCLUIR_CAMINHOS.some((c) => rel === c || rel.startsWith(c + "/"))
+      )
+        continue;
+      listarJson(p, out);
+    } else if (
+      /\.(geo)?json$/i.test(e.name) &&
+      !JSON_EXCLUIR_FICHEIROS.has(e.name)
+    ) {
+      out.push(p);
+    }
+  }
+  return out;
+}
+
+function eGeojson(d) {
+  return (
+    !!d &&
+    typeof d === "object" &&
+    (d.type === "FeatureCollection" ||
+      d.type === "Feature" ||
+      (typeof d.type === "string" &&
+        (Array.isArray(d.coordinates) || Array.isArray(d.geometries))))
+  );
+}
+
+function arredondarCoords(c) {
+  if (Array.isArray(c)) return c.map(arredondarCoords);
+  if (typeof c === "number" && !Number.isInteger(c))
+    return +c.toFixed(CASAS_DECIMAIS);
+  return c;
+}
+
+function limparGeometria(g) {
+  if (!g || typeof g !== "object") return;
+  if (g.type === "GeometryCollection")
+    (g.geometries || []).forEach(limparGeometria);
+  else if (Array.isArray(g.coordinates))
+    g.coordinates = arredondarCoords(g.coordinates);
+}
+
+// Altera `d` no sítio e devolve o que fez, para o log.
+function limparGeojson(d) {
+  let arrobas = 0;
+  let pontos = 0;
+  const limparFeature = (f) => {
+    if (!f || typeof f !== "object") return;
+    limparGeometria(f.geometry);
+    if (f.properties && typeof f.properties === "object") {
+      for (const k of Object.keys(f.properties)) {
+        if (k.startsWith("@")) {
+          delete f.properties[k];
+          arrobas++;
+        }
+      }
+    }
+  };
+  if (d.type === "FeatureCollection" && Array.isArray(d.features)) {
+    d.features.forEach(limparFeature);
+    const temLinhas = d.features.some(
+      (f) => f && f.geometry && /LineString$/.test(f.geometry.type || ""),
+    );
+    if (temLinhas) {
+      const antes = d.features.length;
+      d.features = d.features.filter(
+        (f) =>
+          !(
+            f &&
+            f.geometry &&
+            f.geometry.type === "Point" &&
+            (!f.properties || !Object.keys(f.properties).length)
+          ),
+      );
+      pontos = antes - d.features.length;
+    }
+  } else if (d.type === "Feature") {
+    limparFeature(d);
+  } else {
+    limparGeometria(d);
+  }
+  return { arrobas, pontos };
+}
+
+function passoMinifyJson() {
+  const ficheiros = listarJson(RAIZ);
+  let antes = 0;
+  let depois = 0;
+  let feitos = 0;
+  let geo = 0;
+  let arrobas = 0;
+  let pontos = 0;
+  for (const f of ficheiros) {
+    const rel = path.relative(RAIZ, f);
+    let src;
+    try {
+      src = fs.readFileSync(f, "utf8");
+    } catch (_) {
+      continue;
+    }
+    let d;
+    try {
+      d = JSON.parse(src.replace(/^\uFEFF/, ""));
+    } catch (e) {
+      // Um JSON partido já estava partido: fica como está, com aviso.
+      aviso(`${rel}: JSON inválido — publicado como está`);
+      continue;
+    }
+    if (eGeojson(d)) {
+      const r = limparGeojson(d);
+      geo++;
+      arrobas += r.arrobas;
+      pontos += r.pontos;
+    }
+    const out = JSON.stringify(d);
+    if (Buffer.byteLength(out) >= Buffer.byteLength(src)) continue;
+    fs.writeFileSync(f, out);
+    antes += Buffer.byteLength(src);
+    depois += Buffer.byteLength(out);
+    feitos++;
+  }
+  const kb = (n) => (n / 1024).toFixed(0) + " KB";
+  const pct = antes ? ((1 - depois / antes) * 100).toFixed(0) : "0";
+  log(
+    `  JSON: ${feitos} de ${ficheiros.length} ficheiros · ${kb(antes)} → ${kb(depois)} (−${pct}%)` +
+      (geo ? ` · ${geo} GeoJSON: coordenadas a ${CASAS_DECIMAIS} casas` : "") +
+      (arrobas ? `, ${arrobas} propriedades "@" do OSM` : "") +
+      (pontos ? `, ${pontos} pontos vazios` : ""),
+  );
+}
+
 async function passoMinify() {
-  log("\n[4/4] Minificação de JavaScript");
+  log("\n[4/4] Minificação de JavaScript e JSON");
   const noNetlify = process.env.NETLIFY === "true";
   if (!noNetlify && !process.argv.includes("--minify")) {
     log("  saltado fora do Netlify (reescreveria os ficheiros de origem)");
     return true;
   }
+
+  // Primeiro o JSON: não precisa do terser, e não deve depender dele.
+  passoMinifyJson();
 
   let terser;
   try {
@@ -692,7 +860,7 @@ async function passoMinify() {
   const kb = (n) => (n / 1024).toFixed(0) + " KB";
   const pct = antes ? ((1 - depois / antes) * 100).toFixed(0) : "0";
   log(
-    `  ${feitos} de ${ficheiros.length} ficheiros · ${kb(antes)} → ${kb(depois)} (−${pct}%)` +
+    `  JS: ${feitos} de ${ficheiros.length} ficheiros · ${kb(antes)} → ${kb(depois)} (−${pct}%)` +
       (falhados ? ` · ${falhados} ficaram por minificar` : ""),
   );
   if (falhados) falhas.push(`${falhados} ficheiro(s) JS não minificado(s)`);
