@@ -24,7 +24,7 @@
   const CFG = {
     brand: "#10b981", // cor da marca (Emerald). Azul: "#3b82f6"
     glow: "rgba(16,185,129,.55)", // halo/glow da marca
-    frontSrc: "/imagens/front_fertagus.svg", // frente do comboio
+    frontSrc: "/assets/img/front_fertagus.webp", // frente do comboio
     trainSize: 40, // px — comboio (desktop)
     trainSizeMobile: 20, // px — comboio (mobile, mais pequeno)
     railLineGap: 15, // px — distância entre os dois carris (desktop)

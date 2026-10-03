@@ -1,10 +1,10 @@
 // --- BEGIN VERSIONS ---
-const GLOBAL_VERSION = "livetagus-v.rc9.30092026";
+const GLOBAL_VERSION = "livetagus-v.rc2.03102026";
 const ASSETS_VERSIONS = {
   "./index.html": "v.rc2.30092026",
   "./index.js": "v.rc3.21062026",
   "./index-home.js": "v.rc1.22062026",
-  "./home-map.js": "v.rc6.22062026",
+  "./home-map.js": "v.rc1.03102026",
   "./app.html": "v.rc2.30092026",
   "./app-alerts.js": "v.rc3.13062026",
   "./app-config.js": "v.rc2.13092026",
@@ -23,15 +23,13 @@ const ASSETS_VERSIONS = {
   "./horarios.js": "v.rc1.24052026",
   "./privacidade.html": "v.rc3.30092026",
   "./tabs.js": "v.rc1.24052026",
-  "./train-scrollbar.js": "v.rc3.22062026",
+  "./train-scrollbar.js": "v.rc1.03102026",
   "./output.css": "v.rc12.12092026",
   "./assets/fonts/fonts.css": "v.rc1.30092026",
   "./assets/fonts/inter-normal-variavel-v20-latin.woff2": "v.rc1.30092026",
   "./assets/fonts/inter-normal-variavel-v20-latin-ext.woff2": "v.rc1.30092026",
-  "./assets/fonts/jetbrains-mono-normal-variavel-v24-latin.woff2":
-    "v.rc1.30092026",
-  "./assets/fonts/jetbrains-mono-normal-variavel-v24-latin-ext.woff2":
-    "v.rc1.30092026",
+  "./assets/fonts/jetbrains-mono-normal-variavel-v24-latin.woff2": "v.rc1.30092026",
+  "./assets/fonts/jetbrains-mono-normal-variavel-v24-latin-ext.woff2": "v.rc1.30092026",
   "./menu.js": "v.rc1.28092026",
   "./nav-tools.js": "v.rc9.08062026",
   "./offline.js": "v.rc1.24052026",
@@ -43,7 +41,7 @@ const ASSETS_VERSIONS = {
   "./imagens/netlify-light.svg": "v.rc1.24052026",
   "./json/fertagus_sentido_lisboa.json": "v.rc1.24052026",
   "./json/fertagus_sentido_margem.json": "v.rc1.24052026",
-  "./json/feriados.json": "v.rc1.24052026",
+  "./json/feriados.json": "v.rc1.24052026"
 };
 // --- END VERSIONS ---
 

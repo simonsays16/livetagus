@@ -1828,7 +1828,7 @@
       </svg>`;
 
     const frontSvg = `
-      <img src="./imagens/front_fertagus.svg" class="train-front-img" alt="" aria-hidden="true"
+      <img src="/assets/img/front_fertagus.webp" class="train-front-img" alt="" aria-hidden="true"
            data-front-img="1" />
     `;
 

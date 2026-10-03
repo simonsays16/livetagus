@@ -36,7 +36,7 @@
     ],
     brand: "#10b981",
     glow: "rgba(16,185,129,.55)",
-    frontSrc: "/imagens/front_fertagus.svg", // frente do comboio (igual ao mapa)
+    frontSrc: "/assets/img/front_fertagus.webp", // frente do comboio (igual ao mapa)
     markerSize: 34, // px — tamanho do disco (40 no mapa; um pouco menor no card)
     redirect: "/mapa",
   };
