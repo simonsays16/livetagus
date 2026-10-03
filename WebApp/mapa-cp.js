@@ -2,14 +2,18 @@
  * mapa-cp.js · LiveTagus (mapa)
  * CP — Comboios de Portugal: linhas e estações no mapa.
  *
- * Fonte do shapes vem dos gtfs:
+ * ESTAÇÕES: sempre de /data/geojson/cp-stations.geojson, já filtradas e
+ * agrupadas. O índice de paragens do GTFS não é carregado aqui — o painel das
+ * partidas carrega-o quando se abre a primeira estação, e guarda-o.
+ *
+ * LINHAS: do /data/geojson/cp-lisboa-linhas.geojson ou, no modo "bundle", das
+ * shapes do gtfs-departures:
  *
  *   /data/gtfs/cp-comboios-de-portugal-gtfs-departures/
  *     manifest.json        → mapa de recursos
  *     routes.json          → cor, nome e tipo de cada linha
  *     shapes/index.json    → geometrias, com route_ids e bbox por shape
  *     shapes/<id>.json     → FeatureCollection com um LineString
- *     stops/index.json     → estações servidas, com coordenadas
  *
  * UMA GEOMETRIA POR LINHA. Um feed nacional tem dezenas de variantes por linha
  * (reforços, comboios que ficam a meio, desvios) e desenhá-las todas dava um
@@ -20,6 +24,9 @@
  * Clicar numa estação abre o painel de partidas (window.GtfsHorarios) com o
  * stop_id directo, a CP não precisa da correspondência por nome que o ML e o
  * MTS precisam, porque as estações no mapa SÃO as paragens do GTFS.
+ *
+ * Arranque leve (LINES_SOURCE = "geojson"): só /data/geojson/cp-lisboa-linhas
+ * e /data/geojson/cp-stations. O GTFS fica para quando se abre uma estação.
  *
  * Visibilidade: registada no botão do olho via window.MapaView.register("cp").
  * Os dados só são descarregados quando a camada está visível.
@@ -42,18 +49,11 @@
   //               62 KB, e é o âmbito certo para esta app.
   //   "bundle"  → shapes do gtfs-departures. Mantido porque é a única forma de
   //               ter a rede nacional, mas dá ~184 geometrias e muitos MB.
-  // As ESTAÇÕES vêm sempre do bundle: é lá que estão os stop_id de que o painel
-  // de partidas precisa.
+  // As ESTAÇÕES vêm sempre do STATIONS_FILE, já filtradas e agrupadas: nada
+  // do GTFS no arranque (eram três pedidos e um índice de 165 KB).
   const LINES_SOURCE = "geojson";
   const LINES_GEOJSON = "/data/geojson/cp-lisboa-linhas.geojson";
-
-  // O geojson cobre só Lisboa e o bundle traz as estações do país inteiro. Sem
-  // este filtro ficavam centenas de estações sem linha nenhuma por baixo.
-  const FILTER_STATIONS_TO_LINES = true;
-  // Folgado de propósito: o ponto de uma estação no GTFS está muitas vezes na
-  // entrada do edifício e não sobre a via. Incluir uma estação a mais é
-  // inofensivo; fazer desaparecer uma verdadeira em silêncio não é.
-  const STATION_MAX_DIST_M = 800;
+  const STATIONS_FILE = "/data/geojson/cp-stations.geojson";
 
   // Como agrupar as geometrias antes de escolher uma:
   //   "route"       → uma por route_id do GTFS. Atenção: num feed nacional
@@ -62,7 +62,6 @@
   //   "route_name"  → uma por nome de linha (Norte, Sado, Azambuja…). É o que
   //                   corresponde a "uma de cada tipo" no sentido humano.
   //   "route_type"  → uma por tipo de serviço (urbano, regional, longo curso).
-  // O módulo escreve na consola quantas geometrias daria cada modo.
   const SHAPE_GROUP = "route";
   // Qual escolher dentro do grupo:
   //   "longest" → a de maior extensão (bbox), representa a linha inteira
@@ -266,28 +265,6 @@
   // Distância ponto→conjunto de linhas, em metros. Só serve para decidir se uma
   // estação fica perto de algum traçado, por isso basta a distância aos
   // vértices — não é preciso projectar nos segmentos.
-  function distToLines(lon, lat, features, step) {
-    const R = 6371000,
-      rad = Math.PI / 180;
-    const cosLat = Math.cos(lat * rad);
-    let best = Infinity;
-    for (const f of features) {
-      const parts =
-        f.geometry.type === "MultiLineString"
-          ? f.geometry.coordinates
-          : [f.geometry.coordinates];
-      for (const ls of parts) {
-        for (let i = 0; i < ls.length; i += step) {
-          const dx = (ls[i][0] - lon) * cosLat * rad * R;
-          const dy = (ls[i][1] - lat) * rad * R;
-          const d = dx * dx + dy * dy;
-          if (d < best) best = d;
-        }
-      }
-    }
-    return Math.sqrt(best);
-  }
-
   function loadGeojsonLines() {
     return getJSON(LINES_GEOJSON).then((gj) => {
       const feats = ((gj && gj.features) || []).filter(
@@ -308,150 +285,108 @@
     });
   }
 
+  // ── Estações: sempre do cp-stations.geojson ──
+  // Aceita a lista que o getStations() devolve ({stop_id, name, lines, lat,
+  // lng}) ou um GeoJSON de pontos com essas propriedades.
+  function lerEstacoes(dados) {
+    const brutas = Array.isArray(dados)
+      ? dados
+      : dados && Array.isArray(dados.features)
+        ? dados.features.map((f) => ({
+            ...(f.properties || {}),
+            lng:
+              f.geometry && f.geometry.coordinates && f.geometry.coordinates[0],
+            lat:
+              f.geometry && f.geometry.coordinates && f.geometry.coordinates[1],
+          }))
+        : [];
+    return brutas
+      .map((e) => ({
+        stop_id: e && e.stop_id != null ? String(e.stop_id) : "",
+        name: (e && (e.name || e.stop_name)) || "",
+        lines: Array.isArray(e && e.lines)
+          ? e.lines.join(" · ")
+          : (e && e.lines) || "",
+        lat: Number(e && e.lat),
+        lng: Number(e && e.lng),
+      }))
+      .filter((e) => e.stop_id && isFinite(e.lat) && isFinite(e.lng));
+  }
+
+  // ── Linhas do bundle (LINES_SOURCE = "bundle") ──
+  // As shapes do GTFS, para a rede nacional. Só as geometrias: as estações
+  // continuam a vir do ficheiro.
+  function loadBundleLines() {
+    return getJSON(`${BUNDLE}/manifest.json`).then((manifest) => {
+      const res = manifest.resources || {};
+      return Promise.all([
+        getJSON(`${BUNDLE}/${res.routes || "routes.json"}`).catch(() => []),
+        getJSON(`${BUNDLE}/${res.shapes_index || "shapes/index.json"}`).catch(
+          () => ({}),
+        ),
+      ]).then(async ([routes, shapeIndex]) => {
+        const routesById = new Map((routes || []).map((r) => [r.route_id, r]));
+        const chosen = pickShapes(shapeIndex, routesById);
+        const features = await fetchAll(
+          chosen,
+          async ({ shapeId, meta }) => {
+            const gj = await getJSON(`${BUNDLE}/${meta.file}`);
+            const f = gj && gj.features && gj.features[0];
+            if (!f) return null;
+            const routeId = (meta.route_ids && meta.route_ids[0]) || null;
+            const route = routeId ? routesById.get(routeId) : null;
+            const out = simplify(f);
+            out.properties = {
+              shape_id: shapeId,
+              route_id: routeId,
+              // A cor vem do feed; o fallback é a cor de marca da CP.
+              colour:
+                route && route.route_color ? `#${route.route_color}` : CP_COLOR,
+              ref:
+                (route && (route.route_short_name || route.route_long_name)) ||
+                routeId ||
+                "",
+              route_type:
+                route && route.route_type != null ? route.route_type : null,
+            };
+            return out;
+          },
+          FETCH_CONCURRENCY,
+        );
+        return { type: "FeatureCollection", features };
+      });
+    });
+  }
+
   function load() {
     if (loading) return loading;
-    loading = getJSON(`${BUNDLE}/manifest.json`)
-      .then((manifest) => {
-        const res = manifest.resources || {};
-        const useGeojson = LINES_SOURCE === "geojson";
-        return Promise.all([
-          getJSON(`${BUNDLE}/${res.routes || "routes.json"}`).catch(() => []),
-          useGeojson
-            ? Promise.resolve({})
-            : getJSON(
-                `${BUNDLE}/${res.shapes_index || "shapes/index.json"}`,
-              ).catch(() => ({})),
-          getJSON(`${BUNDLE}/${res.stops_index || "stops/index.json"}`),
-          // Os ícones entram na mesma espera, para o addLayers já saber se os
-          // pode usar. São dois: fundo branco e fundo verde (seleccionada). Se
-          // o /assets/img/logos/cp.png não existir, fica o círculo.
-          ensureIcons(),
-        ]).then(async ([routes, shapeIndex, stopsIndex, hasIcon]) => {
-          iconReady = !!hasIcon;
-          const routesById = new Map(
-            (routes || []).map((r) => [r.route_id, r]),
-          );
-
-          // ── Geometrias ──
-          if (useGeojson) {
-            lines = await loadGeojsonLines();
-          } else {
-            const chosen = pickShapes(shapeIndex, routesById);
-            const features = await fetchAll(
-              chosen,
-              async ({ shapeId, meta }) => {
-                const gj = await getJSON(`${BUNDLE}/${meta.file}`);
-                const f = gj && gj.features && gj.features[0];
-                if (!f) return null;
-                const routeId = (meta.route_ids && meta.route_ids[0]) || null;
-                const route = routeId ? routesById.get(routeId) : null;
-                const out = simplify(f);
-                out.properties = {
-                  shape_id: shapeId,
-                  route_id: routeId,
-                  // A cor vem do feed; o fallback é a cor de marca da CP.
-                  colour:
-                    route && route.route_color
-                      ? `#${route.route_color}`
-                      : CP_COLOR,
-                  ref:
-                    (route &&
-                      (route.route_short_name || route.route_long_name)) ||
-                    routeId ||
-                    "",
-                  route_type:
-                    route && route.route_type != null ? route.route_type : null,
-                };
-                return out;
-              },
-              FETCH_CONCURRENCY,
-            );
-            lines = { type: "FeatureCollection", features };
-          }
-
-          // ── Estações ──
-          // Um feed da CP tem uma paragem por plataforma; agrupa-se por
-          // parent_station para desenhar um marcador por estação em vez de
-          // dois em cima um do outro.
-          const seen = new Map();
-          for (const key in stopsIndex) {
-            const e = stopsIndex[key];
-            stopsById.set(e.stop_id, e);
-            if (!Array.isArray(e.coordinates)) continue;
-            const groupKey = e.parent_station || e.stop_id;
-            if (seen.has(groupKey)) continue;
-            seen.set(groupKey, e);
-          }
-          let stationEntries = Array.from(seen.values());
-          const beforeFilter = stationEntries.length;
-          if (FILTER_STATIONS_TO_LINES && lines.features.length) {
-            // Um vértice em cada 4 chega para decidir proximidade e corta o
-            // trabalho para um quarto.
-            stationEntries = stationEntries.filter(
-              (e) =>
-                distToLines(
-                  e.coordinates[0],
-                  e.coordinates[1],
-                  lines.features,
-                  4,
-                ) <= STATION_MAX_DIST_M,
-            );
-          }
-          stations = {
-            type: "FeatureCollection",
-            features: stationEntries.map((e) => ({
-              type: "Feature",
-              geometry: { type: "Point", coordinates: e.coordinates },
-              properties: {
-                stop_id: e.stop_id,
-                name: e.stop_name,
-                // Sem o Set, uma estação da Linha de Sintra listava "Sintra"
-                // dezenas de vezes — uma por route_id do feed nacional.
-                lines: Array.from(new Set(e.route_short_names || [])).join(
-                  " · ",
-                ),
-              },
-            })),
-          };
-
-          // Diagnóstico: um feed nacional tem muitas "routes" no sentido GTFS
-          // (cada relação origem-destino é uma), por isso "uma por linha" pode
-          // dar dezenas de geometrias. Isto diz quantas daria cada modo, para
-          // se poder escolher o SHAPE_GROUP com números em vez de palpites.
-          const countBy = (keyOf) => {
-            const set = new Set();
-            for (const id in shapeIndex) set.add(keyOf(shapeIndex[id]));
-            return set.size;
-          };
-          if (useGeojson) {
-            console.info(
-              `[CP] ${lines.features.length} linhas de ${LINES_GEOJSON} · ` +
-                `${stations.features.length} estações` +
-                (beforeFilter !== stations.features.length
-                  ? ` (de ${beforeFilter}, filtradas a ${STATION_MAX_DIST_M} m das linhas)`
-                  : ""),
-            );
-            return true;
-          }
-
-          console.info(
-            `[CP] ${lines.features.length} geometrias de ${Object.keys(shapeIndex).length} shapes ` +
-              `· ${stations.features.length} estações · SHAPE_GROUP="${SHAPE_GROUP}". ` +
-              `Alternativas: por route=${countBy((m) => (m.route_ids && m.route_ids[0]) || "?")}, ` +
-              `por route_type=${countBy((m) => {
-                const r = routesById.get((m.route_ids && m.route_ids[0]) || "");
-                return r && r.route_type != null ? r.route_type : "?";
-              })}, ` +
-              `por nome de linha=${countBy((m) => {
-                const r = routesById.get((m.route_ids && m.route_ids[0]) || "");
-                return (r && (r.route_short_name || r.route_long_name)) || "?";
-              })}.`,
-          );
-          return true;
-        });
+    loading = Promise.all([
+      LINES_SOURCE === "bundle" ? loadBundleLines() : loadGeojsonLines(),
+      getJSON(STATIONS_FILE),
+      // Os ícones entram na mesma espera, para o addLayers já saber se os pode
+      // usar. São dois: fundo branco e fundo verde (seleccionada). Se o
+      // /assets/img/logos/cp.png não existir, fica o círculo.
+      ensureIcons(),
+    ])
+      .then(([geo, dados, hasIcon]) => {
+        const lista = lerEstacoes(dados);
+        if (!lista.length)
+          throw new Error(`${STATIONS_FILE} não tem estações válidas`);
+        iconReady = !!hasIcon;
+        lines = geo;
+        stopsById = new Map(lista.map((e) => [e.stop_id, e]));
+        stations = {
+          type: "FeatureCollection",
+          features: lista.map((e) => ({
+            type: "Feature",
+            geometry: { type: "Point", coordinates: [e.lng, e.lat] },
+            properties: { stop_id: e.stop_id, name: e.name, lines: e.lines },
+          })),
+        };
+        return true;
       })
       .catch((err) => {
-        console.error("[CP] bundle indisponível:", err && err.message);
+        console.error("[CP] dados indisponíveis:", err && err.message);
         loading = null; // deixa tentar outra vez se a camada for ligada de novo
         throw err;
       });
@@ -882,7 +817,7 @@
     getSharedIds: () => sharedIds.slice(),
     refreshSharedFilter,
     isOn,
-    // Todas as paragens do bundle (país inteiro).
+    // As estações do cp-stations.geojson.
     getStops: () => Array.from(stopsById.values()),
     // Só as que estão desenhadas: agrupadas por estação e dentro do âmbito das
     // linhas. É esta a lista que a pesquisa usa, para não oferecer estações que

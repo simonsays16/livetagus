@@ -1,0 +1,436 @@
+[
+    {
+        "stop_id": "94_31005",
+        "name": "Braco de Prata",
+        "lines": "Linha da Azambuja · Linha de Sintra · R",
+        "lat": 38.746784,
+        "lng": -9.10296
+    },
+    {
+        "stop_id": "94_31039",
+        "name": "Lisboa Oriente",
+        "lines": "AP · IC · IR · Linha da Azambuja · Linha de Sintra · R",
+        "lat": 38.76775932,
+        "lng": -9.099094751
+    },
+    {
+        "stop_id": "94_31047",
+        "name": "Moscavide",
+        "lines": "Linha da Azambuja · R",
+        "lat": 38.77822574,
+        "lng": -9.099672625
+    },
+    {
+        "stop_id": "94_31062",
+        "name": "Sacavem",
+        "lines": "Linha da Azambuja · R",
+        "lat": 38.79518,
+        "lng": -9.09975
+    },
+    {
+        "stop_id": "94_31070",
+        "name": "Bobadela",
+        "lines": "Linha da Azambuja · R",
+        "lat": 38.80673,
+        "lng": -9.094764
+    },
+    {
+        "stop_id": "94_31112",
+        "name": "Santa Iria",
+        "lines": "Linha da Azambuja · R",
+        "lat": 38.84092177,
+        "lng": -9.080333459
+    },
+    {
+        "stop_id": "94_31146",
+        "name": "Povoa",
+        "lines": "Linha da Azambuja · R",
+        "lat": 38.85956214,
+        "lng": -9.063787169
+    },
+    {
+        "stop_id": "94_31187",
+        "name": "Alverca",
+        "lines": "Linha da Azambuja · R",
+        "lat": 38.8898,
+        "lng": -9.0342
+    },
+    {
+        "stop_id": "94_31237",
+        "name": "Alhandra",
+        "lines": "Linha da Azambuja · R",
+        "lat": 38.92403279,
+        "lng": -9.011379799
+    },
+    {
+        "stop_id": "94_31278",
+        "name": "Vila Franca de Xira",
+        "lines": "IC · IR · Linha da Azambuja · R",
+        "lat": 38.95513471,
+        "lng": -8.986308476
+    },
+    {
+        "stop_id": "94_31310",
+        "name": "Castanheira do Ribatejo",
+        "lines": "Linha da Azambuja · R",
+        "lat": 38.98791244,
+        "lng": -8.966061218
+    },
+    {
+        "stop_id": "94_59006",
+        "name": "Lisboa Rossio",
+        "lines": "Linha de Sintra",
+        "lat": 38.714233,
+        "lng": -9.1414607
+    },
+    {
+        "stop_id": "94_60004",
+        "name": "Campolide",
+        "lines": "Linha da Azambuja · Linha de Sintra",
+        "lat": 38.7322222,
+        "lng": -9.16805555555555
+    },
+    {
+        "stop_id": "94_60038",
+        "name": "Santa Cruz - Damaia",
+        "lines": "Linha da Azambuja · Linha de Sintra",
+        "lat": 38.74692993,
+        "lng": -9.213167824
+    },
+    {
+        "stop_id": "94_60046",
+        "name": "Benfica",
+        "lines": "Linha da Azambuja · Linha de Sintra",
+        "lat": 38.74431245,
+        "lng": -9.199965686
+    },
+    {
+        "stop_id": "94_60087",
+        "name": "Amadora",
+        "lines": "Linha da Azambuja · Linha de Sintra",
+        "lat": 38.7598334,
+        "lng": -9.236027949
+    },
+    {
+        "stop_id": "94_60095",
+        "name": "Reboleira",
+        "lines": "Linha da Azambuja · Linha de Sintra",
+        "lat": 38.75085337,
+        "lng": -9.222599576
+    },
+    {
+        "stop_id": "94_60103",
+        "name": "Queluz - Belas",
+        "lines": "Linha da Azambuja · Linha de Sintra",
+        "lat": 38.75881533,
+        "lng": -9.25702671
+    },
+    {
+        "stop_id": "94_60111",
+        "name": "Monte Abraao",
+        "lines": "Linha da Azambuja · Linha de Sintra",
+        "lat": 38.75542564,
+        "lng": -9.265351205
+    },
+    {
+        "stop_id": "94_60137",
+        "name": "Massama - Barcarena",
+        "lines": "Linha da Azambuja · Linha de Sintra",
+        "lat": 38.75150586,
+        "lng": -9.283588336
+    },
+    {
+        "stop_id": "94_61002",
+        "name": "Agualva - Cacem",
+        "lines": "IR · Linha da Azambuja · Linha de Sintra · R",
+        "lat": 38.76642799,
+        "lng": -9.298424307
+    },
+    {
+        "stop_id": "94_61044",
+        "name": "Rio de Mouro",
+        "lines": "Linha da Azambuja · Linha de Sintra",
+        "lat": 38.78449,
+        "lng": -9.321619
+    },
+    {
+        "stop_id": "94_61051",
+        "name": "Merces",
+        "lines": "Linha da Azambuja · Linha de Sintra",
+        "lat": 38.793293,
+        "lng": -9.330818
+    },
+    {
+        "stop_id": "94_61069",
+        "name": "Algueirao - Mem Martins",
+        "lines": "Linha da Azambuja · Linha de Sintra",
+        "lat": 38.79771236,
+        "lng": -9.340984821
+    },
+    {
+        "stop_id": "94_61093",
+        "name": "Portela de Sintra",
+        "lines": "Linha da Azambuja · Linha de Sintra",
+        "lat": 38.80223677,
+        "lng": -9.376723955
+    },
+    {
+        "stop_id": "94_61101",
+        "name": "Sintra",
+        "lines": "Linha da Azambuja · Linha de Sintra",
+        "lat": 38.79929269,
+        "lng": -9.385450271
+    },
+    {
+        "stop_id": "94_66019",
+        "name": "Marvila",
+        "lines": "Linha da Azambuja",
+        "lat": 38.73924235,
+        "lng": -9.108394719
+    },
+    {
+        "stop_id": "94_66035",
+        "name": "Roma - Areeiro",
+        "lines": "Linha da Azambuja · Linha de Sintra",
+        "lat": 38.74572442,
+        "lng": -9.134830778
+    },
+    {
+        "stop_id": "94_66050",
+        "name": "Entrecampos",
+        "lines": "AP · IC · IR · Linha da Azambuja · Linha de Sintra · R",
+        "lat": 38.74468,
+        "lng": -9.148575
+    },
+    {
+        "stop_id": "94_66076",
+        "name": "Sete Rios",
+        "lines": "IC · IR · Linha da Azambuja · Linha de Sintra · R",
+        "lat": 38.74005101,
+        "lng": -9.166950111
+    },
+    {
+        "stop_id": "94_67025",
+        "name": "Alcantara - Terra",
+        "lines": "Linha da Azambuja",
+        "lat": 38.70743461,
+        "lng": -9.17323799
+    },
+    {
+        "stop_id": "94_68007",
+        "name": "Pinhal Novo",
+        "lines": "AP · IC · Linha do Sado",
+        "lat": 38.63018,
+        "lng": -8.912074
+    },
+    {
+        "stop_id": "94_68049",
+        "name": "Venda do Alcaide",
+        "lines": "Linha do Sado",
+        "lat": 38.60572832,
+        "lng": -8.888240288
+    },
+    {
+        "stop_id": "94_68080",
+        "name": "Palmela",
+        "lines": "Linha do Sado",
+        "lat": 38.5718791,
+        "lng": -8.872821568
+    },
+    {
+        "stop_id": "94_68122",
+        "name": "Setubal",
+        "lines": "Linha do Sado",
+        "lat": 38.53054468,
+        "lng": -8.884972033
+    },
+    {
+        "stop_id": "94_68130",
+        "name": "Praca do Quebedo",
+        "lines": "Linha do Sado",
+        "lat": 38.52493444,
+        "lng": -8.88647322
+    },
+    {
+        "stop_id": "94_69005",
+        "name": "Cais do Sodre",
+        "lines": "Linha de Cascais",
+        "lat": 38.70614229,
+        "lng": -9.145373786
+    },
+    {
+        "stop_id": "94_69013",
+        "name": "Santos",
+        "lines": "Linha de Cascais",
+        "lat": 38.70615507,
+        "lng": -9.155312247
+    },
+    {
+        "stop_id": "94_69039",
+        "name": "Alcantara -  Mar",
+        "lines": "Linha de Cascais",
+        "lat": 38.70235141,
+        "lng": -9.17402131
+    },
+    {
+        "stop_id": "94_69054",
+        "name": "Belem",
+        "lines": "Linha de Cascais",
+        "lat": 38.69616782,
+        "lng": -9.197622584
+    },
+    {
+        "stop_id": "94_69088",
+        "name": "Alges",
+        "lines": "Linha de Cascais",
+        "lat": 38.69832982,
+        "lng": -9.229453001
+    },
+    {
+        "stop_id": "94_69104",
+        "name": "Cruz Quebrada",
+        "lines": "Linha de Cascais",
+        "lat": 38.69979769,
+        "lng": -9.252196627
+    },
+    {
+        "stop_id": "94_69120",
+        "name": "Caxias",
+        "lines": "Linha de Cascais",
+        "lat": 38.69874435,
+        "lng": -9.274388514
+    },
+    {
+        "stop_id": "94_69146",
+        "name": "Paco de Arcos",
+        "lines": "Linha de Cascais",
+        "lat": 38.69710796,
+        "lng": -9.290535587
+    },
+    {
+        "stop_id": "94_69161",
+        "name": "Santo Amaro",
+        "lines": "Linha de Cascais",
+        "lat": 38.68690558,
+        "lng": -9.312025239
+    },
+    {
+        "stop_id": "94_69179",
+        "name": "Oeiras",
+        "lines": "Linha de Cascais",
+        "lat": 38.6885188,
+        "lng": -9.319046859
+    },
+    {
+        "stop_id": "94_69187",
+        "name": "Carcavelos",
+        "lines": "Linha de Cascais",
+        "lat": 38.68782177,
+        "lng": -9.337419198
+    },
+    {
+        "stop_id": "94_69203",
+        "name": "Parede",
+        "lines": "Linha de Cascais",
+        "lat": 38.68973478,
+        "lng": -9.356388966
+    },
+    {
+        "stop_id": "94_69229",
+        "name": "Sao Pedro do Estoril",
+        "lines": "Linha de Cascais",
+        "lat": 38.69541017,
+        "lng": -9.371882889
+    },
+    {
+        "stop_id": "94_69237",
+        "name": "Sao Joao do Estoril",
+        "lines": "Linha de Cascais",
+        "lat": 38.70129509,
+        "lng": -9.386122441
+    },
+    {
+        "stop_id": "94_69245",
+        "name": "Estoril",
+        "lines": "Linha de Cascais",
+        "lat": 38.70323838,
+        "lng": -9.398724194
+    },
+    {
+        "stop_id": "94_69252",
+        "name": "Monte Estoril",
+        "lines": "Linha de Cascais",
+        "lat": 38.70357154,
+        "lng": -9.406511881
+    },
+    {
+        "stop_id": "94_69260",
+        "name": "Cascais",
+        "lines": "Linha de Cascais",
+        "lat": 38.70079545,
+        "lng": -9.41819051
+    },
+    {
+        "stop_id":"94_17087",
+        "name": "Pragal",
+        "lines": "IC",
+        "lat": 38.66616944,
+        "lng": -9.179573483
+    },
+    {
+        "stop_id": "94_91058",
+        "name": "Praias do Sado-A",
+        "lines": "Linha do Sado",
+        "lat": 38.51795617,
+        "lng": -8.838120473
+    },
+    {
+        "stop_id": "94_95000",
+        "name": "Barreiro",
+        "lines": "Linha do Sado",
+        "lat": 38.65248536,
+        "lng": -9.079438371
+    },
+    {
+        "stop_id": "94_95026",
+        "name": "Barreiro-A",
+        "lines": "Linha do Sado",
+        "lat": 38.65976812,
+        "lng": -9.071588362
+    },
+    {
+        "stop_id": "94_95042",
+        "name": "Lavradio",
+        "lines": "Linha do Sado",
+        "lat": 38.66182209,
+        "lng": -9.058282417
+    },
+    {
+        "stop_id": "94_95059",
+        "name": "Baixa da Banheira",
+        "lines": "Linha do Sado",
+        "lat": 38.65956434,
+        "lng": -9.044295693
+    },
+    {
+        "stop_id": "94_95075",
+        "name": "Alhos Vedros",
+        "lines": "Linha do Sado",
+        "lat": 38.65183875,
+        "lng": -9.026695914
+    },
+    {
+        "stop_id": "94_95109",
+        "name": "Moita",
+        "lines": "Linha do Sado",
+        "lat": 38.64476453,
+        "lng": -8.996018397
+    },
+    {
+        "stop_id": "94_95125",
+        "name": "Penteado",
+        "lines": "Linha do Sado",
+        "lat": 38.63814272,
+        "lng": -8.956170784
+    }
+]
