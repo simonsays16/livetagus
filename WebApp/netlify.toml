@@ -100,7 +100,10 @@
   for = "/*"
   [headers.values]
     # Política Principal de Segurança (CSP) - 'unsafe-inline' retirados nos scripts
-    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://tile.openstreetmap.org/ https://queue.simpleanalyticscdn.com; connect-src 'self' https://api.livetagus.pt https://www.netlify.com https://api.github.com/ https://queue.simpleanalyticscdn.com https://api.carrismetropolitana.pt https://go.tmlmobilidade.pt https://tile.openstreetmap.org/ https://demotiles.maplibre.org; worker-src 'self' blob:; manifest-src 'self' blob:;"
+    # base-uri, form-action e frame-ancestors NÃO herdam do default-src: sem
+    # elas, uma injecção de <base> ou de <form> passava. O frame-ancestors é a
+    # versão moderna do X-Frame-Options (ficam os dois, para browsers antigos).
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://tile.openstreetmap.org/ https://queue.simpleanalyticscdn.com; connect-src 'self' https://api.livetagus.pt https://www.netlify.com https://api.github.com/ https://queue.simpleanalyticscdn.com https://api.carrismetropolitana.pt https://go.tmlmobilidade.pt https://tile.openstreetmap.org/ https://demotiles.maplibre.org; worker-src 'self' blob:; manifest-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none';"
 
     # Proteção contra partilha não autorizada de recursos
     Cross-Origin-Resource-Policy = "same-origin"
@@ -111,8 +114,10 @@
     # Proteção contra Clickjacking (impedir que outros sites ponham a livetagus num iframe)
     X-Frame-Options = "DENY"
     
-    # Proteção XSS básica para browsers antigos
-    X-XSS-Protection = "1; mode=block"
+    # Desligado de propósito: o "filtro XSS" dos browsers antigos podia ser
+    # usado para APAGAR scripts legítimos de uma página, e já foi retirado dos
+    # browsers actuais. A protecção a sério é a CSP acima. Recomendação OWASP.
+    X-XSS-Protection = "0"
     
     # Referrer Policy (Privacidade)
     Referrer-Policy = "strict-origin-when-cross-origin"
@@ -128,12 +133,18 @@
   for = "/imagens/*"
   [headers.values]
     Cross-Origin-Resource-Policy = "cross-origin"
+    Cache-Control = "public, max-age=604800"
 
-# Cache eficiente para imagens e fontes
+# Cache das fontes e imagens.
 [[headers]]
-  for = "*.{png,jpg,jpeg,gif,svg,woff,woff2}"
+  for = "/assets/fonts/*.woff2"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/assets/img/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
 
 [[headers]]
   for = "/vendor/*"

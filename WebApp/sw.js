@@ -1,5 +1,5 @@
 // --- BEGIN VERSIONS ---
-const GLOBAL_VERSION = "livetagus-v.rc2.03102026";
+const GLOBAL_VERSION = "livetagus-v.rc3.03102026";
 const ASSETS_VERSIONS = {
   "./index.html": "v.rc2.30092026",
   "./index.js": "v.rc3.21062026",
@@ -27,9 +27,8 @@ const ASSETS_VERSIONS = {
   "./output.css": "v.rc12.12092026",
   "./assets/fonts/fonts.css": "v.rc1.30092026",
   "./assets/fonts/inter-normal-variavel-v20-latin.woff2": "v.rc1.30092026",
-  "./assets/fonts/inter-normal-variavel-v20-latin-ext.woff2": "v.rc1.30092026",
-  "./assets/fonts/jetbrains-mono-normal-variavel-v24-latin.woff2": "v.rc1.30092026",
-  "./assets/fonts/jetbrains-mono-normal-variavel-v24-latin-ext.woff2": "v.rc1.30092026",
+  "./assets/fonts/jetbrains-mono-normal-variavel-v24-latin.woff2":
+    "v.rc1.30092026",
   "./menu.js": "v.rc1.28092026",
   "./nav-tools.js": "v.rc9.08062026",
   "./offline.js": "v.rc1.24052026",
@@ -41,7 +40,7 @@ const ASSETS_VERSIONS = {
   "./imagens/netlify-light.svg": "v.rc1.24052026",
   "./json/fertagus_sentido_lisboa.json": "v.rc1.24052026",
   "./json/fertagus_sentido_margem.json": "v.rc1.24052026",
-  "./json/feriados.json": "v.rc1.24052026"
+  "./json/feriados.json": "v.rc1.24052026",
 };
 // --- END VERSIONS ---
 
@@ -119,6 +118,36 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+// Ficheiros com a versão no nome
+const CACHE_IMUTAVEIS = "lt-imutaveis";
+
+function eImutavel(url) {
+  return (
+    url.origin === self.location.origin &&
+    (url.pathname.startsWith("/vendor/") ||
+      /-v\d+-[\w-]+\.woff2$/.test(url.pathname))
+  );
+}
+
+// "maplibre-gl@4.7.1.min.js" e "maplibre-gl@4.8.0.min.js" são a mesma
+// família: ao guardar uma versão nova, a anterior sai.
+function familia(pathname) {
+  return pathname
+    .replace(/@\d[\w.-]*?(?=\.(?:min\.)?(?:js|css)$)/, "@*")
+    .replace(/-v\d+-/, "-v*-");
+}
+
+async function guardarImutavel(request, response) {
+  const cache = await caches.open(CACHE_IMUTAVEIS);
+  const fam = familia(new URL(request.url).pathname);
+  for (const antigo of await cache.keys()) {
+    const p = new URL(antigo.url).pathname;
+    if (antigo.url !== request.url && familia(p) === fam)
+      await cache.delete(antigo);
+  }
+  await cache.put(request, response);
+}
+
 self.addEventListener("fetch", (event) => {
   if (
     event.request.url.includes("api.") ||
@@ -126,11 +155,31 @@ self.addEventListener("fetch", (event) => {
   )
     return;
 
+  const url = new URL(event.request.url);
+  if (url.origin === self.location.origin && url.searchParams.has("t")) {
+    event.respondWith(
+      fetch(event.request).catch(async (err) => {
+        const guardado = await caches.match(event.request, {
+          ignoreSearch: true,
+        });
+        if (guardado) return guardado;
+        throw err;
+      }),
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then(async (response) => {
       if (response) return response;
 
-      const url = new URL(event.request.url);
+      // Imutáveis: à primeira vez, da rede, e ficam guardados.
+      if (event.request.method === "GET" && eImutavel(url)) {
+        const res = await fetch(event.request);
+        if (res.ok)
+          event.waitUntil(guardarImutavel(event.request, res.clone()));
+        return res;
+      }
 
       if (
         event.request.mode === "navigate" &&
