@@ -23,6 +23,7 @@
   // ─── BLOQUEIO: estações já verificadas (nome em maiúsculas) ──────────
   // Acrescentar aqui à medida que forem validadas as restantes.
   const AVAILABLE_STATIONS = [
+    "ROMA AREEIRO",
     "ENTRECAMPOS",
     "SETE RIOS",
     "CAMPOLIDE",
@@ -32,6 +33,7 @@
     "FOGUETEIRO",
     "COINA",
     "PENALVA",
+    "PINHAL NOVO",
     "VENDA DO ALCAIDE",
     "PALMELA",
     "SETUBAL",
@@ -699,6 +701,8 @@
   function open(stop) {
     ensureElements();
     if (!panel || !backdrop || !stop) return;
+
+    if (window.sa_event) window.sa_event("mapa_paragem_cm_aberta");
 
     // Fecha outras sheets que partilham o mesmo painel.
     if (window.MapaDetails && window.MapaDetails.isOpen())

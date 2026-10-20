@@ -638,20 +638,23 @@ html.dark .ltp-badge.delay{color:#fbbf24}
 .ltp-live-dot.pulse{animation:ltp-pulse 1.7s ease-in-out infinite}
 @keyframes ltp-pulse{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.5)}50%{box-shadow:0 0 0 5px rgba(16,185,129,0)}}
 
-/* Destino em destaque (info mais importante) */
-.ltp-dest{padding-left:.55rem;margin-top:.55rem;display:flex;align-items:baseline;gap:.5rem}
+/* Destino em destaque */
 .ltp-dest-arrow{font-size:13px;color:rgb(212,212,216)}
 html.dark .ltp-dest-arrow{color:rgb(63,63,70)}
-.ltp-dest-name{font-size:1.05rem;font-weight:500;letter-spacing:-.01em;color:rgb(24,24,27);line-height:1.1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 html.dark .ltp-dest-name{color:rgb(244,244,245)}
 .ltp-via{padding-left:.55rem;margin-top:.25rem;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:rgb(161,161,170);display:flex;align-items:center;justify-content:space-between;gap:.5rem}
-.ltp-num{font-family:"JetBrains Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+
+
+/* Destino: agora com o #num no canto */
+.ltp-dest{padding-left:.55rem;margin-top:.55rem;display:flex;align-items:baseline;gap:.5rem;justify-content:space-between}
+.ltp-dest-name{font-size:1.05rem;font-weight:500;letter-spacing:-.01em;color:rgb(24,24,27);line-height:1.1;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* #num sobe um bocadinho e encosta ao topo da linha do destino */
+.ltp-num{font-family:"JetBrains Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;flex-shrink:0;align-self:flex-start;color:rgb(161,161,170);font-size:11px}
 
 /* Ocupação / carruagens */
-.ltp-cars{display:flex;align-items:center;gap:.6rem;padding-left:.55rem;margin-top:.75rem}
-.ltp-cars-bar{display:flex;gap:2px;flex:1;min-width:0}
+.ltp-cars{padding-left:.55rem;margin-top:.75rem}
+.ltp-cars-bar{display:flex;gap:2px;width:100%}
 .ltp-cars-bar span{height:4px;flex:1;border-radius:1px}
-.ltp-cars-txt{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:rgb(161,161,170);white-space:nowrap}
 
 /* Aviso de trajeto anormal */
 .ltp-warn{display:flex;align-items:flex-start;gap:.5rem;margin:.7rem 0 0 .55rem;padding:.55rem .7rem;border-radius:8px;font-size:10px;line-height:1.4;font-weight:500}
@@ -730,6 +733,30 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
   function carBars(dep, noNet) {
     const occ = dep.occupancy;
     const n = dep.carriages || 4;
+    const LABELS = {
+      MB: { label: "Muito Baixa", color: "#10b981" },
+      B: { label: "Baixa", color: "#22c55e" },
+      M: { label: "Média", color: "#eab308" },
+      A: { label: "Média Alta", color: "#f97316" },
+      MA: { label: "M. Alta", color: "#ef4444" },
+    };
+
+    // Sigla → carruagens azuis, label colorido
+    if (typeof occ === "string" && LABELS[occ]) {
+      let s = "";
+      for (let i = 0; i < n; i++)
+        s += `<span style="background-color:#3b82f6"></span>`;
+      return {
+        bars: s,
+        n,
+        occ,
+        isCode: true,
+        label: LABELS[occ].label,
+        labelColor: LABELS[occ].color,
+      };
+    }
+
+    // Percentagem (hora de ponta) → barras coloridas
     let fill = "#3b82f6";
     if (noNet && occ == null) fill = "#71717a";
     else if (occ != null && occ > 85) fill = "#ef4444";
@@ -739,7 +766,7 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
     let s = "";
     for (let i = 0; i < n; i++)
       s += `<span style="background-color:${i < filled ? fill : "rgba(161,161,170,.25)"}"></span>`;
-    return { bars: s, n, occ };
+    return { bars: s, n, occ, isCode: false, label: null, labelColor: fill };
   }
 
   function badgeHtml(dep) {
@@ -775,14 +802,20 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
     return "";
   }
 
-  const dirLabel = (d) => (d === "margem" ? "Sent. Margem" : "Sent. Lisboa");
+  const dirLabel = (d) => (d === "margem" ? "Margem" : "Lisboa");
 
   // innerHTML de um cartão (sem o elemento raiz — o reconciliador gere a raiz).
   function cardInner(dep, noNet) {
-    const { bars, n, occ } = carBars(dep, noNet);
+    const { bars, n, occ, isCode, label, labelColor } = carBars(dep, noNet);
     const status = dep.dotStatus || "gray";
     const timeCls = dep.suppressed || dep.shortened ? " sup" : "";
     let prog = "";
+    const occLabel =
+      occ == null
+        ? ""
+        : typeof occ === "string"
+          ? ` · ${{ MB: "Muito Baixa", B: "Baixa", M: "Média", A: "Alta", MA: "Muito Alta" }[occ] || occ}`
+          : ` · ${occ}%`;
     const node = dep.node;
     if (!dep.suppressed && !dep.shortened && dep.delayMin >= 1 && node) {
       const p = (node.HoraProgramada || "").substring(0, 5);
@@ -794,7 +827,7 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
       <div class="ltp-r1">
         <div style="min-width:0"><span class="ltp-time${timeCls}">${esc(dep.timeStr || "--:--")}</span>${prog}</div>
         <div class="ltp-r1r">
-          <span class="ltp-dir-tag">${dirLabel(dep.direction)}</span>
+          <span class="ltp-dir-tag">#${esc(dep.numero || dep.id)} · ${dirLabel(dep.direction)}</span>
           ${badgeHtml(dep)}
         </div>
       </div>
@@ -804,11 +837,16 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
       </div>
       <div class="ltp-via">
         <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">de ${esc(dep.origem || "—")}</span>
-        <span class="ltp-num">#${esc(dep.numero || dep.id)}</span>
+        <span class="ltp-cars-txt">${n} carr${
+          occ == null
+            ? " · Apenas dias úteis"
+            : isCode
+              ? ` · <b style="color:${labelColor}">${esc(label)}</b>`
+              : ` · <b style="color:${labelColor}">${occ}%</b>`
+        }</span>
       </div>
       <div class="ltp-cars">
         <div class="ltp-cars-bar">${bars}</div>
-        <span class="ltp-cars-txt">${n} carr${occ != null ? ` · ${occ}%` : ""}</span>
       </div>
       ${warnHtml(dep)}`;
   }
@@ -1018,7 +1056,7 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
   // Render do percurso (cases 2 e 3) numa sheet.
   function renderRouteSheet(dep, nodes, station) {
     const noNet = !navigator.onLine;
-    const { bars, n, occ } = carBars(dep, noNet);
+    const { bars, n, occ, isCode, label, labelColor } = carBars(dep, noNet);
     const stationApiId = station ? String(station.apiId) : null;
 
     // [TRAJETO ANORMAL] estações saltadas → intercalar na posição física da
@@ -1132,8 +1170,10 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
           ${esc(dep.origem || "—")} <span style="color:rgb(161,161,170);margin:0 .3rem">→</span> ${esc(dep.destino || "—")}
         </h2>
         <div class="ltp-cars" style="padding-left:0;margin-top:.9rem">
-          <div class="ltp-cars-bar">${bars}</div>
-          <span class="ltp-cars-txt">${n} carr${occ != null ? ` · ${occ}% ocup.` : ""}</span>
+          <div class="ltp-cars" style="padding-left:0;margin-top:.9rem">
+            <div class="ltp-cars-bar">${bars}</div>
+            <span class="ltp-cars-txt">${n} carr${occ == null ? " · Apenas dias úteis" : isCode ? ` · <b style="color:${labelColor}">${esc(label)}</b>` : ` · <b style="color:${labelColor}">${occ}% ocup.</b>`}</span>
+          </div>
         </div>
         ${warnHtml(dep)}
       </div>

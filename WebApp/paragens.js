@@ -49,7 +49,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // ─── INICIALIZAÇÃO ───
   lucide.createIcons();
   renderStops();
-  injectCustomMenuElements();
 
   // Pré-carregar stops JSON silenciosamente
   fetchAllStops().catch(console.error);

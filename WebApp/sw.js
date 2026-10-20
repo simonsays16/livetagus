@@ -1,17 +1,17 @@
 // --- BEGIN VERSIONS ---
-const GLOBAL_VERSION = "livetagus-v.rc8.06072026";
+const GLOBAL_VERSION = "livetagus-v.rc17.20102026";
 const ASSETS_VERSIONS = {
-  "./index.html": "v.rc19.22062026",
+  "./index.html": "v.rc22.20102026",
   "./index.js": "v.rc3.21062026",
   "./index-home.js": "v.rc1.22062026",
   "./home-map.js": "v.rc6.22062026",
-  "./app.html": "v.rc1.07062026",
+  "./app.html": "v.rc4.19102026",
   "./app-alerts.js": "v.rc3.13062026",
   "./app-config.js": "v.rc1.13062026",
   "./app-init.js": "v.rc2.13062026",
   "./app-settings.js": "v.rc3.07062026",
   "./app-trains.js": "v.rc1.14062026",
-  "./app-ui.js": "v.rc1.03072026",
+  "./app-ui.js": "v.rc29.20102026",
   "./lucide-icons.js": "v.rc1.25062026",
   "./sudoku.html": "v.rc2.07062026",
   "./sudoku.js": "v.rc1.24052026",
@@ -21,7 +21,7 @@ const ASSETS_VERSIONS = {
   "./privacidade.html": "v.rc2.21062026",
   "./tabs.js": "v.rc1.24052026",
   "./train-scrollbar.js": "v.rc3.22062026",
-  "./output.css": "v.rc7.22062026",
+  "./output.css": "v.rc11.20102026",
   "./menu.js": "v.rc8.06072026",
   "./nav-tools.js": "v.rc9.08062026",
   "./offline.js": "v.rc1.24052026",
@@ -31,9 +31,9 @@ const ASSETS_VERSIONS = {
   "./imagens/badge_coded_in_europe_portugal_margem_sul.svg": "v.rc1.24052026",
   "./imagens/netlify-dark.svg": "v.rc1.24052026",
   "./imagens/netlify-light.svg": "v.rc1.24052026",
-  "./json/fertagus_sentido_lisboa.json": "v.rc1.24052026",
-  "./json/fertagus_sentido_margem.json": "v.rc1.24052026",
-  "./json/feriados.json": "v.rc1.24052026"
+  "./json/fertagus_sentido_lisboa.json": "v.rc1.19102026",
+  "./json/fertagus_sentido_margem.json": "v.rc1.19102026",
+  "./json/feriados.json": "v.rc1.24052026",
 };
 // --- END VERSIONS ---
 

@@ -32,6 +32,8 @@ module.exports = {
     "text-white",
     "text-zinc-400",
     "text-[10px]",
+    "bg-green-500",
+    "text-green-500",
 
     // Cores Específicas da Timeline/Detalhes
     "bg-blue-500",

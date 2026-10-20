@@ -86,10 +86,19 @@
         `<div class="h-1.5 flex-1" style="background-color:${on ? fill : "rgba(161,161,170,.25)"}"></div>`,
       );
     }
-    const occupancyPart =
-      train.occupancy != null
-        ? ` / <span style="color:${fill}">${train.occupancy}%</span>`
-        : "";
+    const LABELS = {
+      MB: "Muito Baixa",
+      B: "Baixa",
+      M: "Média",
+      A: "Média Alta",
+      MA: "Muito Alta",
+    };
+    const occ = train.occupancy;
+    let occupancyPart = "";
+    if (occ != null) {
+      const txt = typeof occ === "string" ? LABELS[occ] || occ : `${occ}%`;
+      occupancyPart = ` / <span style="color:${fill}">${txt}</span>`;
+    }
     return `
       <div class="flex flex-col">
         <span class="text-[9px] uppercase tracking-[0.2em] text-zinc-400 mb-1.5">Carruagens</span>
@@ -284,7 +293,7 @@
             <i data-lucide="${hasRealPosition ? "satellite-dish" : "route"}"
                class="w-3 h-3 ${hasRealPosition ? "text-emerald-500" : "text-zinc-400"} shrink-0"></i>
             <span class="text-[9px] font-medium uppercase tracking-[0.2em] ${hasRealPosition ? "text-emerald-600 dark:text-emerald-400" : "text-zinc-400 dark:text-zinc-500"}">
-              ${hasRealPosition ? "Localização Real do Comboio <b>(NOVO)</b>" : "Localização do Comboio Estimada"}
+              ${hasRealPosition ? "Localização Real do Comboio" : "Localização do Comboio Estimada"}
             </span>
           </div>
 
