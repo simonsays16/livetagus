@@ -28,7 +28,8 @@
     { key: "entrecampos", name: "Entrecampos" },
     { key: "roma_areeiro", name: "Roma-Areeiro" },
   ];
-  const NAME_OF = (key) => (STATIONS.find((s) => s.key === key) || {}).name || key;
+  const NAME_OF = (key) =>
+    (STATIONS.find((s) => s.key === key) || {}).name || key;
   const IDX_OF = (key) => STATIONS.findIndex((s) => s.key === key);
 
   // Estações onde a ocupação em hora de ponta justifica sugerir alternativas.
@@ -58,9 +59,9 @@
   const dbReady = (async function loadDB() {
     try {
       const [l, m, f] = await Promise.all([
-        fetch("./json/fertagus_sentido_lisboa.json"),
-        fetch("./json/fertagus_sentido_margem.json"),
-        fetch("./json/feriados.json"),
+        fetch("./data/json/fertagus_sentido_lisboa.json"),
+        fetch("./data/json/fertagus_sentido_margem.json"),
+        fetch("./data/json/feriados.json"),
       ]);
       if (l.ok) DB_LISBOA = await l.json();
       if (m.ok) DB_MARGEM = await m.json();
@@ -367,7 +368,8 @@ html.dark .lt-pl-line{background:rgb(39,39,42)}
       bars += `<span style="background:${on ? OCC_HEX[lvl] : "currentColor"};${on ? "" : "opacity:.16"}"></span>`;
     }
     const txt =
-      `${n} carr.` + (t.occupancy != null ? ` · ${Math.round(t.occupancy)}%` : "");
+      `${n} carr.` +
+      (t.occupancy != null ? ` · ${Math.round(t.occupancy)}%` : "");
     return `<div class="lt-pl-bar">${bars}</div><span class="lt-pl-cars-txt">${txt}</span>`;
   }
 
@@ -385,9 +387,7 @@ html.dark .lt-pl-line{background:rgb(39,39,42)}
   }
 
   function comfortNote(t, best, gapTrains, earlier) {
-    const minutes = Math.abs(
-      Math.round((t.depDate - best.depDate) / 60000),
-    );
+    const minutes = Math.abs(Math.round((t.depDate - best.depDate) / 60000));
     const when = earlier ? "mais cedo" : "mais tarde";
     const side = earlier ? "antes" : "depois";
     const trains =
@@ -541,12 +541,7 @@ html.dark .lt-pl-line{background:rgb(39,39,42)}
       if (isBest && crowded) {
         note = crowdedNote(best, earlierIdx >= 0 || laterIdx >= 0);
       } else if (isEarlier || isLater) {
-        note = comfortNote(
-          t,
-          best,
-          Math.abs(globalIdx - targetIdx),
-          isEarlier,
-        );
+        note = comfortNote(t, best, Math.abs(globalIdx - targetIdx), isEarlier);
       }
       list.appendChild(
         makeCard(t, { isBest, note, comfort: isEarlier || isLater }),
@@ -590,7 +585,8 @@ html.dark .lt-pl-line{background:rgb(39,39,42)}
 
     // Percurso completo do comboio, na data escolhida
     const dir = t.direction;
-    const ordered = dir === "margem" ? [...STATIONS].reverse() : STATIONS.slice();
+    const ordered =
+      dir === "margem" ? [...STATIONS].reverse() : STATIONS.slice();
     const oIdx = IDX_OF(t.originKey);
     const dIdx = IDX_OF(t.destKey);
     let stops = "";

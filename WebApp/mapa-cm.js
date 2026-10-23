@@ -74,6 +74,43 @@
   }
 
   // Linhas únicas (por line-id), preservando ordem e cor.
+  // Texto legível sobre a cor de uma linha. Os feeds mandam muitas vezes
+  // branco sobre amarelo ou verde-lima (o Metro e o MTS) e texto da cor da
+  // própria linha nas pastilhas de contorno. Escolhe-se pelo contraste.
+  function luminancia(hex) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || "").trim());
+    if (!m) return null;
+    const n = parseInt(m[1], 16);
+    const lin = (c) => {
+      c /= 255;
+      return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    };
+    return (
+      0.2126 * lin(n >> 16) +
+      0.7152 * lin((n >> 8) & 255) +
+      0.0722 * lin(n & 255)
+    );
+  }
+  function contrasteCores(a, b) {
+    const la = luminancia(a),
+      lb = luminancia(b);
+    if (la == null || lb == null) return 21;
+    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+  }
+  // Mantém a cor do feed se já se lê bem (≥ 4,5:1); senão preto ou branco.
+  function corTexto(bg, preferida) {
+    if (preferida && contrasteCores(bg, preferida) >= 4.5) return preferida;
+    const L = luminancia(bg);
+    if (L == null) return "#fff";
+    return (L + 0.05) / 0.05 >= 1.05 / (L + 0.05) ? "#09090b" : "#fff";
+  }
+  // Cores quase brancas ou quase pretas desaparecem num dos temas: levam um
+  // contorno, e nas pastilhas de contorno usa-se a linha neutra do painel.
+  function corExtrema(bg) {
+    const L = luminancia(bg);
+    return L != null && (L > 0.8 || L < 0.02);
+  }
+
   function uniqueLines(stop) {
     const out = [];
     const seen = new Set();
@@ -376,9 +413,10 @@
       .map((l) => {
         const isActive = activeLine === l.id;
         const dimmed = activeLine && !isActive;
+        const borda = corExtrema(l.color) ? "var(--lt-line-strong)" : l.color;
         const style = isActive
-          ? `background:${l.color};color:#fff;border-color:${l.color}`
-          : `background:transparent;color:${l.color};border-color:${l.color}`;
+          ? `background:${l.color};color:${corTexto(l.color, "#fff")};border-color:${borda}`
+          : `background:transparent;color:var(--lt-ink);border-color:${borda}`;
         return `<button type="button" data-cm-line="${escapeHtml(l.id)}"
           class="px-2 py-1 text-[10px] font-extrabold tracking-widest border rounded-[3px] transition-all duration-150${dimmed ? " opacity-35" : ""}"
           style="${style}"
@@ -408,7 +446,7 @@
       : "";
 
     return `
-      <div class="flex flex-col h-full bg-white dark:bg-[#09090b]">
+      <div class="lt-shell flex flex-col h-full">
         <div class="dp-handle md:hidden shrink-0" data-drag-area="1" aria-hidden="true">
           <div class="dp-handle-pill"></div>
         </div>
@@ -532,8 +570,8 @@
     return `
       <div class="flex items-center justify-between px-1 py-3.5 ${border}${temPercurso(b) ? " cm-linha-percurso" : ""}"${percursoAttrs(b, colour, paragem)}>
         <div class="flex items-center gap-3 flex-1 min-w-0 pr-3">
-          ${paragem ? paragemBtnHtml(paragem) + "\n          " : ""}<span class="text-white text-[10px] font-bold tracking-widest text-center px-1.5 py-1 rounded-[3px] shrink-0"
-            style="background:${colour};min-width:42px">${escapeHtml(b.line_id)}</span>
+          ${paragem ? paragemBtnHtml(paragem) + "\n          " : ""}<span class="text-[10px] font-bold tracking-widest text-center px-1.5 py-1 rounded-[3px] shrink-0"
+            style="background:${colour};color:${corTexto(colour, "#fff")};min-width:42px">${escapeHtml(b.line_id)}</span>
           ${
             paragem
               ? `<span class="min-w-0 flex flex-col">
@@ -905,6 +943,8 @@
     ensureElements();
     if (!panel || !backdrop || !stop) return;
 
+    if (window.sa_event) window.sa_event("mapa_paragem_cm_aberta");
+
     // Fecha outras sheets que partilham o mesmo painel.
     if (window.MapaDetails && window.MapaDetails.isOpen())
       window.MapaDetails.close();
@@ -1143,8 +1183,8 @@
         const ativa = sel.has(l.id);
         const apagada = sel.size && !ativa;
         const style = ativa
-          ? `background:${l.color};color:#fff;border-color:${l.color}`
-          : `background:transparent;color:${l.color};border-color:${l.color}`;
+          ? `background:${l.color};color:${corTexto(l.color, "#fff")};border-color:${corExtrema(l.color) ? "var(--lt-line-strong)" : l.color}`
+          : `background:transparent;color:var(--lt-ink);border-color:${corExtrema(l.color) ? "var(--lt-line-strong)" : l.color}`;
         return `<button type="button" data-cm-hub-line="${escapeHtml(l.id)}" aria-pressed="${ativa}"
           class="px-2 py-1 text-[10px] font-extrabold tracking-widest border rounded-[3px] transition-all duration-150${apagada ? " opacity-35" : ""}"
           style="${style}">${escapeHtml(l.name)}</button>`;
@@ -1184,7 +1224,7 @@
   function shellHubHtml() {
     const n = hub.paragens.length;
     return `
-      <div class="flex flex-col h-full bg-white dark:bg-[#09090b]">
+      <div class="lt-shell flex flex-col h-full">
         <div class="dp-handle md:hidden shrink-0" data-drag-area="1" aria-hidden="true">
           <div class="dp-handle-pill"></div>
         </div>
@@ -1625,13 +1665,13 @@
     .cmr{--cmr:#FDB71A}
     .cmr-cab{padding:2px 4px 12px}
     .cmr-voltar{display:inline-flex;align-items:center;gap:6px;padding:6px 0;background:none;border:0;cursor:pointer;
-      font:inherit;font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgb(113,113,122)}
+      font:inherit;font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--lt-ink-3)}
     .cmr-voltar:hover{color:rgb(24,24,27)} html.dark .cmr-voltar:hover{color:#fff}
     .cmr-linha{display:flex;align-items:center;gap:10px;margin-top:8px}
     .cmr-pill{color:#fff;font-size:10px;font-weight:700;letter-spacing:.14em;padding:4px 6px;border-radius:3px;min-width:42px;text-align:center}
     .cmr-dest{font-size:15px;color:rgb(24,24,27);font-weight:500}
     html.dark .cmr-dest{color:#fff}
-    .cmr-res{font-size:10px;color:rgb(161,161,170);margin-top:6px;font-variant-numeric:tabular-nums}
+    .cmr-res{font-size:10px;color:var(--lt-ink-3);margin-top:6px;font-variant-numeric:tabular-nums}
     .cmr-row{display:flex;align-items:center;gap:12px;padding:9px 2px;min-height:44px;border-bottom:1px solid rgba(0,0,0,.05)}
     html.dark .cmr-row{border-bottom-color:rgba(255,255,255,.05)}
     .cmr-rail{position:relative;width:14px;flex-shrink:0;align-self:stretch;display:flex;align-items:center;justify-content:center;margin:-9px 0}
@@ -1647,8 +1687,8 @@
     .cmr-nm{font-size:13px;color:rgb(24,24,27);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     html.dark .cmr-nm{color:#fff}
     .cmr-row.is-here .cmr-nm{font-weight:700}
-    .cmr-row.is-past .cmr-nm{color:rgb(161,161,170)}
-    .cmr-tag{display:block;margin-top:2px;font-size:8px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:rgb(161,161,170)}
+    .cmr-row.is-past .cmr-nm{color:var(--lt-ink-3)}
+    .cmr-tag{display:block;margin-top:2px;font-size:8px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--lt-ink-3)}
     .cmr-row.is-here .cmr-tag{color:rgb(217,119,6)}
     .cmr-ligs{display:flex;gap:4px;flex-shrink:0}
     .cmr-lig{width:26px;height:26px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;
@@ -1656,14 +1696,14 @@
     html.dark .cmr-lig{border-color:rgba(255,255,255,.4)}
     .cmr-lig img{width:15px;height:15px;object-fit:contain}
     .cmr-lig:focus-visible{outline:2px solid #3b82f6;outline-offset:2px}
-    .cmr-time{flex-shrink:0;min-width:3.2rem;text-align:right;font-size:14px;font-variant-numeric:tabular-nums;color:rgb(82,82,91)}
-    html.dark .cmr-time{color:rgb(212,212,216)}
+    .cmr-time{flex-shrink:0;min-width:3.2rem;text-align:right;font-size:14px;font-variant-numeric:tabular-nums;color:var(--lt-ink-2)}
+    html.dark .cmr-time{color:var(--lt-ink-2)}
     .cmr-row.is-here .cmr-time{font-weight:700;color:rgb(217,119,6)}
-    .cmr-row.is-past .cmr-time{color:rgb(161,161,170)}
+    .cmr-row.is-past .cmr-time{color:var(--lt-ink-3)}
     .cmr-ant{display:flex;align-items:center;justify-content:space-between;width:100%;padding:11px 2px;background:none;border:0;
       border-bottom:1px dashed rgba(0,0,0,.12);font:inherit;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.18em;
-      text-transform:uppercase;color:rgb(113,113,122)}
-    html.dark .cmr-ant{border-bottom-color:rgba(255,255,255,.1);color:rgb(161,161,170)}
+      text-transform:uppercase;color:var(--lt-ink-3)}
+    html.dark .cmr-ant{border-bottom-color:rgba(255,255,255,.1);color:var(--lt-ink-3)}
     @media (max-width: 767.98px){
       .cmr-row.is-past{min-height:30px;padding:4px 2px;gap:10px}
       .cmr-row.is-past .cmr-rail{margin:-4px 0}
@@ -1671,7 +1711,7 @@
       .cmr-row.is-past .cmr-nm,.cmr-row.is-past .cmr-time{font-size:11.5px}
       .cmr-row.is-past:not(.is-here) .cmr-tag{display:none}
     }
-    .cmr-msg{font-size:12px;color:rgb(161,161,170);text-align:center;padding:28px 0}`;
+    .cmr-msg{font-size:12px;color:var(--lt-ink-3);text-align:center;padding:28px 0}`;
     document.head.appendChild(el);
   }
 
@@ -1682,7 +1722,7 @@
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
           Partidas</button>
         <div class="cmr-linha">
-          <span class="cmr-pill" style="background:${escapeHtml(d.cor)}">${escapeHtml(d.line)}</span>
+          <span class="cmr-pill" style="background:${escapeHtml(d.cor)};color:${corTexto(d.cor, "#fff")}">${escapeHtml(d.line)}</span>
           <span class="cmr-dest">${escapeHtml(d.headsign || "—")}</span>
         </div>
         ${resumo ? `<p class="cmr-res">${escapeHtml(resumo)}</p>` : ""}

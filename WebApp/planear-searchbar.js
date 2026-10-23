@@ -363,11 +363,6 @@ html.dark .lt-sb-cta:hover{background:rgb(212,212,216)}
         </div>
       </div>
 
-      <p data-lt="offline-note" class="lt-sb-note hidden">
-        ${svg.chevron.replace("m6 9 6 6 6-6", "M12 9v4M12 17h.01M10.3 4l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3l-8-14a2 2 0 0 0-3.4 0Z")}
-        <span>Noutros dias só há horário programado — sem tempo real nem atrasos.</span>
-      </p>
-
       ${
         showReset
           ? `<div class="lt-sb-actions">
@@ -452,13 +447,11 @@ html.dark .lt-sb-cta:hover{background:rgb(212,212,216)}
         dayBadge.textContent = "";
         dayBadge.classList.add("hidden");
       }
-      const note = $("offline-note");
-      if (note) note.classList.toggle("hidden", state.dateStr === todayYMD());
 
       dayPrev.classList.toggle("off", state.dateStr <= todayYMD());
       dayNext.classList.toggle("off", state.dateStr >= maxYMD());
     }
-    fetch("./json/feriados.json")
+    fetch("./data/json/feriados.json")
       .then((r) => (r.ok ? r.json() : {}))
       .then((j) => {
         feriados = j;

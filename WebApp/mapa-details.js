@@ -86,14 +86,32 @@
         `<div class="h-1.5 flex-1" style="background-color:${on ? fill : "rgba(161,161,170,.25)"}"></div>`,
       );
     }
-    const occupancyPart =
-      train.occupancy != null
-        ? ` / <span style="color:${fill}">${train.occupancy}%</span>`
-        : "";
+    const LABELS = {
+      MB: "Muito Baixa",
+      B: "Baixa",
+      M: "Média",
+      A: "Média Alta",
+      MA: "Muito Alta",
+    };
+    const occ = train.occupancy;
+    let occupancyPart = "";
+    if (occ != null) {
+      // As carruagens ficam azuis com a sigla; o texto mantém a cor do nível.
+      const SIGLA_COR = {
+        MB: "#10b981",
+        B: "#22c55e",
+        M: "#eab308",
+        A: "#f97316",
+        MA: "#ef4444",
+      };
+      const cor = typeof occ === "string" ? SIGLA_COR[occ] || fill : fill;
+      const txt = typeof occ === "string" ? LABELS[occ] || occ : `${occ}%`;
+      occupancyPart = ` / <span class="lt-occ" style="--occ:${cor}">${txt}</span>`;
+    }
     return `
       <div class="flex flex-col">
-        <span class="text-[9px] uppercase tracking-[0.2em] text-zinc-400 mb-1.5">Carruagens</span>
-        <span class="text-[11px] text-zinc-500 font-medium leading-none">${count} unid.${occupancyPart}</span>
+        <!--<span class="text-[9px] uppercase tracking-[0.2em] text-zinc-400 mb-1.5">Carruagens</span>-->
+        <span class="text-[11px] text-zinc-500 font-medium leading-none">${count} carruagens${occupancyPart}</span>
         <div class="mt-2 flex gap-[2px]">${blocks.join("")}</div>
       </div>`;
   }
@@ -321,9 +339,9 @@
       overflow:hidden;text-overflow:ellipsis;letter-spacing:.01em}
     html.dark .dp-nm{color:#fff}
     .dp-row.is-next .dp-nm{font-weight:700}
-    .dp-row.is-past .dp-nm{color:rgb(161,161,170);text-decoration:line-through;text-decoration-thickness:.5px}
+    .dp-row.is-past .dp-nm{color:var(--lt-ink-3);text-decoration:line-through;text-decoration-thickness:.5px}
     .dp-tag{display:block;margin-top:2px;font-size:8px;font-weight:700;letter-spacing:.24em;
-      text-transform:uppercase;color:rgb(161,161,170)}
+      text-transform:uppercase;color:var(--lt-ink-3)}
     .dp-tag.is-next{color:var(--dp-line)}
     .dp-ligs{display:flex;align-items:center;gap:4px;flex-shrink:0}
     .dp-lig{width:26px;height:26px;padding:0;display:inline-flex;align-items:center;justify-content:center;
@@ -335,19 +353,19 @@
     .dp-lig:active{transform:scale(.9)}
     .dp-lig:focus-visible{outline:2px solid var(--dp-line);outline-offset:2px}
     .dp-time{flex-shrink:0;min-width:3.2rem;display:flex;flex-direction:column;align-items:flex-end}
-    .dp-t{font-size:14px;font-variant-numeric:tabular-nums;color:rgb(82,82,91)}
-    html.dark .dp-t{color:rgb(212,212,216)}
+    .dp-t{font-size:14px;font-variant-numeric:tabular-nums;color:var(--lt-ink-2)}
+    html.dark .dp-t{color:var(--lt-ink-2)}
     .dp-t.is-next{color:var(--dp-line);font-weight:600}
     .dp-t.is-late{color:rgb(217,119,6);font-weight:600}
     html.dark .dp-t.is-late{color:rgb(251,191,36)}
-    .dp-row.is-past .dp-t{color:rgb(161,161,170)}
-    .dp-t-old{font-size:9px;color:rgb(161,161,170);text-decoration:line-through;
+    .dp-row.is-past .dp-t{color:var(--lt-ink-3)}
+    .dp-t-old{font-size:9px;color:var(--lt-ink-3);text-decoration:line-through;
       font-variant-numeric:tabular-nums;margin-top:1px}
     .dp-past-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;
       padding:11px 2px;margin-bottom:2px;background:none;border:0;
       border-bottom:1px dashed rgba(0,0,0,.12);font:inherit;cursor:pointer;
-      font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgb(113,113,122)}
-    html.dark .dp-past-toggle{border-bottom-color:rgba(255,255,255,.1);color:rgb(161,161,170)}
+      font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--lt-ink-3)}
+    html.dark .dp-past-toggle{border-bottom-color:rgba(255,255,255,.1);color:var(--lt-ink-3)}
     .dp-past-toggle:hover{color:rgb(24,24,27)}
     html.dark .dp-past-toggle:hover{color:#fff}
     .dp-past-n{display:inline-block;margin-left:.4rem;padding:1px 6px;border-radius:999px;
@@ -396,7 +414,7 @@
     );
 
     return `
-      <div class="flex flex-col h-full bg-white dark:bg-[#09090b]">
+    <div class="lt-shell flex flex-col h-full">
 
         <!-- DRAG HANDLE (visível em mobile) -->
         <div class="dp-handle md:hidden shrink-0" data-drag-area="1" aria-hidden="true">
@@ -503,11 +521,11 @@
 
         <!-- EXPANDED CONTENT (só visível em state="expanded") -->
         <div class="dp-expanded-content flex-1 overflow-y-auto px-6 py-6" data-details-scroll="1">
-          <div class="flex items-center gap-3 mb-5">
+          <!--<div class="flex items-center gap-3 mb-5">
             <span class="text-[9px] uppercase tracking-[0.3em] font-bold text-zinc-900 dark:text-white">Percurso</span>
             <span class="h-px flex-1 bg-zinc-200 dark:bg-zinc-800"></span>
             <span class="text-[9px] uppercase tracking-[0.2em] text-zinc-400">${(train.nodes || []).length} paragens</span>
-          </div>
+          </div>-->
           ${timelineHtml(train)}
           <div class="h-4 pb-safe-ios"></div>
         </div>
@@ -952,13 +970,13 @@
   function updateBackdropForState() {
     if (!backdrop) return;
     if (currentState === "expanded") {
-      backdrop.classList.remove("opacity-0", "pointer-events-none");
-      backdrop.classList.add("opacity-100");
-      backdrop.dataset.intensity = "strong";
+      backdrop.classList.remove("pointer-events-none", "rounded-t-2xl");
+      backdrop.classList.add("md:opacity-100", "rounded-none");
+      backdrop.dataset.intensity = "soft";
     } else {
       // mini → não escurece para deixar o mapa visível
-      backdrop.classList.add("opacity-0", "pointer-events-none");
-      backdrop.classList.remove("opacity-100");
+      backdrop.classList.add("pointer-events-none", "rounded-t-2xl");
+      backdrop.classList.remove("md:opacity-100", "rounded-none");
       backdrop.dataset.intensity = "soft";
     }
   }

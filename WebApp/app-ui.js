@@ -39,7 +39,7 @@ function _statusCls(t) {
 function _carsHtml(t) {
   if (!t.carriages) return "";
   const occ = t.occupancy;
-  let fill;
+  let fill = "#3b82f6";
   if (t.occupancy != null) {
     fill =
       occ === 0
@@ -60,8 +60,14 @@ function _carsHtml(t) {
     : t.carriages;
   const w = t.carriages === 8 ? "w-full" : "w-1/2";
   let blocks = "";
-  for (let c = 0; c < t.carriages; c++) {
-    blocks += `<div class="h-[6px] rounded-[2px] transition-all duration-300 ease-out flex-1 ${c < filled ? fill : "bg-zinc-300 dark:bg-zinc-700"} opacity-90"></div>`;
+  if (typeof occ === "string") {
+    for (let c = 0; c < t.carriages; c++) {
+      blocks += `<div class="h-[6px] rounded-[2px] transition-all duration-300 ease-out flex-1 bg-blue-500 opacity-90"></div>`;
+    }
+  } else {
+    for (let c = 0; c < t.carriages; c++) {
+      blocks += `<div class="h-[6px] rounded-[2px] transition-all duration-300 ease-out flex-1 ${c < filled ? fill : "bg-zinc-300 dark:bg-zinc-700"} opacity-90"></div>`;
+    }
   }
   return `<div class="flex justify-center w-full mt-3"><div class="flex gap-1 h-1.5 ${w}">${blocks}</div></div>`;
 }
@@ -876,18 +882,37 @@ function openDetails(trainId) {
     barCls = "bg-yellow-500";
   }
 
+  const occMap = {
+    MB: {
+      label: "Muito Baixa",
+      textCls: "text-emerald-500",
+      bgCls: "bg-emerald-500",
+    },
+    B: { label: "Baixa", textCls: "text-green-500", bgCls: "bg-green-500" },
+    M: { label: "Média", textCls: "text-yellow-500", bgCls: "bg-yellow-500" },
+    A: {
+      label: "Média Alta",
+      textCls: "text-orange-500",
+      bgCls: "bg-orange-500",
+    },
+    MA: { label: "Muito Alta", textCls: "text-red-500", bgCls: "bg-red-500" },
+  };
+
+  // Verifica se t.occupancy é uma das siglas novas
+  const isCode = occMap.hasOwnProperty(t.occupancy);
+
   const count = t.carriages || 4;
   const filledCount = t.occupancy
     ? Math.round((t.occupancy / 100) * count)
     : count;
   let carsHtml = "";
-  if (t.occupancy != null) {
+  if (typeof t.occupancy != "string") {
     for (let c = 0; c < count; c++) {
       carsHtml += `<div class="h-2 flex-1 rounded-sm ${c < filledCount ? barCls : "bg-zinc-700/50"} transition-all"></div>`;
     }
   } else {
     for (let c = 0; c < count; c++) {
-      carsHtml += `<div class="h-2 flex-1 rounded-sm bg-zinc-700/50 border border-zinc-600/30"></div>`;
+      carsHtml += `<div class="h-2 flex-1 rounded-sm bg-blue-500 border border-zinc-600/30"></div>`;
     }
   }
 
@@ -998,8 +1023,8 @@ function openDetails(trainId) {
     if (t.isOffline) {
       timelineHtml += `
         <div class="flex items-center gap-2 mb-6 px-3 py-2.5 rounded-xl bg-zinc-800/60 border border-white/5">
-          <span class="w-1.5 h-1.5 rounded-full bg-zinc-500 shrink-0 animate-pulse"></span>
-          <p class="text-[10px] text-zinc-400 leading-relaxed">Horário programado. Estado em tempo real indisponível sem ligação à internet.</p>
+          <span class="w-1.5 h-1.5 rounded-full bg-white dark:bg-zinc-500 shrink-0 animate-pulse"></span>
+          <p class="text-[10px] text-white dark:text-zinc-400 leading-relaxed">Horário programado. Estado em tempo real indisponível sem ligação à internet.</p>
         </div>`;
     }
     const currentDB = activeTab === "lisboa" ? DB_LISBOA : DB_MARGEM;
@@ -1112,17 +1137,19 @@ function openDetails(trainId) {
               <span class="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Ocupação</span>
               <div class="flex items-end gap-1 mt-1">
                 ${
-                  t.occupancy != null
-                    ? `<span class="text-2xl font-mono font-bold ${occCls} leading-none">${t.occupancy}%</span>`
-                    : `<span class="text-[11px] text-zinc-600 italic">Apenas Hora de Ponta</span>`
+                  t.occupancy == null
+                    ? `<span class="text-[11px] text-zinc-600 italic">Apenas Dias Úteis</span>`
+                    : isCode
+                      ? `<span class="text-lg font-bold ${occMap[t.occupancy].textCls} leading-none">${occMap[t.occupancy].label}</span>`
+                      : `<span class="text-2xl font-mono font-bold ${occCls} leading-none">${t.occupancy}%</span>`
                 }
               </div>
             </div>
           </div>
           ${t.occupancy != null ? `<div class="flex gap-1.5 w-full mt-1">${carsHtml}</div>` : ""}
           <p style="margin-top:-14px" class="text-[9px] text-zinc-500 dark:text-zinc-400 leading-relaxed ${t.occupancy != null ? "" : "hidden"}">
-            Estimativa de Lotação: Os dados baseiam-se no histórico oficial da Fertagus e <b>não</b> em tempo real.
-            <a class="underline" target="_blank" href="https://www.fertagus.pt/Fertagus-pt/Viajar/Comunicados-e-Campanhas/Nova-oferta-de-comboios-duplos-e-simples-20-de-janeiro-25">Vê a Fonte da Informação</a>
+            Estimativa de Lotação! Baseados em estimativas <b>não</b> em tempo real.
+            <a class="underline" href="/sobre?tab=occ">Mais Informação.</a>
           </p>
         </div>
       </div>

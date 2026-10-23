@@ -125,7 +125,7 @@
   // ─── SHELL DO PAINEL ─────────────────────────────────────────────────
   function shellHtml(station) {
     return `
-      <div class="flex flex-col h-full bg-white dark:bg-[#09090b]">
+      <div class="lt-shell flex flex-col h-full">
         <div class="dp-handle md:hidden shrink-0" data-drag-area="1" aria-hidden="true">
           <div class="dp-handle-pill"></div>
         </div>

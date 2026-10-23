@@ -1137,19 +1137,30 @@
 
   // ─── HELPERS DE ESTILO ───────────────────────────────────────────────
 
+  // A ocupação chega como percentagem (número) ou como sigla qualitativa
+  // ("MB", "B", "M", "A", "MA"). A sigla não diz quantas carruagens vão
+  // cheias, por isso é tratada como "sem número": todas pintadas a azul.
+  function ocupacaoNumerica(train) {
+    const o = train.occupancy;
+    return typeof o === "number" && Number.isFinite(o) ? o : null;
+  }
+
   function carriageFillColor(train) {
     const c = MAPA.OCCUPANCY_COLORS;
+    const occ = ocupacaoNumerica(train);
     if (train.isOffline && train.occupancy == null) return c.offline;
-    if (train.occupancy == null) return c.default;
-    if (train.occupancy === 0) return c.empty;
-    if (train.occupancy <= 50) return c.low;
-    if (train.occupancy <= 85) return c.medium;
+    if (occ == null) return c.default;
+    if (occ === 0) return c.empty;
+    if (occ <= 50) return c.low;
+    if (occ <= 85) return c.medium;
     return c.high;
   }
 
   function filledCarriages(train) {
-    if (train.occupancy == null) return train.carriages;
-    return Math.round((train.occupancy / 100) * train.carriages);
+    const n = train.carriages || 4;
+    const occ = ocupacaoNumerica(train);
+    if (occ == null) return n;
+    return Math.round((occ / 100) * n);
   }
 
   function ringColor(train) {

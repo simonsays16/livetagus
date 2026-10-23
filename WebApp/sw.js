@@ -1,30 +1,30 @@
 // --- BEGIN VERSIONS ---
-const GLOBAL_VERSION = "livetagus-v.rc3.03102026";
+const GLOBAL_VERSION = "livetagus-v.rc53.23102026";
 const ASSETS_VERSIONS = {
-  "./index.html": "v.rc2.30092026",
+  "./index.html": "v.rc3.23102026",
   "./index.js": "v.rc3.21062026",
   "./index-home.js": "v.rc1.22062026",
   "./home-map.js": "v.rc1.03102026",
-  "./app.html": "v.rc2.30092026",
+  "./app.html": "v.rc2.23102026",
   "./app-alerts.js": "v.rc3.13062026",
   "./app-config.js": "v.rc2.13092026",
   "./app-occupancy.js": "v.rc1.12092026",
   "./app-timefilter.js": "v.rc1.12092026",
-  "./planear-searchbar.js": "v.rc1.12092026",
-  "./app-init.js": "v.rc1.13092026",
+  "./planear-searchbar.js": "v.rc2.23102026",
+  "./app-init.js": "v.rc4.23102026",
   "./app-settings.js": "v.rc4.12092026",
   "./app-trains.js": "v.rc3.28092026",
-  "./app-ui.js": "v.rc5.12092026",
+  "./app-ui.js": "v.rc30.23102026",
   "./lucide-icons.js": "v.rc1.25062026",
   "./sudoku.html": "v.rc2.30092026",
   "./sudoku.js": "v.rc1.24052026",
   "./sudoku-train.js": "v.rc2.28052026",
   "./horarios.html": "v.rc2.30092026",
-  "./horarios.js": "v.rc1.24052026",
+  "./horarios.js": "v.rc2.23102026",
   "./privacidade.html": "v.rc3.30092026",
   "./tabs.js": "v.rc1.24052026",
   "./train-scrollbar.js": "v.rc1.03102026",
-  "./output.css": "v.rc12.12092026",
+  "./output.css": "v.rc1.23102026",
   "./assets/fonts/fonts.css": "v.rc1.30092026",
   "./assets/fonts/inter-normal-variavel-v20-latin.woff2": "v.rc1.30092026",
   "./assets/fonts/jetbrains-mono-normal-variavel-v24-latin.woff2":
@@ -38,9 +38,9 @@ const ASSETS_VERSIONS = {
   "./imagens/badge_coded_in_europe_portugal_margem_sul.svg": "v.rc1.24052026",
   "./imagens/netlify-dark.svg": "v.rc1.24052026",
   "./imagens/netlify-light.svg": "v.rc1.24052026",
-  "./json/fertagus_sentido_lisboa.json": "v.rc1.24052026",
-  "./json/fertagus_sentido_margem.json": "v.rc1.24052026",
-  "./json/feriados.json": "v.rc1.24052026",
+  "./data/json/fertagus_sentido_lisboa.json": "v.rc4.23102026",
+  "./data/json/fertagus_sentido_margem.json": "v.rc2.23102026",
+  "./data/json/feriados.json": "v.rc3.23102026",
 };
 // --- END VERSIONS ---
 

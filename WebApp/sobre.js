@@ -9,6 +9,16 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnGeral) btnGeral.addEventListener("click", () => switchTab("geral"));
   if (btnAjuda) btnAjuda.addEventListener("click", () => switchTab("ajuda"));
   if (btnTech) btnTech.addEventListener("click", () => switchTab("tech"));
+
+  const params = new URLSearchParams(window.location.search);
+  const tab = params.get("tab");
+  if (tab === "occ") {
+    switchTab("ajuda");
+    requestAnimationFrame(() => {
+      const sec = document.getElementById("sec-ocupacao");
+      if (sec) sec.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
 });
 
 function switchTab(tabId) {

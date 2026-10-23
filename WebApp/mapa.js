@@ -211,10 +211,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     window.MapaRender.setMap(mapInstance);
 
-    mapInstance.addControl(
-      new maplibregl.AttributionControl({ compact: true }),
-      "bottom-right",
-    );
+    // No canto de baixo o MapLibre põe cada controlo novo POR CIMA dos
+    // anteriores: o "i" entra primeiro para ficar por baixo do zoom.
+    mapInstance.addControl(new InfoControl(), "bottom-right");
 
     mapInstance.addControl(
       new maplibregl.NavigationControl({ showCompass: false }),
@@ -228,6 +227,72 @@ document.addEventListener("DOMContentLoaded", () => {
     return new Promise((resolve) => {
       mapInstance.on("load", resolve);
     });
+  }
+
+  // ─── ATRIBUIÇÃO NUM BOTÃO "i" ────────────────────────────────────────
+  // As regras de atribuição da OSMF permitem recolher os créditos desde que
+  // comecem visíveis e continuem a um toque de distância (o "(i)"). Por isso
+  // o balão abre ao carregar e fecha à primeira interação com o mapa ou ao
+  // fim de 5 s. O texto vem do #lt-atribuicao do mapa.html.
+  class InfoControl {
+    onAdd(map) {
+      this._map = map;
+      const box = document.createElement("div");
+      box.className = "maplibregl-ctrl lt-info";
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "lt-info-btn";
+      btn.setAttribute("aria-label", "Créditos do mapa e fontes dos dados");
+      btn.innerHTML =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>';
+
+      let pop = document.getElementById("lt-atribuicao");
+      if (!pop) {
+        pop = document.createElement("div");
+        pop.id = "lt-atribuicao";
+        pop.className = "lt-info-pop";
+        pop.setAttribute("role", "note");
+        pop.innerHTML =
+          '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors · Dados Fertagus · Infraestruturas de Portugal';
+      }
+      pop.hidden = false;
+      btn.setAttribute("aria-controls", pop.id);
+      box.append(pop, btn);
+
+      const abrir = (on) => {
+        box.classList.toggle("is-open", on);
+        btn.setAttribute("aria-expanded", on ? "true" : "false");
+      };
+      this._fechar = () => {
+        clearTimeout(this._t);
+        abrir(false);
+      };
+      this._tecla = (e) => {
+        if (e.key === "Escape" && box.classList.contains("is-open")) this._fechar();
+      };
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        clearTimeout(this._t);
+        abrir(!box.classList.contains("is-open"));
+      });
+      map.on("movestart", this._fechar);
+      map.on("click", this._fechar);
+      document.addEventListener("keydown", this._tecla);
+
+      abrir(true);
+      this._t = setTimeout(this._fechar, 5000);
+      this._box = box;
+      return box;
+    }
+
+    onRemove() {
+      clearTimeout(this._t);
+      this._map.off("movestart", this._fechar);
+      this._map.off("click", this._fechar);
+      document.removeEventListener("keydown", this._tecla);
+      this._box.remove();
+    }
   }
 
   // ─── CARREGAR LINHA E ESTAÇÕES ───────────────────────────────────────

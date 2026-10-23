@@ -733,6 +733,7 @@
       min-width:22px;height:22px;padding:0 6px;border-radius:6px;max-width:8.5rem;
       font-size:12px;font-weight:800;line-height:1;letter-spacing:.02em;
       overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .ltg-pill.is-extrema{box-shadow:inset 0 0 0 1px var(--lt-line-strong);}
     .ltg-row{display:flex;align-items:center;gap:0;padding:0 4px;width:100%;
       text-align:left;background:none;border:0;border-bottom:1px solid rgba(0,0,0,.06);
       font:inherit;color:inherit;cursor:pointer;
@@ -758,13 +759,13 @@
       outline:2px solid rgb(59 130 246);outline-offset:2px;}
     .ltg-linereset{padding:3px 6px;background:none;border:0;font:inherit;
       font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
-      color:rgb(161 161 170);cursor:pointer;}
+      color:var(--lt-ink-3);cursor:pointer;}
     .ltg-linereset:hover{color:rgb(9 9 11);}
     .ltg-ext{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;
       border-radius:999px;border:1px solid rgba(0,0,0,.18);text-decoration:none;
       font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
-      color:rgb(63 63 70);transition:border-color .15s ease,color .15s ease;}
-    html.dark .ltg-ext{border-color:rgba(255,255,255,.2);color:rgb(212 212 216);}
+      color:var(--lt-ink-2);transition:border-color .15s ease,color .15s ease;}
+    html.dark .ltg-ext{border-color:rgba(255,255,255,.2);color:var(--lt-ink-2);}
     .ltg-ext:hover{border-color:rgba(0,0,0,.5);color:rgb(9 9 11);}
     html.dark .ltg-ext:hover{border-color:rgba(255,255,255,.5);color:#fff;}
     .ltg-ext-ic{width:11px;height:11px;flex-shrink:0;}
@@ -779,7 +780,7 @@
     html.dark .ltg-linereset:hover{color:#fff;}
     .ltg-chev{width:14px;height:14px;flex-shrink:0;opacity:.28;}
     .ltg-back{display:inline-flex;align-items:center;gap:6px;background:none;border:0;
-      padding:0;margin:0 0 10px;font:inherit;cursor:pointer;color:rgb(113 113 122);
+      padding:0;margin:0 0 10px;font:inherit;cursor:pointer;color:var(--lt-ink-3);
       font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
       transition:color .15s ease;}
     .ltg-back:hover{color:rgb(9 9 11);}
@@ -806,11 +807,11 @@
       background:rgb(212 212 216);}
     html.dark .ltg-dot{background:rgb(63 63 70);}
     .ltg-dot.is-on{background:var(--ltg-line,rgb(212 212 216));}
-    .ltg-dot.is-end{width:9px;height:9px;box-shadow:0 0 0 2px #fff;}
-    html.dark .ltg-dot.is-end{box-shadow:0 0 0 2px #09090b;}
+    .ltg-dot.is-end{width:9px;height:9px;box-shadow:0 0 0 2px var(--lt-ring,#fff);}
+    html.dark .ltg-dot.is-end{box-shadow:0 0 0 2px var(--lt-ring,#09090b);}
     .ltg-dot-here{width:11px;height:11px;background:var(--ltg-line,rgb(212 212 216));
-      box-shadow:0 0 0 3px rgba(255,255,255,1);}
-    html.dark .ltg-dot-here{box-shadow:0 0 0 3px #09090b;}
+      box-shadow:0 0 0 3px var(--lt-ring,#fff);}
+    html.dark .ltg-dot-here{box-shadow:0 0 0 3px var(--lt-ring,#09090b);}
     /* Linha da viagem: contentor + alvo de toque, para o botão de ligação
        poder ser um botão a sério ao lado. */
     .ltg-hit{display:flex;align-items:center;gap:14px;flex:1;min-width:0;
@@ -829,8 +830,8 @@
     .ltg-link:focus-visible{outline:2px solid rgb(59 130 246);outline-offset:2px;}
     .ltg-badge{display:inline-block;padding:2px 6px;border-radius:4px;
       font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
-      background:rgba(0,0,0,.05);color:rgb(113 113 122);}
-    html.dark .ltg-badge{background:rgba(255,255,255,.07);color:rgb(161 161 170);}
+      background:rgba(0,0,0,.05);color:var(--lt-ink-3);}
+    html.dark .ltg-badge{background:rgba(255,255,255,.07);color:var(--lt-ink-3);}
     .ltg-spin{width:18px;height:18px;border:2px solid rgba(0,0,0,.12);
       border-top-color:rgba(0,0,0,.45);border-radius:999px;margin:0 auto;
       animation:ltg-rot .7s linear infinite;}
@@ -888,10 +889,50 @@
   const ICON_MOON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-8 h-8 mx-auto text-zinc-300 dark:text-zinc-700"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>';
 
+  // Texto legível sobre a cor de uma linha. Os feeds mandam muitas vezes
+  // branco sobre amarelo ou verde-lima (o Metro e o MTS) e texto da cor da
+  // própria linha nas pastilhas de contorno. Escolhe-se pelo contraste.
+  function luminancia(hex) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || "").trim());
+    if (!m) return null;
+    const n = parseInt(m[1], 16);
+    const lin = (c) => {
+      c /= 255;
+      return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    };
+    return (
+      0.2126 * lin(n >> 16) +
+      0.7152 * lin((n >> 8) & 255) +
+      0.0722 * lin(n & 255)
+    );
+  }
+  function contrasteCores(a, b) {
+    const la = luminancia(a),
+      lb = luminancia(b);
+    if (la == null || lb == null) return 21;
+    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+  }
+  // Mantém a cor do feed se já se lê bem (≥ 4,5:1); senão preto ou branco.
+  function corTexto(bg, preferida) {
+    if (preferida && contrasteCores(bg, preferida) >= 4.5) return preferida;
+    const L = luminancia(bg);
+    if (L == null) return "#fff";
+    return (L + 0.05) / 0.05 >= 1.05 / (L + 0.05) ? "#09090b" : "#fff";
+  }
+  // Cores quase brancas ou quase pretas desaparecem num dos temas: levam um
+  // contorno, e nas pastilhas de contorno usa-se a linha neutra do painel.
+  function corExtrema(bg) {
+    const L = luminancia(bg);
+    return L != null && (L > 0.8 || L < 0.02);
+  }
+
   function routeStyle(bundle, routeId) {
     const r = bundle.routes.get(routeId) || {};
     const bg = r.route_color ? `#${r.route_color}` : "#18181b";
-    const fg = r.route_text_color ? `#${r.route_text_color}` : "#ffffff";
+    const fg = corTexto(
+      bg,
+      r.route_text_color ? `#${r.route_text_color}` : null,
+    );
     return {
       bg,
       fg,
@@ -936,12 +977,12 @@
   function pillHtml(bundle, routeId, labelOverride) {
     const s = routeStyle(bundle, routeId);
     const label = labelOverride || s.label;
-    return `<span class="ltg-pill" style="background:${s.bg};color:${s.fg};">${escapeHtml(label)}</span>`;
+    return `<span class="ltg-pill${corExtrema(s.bg) ? " is-extrema" : ""}" style="background:${s.bg};color:${s.fg};">${escapeHtml(label)}</span>`;
   }
 
   function shellHtml(inner) {
     return `
-      <div class="flex flex-col h-full bg-white dark:bg-[#09090b]">
+      <div class="lt-shell flex flex-col h-full">
         <div class="dp-handle md:hidden shrink-0" data-drag-area="1" aria-hidden="true">
           <div class="dp-handle-pill"></div>
         </div>
@@ -958,9 +999,12 @@
       .map((l) => {
         const on = active === l.key;
         const dim = active && !on;
+        // Contorno: o texto é o do painel (a cor da linha, como texto, não
+        // se lia — a branca da CP desaparecia no claro) e a cor fica no contorno.
+        const borda = corExtrema(l.bg) ? "var(--lt-line-strong)" : l.bg;
         const style = on
-          ? `background:${l.bg};color:${l.fg};border-color:${l.bg}`
-          : `background:transparent;color:${l.bg};border-color:${l.bg}`;
+          ? `background:${l.bg};color:${l.fg};border-color:${corExtrema(l.bg) ? "var(--lt-line-strong)" : l.bg}`
+          : `background:transparent;color:var(--lt-ink);border-color:${borda}`;
         return `<button type="button" class="ltg-linebtn${dim ? " is-dim" : ""}"
           data-ltg-line="${escapeHtml(l.key)}" aria-pressed="${on ? "true" : "false"}"
           title="${on ? "Mostrar todas" : "Ver só " + escapeHtml(l.label)}"

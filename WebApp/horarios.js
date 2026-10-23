@@ -83,9 +83,9 @@ async function loadSchedules() {
 
   try {
     const [lisboaRes, margemRes, feriadosRes] = await Promise.all([
-      fetch("./json/fertagus_sentido_lisboa.json"),
-      fetch("./json/fertagus_sentido_margem.json"),
-      fetch("./json/feriados.json"),
+      fetch("./data/json/fertagus_sentido_lisboa.json"),
+      fetch("./data/json/fertagus_sentido_margem.json"),
+      fetch("./data/json/feriados.json"),
     ]);
     cachedData.lisboa = await lisboaRes.json();
     cachedData.margem = await margemRes.json();

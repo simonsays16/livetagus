@@ -65,9 +65,9 @@ async function init() {
   // ── CARREGAMENTO DOS JSON LOCAIS (SW cache, quasi-instantâneo) ──────
   try {
     const [resLisboa, resMargem, resFeriados] = await Promise.all([
-      fetch("./json/fertagus_sentido_lisboa.json"),
-      fetch("./json/fertagus_sentido_margem.json"),
-      fetch("./json/feriados.json"),
+      fetch("./data/json/fertagus_sentido_lisboa.json"),
+      fetch("./data/json/fertagus_sentido_margem.json"),
+      fetch("./data/json/feriados.json"),
     ]);
     if (resLisboa.ok) DB_LISBOA = await resLisboa.json();
     if (resMargem.ok) DB_MARGEM = await resMargem.json();

@@ -17,7 +17,7 @@
     <title>Mapa ao Vivo | LiveTagus</title>
     <meta
       name="description"
-      content="Mapa em tempo real dos comboios Fertagus na área metropolitana de Lisboa. Posição estimada, atrasos e percurso completo."
+      content="Mapa em tempo real dos comboios Fertagus na área metropolitana de Lisboa. Posição real, atrasos e percurso completo."
     />
     <meta name="author" content="LiveTagus" />
 
@@ -388,7 +388,6 @@
           height: 50dvh;
           max-height: 92dvh;
           border-top: 1px solid rgb(228, 228, 231);
-          border-radius: 14px 14px 0 0;
           box-shadow:
             0 -8px 24px -8px rgba(0, 0, 0, 0.18),
             0 -2px 8px -2px rgba(0, 0, 0, 0.08);
@@ -485,7 +484,7 @@
         width: 38px;
         height: 4px;
         border-radius: 999px;
-        background: rgb(212, 212, 216);
+        background: #aaa;
         transition: background 0.2s ease;
       }
       html.dark .dp-handle-pill {
@@ -701,22 +700,6 @@
         .dp-toggle-chevron {
           animation: none !important;
           transition: none !important;
-        }
-      }
-
-      @media (display-mode: standalone), (display-mode: fullscreen) {
-        #btn-legend {
-          bottom: calc(1.5rem + env(safe-area-inset-bottom, 16px)) !important;
-        }
-        #btn-alerts {
-          bottom: calc(4.5rem + env(safe-area-inset-bottom, 16px)) !important;
-        }
-        #legend-card {
-          bottom: calc(8.25rem + env(safe-area-inset-bottom, 16px)) !important;
-        }
-        .maplibregl-ctrl-bottom-right,
-        .maplibregl-ctrl-bottom-left {
-          margin-bottom: env(safe-area-inset-bottom, 16px) !important;
         }
       }
 
@@ -1284,29 +1267,55 @@
         display: block !important;
       }
 
-      /* ─── ATRIBUIÇÃO ESTÁTICA ─────────────────────────────────────────── */
-      .lt-atribuicao {
+      /* ─── ATRIBUIÇÃO NUM BOTÃO "i" (mapa.js · InfoControl) ──────────── */
+      /* As regras da OSMF deixam recolher a atribuição se ela começar visível
+         e continuar acessível por um "(i)": abre ao carregar e fecha à
+         primeira interação com o mapa ou ao fim de 5 s. */
+      .lt-info {
+        position: relative;
+      }
+      .lt-info-pop {
         position: absolute;
-        right: 0;
+        right: calc(100% + 8px);
         bottom: 0;
-        z-index: 2;
-        max-width: calc(100% - 8px);
-        padding: 2px 6px calc(2px + env(safe-area-inset-bottom, 0px));
-        border-top-left-radius: 4px;
-        background: rgba(255, 255, 255, 0.72);
-        color: rgb(63, 63, 70);
-        font-size: 10px;
-        line-height: 1.4;
+        width: max-content;
+        max-width: min(17rem, calc(100vw - 6rem));
+        padding: 7px 10px;
+        border: 1px solid rgba(9, 9, 11, 0.08);
+        border-radius: 10px;
+        background: rgba(250, 250, 251, 0.9);
+        -webkit-backdrop-filter: blur(16px) saturate(170%);
+        backdrop-filter: blur(16px) saturate(170%);
+        box-shadow: 0 6px 20px -6px rgba(0, 0, 0, 0.18);
+        color: #3f3f46;
+        font: 500 10.5px/1.45 Inter, system-ui, sans-serif;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateX(4px);
+        transition:
+          opacity 0.2s ease,
+          transform 0.2s ease,
+          visibility 0s linear 0.2s;
       }
-      html.dark .lt-atribuicao {
-        background: rgba(9, 9, 11, 0.72);
-        color: rgb(161, 161, 170);
+      html.dark .lt-info-pop {
+        border-color: rgba(255, 255, 255, 0.09);
+        background: rgba(20, 20, 24, 0.9);
+        color: #d4d4d8;
       }
-      .lt-atribuicao a {
+      .lt-info.is-open .lt-info-pop {
+        opacity: 1;
+        visibility: visible;
+        transform: none;
+        transition:
+          opacity 0.2s ease,
+          transform 0.2s ease;
+      }
+      .lt-info-pop a {
         color: inherit;
         text-decoration: underline;
+        text-underline-offset: 2px;
       }
-      /* O controlo do MapLibre deixa de ser preciso: a atribuição é a de cima. */
+      /* O controlo do MapLibre não é usado: a atribuição vive no "i". */
       .maplibregl-ctrl-attrib {
         display: none !important;
       }
@@ -1341,21 +1350,355 @@
         outline-offset: 3px;
         border-radius: 999px;
       }
+
+      /* ═══ VIDRO DOS PAINÉIS ═══════════════════════════════════════════
+         Um só vidro, definido aqui e só aqui, para todos os painéis que usam o
+         #details-panel (estação Fertagus, CP, Metro, MTS, Carris, comboio) e
+         para a folha de percurso do partidas.js. Os invólucros dos módulos são
+         transparentes. CSS simples, sem classes do Tailwind: não depende de
+         recompilar o output.css.
+
+         As cores de texto são por FUNÇÃO (--lt-ink, -2, -3…), com valores
+         escolhidos para este vidro e medidos contra o mapa real por baixo:
+         todo o texto cumpre WCAG AA (4,5:1; 3:1 no texto grande) nos dois
+         temas. O partidas.js lê estas variáveis quando está aqui dentro; na
+         página da estação usa as suas por omissão. */
+      #details-panel,
+      html:root body .ltp-sheet {
+        --lt-glass: rgba(250, 250, 251, 0.74);
+        --lt-edge: rgba(255, 255, 255, 0.75);
+        --lt-shadow: 0 -12px 40px -14px rgba(0, 0, 0, 0.28);
+        --lt-blur: blur(28px) saturate(175%);
+        --lt-ink: #09090b;
+        --lt-ink-2: #27272a;
+        --lt-ink-3: #52525b;
+        --lt-line: rgba(9, 9, 11, 0.09);
+        --lt-line-strong: rgba(9, 9, 11, 0.2);
+        --lt-card: rgba(255, 255, 255, 0.55);
+        --lt-card-line: rgba(255, 255, 255, 0.85);
+        --lt-soft: rgba(255, 255, 255, 0.5);
+        --lt-hover: rgba(9, 9, 11, 0.045);
+        --lt-ring: rgba(255, 255, 255, 0.95);
+        color: var(--lt-ink);
+      }
+      html.dark #details-panel,
+      html.dark:root body .ltp-sheet {
+        --lt-glass: rgba(20, 20, 24, 0.74);
+        --lt-edge: rgba(255, 255, 255, 0.09);
+        --lt-shadow: 0 -12px 40px -14px rgba(0, 0, 0, 0.7);
+        --lt-blur: blur(28px) saturate(140%);
+        --lt-ink: #fafafa;
+        --lt-ink-2: #e4e4e7;
+        --lt-ink-3: #a1a1aa;
+        --lt-line: rgba(255, 255, 255, 0.08);
+        --lt-line-strong: rgba(255, 255, 255, 0.22);
+        --lt-card: rgba(255, 255, 255, 0.045);
+        --lt-card-line: rgba(255, 255, 255, 0.07);
+        --lt-soft: rgba(255, 255, 255, 0.05);
+        --lt-hover: rgba(255, 255, 255, 0.05);
+        --lt-ring: #1c1c21;
+      }
+      /* Sem desfoque (browser antigo) ou com "reduzir transparência" pedido
+         pelo sistema: quase sólido, para o texto nunca ficar por cima do mapa. */
+      @supports not (
+        (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
+      ) {
+        #details-panel,
+        html:root body .ltp-sheet {
+          --lt-glass: rgba(250, 250, 251, 0.97);
+        }
+        html.dark #details-panel,
+        html.dark:root body .ltp-sheet {
+          --lt-glass: rgba(20, 20, 24, 0.97);
+        }
+      }
+      @media (prefers-reduced-transparency: reduce) {
+        #details-panel,
+        html:root body .ltp-sheet {
+          --lt-glass: rgba(250, 250, 251, 0.97);
+        }
+        html.dark #details-panel,
+        html.dark:root body .ltp-sheet {
+          --lt-glass: rgba(20, 20, 24, 0.97);
+        }
+      }
+      #details-panel.lt-glass,
+      html:root body .ltp-sheet {
+        background: var(--lt-glass);
+        -webkit-backdrop-filter: var(--lt-blur);
+        backdrop-filter: var(--lt-blur);
+      }
+      @media (max-width: 767.98px) {
+        #details-panel.lt-glass {
+          border: 0;
+          border-top: 1px solid var(--lt-edge);
+          border-radius: 20px 20px 0 0;
+          box-shadow: var(--lt-shadow);
+        }
+      }
+      @media (min-width: 768px) {
+        #details-panel.lt-glass {
+          border: 1px solid var(--lt-edge);
+          border-radius: 18px;
+          box-shadow:
+            0 24px 60px -24px rgba(0, 0, 0, 0.35),
+            0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+        html.dark #details-panel.lt-glass {
+          box-shadow:
+            0 24px 60px -20px rgba(0, 0, 0, 0.8),
+            0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+      }
+      #details-panel .dp-handle-pill {
+        background: var(--lt-line-strong);
+      }
+
+      /* Cinzentos do Tailwind dentro do vidro → cores por função.
+         Separado por tema de propósito: no claro, só as classes base; no
+         escuro, só as dark:, e as base que não tenham uma dark: própria. Assim
+         uma classe "dark:text-…" de outra cor nunca é apanhada no claro. */
+      html:not(.dark)
+        #details-panel
+        :is(
+          .text-zinc-400,
+          .text-zinc-500,
+          .text-zinc-600,
+          .text-gray-400,
+          .text-gray-500
+        ) {
+        color: var(--lt-ink-3);
+      }
+      html:not(.dark) #details-panel :is(.text-zinc-700, .text-zinc-800) {
+        color: var(--lt-ink-2);
+      }
+      html.dark
+        #details-panel
+        :is(
+          .dark\:text-zinc-400,
+          .dark\:text-zinc-500,
+          .dark\:text-zinc-600,
+          .dark\:text-zinc-700
+        ) {
+        color: var(--lt-ink-3);
+      }
+      html.dark #details-panel :is(.dark\:text-zinc-300, .dark\:text-zinc-200) {
+        color: var(--lt-ink-2);
+      }
+      html.dark
+        #details-panel
+        :is(.text-zinc-400, .text-zinc-500, .text-zinc-600):not(
+          [class*="dark:text-"]
+        ) {
+        color: var(--lt-ink-3);
+      }
+      /* …sem estragar os hovers, que essas regras venciam. */
+      html:not(.dark)
+        #details-panel
+        :is(.hover\:text-zinc-900, .hover\:text-zinc-700):hover {
+        color: var(--lt-ink);
+      }
+      html.dark #details-panel .dark\:hover\:text-white:hover {
+        color: var(--lt-ink);
+      }
+      /* Separadores e contornos. */
+      html:not(.dark) #details-panel :is(.border-zinc-100, .border-zinc-200) {
+        border-color: var(--lt-line);
+      }
+      html.dark
+        #details-panel
+        :is(.dark\:border-zinc-800, .dark\:border-zinc-900) {
+        border-color: var(--lt-line);
+      }
+      html:not(.dark) #details-panel .hover\:bg-zinc-50:hover,
+      html.dark #details-panel .dark\:hover\:bg-zinc-900:hover {
+        background-color: var(--lt-hover);
+      }
+      /* Etiquetas dos operadores, em letra de 9 px: no claro precisam de um
+         tom mais escuro para ler sobre o vidro. */
+      html:not(.dark) #details-panel :is(.text-blue-600, .text-blue-500) {
+        color: #1d4ed8;
+      }
+      html:not(.dark) #details-panel .text-yellow-500 {
+        color: #854d0e;
+      }
+      html:not(.dark)
+        #details-panel
+        :is(.text-emerald-500, .text-emerald-600, .text-green-600) {
+        color: #046c4e;
+      }
+      /* "Próxima" e a hora dela, no percurso do comboio. */
+      html:not(.dark) #details-panel :is(.dp-tag.is-next, .dp-t.is-next) {
+        color: #1d4ed8;
+      }
+      html.dark #details-panel :is(.dp-tag.is-next, .dp-t.is-next) {
+        color: #60a5fa;
+      }
+
+      /* Cor da ocupação (a sigla traz a cor em --occ): ajustada ao tema. */
+      .lt-occ {
+        color: var(--occ);
+        font-weight: 700;
+      }
+      html:not(.dark) .lt-occ {
+        color: color-mix(in srgb, var(--occ) 55%, #000);
+      }
+      html.dark .lt-occ {
+        color: color-mix(in srgb, var(--occ) 72%, #fff);
+      }
+
+      /* ═══ ECRÃ DO MAPA E MARGENS SEGURAS ═══════════════════════════════
+         O mapa ocupa sempre o ecrã visível e a página nunca faz scroll:
+         - o contentor é fixo (inset: 0), por isso acompanha as barras do
+           Safari/Chrome sem depender de 100vh/100dvh;
+         - nada no fluxo empurra o mapa para baixo (o #global-nav não tem
+           altura; só o header fixo leva a margem do topo);
+         - topo e fundo somam a margem segura (ilha/notch, indicador de
+           início, barra de gestos do Android) a um respiro fixo. */
+      :root {
+        --lt-safe-top: env(safe-area-inset-top, 0px);
+        --lt-safe-bottom: env(safe-area-inset-bottom, 0px);
+        --lt-gap-bottom: calc(var(--lt-safe-bottom) + 1rem);
+      }
+      html,
+      body {
+        height: 100%;
+        overflow: hidden;
+        overscroll-behavior: none;
+      }
+      body {
+        min-height: 0 !important;
+      }
+      .mapa-container {
+        position: fixed;
+        inset: 0;
+      }
+      #global-nav {
+        padding-top: 0 !important;
+      }
+      #global-nav header {
+        padding-top: calc(var(--lt-safe-top) + 1rem) !important;
+        padding-left: max(0.75rem, env(safe-area-inset-left, 0px)) !important;
+        padding-right: max(0.75rem, env(safe-area-inset-right, 0px)) !important;
+      }
+
+      /* Canto inferior esquerdo: legenda, avisos por cima, cartão por cima. */
+      #btn-legend {
+        bottom: var(--lt-gap-bottom) !important;
+        left: max(1rem, env(safe-area-inset-left, 0px)) !important;
+      }
+      #btn-alerts {
+        bottom: calc(var(--lt-gap-bottom) + 48px) !important;
+        left: max(1rem, env(safe-area-inset-left, 0px)) !important;
+      }
+      #legend-card {
+        bottom: calc(var(--lt-gap-bottom) + 104px) !important;
+        max-width: calc(100vw - 2rem);
+      }
+
+      /* Canto inferior direito: zoom e "i", com o mesmo vidro e a mesma
+         coluna dos botões redondos de cima (right .75rem, 42px). */
+      .maplibregl-ctrl-bottom-right {
+        right: max(0px, env(safe-area-inset-right, 0px));
+        bottom: var(--lt-gap-bottom);
+      }
+      .maplibregl-ctrl-bottom-right .maplibregl-ctrl {
+        margin: 8px 0.75rem 0 0;
+      }
+      /* No computador o painel fica no canto inferior direito (right 2rem,
+         440px): com ele aberto, o zoom e o "i" passam para o lado dele em
+         vez de ficarem tapados. */
+      @media (min-width: 768px) {
+        .maplibregl-ctrl-bottom-right {
+          bottom: 2rem;
+          transition: transform 0.3s ease;
+        }
+        body:has(#details-panel:not([data-state="closed"]))
+          .maplibregl-ctrl-bottom-right {
+          transform: translateX(calc(-440px - 1.25rem));
+        }
+      }
+      .maplibregl-ctrl-bottom-right .maplibregl-ctrl-group,
+      .lt-info-btn {
+        border: 1px solid rgba(228, 228, 231, 0.6) !important;
+        background: rgba(255, 255, 255, 0.82) !important;
+        -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(12px);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06) !important;
+      }
+      html.dark .maplibregl-ctrl-bottom-right .maplibregl-ctrl-group,
+      html.dark .lt-info-btn {
+        border-color: rgba(255, 255, 255, 0.08) !important;
+        background: rgba(9, 9, 11, 0.8) !important;
+      }
+      .maplibregl-ctrl-bottom-right .maplibregl-ctrl-group {
+        border-radius: 9999px;
+        overflow: hidden;
+      }
+      .maplibregl-ctrl-bottom-right .maplibregl-ctrl-group button {
+        width: 40px;
+        height: 40px;
+      }
+      .maplibregl-ctrl-bottom-right .maplibregl-ctrl-group button + button {
+        border-top: 1px solid rgba(9, 9, 11, 0.08);
+      }
+      html.dark .maplibregl-ctrl-bottom-right .maplibregl-ctrl-group button + button {
+        border-top-color: rgba(255, 255, 255, 0.08);
+      }
+      /* Os ícones +/− do MapLibre são imagens escuras: no tema escuro
+         ficavam invisíveis no fundo preto. */
+      html.dark .maplibregl-ctrl-group .maplibregl-ctrl-icon {
+        filter: invert(1);
+      }
+      .maplibregl-ctrl-bottom-right .lt-info {
+        margin-right: calc(0.75rem + 5px);
+      }
+      .lt-info-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 9999px;
+        color: #3f3f46;
+        cursor: pointer;
+        transition:
+          box-shadow 0.2s ease,
+          transform 0.15s ease;
+      }
+      html.dark .lt-info-btn {
+        color: #e4e4e7;
+      }
+      .lt-info-btn:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+      }
+      .lt-info-btn:active {
+        transform: scale(0.94);
+      }
+      .lt-info-btn:focus-visible {
+        outline: 2px solid #3b82f6;
+        outline-offset: 2px;
+      }
+      .lt-info-btn svg {
+        width: 16px;
+        height: 16px;
+      }
     </style>
   </head>
 
   <body
-    class="font-['Inter'] antialiased bg-white text-zinc-900 dark:bg-[#09090b] dark:text-white flex flex-col min-h-screen"
+    class="font-['Inter'] antialiased bg-[#333] text-zinc-900 dark:bg-[#09090b] dark:text-white flex flex-col min-h-screen"
   >
     <!-- ─── GLOBAL NAV ────────────────────────────────────────────── -->
-    <div class="pt-safe-ios" id="global-nav"></div>
+    <div id="global-nav"></div>
 
     <!-- ─── MAIN ──────────────────────────────────────────────────── -->
     <main class="flex-grow relative flex flex-col">
-      <div class="mapa-container relative w-full h-[100dvh]">
+      <div class="mapa-container">
         <!-- Mapa -->
         <div id="map" class="absolute inset-0"></div>
-        <div id="lt-atribuicao" class="lt-atribuicao">
+        <div id="lt-atribuicao" class="lt-info-pop" role="note" hidden>
           ©
           <a
             href="https://www.openstreetmap.org/copyright"
@@ -1484,14 +1827,14 @@
         <!-- ─── LOADING OVERLAY ────────────────────────────────────── -->
         <div
           id="map-loading"
-          class="absolute inset-0 z-20 bg-white dark:bg-[#09090b] flex items-center justify-center transition-opacity duration-400"
+          class="absolute inset-0 z-20 flex items-center justify-center transition-opacity duration-400 bg-gray-200 dark:bg-[#09090b]/20 bg-clip-padding backdrop-filter backdrop-blur-md bg-opacity-0 border border-white-200 dark:border-black-100"
         >
           <div class="text-center">
             <div
               class="inline-block w-8 h-8 border-2 border-zinc-200 dark:border-zinc-800 border-t-blue-500 rounded-full animate-spin mb-4"
             ></div>
             <p
-              class="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-500 dark:text-zinc-400"
+              class="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400"
             >
               A carregar Mapa
             </p>
@@ -1508,7 +1851,7 @@
         ></div>
         <div
           id="details-panel"
-          class="fixed z-30 translate-y-full bg-white dark:bg-[#09090b] overflow-hidden"
+          class="lt-glass fixed z-30 translate-y-full overflow-hidden"
           data-state="closed"
           role="dialog"
           aria-modal="true"
