@@ -48,7 +48,11 @@ const LIGACOES = path.join(RAIZ, "data/json/ligacoes_atualizado.json");
 // ─── FONTES ─────────────────────────────────────────────────────────────────
 const FEEDS = [
   { nome: "CP", url: "https://publico.cp.pt/gtfs/gtfs.zip" },
-  { nome: "MTS", url: "https://mts.pt/imt/MTS-20240129.zip" },
+  //{ nome: "MTS", url: "https://mts.pt/imt/MTS-20240129.zip" }, MTS deixou de entregar GTFS
+  {
+    nome: "MTS",
+    url: "https://files.mobilitydatabase.org/mdb-2408/mdb-2408-202610130122/mdb-2408-202610130122.zip",
+  },
   {
     nome: "Metro de Lisboa",
     url: "https://www.metrolisboa.pt/google_transit/googleTransit.zip",
