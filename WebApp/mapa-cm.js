@@ -73,6 +73,13 @@
   let dragStartTs = 0;
 
   // ─── HELPERS ───────────────────────────────────────────────────────────
+  const limparIdCM = (v) =>
+    v == null
+      ? v
+      : String(v)
+          .replace(/\[[^\]]*\]/g, "")
+          .trim();
+
   function escapeHtml(str) {
     return String(str == null ? "" : str)
       .replace(/&/g, "&amp;")
@@ -410,7 +417,7 @@
         ? `<span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>`
         : "";
     const colour = normColor(
-      b.route_color || colorMap[String(b.line_id)] || "#18181b",
+      b.route_color || colorMap[limparIdCM(String(b.line_id))] || "#18181b",
     );
     const border = withBorder
       ? "border-b border-zinc-100 dark:border-zinc-900"
@@ -419,7 +426,7 @@
       <div class="flex items-center justify-between px-1 py-3.5 ${border}">
         <div class="flex items-center gap-3 flex-1 min-w-0 pr-3">
           <span class="text-white text-[10px] font-bold tracking-widest text-center px-1.5 py-1 rounded-[3px] shrink-0"
-            style="background:${colour};min-width:42px">${escapeHtml(b.line_id)}</span>
+            style="background:${colour};min-width:42px">${escapeHtml(limparIdCM(String(b.line_id)))}</span>
           <span class="truncate text-zinc-600 dark:text-zinc-400 text-[12px]">${escapeHtml(b.headsign || "—")}</span>
         </div>
         <div class="flex items-center shrink-0">
@@ -491,7 +498,9 @@
         .filter((b) => b.ts && b.ts >= now - 30);
 
       if (activeLine)
-        buses = buses.filter((b) => String(b.line_id) === activeLine);
+        buses = buses.filter(
+          (b) => limparIdCM(String(b.line_id)) === activeLine,
+        );
 
       buses = buses.sort((a, b) => a.ts - b.ts).slice(0, ARRIVALS_LIMIT);
 
