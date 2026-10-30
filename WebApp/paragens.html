@@ -14,7 +14,7 @@
     <meta name="theme-color" content="#09090b" />
     <meta
       name="description"
-      content="A Minha Paragem! Tempos de espera em tempo real da Carris Metropolitana."
+      content="A Minha Paragem! Guarde as suas paragens da Carris Metropolitana, veja-as no mapa e consulte os tempos de espera em tempo real."
     />
     <title>A Minha Paragem | LiveTagus</title>
 
@@ -32,7 +32,7 @@
     <script src="./lucide-icons.js" defer></script>
     <script src="/vendor/maplibre-gl@4.7.1.min.js" defer></script>
     <script src="./menu.js" defer></script>
-    <script src="./nav-tools.js" defer></script>
+    <script src="./paragens-guardadas.js" defer></script>
     <script src="./paragens.js" defer></script>
     <script src="./paragens-search.js" defer></script>
 
@@ -60,6 +60,365 @@
       #search-results-panel.panel-visible {
         transform: translateY(0);
       }
+      /* ═══ A MINHA PARAGEM (paragens.js) ════════════════════════════════
+         Estilos próprios (.pg-*), sem depender do build do Tailwind. */
+      :root {
+        --pg-ink: #09090b;
+        --pg-ink-2: #3f3f46;
+        --pg-ink-3: #52525b;
+        --pg-line: #e4e4e7;
+        --pg-soft: #fafafa;
+        --pg-card: #ffffff;
+        --pg-hover: #f4f4f5;
+      }
+      html.dark {
+        --pg-ink: #fafafa;
+        --pg-ink-2: #d4d4d8;
+        --pg-ink-3: #a1a1aa;
+        --pg-line: #27272a;
+        --pg-soft: rgba(24, 24, 27, 0.5);
+        --pg-card: #09090b;
+        --pg-hover: #18181b;
+      }
+      .pg-card {
+        border: 1px solid var(--pg-line);
+        background: var(--pg-card);
+        border-radius: 4px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+        overflow: hidden;
+      }
+      .pg-head {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.85rem 0.75rem 0.85rem 0.6rem;
+      }
+      .pg-order {
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+      }
+      .pg-order button,
+      .pg-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--pg-ink-3);
+        border-radius: 6px;
+        transition: color 0.15s ease, background 0.15s ease;
+      }
+      .pg-order button {
+        width: 28px;
+        height: 22px;
+      }
+      .pg-icon {
+        width: 36px;
+        height: 36px;
+      }
+      .pg-order button:hover:not(:disabled),
+      .pg-icon:hover {
+        color: var(--pg-ink);
+        background: var(--pg-hover);
+      }
+      .pg-icon.is-danger:hover {
+        color: #dc2626;
+      }
+      .pg-order button:disabled {
+        opacity: 0.25;
+        cursor: default;
+      }
+      .pg-title {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+      .pg-title h3 {
+        font-size: 0.875rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--pg-ink);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .pg-title p {
+        margin-top: 2px;
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        color: var(--pg-ink-3);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .pg-actions {
+        display: flex;
+        flex-shrink: 0;
+      }
+      .pg-rename {
+        width: 100%;
+        background: transparent;
+        border: 0;
+        border-bottom: 1px solid var(--pg-ink);
+        color: var(--pg-ink);
+        font: inherit;
+        text-transform: uppercase;
+        padding: 0 2px;
+        outline: none;
+      }
+      .pg-lines {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 0.65rem 1rem;
+        border-top: 1px solid var(--pg-line);
+        background: var(--pg-soft);
+      }
+      .pg-lines-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+      .pg-pill {
+        min-width: 2.6rem;
+        padding: 3px 7px;
+        border: 1px solid var(--pg-line);
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        line-height: 1.3;
+        transition: opacity 0.15s ease, transform 0.1s ease;
+      }
+      .pg-pill:active {
+        transform: scale(0.95);
+      }
+      .pg-pill.is-off {
+        background: transparent;
+        color: var(--pg-ink-3);
+        text-decoration: line-through;
+      }
+      .pg-lines-all {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 4px;
+        flex-shrink: 0;
+        padding-left: 0.6rem;
+        border-left: 1px solid var(--pg-line);
+      }
+      .pg-lines-all button {
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--pg-ink-3);
+      }
+      .pg-lines-all button:hover {
+        color: var(--pg-ink);
+      }
+      .pg-lines-none {
+        padding: 0.6rem 1rem;
+        border-top: 1px solid var(--pg-line);
+        font-size: 10px;
+        color: var(--pg-ink-3);
+      }
+      .pg-toggle {
+        display: flex;
+        width: 100%;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem 1rem;
+        border-top: 1px solid var(--pg-line);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--pg-ink-2);
+        transition: background 0.15s ease, color 0.15s ease;
+      }
+      .pg-toggle:hover {
+        background: var(--pg-hover);
+        color: var(--pg-ink);
+      }
+      .pg-chev {
+        transition: transform 0.2s ease;
+      }
+      .pg-toggle[aria-expanded="true"] .pg-chev {
+        transform: rotate(180deg);
+      }
+      .pg-results {
+        border-top: 1px solid var(--pg-line);
+      }
+      .pg-row {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        padding: 0.7rem 1rem;
+      }
+      .pg-row + .pg-row {
+        border-top: 1px solid var(--pg-line);
+      }
+      .pg-line {
+        min-width: 3rem;
+        padding: 3px 6px;
+        border-radius: 4px;
+        text-align: center;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        flex-shrink: 0;
+      }
+      .pg-dest {
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: var(--pg-ink-2);
+      }
+      .pg-time {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--pg-ink);
+        font-variant-numeric: tabular-nums;
+      }
+      .pg-time.is-now {
+        color: #15803d;
+      }
+      html.dark .pg-time.is-now {
+        color: #4ade80;
+      }
+      .pg-time.is-later {
+        color: var(--pg-ink-3);
+        font-weight: 600;
+      }
+      .pg-live {
+        width: 6px;
+        height: 6px;
+        border-radius: 9999px;
+        background: #22c55e;
+        animation: pg-pulse 1.6s ease-in-out infinite;
+      }
+      .pg-prog {
+        font-size: 9px;
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        text-transform: none;
+        color: var(--pg-ink-3);
+      }
+      @keyframes pg-pulse {
+        50% {
+          opacity: 0.35;
+        }
+      }
+      .pg-msg {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.6rem;
+        padding: 1.25rem 1rem;
+        font-size: 12px;
+        color: var(--pg-ink-3);
+      }
+      .pg-msg.is-error {
+        color: #b91c1c;
+      }
+      html.dark .pg-msg.is-error {
+        color: #f87171;
+      }
+      .pg-loading {
+        display: flex;
+        justify-content: center;
+        padding: 1.25rem;
+      }
+      .pg-spin {
+        width: 16px;
+        height: 16px;
+        border: 2px solid var(--pg-line);
+        border-top-color: var(--pg-ink);
+        border-radius: 9999px;
+        animation: pg-rot 0.8s linear infinite;
+      }
+      @keyframes pg-rot {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .pg-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 2.5rem 1.5rem;
+        border: 1px dashed var(--pg-line);
+        border-radius: 4px;
+        text-align: center;
+        color: var(--pg-ink-3);
+      }
+      .pg-empty-t {
+        margin-top: 0.5rem;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--pg-ink-2);
+      }
+      .pg-empty-s {
+        font-size: 11px;
+        max-width: 22rem;
+      }
+      .pg-note {
+        font-size: 10px;
+        line-height: 1.5;
+        color: var(--pg-ink-3);
+      }
+      #stops-sync {
+        min-height: 1em;
+      }
+      #pg-toast {
+        position: fixed;
+        left: 50%;
+        bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+        z-index: 70;
+        transform: translate(-50%, 1rem);
+        padding: 0.7rem 1.2rem;
+        border-radius: 9999px;
+        background: rgba(9, 9, 11, 0.94);
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s ease, transform 0.25s ease;
+        max-width: calc(100vw - 2rem);
+        text-align: center;
+      }
+      html.dark #pg-toast {
+        background: rgba(250, 250, 250, 0.95);
+        color: #09090b;
+      }
+      #pg-toast.is-on {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .pg-live,
+        .pg-spin {
+          animation: none;
+        }
+      }
     </style>
   </head>
 
@@ -71,39 +430,33 @@
     <main
       class="flex-grow pt-24 pb-12 px-6 max-w-2xl mx-auto w-full flex flex-col gap-8"
     >
-      <!-- ═══ SECÇÃO 1: PARAGENS GUARDADAS (PRIMEIRO) ═══ -->
-      <section class="pt-safe-ios">
-        <div class="flex items-center justify-between mb-5">
-          <div>
-            <h1
-              class="text-[10px] font-bold uppercase tracking-widest text-zinc-900 dark:text-white"
-            >
-              As Minhas Paragens (BETA)
-            </h1>
-            <p id="stops-counter" class="text-[10px] text-zinc-400 mt-1">
-              0/10 paragens
-            </p>
-          </div>
-          <button
-            id="refresh-stops-btn"
-            class="text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors p-2 -mr-2"
-            aria-label="Atualizar Tempos"
-          >
-            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-          </button>
-        </div>
-        <div id="stops-container" class="flex flex-col gap-6"></div>
-        <p
-          class="text-[8px] text-center text-zinc-500 dark:text-zinc-400 opacity-60 block w-full pt-4 uppercase tracking-widest"
+      <!-- ═══ 1. A MINHA PARAGEM ═══ -->
+      <section class="pt-safe-ios space-y-4">
+        <span
+          class="inline-block py-1 px-3 border border-zinc-200 dark:border-white/10 rounded-full text-[10px] uppercase tracking-widest text-zinc-500 dark:text-zinc-400"
         >
-          * Caso apareça "(Prog.)" significa que a Carris Metropolitana não está
-          a fornecer os dados em tempo real.
+          Carris Metropolitana · BETA
+        </span>
+        <h1
+          class="text-3xl md:text-4xl font-light tracking-tighter text-zinc-900 dark:text-white leading-tight"
+        >
+          <span class="font-semibold">A MINHA</span>
+          <br />
+          PARAGEM.
+        </h1>
+        <p
+          class="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed max-w-md"
+        >
+          Guarde as paragens que usa todos os dias — de
+          <strong class="font-semibold text-zinc-900 dark:text-zinc-300">ida</strong>
+          e de
+          <strong class="font-semibold text-zinc-900 dark:text-zinc-300">regresso</strong>.
+          Ficam assinaladas no mapa e aqui pode organizá-las, escolher as
+          carreiras que quer acompanhar e ver os próximos autocarros.
         </p>
       </section>
 
-      <div class="w-full h-px bg-zinc-100 dark:bg-zinc-800"></div>
-
-      <!-- ═══ SECÇÃO 2: ADICIONAR PARAGEM ═══ -->
+      <!-- ═══ 2. ADICIONAR PARAGEM ═══ -->
       <section class="space-y-6">
         <div>
           <h2
@@ -111,12 +464,13 @@
           >
             Adicionar Paragem
           </h2>
-          <p class="text-[10px] text-zinc-400 tracking-wide leading-relaxed">
-            Guarde até 10 paragens e filtre as carreiras que quer acompanhar.
+          <p class="pg-note">
+            Pode guardar até 25 paragens. As carreiras de cada uma são
+            obtidas da Carris Metropolitana e ficam guardadas neste
+            dispositivo.
           </p>
         </div>
 
-        <!-- Botão de pesquisa principal -->
         <button
           id="btn-open-map"
           class="w-full px-6 py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors flex items-center justify-center gap-3 shrink-0 shadow-sm"
@@ -125,7 +479,6 @@
           Procurar Paragem (Nome, Linha ou Mapa)
         </button>
 
-        <!-- Adicionar manualmente por ID -->
         <form
           id="add-stop-form"
           class="flex flex-col sm:flex-row gap-6 items-end"
@@ -133,7 +486,7 @@
           <div class="w-full relative group">
             <label
               for="stop-id"
-              class="absolute -top-3 left-0 text-[9px] font-bold uppercase tracking-widest text-zinc-400"
+              class="absolute -top-3 left-0 text-[9px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400"
             >
               Adicionar por ID
             </label>
@@ -144,7 +497,7 @@
               pattern="[0-9]{5,6}"
               placeholder="Ex: 020073"
               required
-              class="w-full bg-transparent border-b border-zinc-300 dark:border-zinc-700 pb-2 pt-2 text-sm focus:outline-none focus:border-zinc-900 dark:focus:border-white transition-colors placeholder:text-zinc-300 dark:placeholder:text-zinc-700 rounded-none"
+              class="w-full bg-transparent border-b border-zinc-300 dark:border-zinc-700 pb-2 pt-2 text-sm focus:outline-none focus:border-zinc-900 dark:focus:border-white transition-colors placeholder:text-zinc-400 dark:placeholder:text-zinc-600 rounded-none"
             />
           </div>
           <button
@@ -154,91 +507,71 @@
             Adicionar
           </button>
         </form>
-      </section>
-
-      <div class="w-full h-px bg-zinc-100 dark:bg-zinc-800"></div>
-
-      <!-- ═══ SECÇÃO 3: SOBRE A FUNCIONALIDADE (POR BAIXO) ═══ -->
-      <section class="space-y-5 animate-fade-in">
-        <span
-          class="inline-block py-1 px-3 border border-zinc-200 dark:border-white/10 rounded-full text-[10px] uppercase tracking-widest text-zinc-500 backdrop-blur-sm"
-        >
-          Carris Metropolitana · Fase de Testes
-        </span>
-        <h2
-          class="text-3xl md:text-4xl font-light tracking-tighter text-zinc-900 dark:text-white leading-tight"
-        >
-          <span class="font-semibold">A MINHA</span>
-          <br />
-          PARAGEM.
-        </h2>
-        <p
-          class="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed max-w-md"
-        >
-          Desenhada para quem tem uma rotina diária de transportes: apanha
-          sempre o mesmo autocarro na mesma paragem para ir até à estação de
-          comboio. Guarde as suas paragens de
-          <strong class="font-semibold text-zinc-900 dark:text-zinc-300">
-            ida
-          </strong>
-          e de
-          <strong class="font-semibold text-zinc-900 dark:text-zinc-300">
-            regresso
-          </strong>
-          e consulte os próximos autocarros em tempo real.
-        </p>
 
         <div
-          class="bg-zinc-50 dark:bg-zinc-900/50 p-4 border border-zinc-100 dark:border-zinc-800 rounded-sm"
+          class="bg-zinc-50 dark:bg-zinc-900/50 p-4 border border-zinc-100 dark:border-zinc-800 rounded-sm space-y-4"
         >
           <div class="flex items-start gap-4">
             <i
               data-lucide="info"
-              class="w-5 h-5 mt-0.5 text-zinc-400 shrink-0"
+              class="w-5 h-5 mt-0.5 text-zinc-500 dark:text-zinc-400 shrink-0"
             ></i>
-            <div class="space-y-3">
-              <p
-                class="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400"
-              >
-                Configure cada paragem e escolha
-                <span class="font-medium text-zinc-900 dark:text-zinc-300">
-                  que carreiras quer ver.
-                </span>
-                Ideal se passa mais do que uma linha pela sua paragem mas só usa
-                algumas.
-              </p>
-              <p
-                class="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400"
-              >
-                <span class="font-medium text-zinc-900 dark:text-zinc-300">
-                  Onde encontro o ID?
-                </span>
-                Procure o código de 6 dígitos impresso no canto inferior da
-                placa da paragem física. Também pode usar o botão "Procurar
-                Paragem" para pesquisar pelo nome ou linha.
-              </p>
-            </div>
+            <p class="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
+              <span class="font-medium text-zinc-900 dark:text-zinc-300">
+                Onde encontro o ID?
+              </span>
+              É o código de 6 dígitos no canto inferior da placa da paragem.
+              Também pode pesquisar pelo nome, pela linha ou escolher no mapa.
+            </p>
           </div>
-          <div class="flex items-start gap-4 pt-4">
+          <div class="flex items-start gap-4">
             <i
               data-lucide="alert-triangle"
-              class="w-5 h-5 mt-0.5 text-zinc-400 shrink-0"
+              class="w-5 h-5 mt-0.5 text-zinc-500 dark:text-zinc-400 shrink-0"
             ></i>
-            <div class="space-y-3">
-              <p
-                class="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400"
-              >
-                Esta funcionalidade ainda está instável. Se visto um erro
-                manda-nos email para
-                <a href="mailto:geral@livetagus.pt">
-                  <b>geral@livetagus.pt</b>
-                </a>
-              </p>
-            </div>
+            <p class="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
+              Esta funcionalidade ainda está em testes. Se vir um erro, envie
+              um email para
+              <a href="mailto:geral@livetagus.pt"><b>geral@livetagus.pt</b></a>.
+            </p>
           </div>
         </div>
       </section>
+
+      <div class="w-full h-px bg-zinc-100 dark:bg-zinc-800"></div>
+
+      <!-- ═══ 3. AS MINHAS PARAGENS (no fim) ═══ -->
+      <section aria-labelledby="stops-title">
+        <div class="flex items-center justify-between mb-5">
+          <div>
+            <h2
+              id="stops-title"
+              class="text-[10px] font-bold uppercase tracking-widest text-zinc-900 dark:text-white"
+            >
+              As Minhas Paragens
+            </h2>
+            <p id="stops-counter" class="pg-note mt-1">0/25 paragens</p>
+            <p id="stops-sync" class="pg-note" role="status" aria-live="polite"></p>
+          </div>
+          <button
+            id="refresh-stops-btn"
+            class="text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors p-2 -mr-2"
+            aria-label="Atualizar paragens e partidas"
+            title="Atualizar"
+          >
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+          </button>
+        </div>
+        <div id="stops-container" class="flex flex-col gap-4"></div>
+        <p class="pg-note text-center pt-5">
+          Toque em "Próximas partidas" para ver os autocarros de uma paragem.
+          Toque numa carreira para a mostrar ou esconder. "prog." significa
+          que a Carris Metropolitana não está a enviar a posição em tempo
+          real.
+        </p>
+      </section>
     </main>
+    <div id="pg-toast" role="status" aria-live="polite"></div>
 
     <!-- MODAL DO MAPA COM PESQUISA INTEGRADA -->
     <div

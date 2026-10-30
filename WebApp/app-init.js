@@ -217,11 +217,6 @@ document.body.addEventListener("click", function (e) {
     case "go-offline":
       sa_event("offline_schedules_forced");
       break;
-    case "open-smart-menu":
-      const menuTrigger = document.getElementById("menu-trigger");
-      if (menuTrigger) menuTrigger.click();
-      sa_event("topbtnapp_clicked");
-      break;
     case "sudoku-offline":
       sa_event("sudoku-offline-play");
       break;

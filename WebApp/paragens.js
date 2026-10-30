@@ -1,34 +1,41 @@
 /**
- * paragens.js
- * Gestão de paragens favoritas (Max 10), filtros de carreiras, ordenação e mapa interativo.
- * Expõe window.LT para comunicação com paragens-search.js
+ * paragens.js · LiveTagus
+ * Página "A Minha Paragem": gerir as paragens da Carris Metropolitana
+ * guardadas (as mesmas que aparecem no mapa) e ver as próximas partidas.
+ *
+ * - A lista e os dados vivem no paragens-guardadas.js (window.LTParagens):
+ *   máximo de 25, com as linhas e cores de cada paragem, comprimidas.
+ * - Ao abrir a página, todas as guardadas são verificadas e as que precisam
+ *   são atualizadas com a API (/stops + /lines).
+ * - As partidas só são pedidas quando se abre o desdobrável de uma paragem,
+ *   e só se atualizam (a cada 30 s) enquanto ele estiver aberto.
+ *
+ * Expõe window.LT para o paragens-search.js (pesquisa e mapa do modal).
  */
 
 document.addEventListener("DOMContentLoaded", () => {
+  const P = window.LTParagens;
   const CM_API_BASE = "https://api.carrismetropolitana.pt/v2";
   const STOPS_JSON_PATH = "/data/json/stops_cm.json";
-  const STORAGE_KEY = "cm_saved_stops";
-  const MAX_STOPS = 10;
   const REFRESH_INTERVAL = 30000;
+  const ARRIVALS_LIMIT = 6;
 
   const form = document.getElementById("add-stop-form");
   const container = document.getElementById("stops-container");
   const refreshBtn = document.getElementById("refresh-stops-btn");
   const counterEl = document.getElementById("stops-counter");
+  const syncEl = document.getElementById("stops-sync");
   const btnOpenMap = document.getElementById("btn-open-map");
   const btnCloseMap = document.getElementById("btn-close-map");
   const mapModal = document.getElementById("map-modal");
+  const toastEl = document.getElementById("pg-toast");
 
-  let savedStops = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-
-  // Migração de estrutura antiga
-  savedStops = savedStops.map((s) => ({
-    id: s.id,
-    name: s.name,
-    addedAt: s.addedAt || Date.now(),
-    availableLines: s.availableLines || [],
-    hiddenLines: s.hiddenLines || [],
-  }));
+  let savedStops = P.list();
+  let detalhes = new Map(); // id → dados da API (LTParagens)
+  const abertas = new Set(); // ids com o desdobrável aberto
+  const ultimas = new Map(); // id → HTML das últimas partidas (sem piscar)
+  const pedidos = new Map(); // id → AbortController
+  let renomear = null; // id em edição
 
   let mapInstance = null;
   let cmStopsCache = null;
@@ -36,7 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let fertagusCache = null;
   let fertagusLineCache = null;
 
-  // ─── NAMESPACE GLOBAL PARTILHADO COM paragens-search.js ───
+  // ─── NAMESPACE PARTILHADO COM paragens-search.js ───
   window.LT = {
     getMapInstance: () => mapInstance,
     getStopsData: () => cmStopsCache,
@@ -46,32 +53,129 @@ document.addEventListener("DOMContentLoaded", () => {
     updateMapStopsColor: () => updateMapStopsColor(),
   };
 
+  // ─── UTILITÁRIOS ───
+  const esc = (v) =>
+    String(v == null ? "" : v).replace(
+      /[&<>"']/g,
+      (c) =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
+    );
+
+  function luminancia(hex) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || "").trim());
+    if (!m) return null;
+    const n = parseInt(m[1], 16);
+    const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => {
+      v /= 255;
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2];
+  }
+  function contraste(a, b) {
+    const la = luminancia(a);
+    const lb = luminancia(b);
+    if (la == null || lb == null) return 0;
+    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+  }
+  // Texto da pill: o da Carris se tiver contraste, senão preto ou branco.
+  function corTexto(bg, preferida) {
+    if (preferida && contraste(bg, preferida) >= 4.5) return preferida;
+    return contraste(bg, "#09090b") >= contraste(bg, "#ffffff") ? "#09090b" : "#ffffff";
+  }
+
+  function linhaInfo(stopId, lineId) {
+    const d = detalhes.get(stopId);
+    return (d && d.lines.find((l) => l.id === lineId)) || null;
+  }
+
+  let toastTimer = null;
+  function toast(msg) {
+    if (!toastEl) return alert(msg);
+    toastEl.textContent = msg;
+    toastEl.classList.add("is-on");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove("is-on"), 2800);
+  }
+
+  function setSync(txt) {
+    if (syncEl) syncEl.textContent = txt || "";
+  }
+
   // ─── INICIALIZAÇÃO ───
   lucide.createIcons();
-  renderStops();
   injectCustomMenuElements();
+  renderStops();
+  carregarDetalhes().then(verificarTodas);
 
-  // Pré-carregar stops JSON silenciosamente
+  // Pré-carregar o catálogo da pesquisa em silêncio
   fetchAllStops().catch(console.error);
 
-  // Auto-refresh a cada 30s
-  setInterval(updateAllStopsData, REFRESH_INTERVAL);
+  // Só as abertas se atualizam, e só com a página visível.
+  setInterval(() => {
+    if (!document.hidden) abertas.forEach((id) => fetchArrivals(id));
+  }, REFRESH_INTERVAL);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) abertas.forEach((id) => fetchArrivals(id));
+  });
 
-  // Observar mudança de tema
+  // Mudanças vindas de outro lado (mapa noutro separador, sync da API).
+  window.addEventListener(P.EVENTO, onListaMudou);
+  window.addEventListener("storage", (e) => {
+    if (!e.key || e.key.startsWith("cm_saved_stops")) onListaMudou();
+  });
+
   const isIOS =
     /iPad|iPhone|iPod/.test(navigator.userAgent) ||
     (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-  if (isIOS) {
-    document.body.classList.add("is-ios");
-  }
+  if (isIOS) document.body.classList.add("is-ios");
 
-  const observer = new MutationObserver(() => {
+  new MutationObserver(() => {
     if (mapInstance) setMapTheme();
-  });
-  observer.observe(document.documentElement, {
+  }).observe(document.documentElement, {
     attributes: true,
     attributeFilter: ["class"],
   });
+
+  async function carregarDetalhes() {
+    try {
+      detalhes = await P.details();
+    } catch (_) {
+      detalhes = new Map();
+    }
+    renderStops();
+  }
+
+  // 1.3 — ao abrir a página, verifica todas e atualiza as que precisam.
+  async function verificarTodas(force) {
+    if (!savedStops.length) return setSync("");
+    setSync("A verificar as paragens…");
+    try {
+      const feitas = await P.sync({ force: !!force });
+      setSync(
+        feitas.length
+          ? `${feitas.length} ${feitas.length === 1 ? "paragem atualizada" : "paragens atualizadas"}`
+          : "Paragens verificadas",
+      );
+    } catch (e) {
+      setSync("Sem ligação à Carris: dados das paragens por atualizar");
+    }
+    setTimeout(() => setSync(""), 4000);
+  }
+
+  let onListaTimer = null;
+  function onListaMudou() {
+    clearTimeout(onListaTimer);
+    onListaTimer = setTimeout(async () => {
+      savedStops = P.list();
+      for (const id of [...abertas])
+        if (!savedStops.some((s) => s.id === id)) fecharPartidas(id);
+      try {
+        detalhes = await P.details();
+      } catch (_) {}
+      if (!renomear) renderStops();
+      updateMapStopsColor();
+    }, 30);
+  }
 
   // ─── EVENT LISTENERS ───
   form.addEventListener("submit", async (e) => {
@@ -80,8 +184,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const stopId = idInput.value.trim();
     if (!stopId) return;
 
-    if (savedStops.length >= MAX_STOPS) {
-      alert(`Pode guardar um máximo de ${MAX_STOPS} paragens.`);
+    if (savedStops.length >= P.MAX) {
+      toast(`Pode guardar no máximo ${P.MAX} paragens.`);
       return;
     }
 
@@ -94,15 +198,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const stopsData = await fetchAllStops();
       const stopData = stopsData.find((s) => s.id === stopId);
       if (!stopData) throw new Error("Paragem não encontrada");
-
-      const stopName = stopData.n || `Paragem ${stopId}`;
-      const lines = stopData.l || [];
-      addStop(stopId, stopName, lines);
-      idInput.value = "";
+      if (addStop(stopId, stopData.n || `Paragem ${stopId}`, stopData.l || []))
+        idInput.value = "";
     } catch (err) {
-      alert(
-        "Não foi possível encontrar essa paragem. Verifique o ID de 6 dígitos.",
-      );
+      toast("Paragem não encontrada. Verifique o ID de 6 dígitos.");
     } finally {
       btn.innerText = originalText;
       btn.disabled = false;
@@ -110,29 +209,29 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   refreshBtn.addEventListener("click", () => {
-    const icon = refreshBtn.querySelector("i");
-    icon.classList.add("animate-spin");
-    updateAllStopsData().finally(() => {
-      setTimeout(() => icon.classList.remove("animate-spin"), 500);
+    const icon = refreshBtn.querySelector("svg, i");
+    if (icon) icon.classList.add("animate-spin");
+    Promise.allSettled([
+      verificarTodas(true),
+      ...[...abertas].map((id) => fetchArrivals(id)),
+    ]).finally(() => {
+      setTimeout(() => icon && icon.classList.remove("animate-spin"), 500);
     });
   });
 
-  // Delegação de eventos no container de paragens
   container.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-action]");
     if (!btn) return;
+    const { action, id } = btn.dataset;
+    const index = savedStops.findIndex((s) => s.id === id);
 
-    const action = btn.dataset.action;
-    const id = btn.dataset.id;
-    const index = parseInt(btn.dataset.index, 10);
-
-    if (action === "delete-stop") removeStop(id);
-    else if (action === "move-up" && index > 0) swapStops(index, index - 1);
-    else if (action === "move-down" && index < savedStops.length - 1)
-      swapStops(index, index + 1);
+    if (action === "toggle-departures") alternarPartidas(id);
+    else if (action === "delete-stop") removeStop(id);
+    else if (action === "move-up" && index > 0) P.move(index, index - 1);
+    else if (action === "move-down" && index > -1 && index < savedStops.length - 1)
+      P.move(index, index + 1);
     else if (action === "edit-stop") toggleEditMode(id);
-    else if (action === "toggle-line")
-      toggleLineVisibility(id, btn.dataset.line);
+    else if (action === "toggle-line") toggleLineVisibility(id, btn.dataset.line);
     else if (action === "hide-all-lines") setAllLinesVisibility(id, false);
     else if (action === "show-all-lines") setAllLinesVisibility(id, true);
   });
@@ -140,24 +239,16 @@ document.addEventListener("DOMContentLoaded", () => {
   btnOpenMap.addEventListener("click", openMapModal);
   btnCloseMap.addEventListener("click", closeMapModal);
 
-  // Handler para adicionar paragem a partir do popup do mapa
+  // Adicionar a partir do popup do mapa do modal
   document.addEventListener("click", (e) => {
     const addBtn = e.target.closest("[data-map-add]");
     if (!addBtn) return;
-
     const id = addBtn.dataset.mapAdd;
     const name = addBtn.dataset.mapName;
     const lines = addBtn.dataset.mapLines
       ? addBtn.dataset.mapLines.split(",").filter(Boolean)
       : [];
-
-    if (savedStops.length >= MAX_STOPS) {
-      alert(`Limite de ${MAX_STOPS} paragens atingido.`);
-      return;
-    }
-
-    const success = addStop(id, name, lines);
-    if (success) {
+    if (addStop(id, name, lines)) {
       addBtn.innerText = "ADICIONADA ✓";
       addBtn.disabled = true;
       addBtn.classList.remove("bg-zinc-900", "dark:bg-white");
@@ -166,7 +257,290 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // ─── FERTAGUS ───
+  // ─── LÓGICA CORE ───
+
+  /** @returns {boolean} true se adicionou */
+  function addStop(id, name, lines = []) {
+    const r = P.add({ id, name, lines });
+    if (!r.ok) {
+      if (r.motivo === "existe") toast("Esta paragem já está guardada.");
+      else if (r.motivo === "limite")
+        toast(`Limite de ${P.MAX} paragens atingido.`);
+      else toast("Não foi possível guardar a paragem.");
+      return false;
+    }
+    savedStops = P.list();
+    renderStops();
+    updateMapStopsColor();
+    toast("Paragem guardada");
+    return true;
+  }
+
+  function removeStop(id) {
+    const s = savedStops.find((x) => x.id === id);
+    if (s && !confirm(`Remover "${s.name}" das paragens guardadas?`)) return;
+    fecharPartidas(id);
+    ultimas.delete(id);
+    P.remove(id);
+  }
+
+  function toggleEditMode(stopId) {
+    const titleEl = document.getElementById(`title-${stopId}`);
+    if (!titleEl) return;
+    const stop = savedStops.find((s) => s.id === stopId);
+    const currentName = stop ? stop.name : titleEl.innerText;
+    renomear = stopId;
+    titleEl.innerHTML = `<input type="text" id="input-${esc(stopId)}" value="${esc(currentName)}"
+      class="pg-rename" maxlength="40" aria-label="Novo nome da paragem" />`;
+    const input = document.getElementById(`input-${stopId}`);
+    input.focus();
+    input.select();
+    let feito = false;
+    const save = (guardar) => {
+      if (feito) return;
+      feito = true;
+      renomear = null;
+      if (guardar) P.rename(stopId, input.value.trim() || currentName);
+      else renderStops();
+    };
+    input.addEventListener("blur", () => save(true));
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") input.blur();
+      if (e.key === "Escape") save(false);
+    });
+  }
+
+  function toggleLineVisibility(stopId, lineId) {
+    const stop = savedStops.find((s) => s.id === stopId);
+    if (!stop) return;
+    const hidden = stop.hiddenLines.includes(lineId)
+      ? stop.hiddenLines.filter((l) => l !== lineId)
+      : [...stop.hiddenLines, lineId];
+    P.setHidden(stopId, hidden);
+    if (abertas.has(stopId)) setTimeout(() => fetchArrivals(stopId), 40);
+  }
+
+  function setAllLinesVisibility(stopId, showAll) {
+    const stop = savedStops.find((s) => s.id === stopId);
+    if (!stop) return;
+    P.setHidden(stopId, showAll ? [] : [...linhasDe(stop)]);
+    if (abertas.has(stopId)) setTimeout(() => fetchArrivals(stopId), 40);
+  }
+
+  function linhasDe(stop) {
+    const d = detalhes.get(stop.id);
+    if (d && d.lines.length) return d.lines.map((l) => l.id);
+    return stop.availableLines || [];
+  }
+
+  // ─── RENDERIZAÇÃO ───
+
+  function renderStops() {
+    counterEl.textContent = `${savedStops.length}/${P.MAX} paragens`;
+
+    if (savedStops.length === 0) {
+      container.innerHTML = `
+        <div class="pg-empty">
+          <i data-lucide="bus" class="w-7 h-7"></i>
+          <p class="pg-empty-t">Ainda não guardou nenhuma paragem.</p>
+          <p class="pg-empty-s">Procure uma paragem acima para começar. As que guardar aparecem também no mapa.</p>
+        </div>`;
+      lucide.createIcons();
+      return;
+    }
+
+    container.innerHTML = savedStops
+      .map((stop, index) => cartaoHtml(stop, index))
+      .join("");
+    lucide.createIcons();
+  }
+
+  function cartaoHtml(stop, index) {
+    const id = esc(stop.id);
+    const d = detalhes.get(stop.id);
+    const oficial = d && d.name && d.name.toUpperCase() !== stop.name.toUpperCase() ? d.name : "";
+    const linhas = linhasDe(stop);
+    const aberta = abertas.has(stop.id);
+
+    const pills = linhas
+      .map((lid) => {
+        const li = linhaInfo(stop.id, lid);
+        const off = stop.hiddenLines.includes(lid);
+        const bg = (li && li.color) || "#18181b";
+        const style = off
+          ? ""
+          : `background:${bg};border-color:${bg};color:${corTexto(bg, li && li.text)}`;
+        const titulo = li && li.long ? `${lid} · ${li.long}` : lid;
+        return `<button type="button" data-action="toggle-line" data-id="${id}" data-line="${esc(lid)}"
+          class="pg-pill${off ? " is-off" : ""}" style="${style}" aria-pressed="${off ? "false" : "true"}"
+          title="${esc(titulo)}${off ? " (oculta)" : ""}">${esc((li && li.short) || lid)}</button>`;
+      })
+      .join("");
+
+    const linhasHtml = linhas.length
+      ? `<div class="pg-lines">
+          <div class="pg-lines-list">${pills}</div>
+          <div class="pg-lines-all">
+            <button type="button" data-action="show-all-lines" data-id="${id}">Todas</button>
+            <button type="button" data-action="hide-all-lines" data-id="${id}">Nenhuma</button>
+          </div>
+        </div>`
+      : `<p class="pg-lines-none">${d ? "Sem carreiras conhecidas nesta paragem." : "A obter as carreiras desta paragem…"}</p>`;
+
+    return `
+      <article class="pg-card" data-stop="${id}">
+        <div class="pg-head">
+          <div class="pg-order">
+            <button type="button" data-action="move-up" data-id="${id}" aria-label="Subir" ${index === 0 ? "disabled" : ""}>
+              <i data-lucide="chevron-up" class="w-4 h-4"></i></button>
+            <button type="button" data-action="move-down" data-id="${id}" aria-label="Descer" ${index === savedStops.length - 1 ? "disabled" : ""}>
+              <i data-lucide="chevron-down" class="w-4 h-4"></i></button>
+          </div>
+          <div class="pg-title">
+            <h3 id="title-${id}">${esc(stop.name)}</h3>
+            <p>ID ${id}${oficial ? ` · ${esc(oficial)}` : ""}</p>
+          </div>
+          <div class="pg-actions">
+            <a href="/mapa#paragem=${encodeURIComponent(stop.id)}" class="pg-icon" title="Ver no mapa" aria-label="Ver no mapa">
+              <i data-lucide="map-pin" class="w-4 h-4"></i></a>
+            <button type="button" data-action="edit-stop" data-id="${id}" class="pg-icon" title="Renomear" aria-label="Renomear">
+              <i data-lucide="pencil" class="w-4 h-4"></i></button>
+            <button type="button" data-action="delete-stop" data-id="${id}" class="pg-icon is-danger" title="Remover" aria-label="Remover">
+              <i data-lucide="trash-2" class="w-4 h-4"></i></button>
+          </div>
+        </div>
+        ${linhasHtml}
+        <button type="button" class="pg-toggle" data-action="toggle-departures" data-id="${id}"
+          aria-expanded="${aberta}" aria-controls="results-${id}">
+          <span>Próximas partidas</span>
+          <i data-lucide="chevron-down" class="w-4 h-4 pg-chev"></i>
+        </button>
+        <div id="results-${id}" class="pg-results" ${aberta ? "" : "hidden"}>${aberta ? ultimas.get(stop.id) || spinnerHtml() : ""}</div>
+      </article>`;
+  }
+
+  const spinnerHtml = () => `<div class="pg-loading"><span class="pg-spin"></span></div>`;
+
+  // ─── PARTIDAS (só com o desdobrável aberto) ───
+
+  function alternarPartidas(id) {
+    if (abertas.has(id)) fecharPartidas(id);
+    else abrirPartidas(id);
+  }
+
+  function abrirPartidas(id) {
+    abertas.add(id);
+    const box = document.getElementById(`results-${id}`);
+    const btn = container.querySelector(`[data-action="toggle-departures"][data-id="${CSS.escape(id)}"]`);
+    if (btn) btn.setAttribute("aria-expanded", "true");
+    if (box) {
+      box.hidden = false;
+      box.innerHTML = ultimas.get(id) || spinnerHtml();
+    }
+    fetchArrivals(id);
+  }
+
+  function fecharPartidas(id) {
+    abertas.delete(id);
+    const c = pedidos.get(id);
+    if (c) c.abort();
+    pedidos.delete(id);
+    const box = document.getElementById(`results-${id}`);
+    const btn = container.querySelector(`[data-action="toggle-departures"][data-id="${CSS.escape(id)}"]`);
+    if (btn) btn.setAttribute("aria-expanded", "false");
+    if (box) {
+      box.hidden = true;
+      box.innerHTML = "";
+    }
+  }
+
+  async function fetchArrivals(stopId) {
+    if (!abertas.has(stopId)) return;
+    const stop = savedStops.find((s) => s.id === stopId);
+    if (!stop) return;
+    const prev = pedidos.get(stopId);
+    if (prev) prev.abort();
+    const ctrl = new AbortController();
+    pedidos.set(stopId, ctrl);
+
+    let html;
+    try {
+      const res = await fetch(
+        `${CM_API_BASE}/arrivals/by_stop/${encodeURIComponent(stopId)}`,
+        // Sem cookies: não envia nenhum e ignora os Set-Cookie da Carris.
+        { credentials: "omit", cache: "no-store", signal: ctrl.signal },
+      );
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = P.limparChegadas(await res.json());
+      const nowUnix = Math.floor(Date.now() / 1000);
+      const hidden = stop.hiddenLines;
+      const buses = data
+        .map((bus) => ({
+          ...bus,
+          timeUnix: bus.estimated_arrival_unix || bus.scheduled_arrival_unix,
+          live: !!bus.estimated_arrival_unix,
+        }))
+        .filter((bus) => bus.timeUnix && bus.timeUnix >= nowUnix - 30)
+        .filter((bus) => !hidden.includes(String(bus.line_id)))
+        .sort((a, b) => a.timeUnix - b.timeUnix)
+        .slice(0, ARRIVALS_LIMIT);
+      html = resultadosHtml(stopId, buses, hidden.length > 0);
+    } catch (error) {
+      if (ctrl.signal.aborted) return;
+      html = `<div class="pg-msg is-error"><i data-lucide="wifi-off" class="w-4 h-4"></i>
+        <span>Sem ligação aos servidores da Carris.</span></div>`;
+    }
+    if (pedidos.get(stopId) === ctrl) pedidos.delete(stopId);
+    if (!abertas.has(stopId)) return;
+    ultimas.set(stopId, html);
+    const box = document.getElementById(`results-${stopId}`);
+    if (box) {
+      box.innerHTML = html;
+      lucide.createIcons();
+    }
+  }
+
+  function resultadosHtml(stopId, buses, isFiltered) {
+    if (buses.length === 0) {
+      return `<div class="pg-msg">${
+        isFiltered
+          ? "Sem autocarros nas carreiras selecionadas."
+          : "Sem previsões para as próximas horas."
+      }</div>`;
+    }
+    const nowUnix = Math.floor(Date.now() / 1000);
+    return buses
+      .map((bus) => {
+        const diffMins = Math.floor((bus.timeUnix - nowUnix) / 60);
+        let timeStr;
+        let cls = "";
+        if (diffMins <= 0) {
+          timeStr = "A chegar";
+          cls = " is-now";
+        } else if (diffMins < 60) {
+          timeStr = `${diffMins} min`;
+        } else {
+          timeStr = new Date(bus.timeUnix * 1000).toLocaleTimeString("pt-PT", {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+          cls = " is-later";
+        }
+        const li = linhaInfo(stopId, String(bus.line_id));
+        const bg = (li && li.color) || "#18181b";
+        return `
+          <div class="pg-row">
+            <span class="pg-line" style="background:${bg};color:${corTexto(bg, li && li.text)}">${esc(bus.line_id)}</span>
+            <span class="pg-dest">${esc(bus.headsign || "—")}</span>
+            <span class="pg-time${cls}">
+              ${bus.live ? '<span class="pg-live" aria-hidden="true"></span>' : '<span class="pg-prog">prog.</span>'}${timeStr}
+            </span>
+          </div>`;
+      })
+      .join("");
+  }
+
+  // ─── FERTAGUS (mapa do modal) ───
   async function fetchFertagusStops() {
     if (fertagusCache) return fertagusCache;
     try {
@@ -234,19 +608,7 @@ document.addEventListener("DOMContentLoaded", () => {
         type: "circle",
         source: "fertagus-stations",
         paint: {
-          "circle-radius": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            10,
-            4,
-            13,
-            9,
-            16,
-            12,
-            19,
-            20,
-          ],
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 4, 13, 9, 16, 12, 19, 20],
           "circle-color": "#ffffff",
           "circle-stroke-width": 2,
           "circle-stroke-color": "#000000",
@@ -259,342 +621,19 @@ document.addEventListener("DOMContentLoaded", () => {
         new maplibregl.Popup({ closeButton: false, maxWidth: "240px" })
           .setLngLat(coords)
           .setHTML(
-            `
-            <div class="text-left flex flex-col font-['Inter'] px-1">
-              <h4 class="font-bold text-xs uppercase tracking-wider text-blue-500">${props.name}</h4>
+            `<div class="text-left flex flex-col font-['Inter'] px-1">
+              <h4 class="font-bold text-xs uppercase tracking-wider text-blue-500">${esc(props.name)}</h4>
               <span class="text-[9px] tracking-widest text-zinc-500 mt-1">Fertagus</span>
-            </div>
-          `,
+            </div>`,
           )
           .addTo(map);
       });
-
-      map.on(
-        "mouseenter",
-        "fertagus-stations-layer",
-        () => (map.getCanvas().style.cursor = "pointer"),
-      );
-      map.on(
-        "mouseleave",
-        "fertagus-stations-layer",
-        () => (map.getCanvas().style.cursor = ""),
-      );
+      map.on("mouseenter", "fertagus-stations-layer", () => (map.getCanvas().style.cursor = "pointer"));
+      map.on("mouseleave", "fertagus-stations-layer", () => (map.getCanvas().style.cursor = ""));
     }
   }
 
-  // ─── LÓGICA CORE ───
-
-  /**
-   * Adiciona uma paragem à lista guardada.
-   * @returns {boolean} true se adicionou com sucesso, false caso contrário
-   */
-  function addStop(id, name, lines = []) {
-    if (savedStops.find((s) => s.id === id)) {
-      alert("Esta paragem já se encontra guardada.");
-      return false;
-    }
-    if (savedStops.length >= MAX_STOPS) {
-      alert(`Limite de ${MAX_STOPS} paragens atingido.`);
-      return false;
-    }
-    savedStops.push({
-      id,
-      name,
-      addedAt: Date.now(),
-      availableLines: lines,
-      hiddenLines: [],
-    });
-    saveData();
-    renderStops();
-    updateMapStopsColor();
-    return true;
-  }
-
-  function removeStop(id) {
-    savedStops = savedStops.filter((s) => s.id !== id);
-    saveData();
-    renderStops();
-    updateMapStopsColor();
-  }
-
-  function swapStops(idx1, idx2) {
-    [savedStops[idx1], savedStops[idx2]] = [savedStops[idx2], savedStops[idx1]];
-    saveData();
-    renderStops();
-  }
-
-  function saveData() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(savedStops));
-  }
-
-  function toggleEditMode(stopId) {
-    const titleEl = document.getElementById(`title-${stopId}`);
-    const currentName = titleEl.innerText;
-
-    titleEl.innerHTML = `
-      <input type="text" id="input-${stopId}" value="${currentName}"
-        class="w-full bg-transparent border-b border-zinc-900 dark:border-white text-sm font-semibold uppercase focus:outline-none px-1"
-        maxlength="30" />
-    `;
-
-    const input = document.getElementById(`input-${stopId}`);
-    input.focus();
-    input.select();
-
-    const saveTitle = () => {
-      const newName = input.value.trim() || currentName;
-      const stopIndex = savedStops.findIndex((s) => s.id === stopId);
-      if (stopIndex > -1) {
-        savedStops[stopIndex].name = newName;
-        saveData();
-      }
-      renderStops();
-    };
-
-    input.addEventListener("blur", saveTitle);
-    input.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") input.blur();
-    });
-  }
-
-  function toggleLineVisibility(stopId, lineId) {
-    const stop = savedStops.find((s) => s.id === stopId);
-    if (!stop) return;
-    if (stop.hiddenLines.includes(lineId)) {
-      stop.hiddenLines = stop.hiddenLines.filter((l) => l !== lineId);
-    } else {
-      stop.hiddenLines.push(lineId);
-    }
-    saveData();
-    renderStops();
-  }
-
-  function setAllLinesVisibility(stopId, showAll) {
-    const stop = savedStops.find((s) => s.id === stopId);
-    if (!stop) return;
-    stop.hiddenLines = showAll ? [] : [...stop.availableLines];
-    saveData();
-    renderStops();
-  }
-
-  // ─── RENDERIZAÇÃO DA UI ───
-
-  function renderStops() {
-    container.innerHTML = "";
-    counterEl.innerText = `${savedStops.length}/${MAX_STOPS} paragens`;
-
-    if (savedStops.length === 0) {
-      container.innerHTML = `
-        <div class="text-center py-12 border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/20 rounded-sm">
-          <i data-lucide="bus" class="w-8 h-8 text-zinc-300 dark:text-zinc-700 mx-auto mb-4"></i>
-          <p class="text-[10px] uppercase tracking-widest text-zinc-500 font-medium mb-1">Ainda não guardou nenhuma paragem.</p>
-          <p class="text-[10px] text-zinc-400 tracking-wide">Use o botão abaixo para começar.</p>
-        </div>
-      `;
-      lucide.createIcons();
-      return;
-    }
-
-    savedStops.forEach((stop, index) => {
-      const stopEl = document.createElement("div");
-      stopEl.className =
-        "border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#09090b] relative flex flex-col rounded-sm shadow-sm transition-all";
-
-      // ── Pills de Linhas (sempre visíveis) ──
-      let linesStripHtml = "";
-      if (stop.availableLines && stop.availableLines.length > 0) {
-        const linePills = stop.availableLines
-          .map((line) => {
-            const isHidden = stop.hiddenLines.includes(line);
-            const pillCls = isHidden
-              ? "bg-transparent border-zinc-200 dark:border-zinc-700 text-zinc-300 dark:text-zinc-600 line-through"
-              : "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 border-zinc-900 dark:border-white";
-            return `<button
-              data-action="toggle-line"
-              data-id="${stop.id}"
-              data-line="${line}"
-              class="px-1.5 py-0.5 text-[9px] font-bold tracking-widest border transition-all duration-150 ${pillCls}"
-              title="${isHidden ? "Clique para mostrar" : "Clique para ocultar"}"
-            >${line}</button>`;
-          })
-          .join("");
-
-        linesStripHtml = `
-          <div class="px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/20 flex items-start gap-3">
-            <div class="flex flex-wrap gap-1.5 flex-1 min-w-0 pt-0.5">${linePills}</div>
-            <div class="flex flex-col items-end gap-1 shrink-0 pl-2 border-l border-zinc-100 dark:border-zinc-800">
-              <button
-                data-action="show-all-lines"
-                data-id="${stop.id}"
-                class="text-[8px] uppercase tracking-widest font-semibold text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors whitespace-nowrap"
-              >Todas</button>
-              <button
-                data-action="hide-all-lines"
-                data-id="${stop.id}"
-                class="text-[8px] uppercase tracking-widest font-semibold text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors whitespace-nowrap"
-              >Nenhuma</button>
-            </div>
-          </div>
-        `;
-      }
-
-      stopEl.innerHTML = `
-        <div class="px-5 py-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center gap-4 bg-zinc-50/50 dark:bg-zinc-900/30">
-          <div class="flex flex-col gap-1 shrink-0">
-            <button
-              data-action="move-up"
-              data-index="${index}"
-              class="text-zinc-300 hover:text-zinc-900 dark:hover:text-white disabled:opacity-20 transition-colors"
-              ${index === 0 ? "disabled" : ""}
-            ><i data-lucide="chevron-up" class="w-4 h-4"></i></button>
-            <button
-              data-action="move-down"
-              data-index="${index}"
-              class="text-zinc-300 hover:text-zinc-900 dark:hover:text-white disabled:opacity-20 transition-colors"
-              ${index === savedStops.length - 1 ? "disabled" : ""}
-            ><i data-lucide="chevron-down" class="w-4 h-4"></i></button>
-          </div>
-          <div class="flex-grow min-w-0">
-            <h3 id="title-${stop.id}" class="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider truncate">${stop.name}</h3>
-            <p class="text-[10px] text-zinc-500 tracking-widest mt-0.5">ID: ${stop.id}</p>
-          </div>
-          <div class="flex items-center gap-0.5 shrink-0">
-            <button
-              data-action="edit-stop"
-              data-id="${stop.id}"
-              class="p-2 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"
-              title="Renomear"
-            ><i data-lucide="pencil" class="w-4 h-4"></i></button>
-            <button
-              data-action="delete-stop"
-              data-id="${stop.id}"
-              class="p-2 text-zinc-400 hover:text-red-500 transition-colors"
-              title="Remover"
-            ><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-          </div>
-        </div>
-        ${linesStripHtml}
-        <div id="results-${stop.id}" class="flex flex-col min-h-[80px]">
-          <div class="p-6 flex justify-center">
-            <div class="w-4 h-4 border-2 border-zinc-300 border-t-zinc-900 dark:border-zinc-700 dark:border-t-white rounded-full animate-spin"></div>
-          </div>
-        </div>
-      `;
-
-      container.appendChild(stopEl);
-    });
-
-    lucide.createIcons();
-    updateAllStopsData();
-  }
-
-  // ─── FETCHING E PROCESSAMENTO TEMPO REAL ───
-
-  async function updateAllStopsData() {
-    const promises = savedStops.map((stop) =>
-      fetchArrivalsForStop(stop.id, stop.hiddenLines),
-    );
-    await Promise.allSettled(promises);
-  }
-
-  async function fetchArrivalsForStop(stopId, hiddenLines) {
-    const resultsContainer = document.getElementById(`results-${stopId}`);
-    if (!resultsContainer) return;
-
-    try {
-      const res = await fetch(`${CM_API_BASE}/arrivals/by_stop/${stopId}`, {
-        cache: "no-store",
-      });
-      if (!res.ok) throw new Error("API Indisponível");
-
-      const data = await res.json();
-      const nowUnix = Math.floor(Date.now() / 1000);
-
-      const futureBuses = data
-        .map((bus) => ({
-          ...bus,
-          timeUnix: bus.estimated_arrival_unix || bus.scheduled_arrival_unix,
-          live: !!bus.estimated_arrival_unix,
-        }))
-        .filter((bus) => bus.timeUnix >= nowUnix - 30)
-        .filter((bus) => !hiddenLines.includes(bus.line_id))
-        .sort((a, b) => a.timeUnix - b.timeUnix)
-        .slice(0, 5);
-
-      drawResults(resultsContainer, futureBuses, hiddenLines.length > 0);
-    } catch (error) {
-      resultsContainer.innerHTML = `
-        <div class="p-5 flex items-center gap-3 text-red-500/80">
-          <i data-lucide="wifi-off" class="w-4 h-4 shrink-0"></i>
-          <p class="text-[10px] uppercase tracking-wider font-semibold">Sem ligação aos servidores.</p>
-        </div>`;
-      lucide.createIcons();
-    }
-  }
-
-  function drawResults(container, buses, isFiltered) {
-    if (buses.length === 0) {
-      const msg = isFiltered
-        ? "Sem autocarros nas carreiras selecionadas."
-        : "Sem previsões para as próximas horas.";
-      container.innerHTML = `
-        <div class="p-6 text-center">
-          <p class="text-xs text-zinc-400 font-medium">${msg}</p>
-        </div>`;
-      return;
-    }
-
-    const nowUnix = Math.floor(Date.now() / 1000);
-    let html = "";
-
-    buses.forEach((bus, index) => {
-      const diffMins = Math.floor((bus.timeUnix - nowUnix) / 60);
-      let timeStr = "";
-      let timeClass = "text-zinc-900 dark:text-white font-bold";
-      let pulseHtml = "";
-
-      if (diffMins <= 0) {
-        timeStr = "A CHEGAR";
-        timeClass = "text-green-600 dark:text-green-500 font-extrabold";
-        pulseHtml = `<span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse mr-1.5 shrink-0"></span>`;
-      } else if (diffMins < 60) {
-        timeStr = `${diffMins} min`;
-      } else {
-        const d = new Date(bus.timeUnix * 1000);
-        timeStr = d.toLocaleTimeString("pt-PT", {
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-        timeClass = "text-zinc-500 font-medium";
-      }
-
-      const borderClass =
-        index === buses.length - 1
-          ? ""
-          : "border-b border-zinc-100 dark:border-zinc-800";
-
-      html += `
-        <div class="px-5 py-3.5 flex items-center justify-between ${borderClass} hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors">
-          <div class="flex items-center gap-4 truncate pr-4">
-            <div class="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-2 py-1 min-w-[3rem] text-center shrink-0 shadow-sm">
-              <span class="text-[10px] font-bold tracking-widest">${bus.line_id}</span>
-            </div>
-            <p class="text-xs sm:text-sm text-zinc-700 dark:text-zinc-300 truncate font-medium">${bus.headsign}</p>
-          </div>
-          <div class="flex items-center shrink-0 text-right">
-            ${bus.live ? '<span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse mr-1.5 shrink-0"></span>' : ""}
-            <p class="text-[10px] sm:text-xs uppercase tracking-widest ${timeClass}">
-              <span class="text-zinc-400 font-normal text-[9px] mr-1 ${bus.live ? "hidden" : ""}">(prog.)</span>${timeStr}
-            </p>
-          </div>
-        </div>
-      `;
-    });
-
-    container.innerHTML = html;
-  }
-
-  // ─── MAPA MAPLIBRE GL ───
+  // ─── MAPA DO MODAL ───
 
   async function openMapModal() {
     mapModal.classList.remove("hidden");
@@ -616,36 +655,28 @@ document.addEventListener("DOMContentLoaded", () => {
     if (cmStopsCache) return cmStopsCache;
     const res = await fetch(STOPS_JSON_PATH);
     if (!res.ok) throw new Error("stops_cm.json não encontrado");
-    cmStopsCache = await res.json();
+    const arr = await res.json();
+    // Ids de linha limpos também no catálogo local (ver LTParagens.limparId).
+    for (const s of arr) if (Array.isArray(s.l)) s.l = s.l.map((l) => P.limparId(l));
+    cmStopsCache = arr;
     return cmStopsCache;
   }
 
   function setMapTheme() {
     if (!mapInstance) return;
-    const tileUrl = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
-
     mapInstance.setStyle({
       version: 8,
       sources: {
         basemap: {
           type: "raster",
-          tiles: [tileUrl],
+          tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
           tileSize: 256,
           attribution:
             '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
         },
       },
-      layers: [
-        {
-          id: "basemap-layer",
-          type: "raster",
-          source: "basemap",
-          minzoom: 0,
-          maxzoom: 22,
-        },
-      ],
+      layers: [{ id: "basemap-layer", type: "raster", source: "basemap", minzoom: 0, maxzoom: 22 }],
     });
-
     mapInstance.once("styledata", () => {
       if (geojsonCache) drawStopsLayer();
       if (fertagusCache && fertagusLineCache) {
@@ -659,38 +690,15 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!mapInstance.getSource("stops")) {
       mapInstance.addSource("stops", { type: "geojson", data: geojsonCache });
     }
-
     if (!mapInstance.getLayer("stops-layer")) {
       mapInstance.addLayer({
         id: "stops-layer",
         type: "circle",
         source: "stops",
         paint: {
-          "circle-radius": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            10,
-            2,
-            13,
-            6,
-            16,
-            9,
-            19,
-            15,
-          ],
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 2, 13, 6, 16, 9, 19, 15],
           "circle-color": "#FFDD00",
-          "circle-stroke-width": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            10,
-            1,
-            14,
-            2,
-            18,
-            3,
-          ],
+          "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 10, 1, 14, 2, 18, 3],
           "circle-stroke-color": "#000000",
         },
       });
@@ -712,16 +720,14 @@ document.addEventListener("DOMContentLoaded", () => {
   async function initializeMap() {
     try {
       const stopsData = await fetchAllStops();
-
-      const features = stopsData.map((s) => ({
-        type: "Feature",
-        geometry: { type: "Point", coordinates: [s.c[1], s.c[0]] },
-        properties: { id: s.id, name: s.n, lines: s.l ? s.l.join(",") : "" },
-      }));
-
-      geojsonCache = { type: "FeatureCollection", features };
-
-      const initialTile = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+      geojsonCache = {
+        type: "FeatureCollection",
+        features: stopsData.map((s) => ({
+          type: "Feature",
+          geometry: { type: "Point", coordinates: [s.c[1], s.c[0]] },
+          properties: { id: s.id, name: s.n, lines: s.l ? s.l.join(",") : "" },
+        })),
+      };
 
       mapInstance = new maplibregl.Map({
         container: "map",
@@ -730,21 +736,13 @@ document.addEventListener("DOMContentLoaded", () => {
           sources: {
             basemap: {
               type: "raster",
-              tiles: [initialTile],
+              tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
               tileSize: 256,
               attribution:
                 '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> | Dados: Carris Metropolitana · Infraestruturas de Portugal',
             },
           },
-          layers: [
-            {
-              id: "basemap-layer",
-              type: "raster",
-              source: "basemap",
-              minzoom: 0,
-              maxzoom: 22,
-            },
-          ],
+          layers: [{ id: "basemap-layer", type: "raster", source: "basemap", minzoom: 0, maxzoom: 22 }],
         },
         center: [-9.01, 38.65],
         zoom: 11,
@@ -755,86 +753,59 @@ document.addEventListener("DOMContentLoaded", () => {
         ],
       });
 
-      mapInstance.addControl(
-        new maplibregl.NavigationControl(),
-        "bottom-right",
-      );
+      mapInstance.addControl(new maplibregl.NavigationControl(), "bottom-right");
 
       mapInstance.on("load", async () => {
-        document
-          .getElementById("map-loading")
-          ?.classList.add("opacity-0", "pointer-events-none");
-
+        document.getElementById("map-loading")?.classList.add("opacity-0", "pointer-events-none");
         drawStopsLayer();
-
-        const [stationsData, lineData] = await Promise.all([
-          fetchFertagusStops(),
-          fetchFertagusLine(),
-        ]);
-
+        const [stationsData, lineData] = await Promise.all([fetchFertagusStops(), fetchFertagusLine()]);
         drawFertagusRoute(mapInstance, lineData);
         drawFertagusStations(mapInstance, stationsData);
       });
 
-      // Click numa paragem CM
       mapInstance.on("click", "stops-layer", (e) => {
         const props = e.features[0].properties;
         const coords = e.features[0].geometry.coordinates.slice();
-
-        let linesHtml =
-          '<p class="text-[9px] text-zinc-400 mt-1 mb-2">Sem carreiras disp.</p>';
+        let linesHtml = '<p class="text-[9px] text-zinc-500 mt-1 mb-2">Sem carreiras disp.</p>';
         if (props.lines) {
           const linePills = props.lines
             .split(",")
             .filter(Boolean)
             .map(
               (l) =>
-                `<span class="font-mono bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white px-1.5 py-0.5 text-[11px] font-bold tracking-widest mr-1 mb-1 inline-block border border-zinc-200 dark:border-zinc-700">${l}</span>`,
+                `<span class="font-mono bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white px-1.5 py-0.5 text-[11px] font-bold tracking-widest mr-1 mb-1 inline-block border border-zinc-200 dark:border-zinc-700">${esc(l)}</span>`,
             )
             .join("");
           linesHtml = `<div class="mb-4 mt-2 leading-tight">${linePills}</div>`;
         }
-
         const isSaved = savedStops.find((s) => s.id === props.id);
-
         new maplibregl.Popup({ closeButton: false, maxWidth: "240px" })
           .setLngLat(coords)
           .setHTML(
-            `
-            <div class="text-left flex flex-col font-['Inter']">
-              <h4 class="font-semibold text-xs uppercase tracking-wider text-zinc-900 dark:text-white">${props.name}</h4>
-              <span class="text-[9px] tracking-widest text-zinc-500 mt-0.5">ID: ${props.id}</span>
+            `<div class="text-left flex flex-col font-['Inter']">
+              <h4 class="font-semibold text-xs uppercase tracking-wider text-zinc-900 dark:text-white">${esc(props.name)}</h4>
+              <span class="text-[9px] tracking-widest text-zinc-500 mt-0.5">ID: ${esc(props.id)}</span>
               ${linesHtml}
               <button
-                data-map-add="${props.id}"
-                data-map-name="${props.name}"
-                data-map-lines="${props.lines}"
+                data-map-add="${esc(props.id)}"
+                data-map-name="${esc(props.name)}"
+                data-map-lines="${esc(props.lines)}"
                 class="w-full text-[9px] ${isSaved ? "bg-green-600 border-green-600 cursor-default" : "bg-zinc-900 dark:bg-white hover:bg-zinc-800"} text-white dark:text-zinc-900 px-4 py-2.5 font-bold uppercase tracking-[0.2em] transition-colors border border-zinc-900 dark:border-white"
                 ${isSaved ? "disabled" : ""}
               >${isSaved ? "✓ Já Adicionada" : "Adicionar Paragem"}</button>
-            </div>
-          `,
+            </div>`,
           )
           .addTo(mapInstance);
       });
 
-      mapInstance.on(
-        "mouseenter",
-        "stops-layer",
-        () => (mapInstance.getCanvas().style.cursor = "pointer"),
-      );
-      mapInstance.on(
-        "mouseleave",
-        "stops-layer",
-        () => (mapInstance.getCanvas().style.cursor = ""),
-      );
+      mapInstance.on("mouseenter", "stops-layer", () => (mapInstance.getCanvas().style.cursor = "pointer"));
+      mapInstance.on("mouseleave", "stops-layer", () => (mapInstance.getCanvas().style.cursor = ""));
     } catch (error) {
       console.error("Erro ao carregar mapa:", error);
       const loadingEl = document.getElementById("map-loading");
-      if (loadingEl) {
+      if (loadingEl)
         loadingEl.innerHTML =
           '<p class="text-xs uppercase text-zinc-500 tracking-widest">Erro ao carregar mapa.</p>';
-      }
     }
   }
 });
@@ -853,9 +824,6 @@ function injectCustomMenuElements() {
       settingsTemplate.remove();
     }
   }
-
-  const header = document.querySelector("#global-nav header");
-  const trigger = document.getElementById("menu-trigger");
 
   const footer = document.getElementById("global-footer");
   if (footer && !document.getElementById("footer-warning")) {

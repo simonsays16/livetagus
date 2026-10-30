@@ -1,5 +1,7 @@
 /* Filename: js/menu.js 
    Funções: Menu Global, Footer Global, Definições de Tema, API Status, CSP Compliant snd analitycs
+   + Partilha no header (antes no nav-tools.js, que foi apagado)
+   + Lista das estações (window.LTEstacoes), usada pelo "Estações ›" do menu e por /estacao/
 */
 
 window.sa_event =
@@ -13,8 +15,9 @@ document.addEventListener("DOMContentLoaded", () => {
   injectNavigation(); // injetar header
   injectFooter(); // injetar footer
   initTheme(); // verificar tema escuro/claro/auto
-  initMenuInteractions(); // interações menu
+  initMenuInteractions(); // interações menu (+ segundo nível "Estações")
   initShareButton(); // partilha nativa no footer
+  initHeaderShare(); // partilha da página atual no header
   checkApiStatus(); // verificar estado
   updateAppVersion(); // versao sw.js
   //initComingSoonPill();  botão brevemnte
@@ -26,8 +29,6 @@ function injectNavigation() {
   if (!navContainer) return;
 
   const logoSrc = "/imagens/logotransparente.svg";
-
-  const githubIcon = `<svg viewBox="0 0 24 24" class="w-5 h-5 fill-current"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>`;
 
   /* ===== MUNDIAL 2026 — DECORAÇÃO TEMPORÁRIA (apagar este bloco + style + .mundial-confetti depois do evento) =====
   const mundialCores = ["#046A38", "#DA291C", "#FFE900"];
@@ -47,115 +48,333 @@ function injectNavigation() {
     }
   }*/
 
-  navContainer.innerHTML = `
-        <header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 py-4 transition-all duration-500 bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-md border-b border-zinc-200/50 dark:border-white/5 supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-[#09090b]/60 pt-safe-ios">
-            
+  // Página atual: "/" → home · "/mapa" → mapa · "/estacao/coina" → estacao
+  const key = paginaAtual();
+  // No mapa o header é transparente e cada controlo é uma pill de vidro,
+  // para se ver o mapa por trás (era o estilo "glass" do nav-tools.js).
+  const glass = key === "mapa";
+
+  const BTN_FLAT =
+    "p-2 rounded-full transition-colors text-zinc-900 dark:text-white hover:opacity-70";
+  const BTN_GLASS =
+    "p-2 rounded-full bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-md border border-zinc-200/50 dark:border-white/5 shadow-sm transition-colors text-zinc-900 dark:text-white";
+  const HEADER_BAR = glass
+    ? "px-3"
+    : "px-6 bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-md border-b border-zinc-200/50 dark:border-white/5 supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-[#09090b]/60";
+  const TRIGGER_GLASS = glass
+    ? " bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-md border border-zinc-200/50 dark:border-white/5 shadow-sm rounded-full py-3.5"
+    : "";
+
+  const logoHtml = `
             <a href="/" class="flex items-center gap-3 group" aria-label="Ir para a página inicial">
                 <img id="nav-logo" src="${logoSrc}" class="w-8 h-8 opacity-100 transition-opacity object-contain" alt="LiveTagus Logo" width="32" height="32">
-                <span class="font-sans font-bold tracking-tighter text-lg text-zinc-900 dark:text-white">LIVETAGUS</span><span class="text-xs"> (beta)</span>
-                <!--<span class="font-sans font-bold tracking-tighter text-lg">
-                    <span style="color: #046A38;"><b>LIVE</b></span><span style="color: #FFE900; opacity: 0.9;">T</span><span style="color: #DA291C;">AGUS</span>
-                </span>-->
-            </a>
-            
-            <button id="menu-trigger" class="flex flex-col items-end gap-1.5 group cursor-pointer p-2 text-zinc-900 dark:text-white" aria-label="Abrir Menu">
-                <span class="w-8 h-[1.5px] bg-current transition-all duration-300 group-hover:w-10 pointer-events-none"></span>
-                <span class="w-6 h-[1.5px] bg-current transition-all duration-300 group-hover:w-10 pointer-events-none"></span>
-            </button>
+                <span class="font-sans font-bold tracking-tighter text-lg text-zinc-900 dark:text-white">LIVETAGUS</span><span id="nav-beta" class="text-xs"> (beta)</span>
+            </a>`;
+
+  const SVG_SHARE = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v13"/><path d="m16 6-4-4-4 4"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/></svg>`;
+  const SVG_CHEV = `<svg class="ltm-chev" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>`;
+  const SVG_BACK = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>`;
+
+  injectMenuStyles();
+
+  navContainer.innerHTML = `
+        <header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center py-4 transition-all duration-500 pt-safe-ios ${HEADER_BAR}">
+            ${
+              glass
+                ? `<div id="nav-logo-pill" class="flex items-center px-3 py-2 rounded-xl bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-md border border-zinc-200/50 dark:border-white/5 shadow-sm">${logoHtml}</div>`
+                : logoHtml
+            }
+            <div id="nav-actions" class="flex items-center gap-2">
+                <button id="nav-share-trigger" type="button" class="${glass ? BTN_GLASS : BTN_FLAT}" aria-label="Partilhar esta página">${SVG_SHARE}</button>
+                <button id="menu-trigger" type="button" class="flex flex-col items-end gap-1.5 group cursor-pointer p-2 text-zinc-900 dark:text-white${TRIGGER_GLASS}" aria-label="Abrir menu" aria-expanded="false" aria-controls="menu-overlay">
+                    <span class="w-8 h-[1.5px] bg-current transition-all duration-300 group-hover:w-10 pointer-events-none"></span>
+                    <span class="w-6 h-[1.5px] bg-current transition-all duration-300 group-hover:w-10 pointer-events-none"></span>
+                </button>
+            </div>
         </header>
 
-        <div id="menu-overlay" class="fixed inset-0 bg-white dark:bg-[#09090b] z-40 transform translate-y-full transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col justify-between pt-24 pb-10 px-6 overflow-hidden overflow-y-auto">
+        <div id="menu-overlay" class="fixed inset-0 bg-white dark:bg-[#09090b] z-40 transform translate-y-full transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden" aria-hidden="true" inert>
 
             <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 dark:bg-blue-900/10 rounded-full blur-[120px] pointer-events-none"></div>
 
-            <nav class="flex flex-col gap-2 relative z-10">
-                <a href="/" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Início</a>
-                <a href="/mapa" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Mapa</a>
-                <!-- PROVISÓRIO <a href="/app" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-black dark:text-white transition-colors uppercase italic">Tempo Real</a> -->
-                <a href="/app" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-black dark:text-white transition-colors uppercase italic">Trajetos</a>
-                <a href="/estacoes/" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Estações</a>
-                <a href="/horarios" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Horários</a>
-                <a id="btn-menu-sobre" href="/sobre" class="menu-link text-4xl md:text-6xl font-light tracking-tighter text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors uppercase">Sobre</a>
-            </nav>
+            <div class="ltm-track" id="ltm-track">
 
-            <div class="relative z-10 border-t border-zinc-200 dark:border-white/10 pt-8 mt-8 md:pb-0">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
-                    
-                    <div class="space-y-4 w-full md:w-auto">
-                        <span class="text-xs font-bold tracking-widest text-zinc-500 uppercase">Aparência</span>
-                        <div class="flex gap-4">
-                            <button class="theme-btn text-sm text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white uppercase tracking-wider transition-colors" data-mode="light">Light</button>
-                            <button class="theme-btn text-sm text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white uppercase tracking-wider transition-colors" data-mode="dark">Dark</button>
-                            <button class="theme-btn text-sm text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white uppercase tracking-wider transition-colors" data-mode="system">Auto</button>
+                <!-- ═══ NÍVEL 1 ═══ -->
+                <div class="ltm-panel" id="ltm-main">
+                    <nav class="ltm-nav" aria-label="Menu principal">
+                        <a href="/" class="menu-link ltm-big" data-page="home">Início</a>
+                        <a href="/mapa" class="menu-link ltm-big" data-page="mapa">Mapa</a>
+                        <div class="ltm-group" role="group" aria-labelledby="ltm-label-comboios">
+                            <p class="ltm-label" id="ltm-label-comboios">Comboios</p>
+                            <div class="ltm-sub">
+                                <a href="/app" class="menu-link ltm-med" data-page="app">Trajetos</a>
+                                <span class="ltm-sep" aria-hidden="true">·</span>
+                                <a href="/horarios" class="menu-link ltm-med" data-page="horarios">Horários</a>
+                            </div>
+                        </div>
+                        <button type="button" id="ltm-open-estacoes" class="menu-link ltm-big ltm-more" data-page="estacao" aria-expanded="false" aria-controls="ltm-estacoes">
+                            <span>Estações</span>${SVG_CHEV}
+                        </button>
+                    </nav>
+
+                    <div class="ltm-foot">
+                        <div class="ltm-links">
+                            <!-- Definições: módulo futuro, ainda sem destino -->
+                            <button type="button" id="menu-settings-btn" class="ltm-small" data-action="open-settings">Definições</button>
+                            <span class="ltm-sep" aria-hidden="true">·</span>
+                            <a href="/sobre" class="menu-link ltm-small" data-page="sobre">Sobre</a>
+                            <span class="ltm-sep" aria-hidden="true">·</span>
+                            <a href="/sudoku" class="menu-link ltm-small" data-page="sudoku">Sudoku</a>
+                        </div>
+                        <div class="ltm-theme" role="group" aria-label="Aparência">
+                            <button type="button" class="theme-btn ltm-theme-btn" data-mode="light">Light</button>
+                            <button type="button" class="theme-btn ltm-theme-btn" data-mode="dark">Dark</button>
+                            <button type="button" class="theme-btn ltm-theme-btn" data-mode="system">Auto</button>
+                        </div>
+                        <div class="ltm-status">
+                            <span id="api-status-display" class="ltm-status-api">
+                                <span id="status-dot" class="w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-700"></span>
+                                <span id="status-text" class="text-[10px] font-mono text-zinc-500 uppercase tracking-wide">A verificar...</span>
+                            </span>
+                            <span id="menu-version-display" class="ltm-version">LiveTagus • a verificar versão...</span>
                         </div>
                     </div>
-
-                    <div class="flex flex-col items-start gap-3">
-                        <p id="menu-version-display" class="text-[10px] text-zinc-600 font-mono mb-0 leading-none">LiveTagus • a verificar versão...</p>
-                        
-                        <div id="api-status-display" class="flex items-center gap-2 mb-1">
-                            <span id="status-dot" class="w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-700"></span>
-                            <span id="status-text" class="text-[10px] font-mono text-zinc-500 uppercase tracking-wide">A verificar...</span>
-                        </div>
-
-                        <div class="flex items-center gap-4">
-                            <a href="https://github.com/simonsays16/livetagus" target="_blank" class="text-zinc-500 hover:text-black dark:hover:text-white transition-colors" aria-label="GitHub">
-                                ${githubIcon}
-                            </a>
-                            <a href="https://www.netlify.com" target="_blank" aria-label="Alojado na Netlify">
-                                <img id="netlify-badge-menu" src="/imagens/netlify-light.svg" alt="Deploys by Netlify" class="h-6 w-auto" width="114" height="51" />
-                            </a>
-                        </div>
-                    </div>
-
                 </div>
+
+                <!-- ═══ NÍVEL 2: ESTAÇÕES ═══ -->
+                <div class="ltm-panel" id="ltm-estacoes" aria-label="Estações">
+                    <button type="button" id="ltm-back" class="ltm-back">${SVG_BACK}<span>Menu</span></button>
+                    <p class="ltm-label ltm-label-top">Rede Fertagus</p>
+                    <p class="ltm-title">Estações</p>
+                    <div id="ltm-stn-list" class="ltm-stn-list"></div>
+                </div>
+
             </div>
         </div>
     `;
 
-  // --- Marca o link activo com base no pathname actual ---
-  // Remove o "italic" do link que está hardcoded e aplica-o ao link que
-  // corresponde à página actual. Mantém compatibilidade com páginas
-  // existentes quando o pathname começa pelo href.
-  try {
-    const path = (window.location.pathname || "/").replace(/\/$/, "") || "/";
-    const links = document.querySelectorAll("#global-nav .menu-link");
-    let matched = null;
-    links.forEach((l) => {
-      const href = l.getAttribute("href") || "";
-      // Ignora links externos (http…)
-      if (/^https?:/i.test(href)) return;
-      const hrefNorm = href.replace(/\/$/, "") || "/";
-      // Match exacto, ou prefixo (ex: /mapa/foo corresponde a /mapa)
-      if (
-        path === hrefNorm ||
-        (hrefNorm !== "/" && path.startsWith(hrefNorm + "/"))
-      ) {
-        matched = l;
-      }
-    });
-    if (matched) {
-      links.forEach((l) => {
-        l.classList.remove("italic", "text-black", "dark:text-white");
-        l.classList.add(
-          "text-zinc-500",
-          "dark:text-zinc-400",
-          "hover:text-black",
-          "dark:hover:text-white",
-        );
-      });
-      matched.classList.remove(
-        "text-zinc-500",
-        "dark:text-zinc-400",
-        "hover:text-black",
-        "dark:hover:text-white",
-      );
-      matched.classList.add("italic", "text-black", "dark:text-white");
-    }
-  } catch (e) {
-    /* silencioso */
-  }
+  // --- Marca a página atual (itálico + cor forte, como sempre foi) ---
+  const atual = document.querySelector(`#menu-overlay [data-page="${key}"]`);
+  if (atual) atual.setAttribute("aria-current", "page");
 }
+
+// Página atual a partir do pathname.
+function paginaAtual() {
+  const p = (window.location.pathname || "/")
+    .toLowerCase()
+    .replace(/\.html$/, "")
+    .replace(/\/+$/, "");
+  if (p === "" || p === "/" || p === "/index") return "home";
+  const seg = p.split("/").filter(Boolean)[0] || "home";
+  if (seg === "estacoes" || seg === "estacao") return "estacao";
+  return seg;
+}
+
+// ─── ESTILOS DO MENU ───────────────────────────────────────────────────
+// Próprios (.ltm-*), para não dependerem do build do Tailwind. Mesmas
+// medidas que o menu tinha (text-4xl/6xl, font-light, tracking-tighter).
+function injectMenuStyles() {
+  if (document.getElementById("ltm-styles")) return;
+  const css = `
+#menu-overlay{--ltm-ink:#09090b;--ltm-mute:#71717a;--ltm-soft:#52525b;--ltm-line:#e4e4e7}
+html.dark #menu-overlay{--ltm-ink:#fafafa;--ltm-mute:#a1a1aa;--ltm-soft:#d4d4d8;--ltm-line:rgba(255,255,255,.1)}
+.ltm-track{position:relative;z-index:1;display:flex;width:200%;height:100%;transition:transform .5s cubic-bezier(.16,1,.3,1)}
+.ltm-track.is-sub{transform:translateX(-50%)}
+.ltm-panel{width:50%;height:100%;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;
+  padding:calc(6rem + env(safe-area-inset-top,0px)) max(1.5rem,env(safe-area-inset-right,0px)) calc(2.5rem + env(safe-area-inset-bottom,0px)) max(1.5rem,env(safe-area-inset-left,0px))}
+#ltm-main{justify-content:space-between}
+.ltm-nav{display:flex;flex-direction:column;align-items:flex-start;gap:.5rem}
+.ltm-big,.ltm-med{font-weight:300;text-transform:uppercase;letter-spacing:-.05em;color:var(--ltm-mute);transition:color .2s ease;background:none;border:0;padding:0;text-align:left;cursor:pointer;font-family:inherit}
+.ltm-big{font-size:2.25rem;line-height:2.5rem}
+.ltm-med{font-size:1.5rem;line-height:2rem}
+.ltm-big:hover,.ltm-med:hover,.ltm-big:focus-visible,.ltm-med:focus-visible{color:var(--ltm-ink)}
+.menu-link[aria-current="page"]{color:var(--ltm-ink);font-style:italic}
+.ltm-more{display:inline-flex;align-items:center;gap:.35rem}
+.ltm-chev{width:1.6rem;height:1.6rem;transition:transform .2s ease}
+.ltm-more:hover .ltm-chev{transform:translateX(3px)}
+.ltm-group{display:flex;flex-direction:column;gap:.25rem;margin:.5rem 0 .25rem}
+.ltm-label{font-size:10px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;color:var(--ltm-mute)}
+.ltm-sub{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:.6rem;row-gap:.15rem}
+.ltm-sub .ltm-sep{font-size:1.5rem;line-height:2rem;color:var(--ltm-line)}
+.ltm-foot{margin-top:2rem;padding-top:1.75rem;border-top:1px solid var(--ltm-line);display:flex;flex-direction:column;gap:1rem}
+.ltm-links,.ltm-theme,.ltm-status{display:flex;flex-wrap:wrap;align-items:center;column-gap:.6rem;row-gap:.4rem}
+.ltm-status{flex-direction:column;align-items:flex-start;row-gap:.5rem}
+.ltm-small{font-size:.75rem;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--ltm-soft);background:none;border:0;padding:.25rem 0;cursor:pointer;font-family:inherit;transition:color .2s ease}
+.ltm-small:hover,.ltm-small:focus-visible{color:var(--ltm-ink)}
+.ltm-sep{color:var(--ltm-mute)}
+.ltm-theme{column-gap:1rem}
+.ltm-theme-btn{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ltm-mute);background:none;border:0;padding:.25rem 0;cursor:pointer;font-family:inherit;transition:color .2s ease}
+.ltm-theme-btn:hover{color:var(--ltm-ink)}
+.ltm-theme-btn.font-bold{color:var(--ltm-ink)}
+.ltm-status-api{display:inline-flex;align-items:center;gap:.5rem}
+.ltm-version{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;color:var(--ltm-mute)}
+.ltm-back{display:inline-flex;align-items:center;gap:.35rem;align-self:flex-start;margin:0 0 1.5rem -.25rem;padding:.35rem .25rem;font-size:.7rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--ltm-soft);background:none;border:0;cursor:pointer;font-family:inherit}
+.ltm-back:hover{color:var(--ltm-ink)}
+.ltm-label-top{margin-bottom:.4rem}
+#ltm-estacoes>*{width:100%;max-width:48rem}
+#ltm-estacoes>.ltm-back{width:auto}
+.ltm-title{font-size:2.25rem;line-height:2.5rem;font-weight:700;letter-spacing:-.05em;text-transform:uppercase;color:var(--ltm-ink);margin-bottom:1.75rem}
+.ltm-zone{display:flex;align-items:center;gap:1rem;margin:1.5rem 0 .25rem}
+.ltm-zone:first-child{margin-top:0}
+.ltm-zone-line{height:1px;flex:1;background:var(--ltm-line)}
+.ltm-zone-n{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9px;letter-spacing:.05em;color:var(--ltm-mute)}
+.ltm-stn{display:flex;align-items:center;gap:.75rem;padding:.8rem 0;border-bottom:1px solid var(--ltm-line);text-decoration:none;transition:padding .3s cubic-bezier(.22,.61,.36,1)}
+.ltm-stn-name{flex:1;min-width:0;font-size:1.25rem;line-height:1.2;font-weight:300;letter-spacing:-.025em;color:var(--ltm-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ltm-stn[aria-current="page"] .ltm-stn-name{font-style:italic;font-weight:500}
+.ltm-stn-ops{display:flex;align-items:center;gap:.5rem;flex-shrink:0}
+.ltm-stn-ops img{width:1rem;height:1rem;object-fit:contain}
+html.dark .ltm-stn-ops{opacity:.85}
+html.dark .ltm-cm-light,html:not(.dark) .ltm-cm-dark{display:none}
+.ltm-stn-arrow{width:1rem;height:1rem;flex-shrink:0;color:var(--ltm-mute);transition:transform .3s ease,color .3s ease}
+.ltm-stn:hover{padding-left:.5rem}
+.ltm-stn:hover .ltm-stn-arrow{color:var(--ltm-ink);transform:translateX(2px)}
+@media (min-width:768px){
+  .ltm-panel{padding-left:max(2.5rem,env(safe-area-inset-left,0px));padding-right:max(2.5rem,env(safe-area-inset-right,0px))}
+  .ltm-big{font-size:3.75rem;line-height:1}
+  .ltm-med,.ltm-sub .ltm-sep{font-size:2.25rem;line-height:2.5rem}
+  .ltm-chev{width:2.5rem;height:2.5rem}
+  .ltm-title{font-size:3.75rem;line-height:1}
+  .ltm-stn-name{font-size:1.75rem}
+  .ltm-stn-ops img{width:1.15rem;height:1.15rem}
+  .ltm-foot{flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:space-between}
+  .ltm-status{flex-basis:100%;flex-direction:row;align-items:center;column-gap:1.25rem}
+}
+/* Telemóveis pequenos (≤ 359px): o "(beta)" sai para os botões respirarem. */
+@media (max-width:359px){#nav-beta{display:none}}
+@media (max-height:600px){.ltm-panel{padding-top:calc(5rem + env(safe-area-inset-top,0px))}.ltm-nav{gap:.25rem}.ltm-foot{margin-top:1.25rem;padding-top:1.25rem}}
+@media (prefers-reduced-motion:reduce){.ltm-track,.ltm-stn,.ltm-chev{transition:none}}
+`;
+  const tag = document.createElement("style");
+  tag.id = "ltm-styles";
+  tag.textContent = css;
+  document.head.appendChild(tag);
+}
+
+// ─── ESTAÇÕES FERTAGUS (lista partilhada) ──────────────────────────────
+// Fonte única da lista: o "Estações ›" do menu e a página /estacao/
+// (estacao/index.js) desenham a partir daqui. Ordem da linha, de Lisboa a
+// Setúbal. apiId cruza com as ligações do ligacoes_atualizado.json.
+window.LTEstacoes = (function () {
+  const LISTA = [
+    {
+      key: "roma_areeiro",
+      name: "Roma-Areeiro",
+      zone: "lisboa",
+      apiId: "9466035",
+    },
+    {
+      key: "entrecampos",
+      name: "Entrecampos",
+      zone: "lisboa",
+      apiId: "9466050",
+    },
+    { key: "sete_rios", name: "Sete Rios", zone: "lisboa", apiId: "9466076" },
+    { key: "campolide", name: "Campolide", zone: "lisboa", apiId: "9467033" },
+    { key: "pragal", name: "Pragal", zone: "margem", apiId: "9417087" },
+    { key: "corroios", name: "Corroios", zone: "margem", apiId: "9417137" },
+    {
+      key: "foros_de_amora",
+      name: "Foros de Amora",
+      zone: "margem",
+      apiId: "9417152",
+    },
+    { key: "fogueteiro", name: "Fogueteiro", zone: "margem", apiId: "9417186" },
+    { key: "coina", name: "Coina", zone: "margem", apiId: "9417236" },
+    { key: "penalva", name: "Penalva", zone: "margem", apiId: "9417095" },
+    {
+      key: "pinhal_novo",
+      name: "Pinhal Novo",
+      zone: "margem",
+      apiId: "9468007",
+    },
+    {
+      key: "venda_do_alcaide",
+      name: "Venda do Alcaide",
+      zone: "margem",
+      apiId: "9468049",
+    },
+    { key: "palmela", name: "Palmela", zone: "margem", apiId: "9468098" },
+    { key: "setubal", name: "Setúbal", zone: "margem", apiId: "9468122" },
+  ];
+  const ZONAS = {
+    lisboa: { label: "Lisboa", index: 1 },
+    margem: { label: "Margem Sul", index: 2 },
+  };
+  // Ordem dos operadores com ligação, como na página das estações.
+  const OPS = ["cp", "metro", "carris", "cm", "mts", "tcb", "re"];
+
+  function normalizar(str) {
+    return String(str || "")
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .toLowerCase();
+  }
+  function slug(name) {
+    return normalizar(name)
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
+  }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(
+      /[&<>"']/g,
+      (c) =>
+        ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        })[c],
+    );
+  }
+
+  // As ligações só são pedidas quando alguém precisa delas (uma vez).
+  let ligacoes = null;
+  function carregarLigacoes() {
+    if (!ligacoes) {
+      ligacoes = fetch("/data/json/ligacoes_atualizado.json")
+        .then((r) => (r.ok ? r.json() : {}))
+        .catch(() => {
+          ligacoes = null;
+          return {};
+        });
+    }
+    return ligacoes;
+  }
+
+  // Operadores com ligação numa estação (pela ordem de OPS).
+  function operadores(dados, apiId) {
+    const lig = (dados && dados[apiId] && dados[apiId].ligacoes) || {};
+    return OPS.filter((op) => Array.isArray(lig[op]) && lig[op].length > 0);
+  }
+
+  // Logos dos operadores. classes = { img, cmLight, cmDark } para cada página
+  // usar o seu próprio CSS.
+  function logosHtml(ops, classes) {
+    const c = classes || {};
+    return ops
+      .map((op) =>
+        op === "cm"
+          ? `<img src="/assets/img/logos/cm-light.svg" alt="Carris Metropolitana" class="${c.img || ""} ${c.cmLight || ""}" /><img src="/assets/img/logos/cm-dark.svg" alt="" aria-hidden="true" class="${c.img || ""} ${c.cmDark || ""}" />`
+          : `<img src="/assets/img/logos/${esc(op)}.png" alt="${esc(op)}" class="${c.img || ""}" />`,
+      )
+      .join("");
+  }
+
+  return {
+    LISTA,
+    ZONAS,
+    OPS,
+    normalizar,
+    slug,
+    esc,
+    carregarLigacoes,
+    operadores,
+    logosHtml,
+  };
+})();
 
 // --- FOOTER GLOBAL ---
 function injectFooter() {
@@ -251,15 +470,37 @@ function injectFooter() {
     `;
 }
 
-// --- BOTÃO DE PARTILHA NATIVA ---
+// --- BOTÃO DE PARTILHA NO HEADER (antes no nav-tools.js) ---
+// Partilha SEMPRE a página onde a pessoa está, com a querystring (?…).
+// Reaproveita o fluxo do rodapé: partilha nativa → área de transferência
+// → execCommand, com a pill "Link Copiado!".
+function initHeaderShare() {
+  const btn = document.getElementById("nav-share-trigger");
+  if (!btn) return;
+  btn.addEventListener("click", () => {
+    const loc = window.location;
+    partilhar(
+      loc.origin + loc.pathname + (loc.search || ""),
+      "Olha a nova aplicação web para ver a Fertagus em tempo real!",
+      "nav_share_button",
+    );
+  });
+}
+
+// --- BOTÃO DE PARTILHA NATIVA (rodapé) ---
 function initShareButton() {
   const btn = document.getElementById("footer-share-btn");
   if (!btn) return;
+  btn.addEventListener("click", () =>
+    partilhar(
+      "https://livetagus.pt",
+      "Olha a nova aplicação web para ver a fertagus em tempo real! Gratuita e sem anúncios!",
+      "native_share_button",
+    ),
+  );
+}
 
-  const SHARE_URL = "https://livetagus.pt";
-  const SHARE_TEXT =
-    "Olha a nova aplicação web para ver a fertagus em tempo real! Gratuita e sem anúncios!";
-
+async function partilhar(SHARE_URL, SHARE_TEXT, evento) {
   let pill = document.getElementById("share-pill-notification");
   if (!pill) {
     pill = document.createElement("div");
@@ -304,8 +545,8 @@ function initShareButton() {
     }, 2200);
   }
 
-  btn.addEventListener("click", async () => {
-    sa_event("native_share_button");
+  {
+    sa_event(evento);
     const shareData = { title: "LiveTagus", text: SHARE_TEXT, url: SHARE_URL };
     if (
       navigator.share &&
@@ -339,21 +580,44 @@ function initShareButton() {
       document.body.removeChild(ta);
       showPill();
     } catch {}
-  });
+  }
 }
 
 function initMenuInteractions() {
   const trigger = document.getElementById("menu-trigger");
   const overlay = document.getElementById("menu-overlay");
-
   if (!trigger || !overlay) return;
 
   const spans = trigger.querySelectorAll("span");
+  const track = document.getElementById("ltm-track");
+  const main = document.getElementById("ltm-main");
+  const sub = document.getElementById("ltm-estacoes");
+  const abrirEst = document.getElementById("ltm-open-estacoes");
+  const voltar = document.getElementById("ltm-back");
   let isOpen = false;
 
-  trigger.addEventListener("click", () => {
-    isOpen = !isOpen;
-    if (isOpen) {
+  // Só o nível visível é focável/legível por leitores de ecrã.
+  function nivel(n) {
+    const noSub = n === 2;
+    if (track) track.classList.toggle("is-sub", noSub);
+    if (main) main.inert = noSub;
+    if (sub) {
+      sub.inert = !noSub;
+      sub.setAttribute("aria-hidden", noSub ? "false" : "true");
+    }
+    if (main) main.setAttribute("aria-hidden", noSub ? "true" : "false");
+    if (abrirEst)
+      abrirEst.setAttribute("aria-expanded", noSub ? "true" : "false");
+  }
+  nivel(1);
+
+  function setOpen(open) {
+    isOpen = open;
+    overlay.inert = !open;
+    overlay.setAttribute("aria-hidden", open ? "false" : "true");
+    trigger.setAttribute("aria-expanded", open ? "true" : "false");
+    trigger.setAttribute("aria-label", open ? "Fechar menu" : "Abrir menu");
+    if (open) {
       overlay.classList.remove("translate-y-full");
       spans[0].classList.add("rotate-45", "translate-y-[5px]");
       spans[1].classList.add("-rotate-45", "-translate-y-[4px]", "w-8");
@@ -365,7 +629,83 @@ function initMenuInteractions() {
       spans[1].classList.remove("-rotate-45", "-translate-y-[4px]", "w-8");
       spans[1].classList.add("w-6");
       document.body.style.overflow = "";
+      // Ao fechar volta sempre ao primeiro nível (depois da animação).
+      setTimeout(() => {
+        if (!isOpen) nivel(1);
+      }, 500);
     }
+  }
+
+  trigger.addEventListener("click", () => setOpen(!isOpen));
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape" || !isOpen) return;
+    if (track && track.classList.contains("is-sub")) {
+      nivel(1);
+      if (abrirEst) abrirEst.focus();
+    } else {
+      setOpen(false);
+      trigger.focus();
+    }
+  });
+
+  if (abrirEst) {
+    abrirEst.addEventListener("click", () => {
+      desenharEstacoes();
+      nivel(2);
+      if (voltar) setTimeout(() => voltar.focus({ preventScroll: true }), 60);
+      if (typeof sa_event === "function") sa_event("menu_estacoes");
+    });
+  }
+  if (voltar) {
+    voltar.addEventListener("click", () => {
+      nivel(1);
+      if (abrirEst)
+        setTimeout(() => abrirEst.focus({ preventScroll: true }), 60);
+    });
+  }
+}
+
+// Lista do segundo nível. Desenha logo com os nomes; os logos dos
+// operadores entram quando as ligações chegarem (pedidas uma só vez).
+let estacoesDesenhadas = false;
+function desenharEstacoes() {
+  const host = document.getElementById("ltm-stn-list");
+  const E = window.LTEstacoes;
+  if (!host || !E) return;
+  if (estacoesDesenhadas) return;
+  estacoesDesenhadas = true;
+
+  const atual = (window.location.pathname || "")
+    .toLowerCase()
+    .replace(/\/+$/, "")
+    .split("/")[2];
+
+  const SVG_SETA = `<svg class="ltm-stn-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`;
+
+  function html(dados) {
+    let out = "";
+    for (const z of Object.keys(E.ZONAS).sort(
+      (a, b) => E.ZONAS[a].index - E.ZONAS[b].index,
+    )) {
+      const lista = E.LISTA.filter((s) => s.zone === z);
+      out += `<div class="ltm-zone"><span class="ltm-label">${E.esc(E.ZONAS[z].label)}</span><span class="ltm-zone-line"></span><span class="ltm-zone-n">${String(lista.length).padStart(2, "0")}</span></div>`;
+      for (const s of lista) {
+        const sl = E.slug(s.name);
+        const ops = dados ? E.operadores(dados, s.apiId) : [];
+        out += `<a href="/estacao/${sl}" class="ltm-stn"${sl === atual ? ' aria-current="page"' : ""}>
+            <span class="ltm-stn-name">${E.esc(s.name)}</span>
+            ${ops.length ? `<span class="ltm-stn-ops">${E.logosHtml(ops, { cmLight: "ltm-cm-light", cmDark: "ltm-cm-dark" })}</span>` : ""}
+            ${SVG_SETA}
+          </a>`;
+      }
+    }
+    return out;
+  }
+
+  host.innerHTML = html(null);
+  E.carregarLigacoes().then((dados) => {
+    if (dados && Object.keys(dados).length) host.innerHTML = html(dados);
   });
 }
 

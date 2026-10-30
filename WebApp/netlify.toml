@@ -45,24 +45,6 @@
   status = 200
   force = true
 
-[[redirects]]
-  from = "/maplibre-gl.css"
-  to = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/maplibre-gl.js"
-  to = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/turf.min.js"
-  to = "https://unpkg.com/@turf/turf@7.2.0/turf.min.js"
-  status = 200
-  force = true
-
 # 301 permanente: links antigos /estacoes/<slug> continuam a funcionar (SEO)
 [[redirects]]
   from = "/estacoes/*"

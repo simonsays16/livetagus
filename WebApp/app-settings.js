@@ -1089,26 +1089,12 @@ if (menuOverlay) {
     }
   }
 }
-const settingsTemplate = document.getElementById("menu-settings-template");
 
 function injectCustomMenuElements() {
-  // 1. Injeta as Definições (Horário Inteligente) no menu principal
-  const menuOverlay = document.getElementById("menu-overlay");
-  const settingsTemplate = document.getElementById("menu-settings-template");
-
-  if (menuOverlay && settingsTemplate) {
-    const nav = menuOverlay.querySelector("nav");
-    if (nav) {
-      const wrapper = document.createElement("div");
-      wrapper.innerHTML = settingsTemplate.innerHTML;
-      nav.parentNode.insertBefore(wrapper, nav.nextSibling);
-      const smartContainer = wrapper.querySelector("#smart-schedule-section");
-      if (smartContainer) {
-        renderSmartSection(smartContainer);
-      }
-      settingsTemplate.remove();
-    }
-  }
+  // 1. O Horário Inteligente saiu do menu (vai para a futura página de
+  //    Definições). A configuração guardada continua a ser aplicada ao abrir
+  //    a app (_detectSmartTab); só deixou de haver onde a mudar por agora.
+  //    renderSmartSection() fica disponível para quando essa página existir.
 
   // 3. O botão de Refresh deixou de ser injetado aqui: passou a ser estático
   //    no app.html, centrado por baixo do botão de troca de sentido e com a

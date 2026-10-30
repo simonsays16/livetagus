@@ -22,6 +22,30 @@
 
   // ─── CONFIG ──────────────────────────────────────────────────────────
   const CM_API_BASE = "https://api.carrismetropolitana.pt/v2";
+  // Pedidos à Carris Metropolitana e à TML sem cookies: credentials "omit"
+  // não envia nenhum e faz o browser ignorar os Set-Cookie das respostas.
+  const SEM_COOKIES = { credentials: "omit" };
+
+  // A API da Carris passou a pôr um código entre parênteses rectos antes dos
+  // ids ("[YA15B]3521", "[YA15B]3521_1_1"). O id verdadeiro é o que sobra.
+  const limparIdCM = (v) =>
+    v == null ? v : String(v).replace(/\[[^\]]*\]/g, "").trim();
+  function limparChegadasCM(arr) {
+    if (!Array.isArray(arr)) return [];
+    for (const b of arr) {
+      if (!b || typeof b !== "object") continue;
+      // O original fica em b._raw. O trip_id NÃO é limpo: o ETA da TML
+      // (go.tmlmobilidade.pt) precisa dele com o código, e é com ele que o
+      // percurso encontra a viagem dentro do padrão.
+      b._raw = b._raw || {};
+      for (const k of ["line_id", "pattern_id", "route_id"])
+        if (b[k] != null) {
+          if (b._raw[k] == null) b._raw[k] = b[k];
+          b[k] = limparIdCM(b[k]);
+        }
+    }
+    return arr;
+  }
   const LIGACOES_JSON = "./data/json/ligacoes_atualizado.json";
   const ARRIVALS_REFRESH_MS = 30_000;
   const ARRIVALS_LIMIT = 15; // partidas no estado expandido
@@ -115,12 +139,13 @@
     const out = [];
     const seen = new Set();
     for (const l of stop.lines || []) {
-      const id = l && l["line-id"];
+      // Limpo como as chegadas, para o filtro e as cores baterem certo.
+      const id = l && limparIdCM(l["line-id"]);
       if (!id || seen.has(id)) continue;
       seen.add(id);
       out.push({
         id: String(id),
-        name: String(l["line-name"] != null ? l["line-name"] : id),
+        name: limparIdCM(l["line-name"] != null ? l["line-name"] : id),
         color: normColor(l["route-color"]),
       });
     }
@@ -636,10 +661,10 @@
     try {
       const res = await fetch(
         `${CM_API_BASE}/arrivals/by_stop/${encodeURIComponent(currentStop.id)}`,
-        { cache: "no-store", signal },
+        { ...SEM_COOKIES, cache: "no-store", signal },
       );
       if (!res.ok) throw new Error("HTTP " + res.status);
-      const data = await res.json();
+      const data = limparChegadasCM(await res.json());
       if (signal.aborted) return;
 
       const now = Math.floor(Date.now() / 1000);
@@ -1098,7 +1123,7 @@
     if (c && Date.now() - c.t < HUB_CACHE_MS) return c.dados;
     const res = await fetch(
       `${CM_API_BASE}/arrivals/by_stop/${encodeURIComponent(id)}`,
-      { cache: "no-store", signal },
+      { ...SEM_COOKIES, cache: "no-store", signal },
     );
     if (!res.ok) {
       const e = new Error("HTTP " + res.status);
@@ -1106,7 +1131,7 @@
       throw e;
     }
     const dados = await res.json();
-    const arr = Array.isArray(dados) ? dados : [];
+    const arr = limparChegadasCM(Array.isArray(dados) ? dados : []);
     cacheChegadas.set(id, { t: Date.now(), dados: arr });
     return arr;
   }
@@ -1580,11 +1605,9 @@
 
   function carregarPadrao(id) {
     if (!cachePadroes.has(id)) {
-      const idLimpo = encodeURIComponent(id).replace(
-        /%5B(LA77N|BNA17|YA15B|A2L1N)%5D/,
-        "",
-      );
+      const idLimpo = encodeURIComponent(limparIdCM(id));
       const pr = fetch(`${CM_API_BASE}/patterns/${idLimpo}`, {
+        ...SEM_COOKIES,
         cache: "no-store",
       })
         .then((r) => {
@@ -2048,7 +2071,7 @@
   async function carregarEta(trip) {
     if (!trip) return null;
     try {
-      const r = await fetch(urlEta(trip), { cache: "no-store" });
+      const r = await fetch(urlEta(trip), { ...SEM_COOKIES, cache: "no-store" });
       if (!r.ok) return null;
       const j = await r.json();
       const lista = Array.isArray(j)

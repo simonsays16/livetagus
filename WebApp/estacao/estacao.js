@@ -567,7 +567,7 @@
     const pills = uniq
       .map((l) => {
         const color = l["route-color"] || "#111";
-        return `<span class="line-pill" style="background:${color}">${escapeHtml(l["line-name"])}</span>`;
+        return `<span class="line-pill" style="background:${color}">${escapeHtml(limparIdCM(l["line-name"]))}</span>`;
       })
       .join(" ");
 
@@ -657,6 +657,28 @@
     target.innerHTML = html;
   }
 
+
+  // A API da Carris passou a pôr um código entre parênteses rectos antes dos
+  // ids ("[YA15B]3521", "[YA15B]3521_1_1"). O id verdadeiro é o que sobra.
+  const limparIdCM = (v) =>
+    v == null ? v : String(v).replace(/\[[^\]]*\]/g, "").trim();
+  function limparChegadasCM(arr) {
+    if (!Array.isArray(arr)) return [];
+    for (const b of arr) {
+      if (!b || typeof b !== "object") continue;
+      // O original fica em b._raw. O trip_id NÃO é limpo: o ETA da TML
+      // (go.tmlmobilidade.pt) precisa dele com o código, e é com ele que o
+      // percurso encontra a viagem dentro do padrão.
+      b._raw = b._raw || {};
+      for (const k of ["line_id", "pattern_id", "route_id"])
+        if (b[k] != null) {
+          if (b._raw[k] == null) b._raw[k] = b[k];
+          b[k] = limparIdCM(b[k]);
+        }
+    }
+    return arr;
+  }
+
   async function fetchCMArrivals(stopId, container) {
     const target = container.querySelector(
       `[data-cm-content="${CSS.escape(stopId)}"]`,
@@ -665,12 +687,13 @@
     try {
       const res = await fetch(
         `https://api.carrismetropolitana.pt/v2/arrivals/by_stop/${encodeURIComponent(stopId)}`,
-        { cache: "no-store" },
+        // Sem cookies: não envia nenhum e ignora os Set-Cookie da Carris.
+        { credentials: "omit", cache: "no-store" },
       );
       if (!res.ok) throw new Error("HTTP " + res.status);
-      const data = await res.json();
+      const data = limparChegadasCM(await res.json());
       const now = Math.floor(Date.now() / 1000);
-      const buses = (Array.isArray(data) ? data : [])
+      const buses = data
         .map((b) => ({
           ...b,
           ts: b.estimated_arrival_unix || b.scheduled_arrival_unix,
@@ -776,149 +799,6 @@
     });
   }
 
-  // Estilo integrado e discreto para os botões do cabeçalho da app
-  const btnClass =
-    "p-2 rounded-full transition-colors text-zinc-900 dark:text-white group relative";
-
-  // ── BOTÃO DE PARTILHA ──────────────────────────────────────────
-  const shareBtn = document.createElement("button");
-  shareBtn.id = "app-header-share-trigger";
-  shareBtn.className = btnClass;
-  shareBtn.setAttribute("aria-label", "Partilhar aplicação");
-  shareBtn.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-           viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-           class="w-5 h-5">
-        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
-        <polyline points="16 6 12 2 8 6"/>
-        <line x1="12" x2="12" y1="2" y2="15"/>
-      </svg>
-    `;
-
-  // Lógica do clique de partilha (com fallback automático para o clipboard do footer)
-  shareBtn.addEventListener("click", async () => {
-    if (typeof sa_event === "function") sa_event("header_share_button");
-    const shareData = {
-      title: "LiveTagus",
-      text: "Olha a nova aplicação web para ver a fertagus em tempo real! Gratuita e sem anúncios!",
-      url: "https://livetagus.pt",
-    };
-    if (
-      navigator.share &&
-      (!navigator.canShare || navigator.canShare(shareData))
-    ) {
-      try {
-        await navigator.share(shareData);
-        return;
-      } catch (err) {
-        if (err.name === "AbortError") return;
-      }
-    }
-    const footerShare = document.getElementById("footer-share-btn");
-    if (footerShare) footerShare.click();
-  });
-
-  // ═══ POPOVER (menu de ferramentas inteligentes) ═══════════════════════
-  function injectMenuExtras() {
-    const header = document.querySelector("#global-nav header");
-    const trigger = document.getElementById("menu-trigger");
-    if (!header || !trigger) return;
-    if (document.getElementById("menu-controls-wrapper")) return;
-
-    const wrapper = document.createElement("div");
-    wrapper.id = "menu-controls-wrapper";
-    wrapper.className = "flex items-center gap-1";
-    header.insertBefore(wrapper, trigger);
-
-    const btn = document.createElement("button");
-    btn.id = "mobility-trigger";
-    btn.className =
-      "p-2 rounded-full transition-colors text-zinc-900 dark:text-white group relative";
-    btn.setAttribute("aria-label", "Ferramentas Inteligentes");
-    btn.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layout-grid">
-        <rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>`;
-    wrapper.appendChild(btn);
-    wrapper.appendChild(trigger);
-
-    const popover = document.createElement("div");
-    popover.id = "mobility-popover";
-    popover.className =
-      "fixed top-16 right-4 w-70 bg-white dark:bg-[#09090b] border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl hidden origin-top-right transition-all duration-300 transform scale-95 opacity-0 z-50 overflow-hidden";
-
-    popover.innerHTML = `
-      <div class="px-4 py-3 bg-zinc-50 dark:bg-zinc-900/50 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
-        <p class="text-[9px] font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">Mobilidade & Smart</p>
-      </div>
-      <div class="flex flex-col">
-        <a href="/app" class="w-full flex items-center gap-4 px-4 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors text-left">
-          <i data-lucide="train-track" class="w-4 h-4 text-zinc-900 dark:text-white"></i>
-          <div class="flex-1">
-            <p class="text-sm font-medium text-zinc-900 dark:text-white leading-none">Fertagus tempo real</p>
-            <p class="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1.5 font-light tracking-wide">Lista e próximas partidas</p>
-          </div>
-          <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-zinc-300 dark:text-zinc-600"></i>
-        </a>
-        <div class="h-px w-full bg-zinc-100 dark:bg-zinc-800"></div>
-        <a href="/mapa" data-action="topbtnapp_mapa" class="w-full flex items-center gap-4 px-4 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors text-left">
-          <i data-lucide="map" class="w-4 h-4 text-zinc-900 dark:text-white"></i>
-          <div class="flex-1">
-            <p class="text-sm font-medium text-zinc-900 dark:text-white leading-none">Mapa Tempo Real</p>
-            <p class="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1.5 font-light tracking-wide">Estimativa de localização dos comboios</p>
-          </div>
-          <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-zinc-300 dark:text-zinc-600"></i>
-        </a>
-        <div class="h-px w-full bg-zinc-100 dark:bg-zinc-800"></div>
-        <a href="/paragens" class="w-full flex items-center gap-4 px-4 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors text-left">
-          <i data-lucide="bus" class="w-4 h-4 text-zinc-900 dark:text-white"></i>
-          <div class="flex-1">
-            <p class="text-sm font-medium text-zinc-900 dark:text-white leading-none">A Minha Paragem (BETA)</p>
-            <p class="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1.5 font-light tracking-wide">Autocarros para a estação</p>
-          </div>
-          <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-zinc-300 dark:text-zinc-600"></i>
-        </a>
-        <div class="h-px w-full bg-zinc-100 dark:bg-zinc-800"></div>
-        <a href="/sudoku" class="w-full flex items-center gap-4 px-4 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors text-left">
-          <i data-lucide="gamepad-2" class="w-4 h-4 text-zinc-900 dark:text-white"></i>
-          <div class="flex-1">
-            <p class="text-sm font-medium text-zinc-900 dark:text-white leading-none">Jogo de Sudoku</p>
-            <p class="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1.5 font-light tracking-wide">Tempo extra? Joga.</p>
-          </div>
-          <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-zinc-300 dark:text-zinc-600"></i>
-        </a>
-      </div>`;
-    document.getElementById("global-nav").appendChild(popover);
-
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const hidden = popover.classList.contains("hidden");
-      if (hidden) {
-        popover.classList.remove("hidden");
-        requestAnimationFrame(() => {
-          popover.classList.remove("scale-95", "opacity-0");
-          popover.classList.add("scale-100", "opacity-100");
-        });
-      } else {
-        popover.classList.remove("scale-100", "opacity-100");
-        popover.classList.add("scale-95", "opacity-0");
-        setTimeout(() => popover.classList.add("hidden"), 200);
-      }
-    });
-    document.addEventListener("click", (e) => {
-      if (
-        !popover.classList.contains("hidden") &&
-        !popover.contains(e.target) &&
-        !btn.contains(e.target)
-      ) {
-        popover.classList.remove("scale-100", "opacity-100");
-        popover.classList.add("scale-95", "opacity-0");
-        setTimeout(() => popover.classList.add("hidden"), 200);
-      }
-    });
-    if (window.lucide) window.lucide.createIcons();
-  }
-
   // ═══ NETWORK / VISIBILIDADE ═══════════════════════════════════════════
   function refreshDepartures() {
     if (state.activeTab === "fertagus" && state.partidasCtrl) {
@@ -971,8 +851,6 @@
     }
     const ogTitle = document.querySelector('meta[property="og:title"]');
     if (ogTitle) ogTitle.setAttribute("content", `${station.name} | LiveTagus`);
-
-    setTimeout(injectMenuExtras, 120);
 
     renderHeader();
     renderTabs();

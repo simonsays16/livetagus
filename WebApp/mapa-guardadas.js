@@ -2,16 +2,20 @@
  * mapa-guardadas.js · LiveTagus (mapa)
  * As paragens que o utilizador guardou na página /paragens, mostradas no mapa.
  *
- * A página /paragens guarda-as em localStorage["cm_saved_stops"] como
- * { id, name, addedAt, availableLines, hiddenLines } — sem coordenadas. Aqui as
- * coordenadas são resolvidas por id em duas fontes, pela ordem:
+ * A lista e os dados vêm do paragens-guardadas.js (window.LTParagens): as
+ * escolhas em localStorage["cm_saved_stops"] e, comprimidos, os dados da API
+ * (nome oficial, coordenadas e linhas com cores). Cada paragem é resolvida
+ * por id, pela ordem:
  *
  *   1. window.MapaCM.getStops()  — paragens verificadas junto às estações
- *      Fertagus, já com a forma completa que a sheet Carris espera (lines com
- *      cor, gmapslink, estação de referência).
- *   2. /data/json/stops_cm.json       — catálogo completo da Carris Metropolitana,
- *      para paragens guardadas fora dessa área. A sheet abre igual; só os chips
- *      de linha ficam de fora, porque este ficheiro não traz as cores.
+ *      Fertagus (estação de referência incluída).
+ *   2. LTParagens.asLigacao(id)  — os dados guardados da paragem, já com a
+ *      mesma forma das ligações (linhas com cor → chips na sheet Carris).
+ *   3. /data/json/stops_cm.json  — catálogo local, para paragens cujos dados
+ *      ainda não chegaram (sem rede ao guardar). Aqui sem cores de linha.
+ *
+ * Link direto: /mapa#paragem=<id> abre a sheet dessa paragem (usado na
+ * página /paragens, "Ver no mapa").
  *
  * Ao contrário da camada Carris normal (só a partir do zoom 13, são milhares de
  * postes), estas ficam SEMPRE visíveis e com o nome ao lado: são poucas, são as
@@ -41,6 +45,7 @@
 
   // ─── LEITURA DO LOCALSTORAGE ─────────────────────────────────────────
   function readSaved() {
+    if (window.LTParagens) return window.LTParagens.list();
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       const list = raw ? JSON.parse(raw) : [];
@@ -109,8 +114,19 @@
     const verified = verifiedById();
     const missing = saved.filter((s) => !verified.has(s.id));
 
-    const step = missing.length ? loadCatalog() : Promise.resolve(catalog);
-    return step.then((cat) => {
+    const P = window.LTParagens;
+    const guardadas = P
+      ? Promise.all(missing.map((s) => P.asLigacao(s.id).catch(() => null)))
+      : Promise.resolve([]);
+    return guardadas.then((lig) => {
+      const porId = new Map();
+      missing.forEach((s, i) => lig[i] && porId.set(s.id, lig[i]));
+      const faltam = missing.some((s) => !porId.has(s.id));
+      return (faltam ? loadCatalog() : Promise.resolve(catalog)).then((cat) => [
+        cat,
+        porId,
+      ]);
+    }).then(([cat, porId]) => {
       const out = [];
       for (const s of saved) {
         const v = verified.get(s.id);
@@ -125,6 +141,20 @@
             gmapslink: v.gmapslink || "",
             station: v.station || "",
             source: "verified",
+          });
+          continue;
+        }
+        const g = porId.get(s.id);
+        if (g) {
+          out.push({
+            id: s.id,
+            name: s.name || g.name,
+            officialName: g.name,
+            location: g.location,
+            lines: g.lines,
+            gmapslink: g.gmapslink,
+            station: "",
+            source: "saved",
           });
           continue;
         }
@@ -354,8 +384,33 @@
   function refresh() {
     return resolve().then(() => {
       push();
+      abrirDoLink();
       return resolved;
     });
+  }
+
+  // /mapa#paragem=<id> → abre a paragem guardada (uma vez).
+  let linkTratado = false;
+  function abrirDoLink() {
+    if (linkTratado) return;
+    const m = /^#paragem=([^&]+)/.exec(window.location.hash || "");
+    if (!m) {
+      linkTratado = true;
+      return;
+    }
+    const id = decodeURIComponent(m[1]);
+    const stop = resolved.find((s) => s.id === id);
+    if (!stop) return; // ainda a resolver: tenta no próximo refresh
+    linkTratado = true;
+    try {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    } catch (_) {}
+    if (map && stop.location) {
+      try {
+        map.jumpTo({ center: [stop.location[1], stop.location[0]], zoom: Math.max(map.getZoom(), 15) });
+      } catch (_) {}
+    }
+    openStop(stop);
   }
 
   function patchMapaRender() {

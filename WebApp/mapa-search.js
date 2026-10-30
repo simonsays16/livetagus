@@ -38,7 +38,7 @@
   // Paragens Carris vão para a MESMA chave da página /paragens, com a mesma
   // forma e o mesmo limite, para as duas páginas verem a mesma lista.
   const CM_SAVED_KEY = "cm_saved_stops"; // igual ao STORAGE_KEY do paragens.js
-  const CM_MAX = 10; // igual ao MAX_STOPS do paragens.js
+  const CM_MAX = 25; // igual ao LTParagens.MAX (paragens-guardadas.js)
   // Estações de comboio/metro não cabem nessa estrutura (não têm id Carris nem
   // carreiras), por isso têm chave própria.
   const STATIONS_SAVED_KEY = "lt_saved_stations";
@@ -524,6 +524,28 @@
   function toggleFav(item) {
     const fav = item.fav;
     if (!fav) return { saved: false };
+
+    if (fav.store === "cm" && window.LTParagens) {
+      // A lista partilhada trata do limite e vai buscar as linhas da paragem
+      // à API (paragens-guardadas.js).
+      const P = window.LTParagens;
+      if (P.has(fav.id)) {
+        P.remove(fav.id);
+        notifySaved();
+        return { saved: false };
+      }
+      const r = P.add({ id: fav.id, name: fav.name, lines: fav.lines || [] });
+      if (!r.ok)
+        return {
+          saved: false,
+          message:
+            r.motivo === "limite"
+              ? `Já tens ${P.MAX} paragens guardadas. Remove uma em Paragens.`
+              : "Não foi possível guardar.",
+        };
+      notifySaved();
+      return { saved: true };
+    }
 
     if (fav.store === "cm") {
       // Mesma chave, mesma forma e mesmo limite da página /paragens, para as
