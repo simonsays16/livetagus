@@ -172,32 +172,11 @@ document.addEventListener("DOMContentLoaded", () => {
   // ─── INICIALIZAÇÃO DO MAPA ───────────────────────────────────────────
 
   async function initMap() {
-    const tileUrl = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
-
+    // O basemap (vetorial da OpenFreeMap, com plano B em raster) e o tema
+    // claro/escuro são geridos pelo mapa-tema.js.
     mapInstance = new maplibregl.Map({
       container: "map",
-      style: {
-        version: 8,
-        glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
-        sources: {
-          basemap: {
-            type: "raster",
-            tiles: [tileUrl],
-            tileSize: 256,
-            attribution:
-              '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors · Dados Fertagus · Infraestruturas de Portugal',
-          },
-        },
-        layers: [
-          {
-            id: "basemap-layer",
-            type: "raster",
-            source: "basemap",
-            minzoom: 0,
-            maxzoom: 22,
-          },
-        ],
-      },
+      style: window.MapaTema.estiloInicial(),
       center: MAPA.CENTER,
       zoom: MAPA.ZOOM,
       minZoom: MAPA.MIN_ZOOM,
@@ -207,7 +186,11 @@ document.addEventListener("DOMContentLoaded", () => {
       dragRotate: false,
       pitchWithRotate: false,
       touchZoomRotate: true,
+      // Mapa sempre plano: o estilo não tem 3D e assim o MapLibre nunca
+      // desenha em perspetiva (mais tiles e mais trabalho por frame).
+      maxPitch: 0,
     });
+    mapInstance.touchZoomRotate.disableRotation();
 
     window.MapaRender.setMap(mapInstance);
 
@@ -254,7 +237,7 @@ document.addEventListener("DOMContentLoaded", () => {
         pop.className = "lt-info-pop";
         pop.setAttribute("role", "note");
         pop.innerHTML =
-          '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors · Dados Fertagus · Infraestruturas de Portugal';
+          '<a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> © <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors · Dados Fertagus · Infraestruturas de Portugal';
       }
       pop.hidden = false;
       btn.setAttribute("aria-controls", pop.id);
@@ -269,7 +252,8 @@ document.addEventListener("DOMContentLoaded", () => {
         abrir(false);
       };
       this._tecla = (e) => {
-        if (e.key === "Escape" && box.classList.contains("is-open")) this._fechar();
+        if (e.key === "Escape" && box.classList.contains("is-open"))
+          this._fechar();
       };
       btn.addEventListener("click", (e) => {
         e.stopPropagation();

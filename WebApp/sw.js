@@ -1,5 +1,5 @@
 // --- BEGIN VERSIONS ---
-const GLOBAL_VERSION = "livetagus-v.rc2.29102026";
+const GLOBAL_VERSION = "livetagus-v.rc53.31102026";
 const ASSETS_VERSIONS = {
   "./index.html": "v.rc3.24102026",
   "./index.js": "v.rc3.21062026",
@@ -27,8 +27,9 @@ const ASSETS_VERSIONS = {
   "./output.css": "v.rc1.23102026",
   "./assets/fonts/fonts.css": "v.rc1.30092026",
   "./assets/fonts/inter-normal-variavel-v20-latin.woff2": "v.rc1.30092026",
-  "./assets/fonts/jetbrains-mono-normal-variavel-v24-latin.woff2": "v.rc1.30092026",
-  "./menu.js": "v.rc2.29102026",
+  "./assets/fonts/jetbrains-mono-normal-variavel-v24-latin.woff2":
+    "v.rc1.30092026",
+  "./menu.js": "v.rc1.31102026",
   "./offline.js": "v.rc1.24052026",
   "./imagens/icon.svg": "v.rc1.24052026",
   "./imagens/logotransparente.svg": "v.rc1.24052026",
@@ -38,7 +39,7 @@ const ASSETS_VERSIONS = {
   "./imagens/netlify-light.svg": "v.rc1.24052026",
   "./data/json/fertagus_sentido_lisboa.json": "v.rc4.23102026",
   "./data/json/fertagus_sentido_margem.json": "v.rc2.23102026",
-  "./data/json/feriados.json": "v.rc3.23102026"
+  "./data/json/feriados.json": "v.rc3.23102026",
 };
 // --- END VERSIONS ---
 
@@ -149,7 +150,8 @@ async function guardarImutavel(request, response) {
 self.addEventListener("fetch", (event) => {
   if (
     event.request.url.includes("api.") ||
-    event.request.url.includes("openstreetmap.org")
+    event.request.url.includes("openstreetmap.org") ||
+    event.request.url.includes("openfreemap.org")
   )
     return;
 

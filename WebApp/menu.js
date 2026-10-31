@@ -125,6 +125,8 @@ function injectNavigation() {
                             <a href="/sobre" class="menu-link ltm-small" data-page="sobre">Sobre</a>
                             <span class="ltm-sep" aria-hidden="true">·</span>
                             <a href="/sudoku" class="menu-link ltm-small" data-page="sudoku">Sudoku</a>
+                            <span class="ltm-sep" aria-hidden="true">·</span>
+                            <a href="/paragens" class="menu-link ltm-small" data-page="paragens">Paragens</a>
                         </div>
                         <div class="ltm-theme" role="group" aria-label="Aparência">
                             <button type="button" class="theme-btn ltm-theme-btn" data-mode="light">Light</button>

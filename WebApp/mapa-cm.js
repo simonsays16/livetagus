@@ -29,7 +29,11 @@
   // A API da Carris passou a pôr um código entre parênteses rectos antes dos
   // ids ("[YA15B]3521", "[YA15B]3521_1_1"). O id verdadeiro é o que sobra.
   const limparIdCM = (v) =>
-    v == null ? v : String(v).replace(/\[[^\]]*\]/g, "").trim();
+    v == null
+      ? v
+      : String(v)
+          .replace(/\[[^\]]*\]/g, "")
+          .trim();
   function limparChegadasCM(arr) {
     if (!Array.isArray(arr)) return [];
     for (const b of arr) {
@@ -466,7 +470,7 @@
     const gmaps = currentStop.gmapslink
       ? `<a href="${escapeHtml(currentStop.gmapslink)}" target="_blank" rel="noopener"
           class="inline-flex items-center gap-1.5 mt-4 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors">
-          <i data-lucide="map-pin" class="w-3 h-3"></i> Abrir no Maps
+          <i data-lucide="map-pin" class="w-3 h-3"></i> Abrir no Google Maps
         </a>`
       : "";
 
@@ -2071,7 +2075,10 @@
   async function carregarEta(trip) {
     if (!trip) return null;
     try {
-      const r = await fetch(urlEta(trip), { ...SEM_COOKIES, cache: "no-store" });
+      const r = await fetch(urlEta(trip), {
+        ...SEM_COOKIES,
+        cache: "no-store",
+      });
       if (!r.ok) return null;
       const j = await r.json();
       const lista = Array.isArray(j)

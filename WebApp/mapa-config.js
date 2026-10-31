@@ -57,6 +57,19 @@
       [-6.0, 42.3], // nordeste (acima de Melgaço)
     ],
 
+    // ─── BASEMAP (mapa-tema.js) ────────────────────────────────────────
+    // Estilos próprios (data/map/claro.json e escuro.json) sobre os tiles
+    // vetoriais da OpenFreeMap. Se a OpenFreeMap falhar, o mapa volta ao
+    // raster do OpenStreetMap.
+    BASEMAP: {
+      estilos: {
+        light: "/data/map/claro.json",
+        dark: "/data/map/escuro.json",
+      },
+      glyphs: "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf",
+      raster: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    },
+
     // ─── PATHS DOS JSON ────────────────────────────────────────────────
     STOPS_JSON: "./json/stops_ft.json",
     LINE_JSON: "./json/fertagus_line.json",

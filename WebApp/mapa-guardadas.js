@@ -118,70 +118,71 @@
     const guardadas = P
       ? Promise.all(missing.map((s) => P.asLigacao(s.id).catch(() => null)))
       : Promise.resolve([]);
-    return guardadas.then((lig) => {
-      const porId = new Map();
-      missing.forEach((s, i) => lig[i] && porId.set(s.id, lig[i]));
-      const faltam = missing.some((s) => !porId.has(s.id));
-      return (faltam ? loadCatalog() : Promise.resolve(catalog)).then((cat) => [
-        cat,
-        porId,
-      ]);
-    }).then(([cat, porId]) => {
-      const out = [];
-      for (const s of saved) {
-        const v = verified.get(s.id);
-        if (v) {
-          // Forma completa: a sheet Carris tem tudo o que precisa.
-          out.push({
-            id: s.id,
-            name: s.name || v.name, // o nome pode ter sido editado pelo utilizador
-            officialName: v.name, // ... mas o original continua pesquisável
-            location: v.location,
-            lines: v.lines || [],
-            gmapslink: v.gmapslink || "",
-            station: v.station || "",
-            source: "verified",
-          });
-          continue;
-        }
-        const g = porId.get(s.id);
-        if (g) {
-          out.push({
-            id: s.id,
-            name: s.name || g.name,
-            officialName: g.name,
-            location: g.location,
-            lines: g.lines,
-            gmapslink: g.gmapslink,
-            station: "",
-            source: "saved",
-          });
-          continue;
-        }
-        const c = cat && cat.get(s.id);
-        if (c) {
-          out.push({
-            id: s.id,
-            name: s.name || c.name,
-            officialName: c.name,
-            location: c.location,
-            // Strings simples: o mapa-cm.js ignora-as (espera line-id/route-color)
-            // e a sheet mostra as linhas que vierem da API de partidas.
-            lines: [],
-            lineNames: c.lines,
-            gmapslink: "",
-            station: "",
-            source: "catalog",
-          });
-          continue;
-        }
-        console.warn(
-          `[MapaGuardadas] paragem guardada ${s.id} ("${s.name}") sem coordenadas conhecidas.`,
+    return guardadas
+      .then((lig) => {
+        const porId = new Map();
+        missing.forEach((s, i) => lig[i] && porId.set(s.id, lig[i]));
+        const faltam = missing.some((s) => !porId.has(s.id));
+        return (faltam ? loadCatalog() : Promise.resolve(catalog)).then(
+          (cat) => [cat, porId],
         );
-      }
-      resolved = out;
-      return out;
-    });
+      })
+      .then(([cat, porId]) => {
+        const out = [];
+        for (const s of saved) {
+          const v = verified.get(s.id);
+          if (v) {
+            // Forma completa: a sheet Carris tem tudo o que precisa.
+            out.push({
+              id: s.id,
+              name: s.name || v.name, // o nome pode ter sido editado pelo utilizador
+              officialName: v.name, // ... mas o original continua pesquisável
+              location: v.location,
+              lines: v.lines || [],
+              gmapslink: v.gmapslink || "",
+              station: v.station || "",
+              source: "verified",
+            });
+            continue;
+          }
+          const g = porId.get(s.id);
+          if (g) {
+            out.push({
+              id: s.id,
+              name: s.name || g.name,
+              officialName: g.name,
+              location: g.location,
+              lines: g.lines,
+              gmapslink: g.gmapslink,
+              station: "",
+              source: "saved",
+            });
+            continue;
+          }
+          const c = cat && cat.get(s.id);
+          if (c) {
+            out.push({
+              id: s.id,
+              name: s.name || c.name,
+              officialName: c.name,
+              location: c.location,
+              // Strings simples: o mapa-cm.js ignora-as (espera line-id/route-color)
+              // e a sheet mostra as linhas que vierem da API de partidas.
+              lines: [],
+              lineNames: c.lines,
+              gmapslink: "",
+              station: "",
+              source: "catalog",
+            });
+            continue;
+          }
+          console.warn(
+            `[MapaGuardadas] paragem guardada ${s.id} ("${s.name}") sem coordenadas conhecidas.`,
+          );
+        }
+        resolved = out;
+        return out;
+      });
   }
 
   // ─── CAMADA ──────────────────────────────────────────────────────────
@@ -273,7 +274,7 @@
               // não tem "Open Sans Bold", e um fontstack em falta não desenha
               // texto nem dá erro na consola.
               "text-font": (window.MapaIcones && window.MapaIcones.FONT) || [
-                "Open Sans Semibold",
+                "Noto Sans Bold",
               ],
               "text-size": [
                 "interpolate",
@@ -403,11 +404,18 @@
     if (!stop) return; // ainda a resolver: tenta no próximo refresh
     linkTratado = true;
     try {
-      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+      window.history.replaceState(
+        null,
+        "",
+        window.location.pathname + window.location.search,
+      );
     } catch (_) {}
     if (map && stop.location) {
       try {
-        map.jumpTo({ center: [stop.location[1], stop.location[0]], zoom: Math.max(map.getZoom(), 15) });
+        map.jumpTo({
+          center: [stop.location[1], stop.location[0]],
+          zoom: Math.max(map.getZoom(), 15),
+        });
       } catch (_) {}
     }
     openStop(stop);

@@ -1570,7 +1570,7 @@
           // Uma fonte só: o servidor de glyphs deste estilo devolve 404 para
           // fontstacks combinados. Ver a nota no mapa-icones.js.
           "text-font": (window.MapaIcones && window.MapaIcones.FONT) || [
-            "Open Sans Semibold",
+            "Noto Sans Bold",
           ],
           "text-size": ["interpolate", ["linear"], ["zoom"], 11, 10, 16, 14],
           // 2,5 em a 14 px dá ~35 px, mais do que os 30 px de raio do círculo

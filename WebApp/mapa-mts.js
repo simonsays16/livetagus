@@ -163,7 +163,7 @@
   // Ver a nota em mapa-icones.js: o servidor de glyphs deste estilo não tem
   // "Open Sans Bold", e um fontstack em falta não desenha texto nem dá erro.
   const LABEL_FONT = (window.MapaIcones && window.MapaIcones.FONT) || [
-    "Open Sans Semibold",
+    "Noto Sans Bold",
   ];
   const LABEL_MINZOOM = 14;
   // Os operadores intermodais só aparecem a partir daqui. Abaixo disto o mapa

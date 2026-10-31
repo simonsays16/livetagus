@@ -1288,7 +1288,10 @@
         backdrop-filter: blur(16px) saturate(170%);
         box-shadow: 0 6px 20px -6px rgba(0, 0, 0, 0.18);
         color: #3f3f46;
-        font: 500 10.5px/1.45 Inter, system-ui, sans-serif;
+        font:
+          500 10.5px/1.45 Inter,
+          system-ui,
+          sans-serif;
         opacity: 0;
         visibility: hidden;
         transform: translateX(4px);
@@ -1642,7 +1645,11 @@
       .maplibregl-ctrl-bottom-right .maplibregl-ctrl-group button + button {
         border-top: 1px solid rgba(9, 9, 11, 0.08);
       }
-      html.dark .maplibregl-ctrl-bottom-right .maplibregl-ctrl-group button + button {
+      html.dark
+        .maplibregl-ctrl-bottom-right
+        .maplibregl-ctrl-group
+        button
+        + button {
         border-top-color: rgba(255, 255, 255, 0.08);
       }
       /* Os ícones +/− do MapLibre são imagens escuras: no tema escuro
@@ -1699,7 +1706,18 @@
         <!-- Mapa -->
         <div id="map" class="absolute inset-0"></div>
         <div id="lt-atribuicao" class="lt-info-pop" role="note" hidden>
+          <a href="https://openfreemap.org" target="_blank" rel="noopener">
+            OpenFreeMap
+          </a>
           ©
+          <a
+            href="https://www.openmaptiles.org/"
+            target="_blank"
+            rel="noopener"
+          >
+            OpenMapTiles
+          </a>
+          · ©
           <a
             href="https://www.openstreetmap.org/copyright"
             target="_blank"

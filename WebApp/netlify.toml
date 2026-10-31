@@ -85,7 +85,7 @@
     # base-uri, form-action e frame-ancestors NÃO herdam do default-src: sem
     # elas, uma injecção de <base> ou de <form> passava. O frame-ancestors é a
     # versão moderna do X-Frame-Options (ficam os dois, para browsers antigos).
-    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://tile.openstreetmap.org/ https://queue.simpleanalyticscdn.com; connect-src 'self' https://api.livetagus.pt https://www.netlify.com https://api.github.com/ https://queue.simpleanalyticscdn.com https://api.carrismetropolitana.pt https://go.tmlmobilidade.pt https://tile.openstreetmap.org/ https://demotiles.maplibre.org; worker-src 'self' blob:; manifest-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none';"
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://tile.openstreetmap.org/ https://queue.simpleanalyticscdn.com; connect-src 'self' https://api.livetagus.pt https://www.netlify.com https://api.github.com/ https://queue.simpleanalyticscdn.com https://api.carrismetropolitana.pt https://go.tmlmobilidade.pt https://tile.openstreetmap.org/ https://tiles.openfreemap.org https://demotiles.maplibre.org; worker-src 'self' blob:; manifest-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none';"
 
     # Proteção contra partilha não autorizada de recursos
     Cross-Origin-Resource-Policy = "same-origin"

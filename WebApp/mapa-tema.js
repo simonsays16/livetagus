@@ -1,26 +1,32 @@
 /**
  * mapa-tema.js · LiveTagus (mapa)
- * Tema escuro do mapa, sem trocar de estilo nem de fornecedor de tiles.
+ * Basemap do mapa e tema claro/escuro.
  *
- * O basemap é uma camada raster do OpenStreetMap. Escurecê-la à bruta
- * (baixar o brilho) dá um mapa abafado: o terreno do OSM é claro e as letras
- * são escuras, por isso ao escurecer tudo as letras desaparecem no fundo.
+ * O basemap é vetorial (tiles PBF da OpenFreeMap), com um estilo por tema:
+ *   claro  → data/map/claro.json
+ *   escuro → data/map/escuro.json
+ * Os estilos são nossos (estrutura inspirada no basemap da TML GO: estradas
+ * apagadas para as linhas de transporte sobressaírem, ferrovia tracejada,
+ * carreiras fluviais). ~46 camadas, sem edifícios 3D, pontos de interesse,
+ * escudos de estrada nem sprite, com os nomes em português. Menos camadas a
+ * desenhar em cada frame = menos bateria, e o estilo não muda sem sabermos.
+ * Só os tiles e as fontes vêm de tiles.openfreemap.org.
  *
- * O que se faz aqui é INVERTER. O MapLibre não tem "raster-invert", mas o
- * raster-brightness aceita um mínimo MAIOR do que o máximo, e isso inverte a
- * luminância: terreno claro → escuro, letras escuras → claras. A inversão
- * também roda as cores (a água azul fica alaranjada), e o hue-rotate de 180°
- * devolve-as ao sítio. É a receita clássica de mapa escuro a partir de tiles
- * claros, e é usada por muita app de transportes.
+ * TROCA DE TEMA
+ * map.setStyle() destrói todas as fontes e camadas, e o mapa-render, o
+ * mapa-cm e outros não as voltam a criar. Por isso a troca usa a opção
+ * transformStyle: o estilo novo recebe as fontes e camadas próprias do
+ * antigo (tudo o que não é do basemap), por cima do basemap, como estavam.
+ * Como o basemap tem a mesma fonte de tiles nos dois estilos, o MapLibre
+ * aplica só a diferença: as camadas próprias nem chegam a ser recriadas.
  *
- * Porquê isto e não um estilo escuro a sério: trocar de estilo com
- * map.setStyle() destrói TODAS as fontes e camadas, e há módulos aqui que não
- * sobrevivem a isso (o mapa-render e o mapa-cm não reagem a "styledata" — a
- * linha da Fertagus e as paragens Carris desapareciam a cada troca de tema).
- * Mexer só na paint da camada do basemap não destrói nada.
+ * PLANO B
+ * Se a OpenFreeMap falhar (estilo, TileJSON ou todos os tiles), o mapa passa
+ * para o raster do OpenStreetMap que se usava antes, com o mesmo truque de
+ * inversão para o tema escuro. As camadas próprias passam com o mesmo
+ * transformStyle.
  *
- * Se um dia isto não chegar, o passo seguinte é trocar o URL dos tiles por um
- * basemap escuro a sério com setTiles() — que também não destrói camadas.
+ * API: window.MapaTema.estiloInicial() · isDark() · modo() · refresh()
  *
  * Inclusão: <script src="./mapa-tema.js" defer></script> (depois do mapa-render.js)
  */
@@ -29,20 +35,34 @@
   "use strict";
   if (window.MapaTema) return;
 
+  // MAPA é um const global do mapa-config.js (não fica em window).
+  const CFG = (typeof MAPA !== "undefined" && MAPA.BASEMAP) || {};
+  const ESTILOS = CFG.estilos || {
+    light: "/data/map/claro.json",
+    dark: "/data/map/escuro.json",
+  };
+  const RASTER_TILES =
+    CFG.raster || "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+  const GLYPHS =
+    CFG.glyphs || "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf";
+
+  // Fontes do basemap (vetorial e raster). Tudo o resto é das camadas próprias.
+  const FONTES_BASE = new Set(["openmaptiles", "basemap"]);
   const BASEMAP_LAYER = "basemap-layer";
 
-  // Valores a afinar. O brilho invertido é o que faz o trabalho todo; o resto
-  // é correcção do que a inversão estraga.
-  const ESCURO = {
-    "raster-brightness-min": 1, // maior que o max = inverte a luminância
-    "raster-brightness-max": 0,
-    "raster-hue-rotate": 180, // devolve as cores rodadas pela inversão
-    "raster-saturation": -0.45, // a inversão exagera a cor; isto acalma-a
-    "raster-contrast": -0.12, // menos contraste, para não picar os olhos
-  };
+  // Plano B: só se a OpenFreeMap falhar a sério, não por um tile isolado.
+  const TILES_FALHADOS_MAX = 6;
 
-  // Os valores por omissão do MapLibre. Repostos explicitamente, para o tema
-  // claro ficar EXACTAMENTE como estava.
+  // Inversão do raster para o tema escuro (só no plano B). Ver a história no
+  // histórico do ficheiro: brilho mínimo > máximo inverte a luminância, e o
+  // hue-rotate devolve as cores ao sítio.
+  const ESCURO = {
+    "raster-brightness-min": 1,
+    "raster-brightness-max": 0,
+    "raster-hue-rotate": 180,
+    "raster-saturation": -0.45,
+    "raster-contrast": -0.12,
+  };
   const CLARO = {
     "raster-brightness-min": 0,
     "raster-brightness-max": 1,
@@ -52,36 +72,127 @@
   };
 
   let map = null;
-  let aplicado = null; // "dark" | "light" — o que está pintado no basemap
-  // O último tema anunciado às outras camadas. É separado do "aplicado" de
-  // propósito: se o basemap ainda não existir, ou a pintura falhar, as linhas
-  // da CP, do Metro e as etiquetas têm de mudar na mesma.
+  let modo = "vetor"; // "vetor" | "raster"
+  let aplicado = null; // tema que está no basemap: "dark" | "light"
   let ultimoAnunciado = null;
   let observando = false;
+  let tilesOk = 0;
+  let tilesFalhados = 0;
 
   function isDark() {
     return document.documentElement.classList.contains("dark");
   }
+  function temaAlvo() {
+    return isDark() ? "dark" : "light";
+  }
 
-  function aplicar(forcar) {
-    if (!map) return;
-    const alvo = isDark() ? "dark" : "light";
-    if (!forcar && alvo === aplicado) return;
-    if (!map.getLayer(BASEMAP_LAYER)) return; // ainda não há basemap
-    const props = alvo === "dark" ? ESCURO : CLARO;
+  // ─── ESTILOS ─────────────────────────────────────────────────────────
+  function estiloRaster() {
+    return {
+      version: 8,
+      glyphs: GLYPHS,
+      sources: {
+        basemap: {
+          type: "raster",
+          tiles: [RASTER_TILES],
+          tileSize: 256,
+          maxzoom: 19,
+          attribution:
+            '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',
+        },
+      },
+      layers: [
+        {
+          id: BASEMAP_LAYER,
+          type: "raster",
+          source: "basemap",
+          minzoom: 0,
+          maxzoom: 22,
+        },
+      ],
+    };
+  }
+
+  /** O estilo com que o mapa nasce (usado pelo mapa.js). */
+  function estiloInicial() {
+    aplicado = temaAlvo();
+    return modo === "vetor" ? ESTILOS[aplicado] : estiloRaster();
+  }
+
+  function eDoBasemap(layer) {
+    return (
+      !layer ||
+      layer.type === "background" ||
+      FONTES_BASE.has(layer.source) ||
+      layer.id === BASEMAP_LAYER
+    );
+  }
+
+  // Passa as fontes e camadas próprias do estilo antigo para o novo, por
+  // cima do basemap, pela mesma ordem.
+  function transportar(antigo, novo) {
+    if (!antigo) return novo;
+    const sources = Object.assign({}, novo.sources);
+    for (const [id, src] of Object.entries(antigo.sources || {})) {
+      if (!FONTES_BASE.has(id) && !(id in sources)) sources[id] = src;
+    }
+    const proprias = (antigo.layers || []).filter((l) => !eDoBasemap(l));
+    const ids = new Set((novo.layers || []).map((l) => l.id));
+    return Object.assign({}, novo, {
+      sources,
+      layers: (novo.layers || []).concat(
+        proprias.filter((l) => !ids.has(l.id)),
+      ),
+    });
+  }
+
+  function trocarEstilo(estilo) {
     try {
-      for (const k in props) map.setPaintProperty(BASEMAP_LAYER, k, props[k]);
-      aplicado = alvo;
+      map.setStyle(estilo, { transformStyle: transportar });
+      return true;
     } catch (e) {
-      console.warn("[MapaTema] não foi possível aplicar:", e && e.message);
+      console.warn("[MapaTema] troca de estilo falhou:", e && e.message);
+      return false;
     }
   }
 
-  // As etiquetas das camadas próprias (Metro, CP, guardadas) já sabem mudar de
-  // cor, mas os seus applyTheme() só correm no "styledata" — que não dispara
-  // quando se alterna o tema. Disparar o evento à mão põe todos a actualizar
-  // sem ser preciso mexer em nenhum: é o mesmo caminho que já percorrem quando
-  // o estilo muda, portanto já está testado por uso.
+  // ─── TEMA ────────────────────────────────────────────────────────────
+  function pintarRaster() {
+    if (!map.getLayer(BASEMAP_LAYER)) return false;
+    const props = aplicado === "dark" ? ESCURO : CLARO;
+    try {
+      for (const k in props) map.setPaintProperty(BASEMAP_LAYER, k, props[k]);
+      return true;
+    } catch (e) {
+      console.warn("[MapaTema] não foi possível aplicar:", e && e.message);
+      return false;
+    }
+  }
+
+  function aplicar() {
+    if (!map) return;
+    const alvo = temaAlvo();
+    if (modo === "raster") {
+      aplicado = alvo;
+      pintarRaster();
+      return;
+    }
+    if (alvo === aplicado) return;
+    // Mesmo estilo nos dois temas: nada a trocar no basemap.
+    if (ESTILOS[alvo] === ESTILOS[aplicado]) {
+      aplicado = alvo;
+      return;
+    }
+    // Antes do primeiro carregamento, a troca espera por ele.
+    if (!map.isStyleLoaded()) {
+      map.once("idle", aplicar);
+      return;
+    }
+    if (trocarEstilo(ESTILOS[alvo])) aplicado = alvo;
+  }
+
+  // As camadas próprias (Metro, CP, guardadas, linha Fertagus) adaptam as
+  // cores no "styledata" e no evento lt:theme.
   function avisarCamadas() {
     try {
       if (map && map.fire) map.fire("styledata");
@@ -95,20 +206,14 @@
 
   function onTemaMudou() {
     aplicar();
-    const tema = isDark() ? "dark" : "light";
+    const tema = temaAlvo();
     if (tema !== ultimoAnunciado) {
       ultimoAnunciado = tema;
       avisarCamadas();
     }
   }
 
-  // Não há evento de mudança de tema no site: o interruptor mexe na classe do
-  // <html> e mais nada. Observar essa classe é o mesmo padrão que o
-  // paragens.js já usa.
   function observarTema() {
-    // A guarda tem de ser uma variável do módulo. Testar window.MapaTema não
-    // servia: já está definido quando o init corre, e o observador nunca
-    // chegava a ser criado.
     if (observando) return;
     observando = true;
     try {
@@ -118,20 +223,58 @@
         attributeFilter: ["class"],
       });
     } catch (_) {}
-    // Preferência do sistema, para quem não fixou um tema.
     try {
       const mq = window.matchMedia("(prefers-color-scheme: dark)");
       if (mq.addEventListener) mq.addEventListener("change", onTemaMudou);
     } catch (_) {}
   }
 
+  // ─── PLANO B ─────────────────────────────────────────────────────────
+  function passarParaRaster(motivo) {
+    if (modo === "raster" || !map) return;
+    console.warn(
+      "[MapaTema] OpenFreeMap indisponível (" +
+        motivo +
+        "); a usar o raster do OpenStreetMap.",
+    );
+    modo = "raster";
+    aplicado = temaAlvo();
+    trocarEstilo(estiloRaster());
+    if (typeof window.sa_event === "function")
+      window.sa_event("mapa_basemap_raster");
+  }
+
+  function vigiarFalhas() {
+    map.on("error", (e) => {
+      if (modo !== "vetor") return;
+      const url = (e && e.error && (e.error.url || "")) || "";
+      // O estilo (JSON) não carregou.
+      if (/\/data\/map\//.test(url)) return passarParaRaster("estilo");
+      if (e && e.sourceId === "openmaptiles") {
+        // Sem tile = falhou o TileJSON (a lista de tiles).
+        if (!e.tile) return passarParaRaster("TileJSON");
+        tilesFalhados++;
+        if (tilesOk === 0 && tilesFalhados >= TILES_FALHADOS_MAX)
+          passarParaRaster("tiles");
+      }
+    });
+    map.on("sourcedata", (e) => {
+      if (e && e.sourceId === "openmaptiles" && e.tile) tilesOk++;
+    });
+  }
+
+  // ─── ARRANQUE ────────────────────────────────────────────────────────
   function init(m) {
     map = m;
-    ultimoAnunciado = isDark() ? "dark" : "light";
-    if (map.isStyleLoaded()) aplicar(true);
-    else map.once("styledata", () => aplicar(true));
-    // Uma troca de estilo repõe a paint por omissão; volta a aplicar.
-    map.on("styledata", () => aplicar(true));
+    ultimoAnunciado = temaAlvo();
+    if (aplicado == null) aplicado = temaAlvo();
+    vigiarFalhas();
+    // No plano B, uma troca de estilo repõe a paint por omissão do raster.
+    map.on("styledata", () => {
+      if (modo === "raster") pintarRaster();
+    });
+    // Se o tema mudou enquanto o mapa carregava.
+    map.once("load", aplicar);
     observarTema();
   }
 
@@ -154,11 +297,10 @@
 
   window.MapaTema = {
     isDark,
-    // Reaplica à força — útil na consola ao afinar os valores.
-    refresh: () => aplicar(true),
-    // Para experimentar sem editar o ficheiro:
-    //   MapaTema.set({ "raster-saturation": -0.2 }); MapaTema.refresh();
-    set: (props) => Object.assign(ESCURO, props || {}),
-    valores: () => Object.assign({}, ESCURO),
+    estiloInicial,
+    modo: () => modo,
+    refresh: aplicar,
+    // Para testar o plano B na consola: MapaTema._raster()
+    _raster: () => passarParaRaster("manual"),
   };
 })();

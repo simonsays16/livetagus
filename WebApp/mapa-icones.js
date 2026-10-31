@@ -235,20 +235,22 @@
       if (map.hasImage && map.hasImage(id)) return Promise.resolve(true);
     } catch (_) {}
 
-    return build(url, style).catch(() => null).then((data) => {
-      if (!data) {
-        console.warn(`[MapaIcones] "${url}" não carregou; fica o círculo.`);
-        return false;
-      }
-      try {
-        if (!map.hasImage || !map.hasImage(id))
-          map.addImage(id, data, { pixelRatio: RATIO });
-        return true;
-      } catch (e) {
-        console.warn("[MapaIcones] addImage falhou:", e && e.message);
-        return false;
-      }
-    });
+    return build(url, style)
+      .catch(() => null)
+      .then((data) => {
+        if (!data) {
+          console.warn(`[MapaIcones] "${url}" não carregou; fica o círculo.`);
+          return false;
+        }
+        try {
+          if (!map.hasImage || !map.hasImage(id))
+            map.addImage(id, data, { pixelRatio: RATIO });
+          return true;
+        } catch (e) {
+          console.warn("[MapaIcones] addImage falhou:", e && e.message);
+          return false;
+        }
+      });
   }
 
   /**
@@ -291,7 +293,11 @@
         map.addLayer(def);
         return true;
       } catch (e) {
-        console.warn("[MapaIcones] não foi possível trocar", def.id, e && e.message);
+        console.warn(
+          "[MapaIcones] não foi possível trocar",
+          def.id,
+          e && e.message,
+        );
         return false;
       }
     }
@@ -299,18 +305,13 @@
 
   // Fontstack das etiquetas. UMA fonte só, de propósito.
   //
-  // O estilo vai buscar os glyphs a demotiles.maplibre.org, e o MapLibre pede o
-  // fontstack INTEIRO num único caminho, separado por vírgulas:
-  //   /font/Open%20Sans%20Semibold,Arial%20Unicode%20MS%20Bold/0-255.pbf → 404
-  // Esse servidor tem ficheiros pré-gerados apenas para nomes isolados, por isso
-  // qualquer par falha — e um fontstack em falta não desenha texto nenhum, sem
-  // erro na consola (só o 404 no separador Network). "Open Sans Semibold" é o
-  // que o próprio estilo do demotiles usa, logo é o que existe garantidamente.
-  //
-  // Se passares para um servidor de glyphs a sério (Maptiler, Protomaps, ou
-  // glyphs próprios), aqui é o único sítio a mudar — e aí já podes ter
-  // fallbacks a mais de uma fonte.
-  const FONT = ["Open Sans Semibold"];
+  // Os glyphs vêm da OpenFreeMap (tiles.openfreemap.org/fonts), que tem as
+  // Noto Sans Regular, Bold e Italic — as mesmas do basemap. O MapLibre pede o
+  // fontstack INTEIRO num único caminho; um nome que o servidor não tenha
+  // (ex.: "Open Sans Semibold", o do demotiles que se usava antes) dá 404 e as
+  // etiquetas desaparecem sem erro na consola. Mudar de servidor de glyphs =
+  // mudar aqui.
+  const FONT = ["Noto Sans Bold"];
 
   window.MapaIcones = { ensure, sizeExpr, replaceLayer, BASE, FONT };
 })();
