@@ -72,7 +72,7 @@
 
     // ─── PATHS DOS JSON ────────────────────────────────────────────────
     STOPS_JSON: "./json/stops_ft.json",
-    LINE_JSON: "./json/fertagus_line.json",
+    LINE_JSON: "./data/geojson/fertagus_line.geojson",
     LISBOA_JSON: "./data/json/fertagus_sentido_lisboa.json",
     MARGEM_JSON: "./data/json/fertagus_sentido_margem.json",
     HOLIDAYS_JSON: "./data/json/feriados.json",

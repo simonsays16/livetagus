@@ -1,0 +1,1910 @@
+<!doctype html>
+<html lang="pt-PT">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="LiveTagus v2 — mapa multimodal, painel de detalhes único, basemap próprio e um mapa mais leve e mais rápido. Tudo o que mudou."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://livetagus.pt/v2" />
+    <meta property="og:title" content="LiveTagus v2 | O que há de novo" />
+    <meta
+      property="og:description"
+      content="Mapa multimodal, painel de detalhes único, basemap próprio e um mapa mais leve e mais rápido."
+    />
+    <meta
+      property="og:image"
+      content="https://livetagus.pt/imagens/opengraph-livetagus.png"
+    />
+    <meta name="theme-color" content="#09090b" />
+    <title>LiveTagus v2 | O que há de novo</title>
+
+    <script src="./menu.js" defer></script>
+
+    <link rel="icon" type="image/svg+xml" href="./imagens/favicon-96x96.png" />
+    <link rel="alternate icon" href="./imagens/favicon-96x96.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="./site.webmanifest" />
+    <link href="./output.css" rel="stylesheet" />
+    <link
+      rel="preload"
+      href="/assets/fonts/inter-normal-variavel-v20-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link rel="stylesheet" href="/assets/fonts/fonts.css" />
+
+    <!-- ============================================================
+         LIVETAGUS v2 · mesmo sistema visual da secção "Pensada ao
+         detalhe" do index (tokens, células, chips, stats, reveal).
+         CSS próprio: renderiza igual com ou sem rebuild do Tailwind.
+         ============================================================ -->
+    <style>
+      :root {
+        --bg: #ffffff;
+        --bg-soft: #fafafa;
+        --surface: #ffffff;
+        --inset: #f4f4f5;
+        --hairline: rgba(9, 9, 11, 0.08);
+        --hairline-strong: rgba(9, 9, 11, 0.14);
+        --text: #18181b;
+        --text-soft: #52525b;
+        --text-faint: #71717a;
+        --accent: #2563eb;
+        --green: #059669;
+        --amber: #d97706;
+        --shadow:
+          0 1px 2px rgba(9, 9, 11, 0.05), 0 12px 30px -22px rgba(9, 9, 11, 0.25);
+        --ease: cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      html.dark {
+        --bg: #09090b;
+        --bg-soft: #0b0b0d;
+        --surface: rgba(255, 255, 255, 0.022);
+        --inset: rgba(255, 255, 255, 0.04);
+        --hairline: rgba(255, 255, 255, 0.08);
+        --hairline-strong: rgba(255, 255, 255, 0.16);
+        --text: #ffffff;
+        --text-soft: #a1a1aa;
+        --text-faint: #8b8b94;
+        --accent: #3b82f6;
+        --green: #10b981;
+        --amber: #f59e0b;
+        --shadow:
+          0 1px 0 rgba(255, 255, 255, 0.03) inset,
+          0 24px 60px -40px rgba(0, 0, 0, 0.9);
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        font-family: "Inter", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+      ::selection {
+        background: color-mix(in srgb, var(--accent) 26%, transparent);
+      }
+      *:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+        border-radius: 2px;
+      }
+      .mono {
+        font-family: "JetBrains Mono", monospace;
+      }
+
+      /* ---------- LAYOUT ---------- */
+      .lt-wrap {
+        width: 100%;
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 0 22px;
+      }
+      @media (min-width: 768px) {
+        .lt-wrap {
+          padding: 0 36px;
+        }
+      }
+
+      /* ---------- HERO ---------- */
+      .v2-hero {
+        position: relative;
+        padding: 150px 0 40px;
+        overflow: hidden;
+      }
+      .v2-hero-glow {
+        position: absolute;
+        top: 30%;
+        left: 50%;
+        width: 80vw;
+        height: 60vh;
+        transform: translate(-50%, -50%);
+        background: radial-gradient(
+          circle,
+          color-mix(in srgb, var(--accent) 14%, transparent),
+          transparent 62%
+        );
+        pointer-events: none;
+        opacity: 0;
+      }
+      html.dark .v2-hero-glow {
+        opacity: 1;
+      }
+      .v2-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+        border: 1px solid var(--hairline);
+        border-radius: 999px;
+        padding: 7px 14px 7px 10px;
+        background: var(--surface);
+      }
+      .v2-kicker .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--green);
+        box-shadow: 0 0 0 4px color-mix(in srgb, var(--green) 18%, transparent);
+      }
+      .v2-title {
+        font-size: clamp(2.6rem, 9vw, 6.2rem);
+        font-weight: 300;
+        letter-spacing: -0.045em;
+        line-height: 0.95;
+        margin: 26px 0 22px;
+      }
+      .v2-title b {
+        font-weight: 600;
+      }
+      .v2-lead {
+        max-width: 640px;
+        font-size: clamp(1rem, 1.6vw, 1.15rem);
+        line-height: 1.6;
+        color: var(--text-soft);
+      }
+      .v2-lead b {
+        color: var(--text);
+        font-weight: 500;
+      }
+      .v2-ops {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 30px;
+      }
+      .v2-op {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        border: 1px solid var(--hairline);
+        background: var(--surface);
+        border-radius: 999px;
+        padding: 6px 14px 6px 6px;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text);
+      }
+      .v2-op img {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        object-fit: contain;
+        background: #fff;
+        border: 1px solid var(--hairline);
+      }
+
+      /* ---------- SECÇÕES ---------- */
+      .lt-section {
+        padding: 56px 0 70px;
+        position: relative;
+      }
+      .lt-section:last-of-type {
+        padding-bottom: 120px;
+      }
+      .lt-section-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 26px;
+      }
+      .lt-section-title {
+        font-size: clamp(1.6rem, 4vw, 2.6rem);
+        font-weight: 300;
+        letter-spacing: -0.03em;
+        line-height: 1;
+        margin: 0;
+      }
+      .lt-section-title b {
+        font-weight: 600;
+      }
+      .lt-section-sub {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+      }
+
+      /* ---------- BENTO ---------- */
+      .lt-bento {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: 1fr;
+      }
+      @media (min-width: 680px) {
+        .lt-bento {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .span-all {
+          grid-column: 1 / -1;
+        }
+      }
+      @media (min-width: 1024px) {
+        .lt-bento {
+          grid-template-columns: repeat(6, 1fr);
+          grid-auto-rows: minmax(158px, auto);
+        }
+        .s2 {
+          grid-column: span 2;
+        }
+        .s3 {
+          grid-column: span 3;
+        }
+        .s4 {
+          grid-column: span 4;
+        }
+        .s6 {
+          grid-column: span 6;
+        }
+        .r2 {
+          grid-row: span 2;
+        }
+      }
+
+      .lt-cell {
+        position: relative;
+        isolation: isolate;
+        border: 1px solid var(--hairline);
+        background: var(--surface);
+        border-radius: 24px;
+        padding: 24px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        transition:
+          transform 0.55s var(--ease),
+          border-color 0.5s var(--ease);
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+      .lt-cell > * {
+        position: relative;
+        z-index: 1;
+      }
+      @media (hover: hover) {
+        .lt-cell:hover {
+          transform: translateY(-4px);
+          border-color: var(--hairline-strong);
+        }
+      }
+      .lt-spot::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        border-radius: inherit;
+        background: radial-gradient(
+          420px circle at var(--mx, 50%) var(--my, 50%),
+          color-mix(in srgb, var(--accent) 13%, transparent),
+          transparent 62%
+        );
+        opacity: 0;
+        transition: opacity 0.45s var(--ease);
+        pointer-events: none;
+      }
+      @media (hover: hover) {
+        .lt-spot:hover::before {
+          opacity: 1;
+        }
+      }
+
+      .lt-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 11px;
+        background: color-mix(in srgb, var(--accent) 12%, transparent);
+        color: var(--accent);
+        flex: none;
+      }
+      .lt-chip.emerald {
+        background: color-mix(in srgb, var(--green) 13%, transparent);
+        color: var(--green);
+      }
+      .lt-chip.amber {
+        background: color-mix(in srgb, var(--amber) 13%, transparent);
+        color: var(--amber);
+      }
+      .lt-chip svg {
+        width: 19px;
+        height: 19px;
+      }
+      .lt-cell-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+      .lt-cell-head h3 {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--text);
+        margin: 0;
+        line-height: 1.1;
+      }
+      .lt-cell-head p {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+        margin: 3px 0 0;
+      }
+      .lt-cell-body {
+        font-size: 12.5px;
+        line-height: 1.65;
+        color: var(--text-soft);
+      }
+      .lt-cell-body b {
+        color: var(--text);
+        font-weight: 500;
+      }
+      .lt-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 9px;
+      }
+      .lt-list li {
+        position: relative;
+        padding-left: 16px;
+        font-size: 12.5px;
+        line-height: 1.6;
+        color: var(--text-soft);
+      }
+      .lt-list li::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0.62em;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        border: 1.5px solid var(--accent);
+      }
+      .lt-list li b {
+        color: var(--text);
+        font-weight: 500;
+      }
+
+      /* stats */
+      .lt-stat {
+        justify-content: space-between;
+        min-height: 158px;
+      }
+      .lt-stat-label {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+      }
+      .lt-stat-h {
+        font-size: clamp(1.15rem, 2vw, 1.5rem);
+        font-weight: 300;
+        letter-spacing: -0.02em;
+        color: var(--text);
+        margin: 12px 0 8px;
+        line-height: 1.05;
+      }
+      .lt-stat-p {
+        font-size: 11.5px;
+        line-height: 1.55;
+        color: var(--text-soft);
+      }
+      .lt-big {
+        font-size: clamp(2.6rem, 6vw, 4rem);
+        font-weight: 300;
+        letter-spacing: -0.05em;
+        line-height: 1;
+        color: var(--text);
+        margin: 14px 0 10px;
+      }
+      .lt-big small {
+        font-size: 0.38em;
+        letter-spacing: 0;
+        color: var(--text-faint);
+        margin-left: 4px;
+      }
+      .lt-big.green {
+        color: var(--green);
+      }
+      .lt-big.accent {
+        color: var(--accent);
+      }
+
+      /* comparação de tamanho v1 / v2 */
+      .v2-bars {
+        display: grid;
+        gap: 14px;
+        margin-top: auto;
+      }
+      .v2-bar-row {
+        display: grid;
+        grid-template-columns: 30px 1fr 64px;
+        align-items: center;
+        gap: 12px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        color: var(--text-faint);
+      }
+      .v2-bar-row span:last-child {
+        text-align: right;
+        color: var(--text);
+      }
+      .v2-bar {
+        height: 10px;
+        border-radius: 999px;
+        background: var(--inset);
+        overflow: hidden;
+      }
+      .v2-bar i {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: var(--text-faint);
+        transform-origin: left;
+        transform: scaleX(var(--w));
+      }
+      .v2-bar.novo i {
+        background: var(--accent);
+      }
+      .lt-js [data-reveal] .v2-bar i {
+        transform: scaleX(0);
+        transition: transform 1.2s var(--ease) 0.25s;
+      }
+      .lt-js [data-reveal].is-in .v2-bar i {
+        transform: scaleX(var(--w));
+      }
+
+      /* antes → depois em linha */
+      .v2-delta {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        flex-wrap: wrap;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        color: var(--text-faint);
+        margin-top: auto;
+        padding-top: 14px;
+        border-top: 1px dashed var(--hairline-strong);
+      }
+      .v2-delta s {
+        text-decoration-color: color-mix(
+          in srgb,
+          var(--text-faint) 70%,
+          transparent
+        );
+      }
+      .v2-delta b {
+        color: var(--green);
+        font-weight: 600;
+      }
+
+      /* mini-mockup do painel de detalhes */
+      .v2-panel {
+        margin-top: auto;
+        border: 1px solid var(--hairline);
+        border-radius: 18px;
+        background: var(--bg-soft);
+        padding: 16px 18px;
+      }
+      .v2-panel-top {
+        display: flex;
+        justify-content: space-between;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 9.5px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+      .v2-panel-top span:last-child {
+        color: var(--text-faint);
+        letter-spacing: 0.04em;
+      }
+      .v2-panel h4 {
+        margin: 8px 0 2px;
+        font-size: 20px;
+        font-weight: 400;
+        letter-spacing: -0.02em;
+      }
+      .v2-panel h4 span {
+        font-size: 13px;
+        color: var(--text-soft);
+        margin-left: 4px;
+      }
+      .v2-tl {
+        list-style: none;
+        margin: 14px 0 0;
+        padding: 0;
+      }
+      .v2-tl li {
+        position: relative;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 0 9px 22px;
+        font-size: 12.5px;
+        border-top: 1px solid var(--hairline);
+      }
+      .v2-tl li::before {
+        content: "";
+        position: absolute;
+        left: 4px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: var(--accent);
+      }
+      .v2-tl li::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 50%;
+        width: 10px;
+        height: 10px;
+        margin-top: -5px;
+        border-radius: 50%;
+        border: 2px solid var(--accent);
+        background: var(--bg-soft);
+      }
+      .v2-tl li:first-child::after {
+        background: var(--accent);
+        box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 20%, transparent);
+      }
+      .v2-tl li.skip {
+        color: var(--text-faint);
+      }
+      .v2-tl li.skip::after {
+        border-color: var(--amber);
+      }
+      .v2-tl li.skip .nm {
+        text-decoration: line-through;
+        text-decoration-color: color-mix(
+          in srgb,
+          var(--amber) 70%,
+          transparent
+        );
+      }
+      .v2-tl .tag {
+        display: block;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 8.5px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-top: 2px;
+      }
+      .v2-tl li.skip .tag {
+        color: var(--amber);
+      }
+      .v2-tl .t {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        color: var(--text);
+      }
+      .v2-tl .ligs {
+        display: flex;
+        gap: 4px;
+        margin-left: auto;
+      }
+      .v2-tl .ligs img {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #fff;
+        border: 1px solid var(--hairline);
+        object-fit: contain;
+      }
+
+      /* paleta do basemap */
+      .v2-swatches {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-top: auto;
+      }
+      .v2-map {
+        position: relative;
+        height: 120px;
+        border-radius: 14px;
+        overflow: hidden;
+        border: 1px solid var(--hairline);
+      }
+      .v2-map svg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+      .v2-map span {
+        position: absolute;
+        left: 10px;
+        bottom: 8px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 9px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      /* linha do tempo dos commits */
+      .v2-time {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        position: relative;
+      }
+      .v2-time::before {
+        content: "";
+        position: absolute;
+        left: 7px;
+        top: 6px;
+        bottom: 6px;
+        width: 2px;
+        background: linear-gradient(var(--hairline-strong), var(--accent));
+      }
+      .v2-time li {
+        position: relative;
+        padding: 0 0 22px 34px;
+      }
+      .v2-time li:last-child {
+        padding-bottom: 0;
+      }
+      .v2-time li::before {
+        content: "";
+        position: absolute;
+        left: 2px;
+        top: 4px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--bg);
+        border: 2px solid var(--accent);
+      }
+      .v2-time time {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+      }
+      .v2-time h4 {
+        margin: 4px 0 4px;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+      .v2-time p {
+        margin: 0;
+        font-size: 12.5px;
+        line-height: 1.6;
+        color: var(--text-soft);
+      }
+
+      .v2-cta {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 18px;
+        padding: 11px 18px;
+        border-radius: 999px;
+        background: var(--text);
+        color: var(--bg);
+        font-size: 13px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: transform 0.4s var(--ease);
+      }
+      .v2-cta:hover {
+        transform: translateY(-2px);
+      }
+      .v2-cta.ghost {
+        background: transparent;
+        color: var(--text);
+        border: 1px solid var(--hairline-strong);
+      }
+
+      /* reveal on scroll (index-home.js) */
+      .lt-js [data-reveal] {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .lt-js [data-reveal] {
+          transition:
+            opacity 0.75s var(--ease),
+            transform 0.75s var(--ease);
+          transition-delay: var(--d, 0s);
+        }
+      }
+      [data-reveal].is-in {
+        opacity: 1;
+        transform: none;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .v2-bar i {
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+
+  <body
+    class="bg-white text-zinc-900 dark:bg-[#09090b] dark:text-white overflow-x-hidden transition-colors duration-500"
+  >
+    <div id="global-nav"></div>
+
+    <main>
+      <!-- ===================== HERO ===================== -->
+      <section class="v2-hero">
+        <div class="v2-hero-glow"></div>
+        <div class="lt-wrap">
+          <span class="v2-kicker">
+            <span class="dot"></span>
+            LiveTagus · versão 2
+          </span>
+          <h1 class="v2-title">
+            Toda a rede.
+            <br />
+            <b>Menos peso.</b>
+          </h1>
+          <p class="v2-lead">
+            A LiveTagus deixou de ser só a Fertagus. A versão 2 junta
+            <b>cinco operadores num só mapa</b>
+            , um
+            <b>painel de detalhes único</b>
+            em todo o lado e um basemap desenhado à medida. E apesar de fazer
+            muito mais, o mapa ficou
+            <b>mais leve e mais rápido</b>
+            , num alojamento verde.
+          </p>
+          <div class="v2-ops">
+            <span class="v2-op">
+              <img src="/assets/img/logos/fertagus.png" alt="" />
+              Fertagus
+            </span>
+            <span class="v2-op">
+              <img src="/assets/img/logos/metro.png" alt="" />
+              Metro de Lisboa
+            </span>
+            <span class="v2-op">
+              <img src="/assets/img/logos/mts.png" alt="" />
+              Metro Sul do Tejo
+            </span>
+            <span class="v2-op">
+              <img src="/assets/img/logos/cp.png" alt="" />
+              CP
+            </span>
+            <span class="v2-op">
+              <img src="/assets/img/logos/cm-light.svg" alt="" />
+              Carris Metropolitana
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== NÚMEROS ===================== -->
+      <section class="lt-section">
+        <div class="lt-wrap">
+          <div class="lt-section-head">
+            <h2 class="lt-section-title">
+              Mais coisas,
+              <b>menos peso.</b>
+            </h2>
+            <span class="lt-section-sub">v1 → v2</span>
+          </div>
+
+          <div class="lt-bento">
+            <div
+              class="lt-cell lt-spot s4 r2 span-all"
+              data-reveal
+              style="--d: 0s"
+            >
+              <div class="lt-cell-head">
+                <span class="lt-chip">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path
+                      d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"
+                    />
+                    <path d="m3.3 7 8.7 5 8.7-5" />
+                    <path d="M12 22V12" />
+                  </svg>
+                </span>
+                <div>
+                  <h3>Peso do mapa</h3>
+                  <p>Transferido no primeiro carregamento</p>
+                </div>
+              </div>
+              <p class="lt-cell-body">
+                Com mais quatro operadores, basemap vetorial, pesquisa, ligações
+                e painéis novos, o mapa
+                <b>encolheu</b>
+                . O turf completo deu lugar a um turf-lite feito à medida, as
+                fontes passaram a ser servidas pelo próprio site, o MapLibre
+                fica em cache imutável e cada operador só carrega quando é
+                ligado.
+              </p>
+              <div class="lt-big">
+                641
+                <small>KB</small>
+              </div>
+              <div class="v2-bars">
+                <div class="v2-bar-row">
+                  <span>v1</span>
+                  <div class="v2-bar"><i style="--w: 1"></i></div>
+                  <span>674 KB</span>
+                </div>
+                <div class="v2-bar-row">
+                  <span>v2</span>
+                  <div class="v2-bar novo"><i style="--w: 0.951"></i></div>
+                  <span>641 KB</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="lt-cell lt-stat s2" data-reveal style="--d: 0.06s">
+              <span class="lt-stat-label">Arranque</span>
+              <div>
+                <div class="lt-big accent">
+                  −0,6
+                  <small>s</small>
+                </div>
+                <p class="lt-stat-p">
+                  O mapa carrega 0,6 segundos mais depressa do que na v1.
+                </p>
+              </div>
+            </div>
+
+            <div class="lt-cell lt-stat s2" data-reveal style="--d: 0.1s">
+              <span class="lt-stat-label">Alojamento</span>
+              <div>
+                <h3 class="lt-stat-h">Hosting verde</h3>
+                <p class="lt-stat-p">
+                  O site passou para a Cloudflare: alojamento verde, servido
+                  perto de quem o abre.
+                </p>
+              </div>
+            </div>
+
+            <div class="lt-cell lt-stat s2" data-reveal style="--d: 0.14s">
+              <span class="lt-stat-label">Geometria</span>
+              <div>
+                <div class="lt-big">
+                  2,4
+                  <small>KB</small>
+                </div>
+                <p class="lt-stat-p">
+                  turf-lite em vez do turf completo (139 KB). Iguais ao bit em
+                  13 000 chamadas.
+                </p>
+              </div>
+            </div>
+
+            <div class="lt-cell lt-stat s2" data-reveal style="--d: 0.18s">
+              <span class="lt-stat-label">Em repouso</span>
+              <div>
+                <div class="lt-big green">
+                  0
+                  <small>fps</small>
+                </div>
+                <p class="lt-stat-p">
+                  Com os comboios parados, o mapa não desenha nada. Antes eram
+                  60 frames por segundo, sempre.
+                </p>
+              </div>
+            </div>
+
+            <div class="lt-cell lt-stat s2" data-reveal style="--d: 0.22s">
+              <span class="lt-stat-label">Basemap</span>
+              <div>
+                <div class="lt-big">
+                  −15
+                  <small>%</small>
+                </div>
+                <p class="lt-stat-p">
+                  Menos custo por frame no basemap próprio do que no estilo de
+                  base cortado.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== MAPA MULTIMODAL ===================== -->
+      <section class="lt-section">
+        <div class="lt-wrap">
+          <div class="lt-section-head">
+            <h2 class="lt-section-title">
+              Um mapa,
+              <b>toda a rede.</b>
+            </h2>
+            <span class="lt-section-sub">Mapa multimodal</span>
+          </div>
+
+          <div class="lt-bento">
+            <div
+              class="lt-cell lt-spot s3 span-all"
+              data-reveal
+              style="--d: 0s"
+            >
+              <div class="lt-cell-head">
+                <span class="lt-chip">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path
+                      d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"
+                    />
+                    <path d="M15 5.764v15" />
+                    <path d="M9 3.236v15" />
+                  </svg>
+                </span>
+                <div>
+                  <h3>Cinco operadores</h3>
+                  <p>Fertagus primeiro, o resto a pedido</p>
+                </div>
+              </div>
+              <ul class="lt-list">
+                <li>
+                  <b>Metro de Lisboa, MTS, CP e Carris Metropolitana</b>
+                  no mesmo mapa, com um painel de partidas partilhado alimentado
+                  por bundles gtfs-departures.
+                </li>
+                <li>
+                  <b>Marcadores com logótipo</b>
+                  em vez de círculos; a seleção pinta o fundo a azul.
+                </li>
+                <li>
+                  Os intermodais só aparecem a partir do zoom 13; as
+                  <b>paragens guardadas</b>
+                  estão sempre visíveis.
+                </li>
+                <li>
+                  Estações partilhadas Fertagus/CP com selo da CP e
+                  <b>botão para trocar de operador</b>
+                  no painel.
+                </li>
+              </ul>
+            </div>
+
+            <div class="lt-cell s3 span-all" data-reveal style="--d: 0.06s">
+              <div class="lt-cell-head">
+                <span class="lt-chip emerald">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 3 4 7l4 4" />
+                    <path d="M4 7h16" />
+                    <path d="m16 21 4-4-4-4" />
+                    <path d="M20 17H4" />
+                  </svg>
+                </span>
+                <div>
+                  <h3>Ligações</h3>
+                  <p>Da Fertagus para tudo o resto</p>
+                </div>
+              </div>
+              <ul class="lt-list">
+                <li>
+                  Em cada estação do percurso, os
+                  <b>logótipos das ligações</b>
+                  : Metro, MTS, CP e Carris.
+                </li>
+                <li>
+                  Tocar numa ligação abre o outro operador
+                  <b>já filtrado pela hora de chegada</b>
+                  do comboio.
+                </li>
+                <li>
+                  A Carris abre
+                  <b>todas as paragens da estação numa lista só</b>
+                  , com filtro de várias carreiras.
+                </li>
+                <li>
+                  Da CP para a Fertagus, a estação abre filtrada com aviso e
+                  cruz para ver tudo.
+                </li>
+              </ul>
+            </div>
+
+            <div class="lt-cell lt-stat s2" data-reveal style="--d: 0.1s">
+              <span class="lt-stat-label">Pesquisa</span>
+              <div>
+                <h3 class="lt-stat-h">Todos os operadores</h3>
+                <p class="lt-stat-p">
+                  Favoritos com estrela, logótipos, e aviso quando há operadores
+                  escondidos.
+                </p>
+              </div>
+            </div>
+
+            <div class="lt-cell lt-stat s2" data-reveal style="--d: 0.14s">
+              <span class="lt-stat-label">Perto de mim</span>
+              <div>
+                <h3 class="lt-stat-h">Só no dispositivo</h3>
+                <p class="lt-stat-p">
+                  A localização nunca é enviada. Pode abrir o mapa já na tua
+                  zona.
+                </p>
+              </div>
+            </div>
+
+            <div class="lt-cell lt-stat s2" data-reveal style="--d: 0.18s">
+              <span class="lt-stat-label">Carris</span>
+              <div>
+                <h3 class="lt-stat-h">Percurso ao vivo</h3>
+                <p class="lt-stat-p">
+                  ETA da TML por viagem e paragens passadas a partir dos
+                  padrões.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== PAINEL DE DETALHES ===================== -->
+      <section class="lt-section">
+        <div class="lt-wrap">
+          <div class="lt-section-head">
+            <h2 class="lt-section-title">
+              Um painel,
+              <b>em todo o lado.</b>
+            </h2>
+            <span class="lt-section-sub">Detalhes do comboio</span>
+          </div>
+
+          <div class="lt-bento">
+            <div
+              class="lt-cell lt-spot s3 r2 span-all"
+              data-reveal
+              style="--d: 0s"
+            >
+              <div class="lt-cell-head">
+                <span class="lt-chip">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect width="18" height="18" x="3" y="3" rx="2" />
+                    <path d="M3 15h18" />
+                  </svg>
+                </span>
+                <div>
+                  <h3>Detalhes uniformizados</h3>
+                  <p>Mapa · estações · app</p>
+                </div>
+              </div>
+              <p class="lt-cell-body">
+                Havia três painéis de detalhes diferentes. Agora há
+                <b>um só módulo</b>
+                , o do mapa, que serve também as páginas das estações e a app. O
+                mesmo desenho, os mesmos gestos, o mesmo percurso.
+              </p>
+              <div class="v2-panel" aria-hidden="true">
+                <div class="v2-panel-top">
+                  <span>Fertagus</span>
+                  <span>#14262</span>
+                </div>
+                <h4>
+                  Roma-Areeiro
+                  <span class="mono">16:46</span>
+                </h4>
+                <ul class="v2-tl">
+                  <li>
+                    <span>
+                      <span class="nm">Pinhal Novo</span>
+                      <span class="tag">Próxima</span>
+                    </span>
+                    <span class="ligs">
+                      <img src="/assets/img/logos/cp.png" alt="" />
+                      <img src="/assets/img/logos/cm-light.svg" alt="" />
+                    </span>
+                    <span class="t">15:56</span>
+                  </li>
+                  <li class="skip">
+                    <span>
+                      <span class="nm">Penalva</span>
+                      <span class="tag">Não passa nesta estação</span>
+                    </span>
+                    <span class="t">16:04</span>
+                  </li>
+                  <li>
+                    <span><span class="nm">Coina</span></span>
+                    <span class="ligs">
+                      <img src="/assets/img/logos/cm-light.svg" alt="" />
+                    </span>
+                    <span class="t">16:13</span>
+                  </li>
+                  <li>
+                    <span><span class="nm">Corroios</span></span>
+                    <span class="ligs">
+                      <img src="/assets/img/logos/cm-light.svg" alt="" />
+                      <img src="/assets/img/logos/mts.png" alt="" />
+                    </span>
+                    <span class="t">16:24</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="lt-cell s3 span-all" data-reveal style="--d: 0.06s">
+              <div class="lt-cell-head">
+                <span class="lt-chip emerald">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path
+                      d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"
+                    />
+                    <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
+                    <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
+                    <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
+                    <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
+                  </svg>
+                </span>
+                <div>
+                  <h3>O que tem</h3>
+                  <p>Igual nas três páginas</p>
+                </div>
+              </div>
+              <ul class="lt-list">
+                <li>
+                  <b>Mini e expandido</b>
+                  , com arrastar no telemóvel e painel lateral no computador.
+                </li>
+                <li>
+                  <b>Paragens anteriores</b>
+                  recolhidas atrás de um botão; a próxima em destaque.
+                </li>
+                <li>
+                  <b>Estações saltadas</b>
+                  num trajeto anormal aparecem riscadas, com "Não passa nesta
+                  estação".
+                </li>
+                <li>
+                  <b>Carruagens e ocupação</b>
+                  numa linha só, estado do comboio, partilhar e ver no mapa.
+                </li>
+                <li>
+                  Na app, o painel
+                  <b>acompanha cada atualização</b>
+                  da lista enquanto está aberto.
+                </li>
+              </ul>
+            </div>
+
+            <div
+              class="lt-cell lt-stat s3 span-all"
+              data-reveal
+              style="--d: 0.1s"
+            >
+              <span class="lt-stat-label">No mapa</span>
+              <div>
+                <h3 class="lt-stat-h">Seguir e focar o percurso</h3>
+                <p class="lt-stat-p">
+                  Só o mapa sabe seguir o comboio e enquadrar o percurso. Nas
+                  estações e na app, as ligações aparecem e avisam que abrem no
+                  mapa.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== COMBOIOS NA LINHA ===================== -->
+      <section class="lt-section">
+        <div class="lt-wrap">
+          <div class="lt-section-head">
+            <h2 class="lt-section-title">
+              Comboios
+              <b>nos carris.</b>
+            </h2>
+            <span class="lt-section-sub">Desenho e animação</span>
+          </div>
+
+          <div class="lt-bento">
+            <div class="lt-cell lt-stat s2" data-reveal style="--d: 0s">
+              <span class="lt-stat-label">Carruagens na linha</span>
+              <div>
+                <div class="lt-big">
+                  0,000
+                  <small>m</small>
+                </div>
+                <p class="lt-stat-p">
+                  Desvio máximo na curva mais fechada. Cada carruagem é uma
+                  fatia da própria linha, desenhada na GPU.
+                </p>
+              </div>
+            </div>
+
+            <div class="lt-cell lt-stat s2" data-reveal style="--d: 0.06s">
+              <span class="lt-stat-label">Via dupla</span>
+              <div>
+                <h3 class="lt-stat-h">Cada sentido no seu lado</h3>
+                <p class="lt-stat-p">
+                  Com zoom, os comboios separam-se para o lado do eixo em que
+                  circulam.
+                </p>
+              </div>
+            </div>
+
+            <div class="lt-cell lt-stat s2" data-reveal style="--d: 0.1s">
+              <span class="lt-stat-label">Modo seguir</span>
+              <div>
+                <h3 class="lt-stat-h">Pela linha, não pelo GPS</h3>
+                <p class="lt-stat-p">
+                  A câmara roda pela tangente da via, sem os saltos do rumo do
+                  GPS.
+                </p>
+              </div>
+            </div>
+
+            <div class="lt-cell s3 span-all" data-reveal style="--d: 0.14s">
+              <div class="lt-cell-head">
+                <span class="lt-chip amber">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
+                  </svg>
+                </span>
+                <div>
+                  <h3>Desempenho</h3>
+                  <p>Só desenha o que muda</p>
+                </div>
+              </div>
+              <ul class="lt-list">
+                <li>
+                  Ciclo de animação
+                  <b>dorme</b>
+                  quando nada se mexe: 0 frames, 0 escritas no DOM.
+                </li>
+                <li>
+                  Comboios fora do ecrã não são redesenhados a meio do deslize:
+                  <b>1200 → 68</b>
+                  reposicionamentos por segundo.
+                </li>
+                <li>
+                  Comboios novos nascem parados:
+                  <b>1800 reposicionamentos inúteis</b>
+                  a menos no arranque.
+                </li>
+              </ul>
+            </div>
+
+            <div class="lt-cell s3 span-all" data-reveal style="--d: 0.18s">
+              <div class="lt-cell-head">
+                <span class="lt-chip">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M3 12h4l3 8 4-16 3 8h4" />
+                  </svg>
+                </span>
+                <div>
+                  <h3>Arranque</h3>
+                  <p>Fertagus primeiro</p>
+                </div>
+              </div>
+              <ul class="lt-list">
+                <li>
+                  Metro, MTS, CP e Carris
+                  <b>só arrancam depois</b>
+                  de a Fertagus estar desenhada.
+                </li>
+                <li>
+                  Operadores escondidos
+                  <b>não carregam</b>
+                  ; o Metro deixou de fazer 720 pedidos por hora a dados que
+                  ninguém via.
+                </li>
+                <li>
+                  Ao clicar num comboio, o enquadramento parte da
+                  <b>posição desenhada</b>
+                  até à terminal.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== BASEMAP ===================== -->
+      <section class="lt-section">
+        <div class="lt-wrap">
+          <div class="lt-section-head">
+            <h2 class="lt-section-title">
+              Um mapa com
+              <b>estilo próprio.</b>
+            </h2>
+            <span class="lt-section-sub">Basemap e vidro</span>
+          </div>
+
+          <div class="lt-bento">
+            <div
+              class="lt-cell lt-spot s4 span-all"
+              data-reveal
+              style="--d: 0s"
+            >
+              <div class="lt-cell-head">
+                <span class="lt-chip">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path
+                      d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"
+                    />
+                    <path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65" />
+                    <path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65" />
+                  </svg>
+                </span>
+                <div>
+                  <h3>LiveTagus claro e escuro</h3>
+                  <p>Basemap vetorial OpenFreeMap</p>
+                </div>
+              </div>
+              <p class="lt-cell-body" style="margin-bottom: 18px">
+                Dois estilos desenhados de raiz, com estrutura inspirada no
+                basemap da TML GO e valores próprios. As estradas apagam-se para
+                <b>as linhas sobressaírem</b>
+                , a ferrovia é tracejada, há carreiras fluviais e os bairros só
+                aparecem a partir do zoom 12. Nomes em português, sem 3D, sem
+                POIs nem ícones.
+              </p>
+              <div class="v2-swatches" aria-hidden="true">
+                <div class="v2-map" style="background: #f3f2ee">
+                  <svg viewBox="0 0 200 120" preserveAspectRatio="none">
+                    <path
+                      d="M0 78 C40 70 70 96 110 88 S170 64 200 72 V120 H0Z"
+                      fill="#cfe3f3"
+                    />
+                    <path
+                      d="M8 18 H70 M30 0 V60 M130 10 L190 48"
+                      stroke="#e4e2dc"
+                      stroke-width="5"
+                    />
+                    <path
+                      d="M20 108 C60 80 90 50 140 30 S190 12 200 8"
+                      stroke="#9a9a9a"
+                      stroke-width="2"
+                      stroke-dasharray="4 4"
+                      fill="none"
+                    />
+                    <path
+                      d="M20 108 C60 80 90 50 140 30"
+                      stroke="#2563eb"
+                      stroke-width="3.5"
+                      fill="none"
+                      stroke-linecap="round"
+                    />
+                    <circle
+                      cx="140"
+                      cy="30"
+                      r="4.5"
+                      fill="#fff"
+                      stroke="#2563eb"
+                      stroke-width="2.5"
+                    />
+                  </svg>
+                  <span style="color: #52525b">Claro</span>
+                </div>
+                <div class="v2-map" style="background: #0e0e11">
+                  <svg viewBox="0 0 200 120" preserveAspectRatio="none">
+                    <path
+                      d="M0 78 C40 70 70 96 110 88 S170 64 200 72 V120 H0Z"
+                      fill="#14202c"
+                    />
+                    <path
+                      d="M8 18 H70 M30 0 V60 M130 10 L190 48"
+                      stroke="#1b1b20"
+                      stroke-width="5"
+                    />
+                    <path
+                      d="M20 108 C60 80 90 50 140 30 S190 12 200 8"
+                      stroke="#4a4a52"
+                      stroke-width="2"
+                      stroke-dasharray="4 4"
+                      fill="none"
+                    />
+                    <path
+                      d="M20 108 C60 80 90 50 140 30"
+                      stroke="#ffffff"
+                      stroke-width="3.5"
+                      fill="none"
+                      stroke-linecap="round"
+                    />
+                    <circle
+                      cx="140"
+                      cy="30"
+                      r="4.5"
+                      fill="#0e0e11"
+                      stroke="#ffffff"
+                      stroke-width="2.5"
+                    />
+                  </svg>
+                  <span style="color: #a1a1aa">Escuro</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="lt-cell lt-stat s2" data-reveal style="--d: 0.06s">
+              <span class="lt-stat-label">Fontes</span>
+              <div>
+                <h3 class="lt-stat-h">Só o que se lê</h3>
+                <p class="lt-stat-p">
+                  Noto Sans em blocos de glifos, pedidos apenas quando há nomes
+                  no ecrã para escrever.
+                </p>
+              </div>
+            </div>
+
+            <div class="lt-cell s3 span-all" data-reveal style="--d: 0.1s">
+              <div class="lt-cell-head">
+                <span class="lt-chip emerald">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+                    <path d="M2 12h20" />
+                  </svg>
+                </span>
+                <div>
+                  <h3>Painéis em vidro</h3>
+                  <p>Contraste AA nos dois temas</p>
+                </div>
+              </div>
+              <ul class="lt-list">
+                <li>
+                  Vidro com blur próprio e
+                  <b>fundo quase opaco</b>
+                  sem backdrop-filter ou com transparência reduzida.
+                </li>
+                <li>
+                  Textos secundários com
+                  <b>contraste AA</b>
+                  : 0 falhas em telemóvel e computador.
+                </li>
+                <li>
+                  Etiquetas das linhas escolhem
+                  <b>texto preto ou branco</b>
+                  pelo contraste.
+                </li>
+              </ul>
+            </div>
+
+            <div class="lt-cell s3 span-all" data-reveal style="--d: 0.14s">
+              <div class="lt-cell-head">
+                <span class="lt-chip amber">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect width="14" height="20" x="5" y="2" rx="2" />
+                    <path d="M12 18h.01" />
+                  </svg>
+                </span>
+                <div>
+                  <h3>Ajustado ao telemóvel</h3>
+                  <p>iPhone e Android</p>
+                </div>
+              </div>
+              <ul class="lt-list">
+                <li>
+                  Mapa em ecrã fixo:
+                  <b>os botões do fundo deixam de fugir</b>
+                  do ecrã.
+                </li>
+                <li>Legenda, avisos e zoom acima da barra de gestos.</li>
+                <li>
+                  Créditos num
+                  <b>botão "i"</b>
+                  que abre e fecha sozinho, como pedem as regras da OSMF.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== APP E ESTAÇÕES ===================== -->
+      <section class="lt-section">
+        <div class="lt-wrap">
+          <div class="lt-section-head">
+            <h2 class="lt-section-title">
+              A app e as estações,
+              <b>mais completas.</b>
+            </h2>
+            <span class="lt-section-sub">Partidas e horários</span>
+          </div>
+
+          <div class="lt-bento">
+            <div
+              class="lt-cell lt-spot s3 span-all"
+              data-reveal
+              style="--d: 0s"
+            >
+              <div class="lt-cell-head">
+                <span class="lt-chip">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
+                </span>
+                <div>
+                  <h3>Filtro de hora e dia</h3>
+                  <p>Partir ou chegar</p>
+                </div>
+              </div>
+              <ul class="lt-list">
+                <li>
+                  Escolhe a hora e o dia,
+                  <b>até 90 dias</b>
+                  , em modo Partir ou Chegar.
+                </li>
+                <li>
+                  Links partilháveis:
+                  <b>/app#org=…&amp;date=…</b>
+                  abre a pesquisa certa.
+                </li>
+                <li>
+                  O estado da ligação passa para uma
+                  <b>auréola</b>
+                  à volta do botão de atualizar.
+                </li>
+                <li>
+                  Tempo real de volta, a cada
+                  <b>15 segundos</b>
+                  na app e no mapa.
+                </li>
+              </ul>
+            </div>
+
+            <div class="lt-cell s3 span-all" data-reveal style="--d: 0.06s">
+              <div class="lt-cell-head">
+                <span class="lt-chip emerald">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="m12 14 4-4" />
+                    <path d="M3.34 19a10 10 0 1 1 17.32 0" />
+                  </svg>
+                </span>
+                <div>
+                  <h3>Partidas</h3>
+                  <p>Estação e mapa</p>
+                </div>
+              </div>
+              <ul class="lt-list">
+                <li>
+                  Sentidos passam a
+                  <b>destinos</b>
+                  : Lisboa, Coina e Setúbal.
+                </li>
+                <li>
+                  <b>Contagem decrescente</b>
+                  até uma hora; depois disso, a hora da partida.
+                </li>
+                <li>
+                  Ocupação estimada
+                  <b>em todos os dias úteis</b>
+                  : percentagem na hora de ponta, nível qualitativo no resto do
+                  dia.
+                </li>
+                <li>
+                  Cartão reorganizado: número junto ao destino, carruagens a
+                  ocupar a largura toda.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== POR BAIXO DO CAPÔ ===================== -->
+      <section class="lt-section">
+        <div class="lt-wrap">
+          <div class="lt-section-head">
+            <h2 class="lt-section-title">
+              Por baixo
+              <b>do capô.</b>
+            </h2>
+            <span class="lt-section-sub">Build, segurança e dados</span>
+          </div>
+
+          <div class="lt-bento">
+            <div class="lt-cell lt-stat s2" data-reveal style="--d: 0s">
+              <span class="lt-stat-label">Build</span>
+              <div>
+                <h3 class="lt-stat-h">bootup.js</h3>
+                <p class="lt-stat-p">
+                  Gera os bundles da CP, MTS e Metro, um a um, e avisa se algum
+                  não cobrir o dia de hoje. Minify com terser.
+                </p>
+              </div>
+            </div>
+
+            <div class="lt-cell lt-stat s2" data-reveal style="--d: 0.06s">
+              <span class="lt-stat-label">Segurança</span>
+              <div>
+                <h3 class="lt-stat-h">Credenciais no cofre</h3>
+                <p class="lt-stat-p">
+                  Segredos no Azure Key Vault, SRI nas bibliotecas e CSP sem
+                  scripts inline.
+                </p>
+              </div>
+            </div>
+
+            <div class="lt-cell lt-stat s2" data-reveal style="--d: 0.1s">
+              <span class="lt-stat-label">Independência</span>
+              <div>
+                <h3 class="lt-stat-h">Tudo servido pelo site</h3>
+                <p class="lt-stat-p">
+                  MapLibre em /vendor com cache imutável e fontes próprias, sem
+                  Google Fonts.
+                </p>
+              </div>
+            </div>
+
+            <div
+              class="lt-cell lt-stat s3 span-all"
+              data-reveal
+              style="--d: 0.14s"
+            >
+              <span class="lt-stat-label">Dados</span>
+              <div>
+                <h3 class="lt-stat-h">MTS até 2027 e Carris por estação</h3>
+                <p class="lt-stat-p">
+                  O calendário do MTS foi estendido até 31/12/2027 e corrigido
+                  dia a dia; as paragens da Carris vêm de um ficheiro de
+                  estações, sem heurísticas por nome.
+                </p>
+              </div>
+            </div>
+
+            <div
+              class="lt-cell lt-stat s3 span-all"
+              data-reveal
+              style="--d: 0.18s"
+            >
+              <span class="lt-stat-label">Offline e acessibilidade</span>
+              <div>
+                <h3 class="lt-stat-h">Cache fiável, Lighthouse limpo</h3>
+                <p class="lt-stat-p">
+                  Todos os módulos da app pré-cacheados para funcionar offline;
+                  comboios como botões com nome, zoom permitido e menos CLS.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== LINHA DO TEMPO ===================== -->
+      <section class="lt-section">
+        <div class="lt-wrap">
+          <div class="lt-section-head">
+            <h2 class="lt-section-title">
+              Como
+              <b>chegámos aqui.</b>
+            </h2>
+            <span class="lt-section-sub">Ago → Nov 2026</span>
+          </div>
+
+          <div class="lt-bento">
+            <div class="lt-cell s4 span-all" data-reveal style="--d: 0s">
+              <ol class="v2-time">
+                <li>
+                  <time>16 ago</time>
+                  <h4>Início do redesign</h4>
+                  <p>
+                    Mapa multimodal, planeador e gestor de paragens. Metro, MTS,
+                    CP e Carris no mapa.
+                  </p>
+                </li>
+                <li>
+                  <time>2 set</time>
+                  <h4>CP na pesquisa e percurso no mesmo painel</h4>
+                  <p>
+                    Ligações Fertagus/CP, "perto de mim" melhorado e sentidos
+                    por destino.
+                  </p>
+                </li>
+                <li>
+                  <time>5–6 set</time>
+                  <h4>Tema escuro, filtro de hora e carregamento preguiçoso</h4>
+                  <p>
+                    Motor de geometria da linha; cada operador só carrega quando
+                    é visível.
+                  </p>
+                </li>
+                <li>
+                  <time>13 set</time>
+                  <h4>bootup.js e tempo real de volta</h4>
+                  <p>
+                    Build com bundles GTFS, links partilháveis na app e service
+                    worker corrigido.
+                  </p>
+                </li>
+                <li>
+                  <time>27–28 set</time>
+                  <h4>Carruagens na linha e turf-lite</h4>
+                  <p>
+                    Fertagus primeiro no arranque, via dupla, MapLibre servido
+                    pelo site.
+                  </p>
+                </li>
+                <li>
+                  <time>23 out</time>
+                  <h4>Painéis em vidro e ocupação qualitativa</h4>
+                  <p>
+                    Contraste AA, mapa ajustado ao telemóvel e créditos num
+                    botão.
+                  </p>
+                </li>
+                <li>
+                  <time>31 out</time>
+                  <h4>Basemap vetorial próprio</h4>
+                  <p>LiveTagus claro e escuro sobre OpenFreeMap.</p>
+                </li>
+                <li>
+                  <time>nov</time>
+                  <h4>Um painel de detalhes para tudo</h4>
+                  <p>
+                    O painel do mapa passa a servir as estações e a app. Hosting
+                    verde na Cloudflare.
+                  </p>
+                </li>
+              </ol>
+            </div>
+
+            <div
+              class="lt-cell lt-spot s2 span-all"
+              data-reveal
+              style="--d: 0.08s"
+            >
+              <div class="lt-cell-head">
+                <span class="lt-chip">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M7 17 17 7" />
+                    <path d="M7 7h10v10" />
+                  </svg>
+                </span>
+                <div>
+                  <h3>Experimenta</h3>
+                  <p>Já está tudo no ar</p>
+                </div>
+              </div>
+              <p class="lt-cell-body">
+                Abre o mapa, toca num comboio e segue as ligações. Ou volta à
+                app de sempre, agora com o mesmo painel.
+              </p>
+              <div style="margin-top: auto">
+                <a class="v2-cta" href="/mapa">Abrir o mapa</a>
+                <a class="v2-cta ghost" href="/app">Abrir a app</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div id="global-footer"></div>
+
+    <!-- reveal e spotlight, os mesmos da homepage · CSP: script-src 'self' -->
+    <script src="/index-home.js" defer></script>
+  </body>
+</html>

@@ -15,6 +15,7 @@ yarn-error.log*
 
 # Ficheiros atoa
 gtfs/
+resources/
 test-extras-helpers.js
 test-station-poller.js
 capacitor.config.json

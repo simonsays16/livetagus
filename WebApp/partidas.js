@@ -17,16 +17,17 @@
  *   • Fallback total: se o endpoint falha (IP down / API down / offline) usa só os
  *     JSON locais. Tudo cacheado pelo Service Worker → funciona offline.
  *
- * Clique num comboio (3 casos pedidos):
- *   1. Ao vivo            → opts.onLiveTrain(dep)  (página: /mapa#{id}; mapa: abre detalhe).
- *   2. Extra, não-vivo    → GET /fertagus, lê NodesPassagemComboio reais → percurso.
- *   3. Normal, não-vivo   → constrói o percurso a partir dos JSON de horários.
+ * Clique num comboio → opts.onOpenTrain(dep). Quem monta abre o painel de
+ * detalhes partilhado (detalhes-comboio.js); o comboio para o painel vem de
+ * Partidas.loadTrain(dep), que resolve o percurso:
+ *   • ao vivo ou extra → GET /fertagus (NodesPassagemComboio reais);
+ *   • normal           → construído a partir dos JSON de horários.
  *
  * Edge cases preparados: manutenção, IP offline, API LiveTagus offline, modo
  * offline do browser, trajetos anormais (comboio não para aqui), sem partidas.
  *
- * Auto-contido: injeta o próprio CSS (.ltp-*) e cria a própria sheet de detalhe
- * (não depende do CSS da página nem de DOM específico). Mobile-first, iOS+Android.
+ * Auto-contido: injeta o próprio CSS (.ltp-*) (não depende do CSS da página
+ * nem de DOM específico). Mobile-first, iOS+Android.
  */
 
 (function () {
@@ -141,27 +142,9 @@
   }
 
   // ── LIGAÇÕES NAS ESTAÇÕES ────────────────────────────────────────────────
-  // O percurso mostra, à frente de cada estação, os logótipos dos operadores
-  // com que se pode fazer ligação ali. Vem do mesmo ficheiro que o mapa usa.
+  // Tipos de ligação de cada estação (metro, cm, cp, mts, …), para o painel de
+  // detalhes partilhado. Vem do mesmo ficheiro que o mapa usa.
   const LIGACOES_JSON = "/data/json/ligacoes_atualizado.json";
-  // Um tipo sem logótipo conhecido simplesmente não aparece; e se o ficheiro
-  // não existir, a imagem é removida (ver bindLigacaoLogos).
-  const LIG_LOGOS = {
-    metro: { src: "/assets/img/logos/metro.png", nome: "Metro de Lisboa" },
-    mts: { src: "/assets/img/logos/mts.png", nome: "Metro Sul do Tejo" },
-    cp: { src: "/assets/img/logos/cp.png", nome: "CP" },
-    cm: {
-      src: "/assets/img/logos/cm-light.svg",
-      nome: "Carris Metropolitana",
-    },
-    carris: { src: "/assets/img/logos/carris.png", nome: "Carris" },
-    re: {
-      src: "/assets/img/logos/re.png",
-      nome: "Rede Expressos",
-    },
-    tcb: { src: "/assets/img/logos/tcb.png", nome: "TCB" },
-  };
-
   let ligacoesPorEstacao = null; // Map(chaveEstacao → ["metro","cm",…])
   let ligacoesPromise = null;
 
@@ -182,7 +165,6 @@
             Object.keys(e.ligacoes).filter((t) => (e.ligacoes[t] || []).length),
           );
         }
-        ligacoesRaw = data || {};
         ligacoesPorEstacao = m;
         return m;
       })
@@ -192,162 +174,6 @@
         return ligacoesPorEstacao;
       });
     return ligacoesPromise;
-  }
-
-  // Os logótipos ficam encostados à direita da linha e são um BOTÃO: abrem a
-  // lista de ligações daquela estação, de onde se pode saltar para o mapa.
-  function ligacoesHtml(stationKey, stationName) {
-    if (!ligacoesPorEstacao || !stationKey) return "";
-    const tipos = (ligacoesPorEstacao.get(stationKey) || []).filter(
-      (t) => LIG_LOGOS[t],
-    );
-    if (!tipos.length) return "";
-    const imgs = tipos
-      .map(
-        (t) =>
-          `<img class="ltp-lig-logo" src="${esc(LIG_LOGOS[t].src)}" alt="${esc(LIG_LOGOS[t].nome)}" data-ltp-lig>`,
-      )
-      .join("");
-    // Uma pastilha com contorno e seta: sem isto, os logótipos liam-se como
-    // decoração e ninguém percebia que se podia carregar neles.
-    return `<button type="button" class="ltp-lig" data-ltp-lig-open="${esc(stationKey)}"
-      data-ltp-lig-name="${esc(stationName || "")}"
-      title="Ligações em ${esc(stationName || "")}"
-      aria-label="Ver ligações em ${esc(stationName || "")}">${imgs}<svg class="ltp-lig-seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" width="9" height="9"><path d="m9 18 6-6-6-6"/></svg></button>`;
-  }
-
-  // Sem onerror inline (CSP): um logótipo em falta desaparece em vez de deixar
-  // o ícone partido do browser.
-  function bindLigacaoLogos(root) {
-    (root || document).querySelectorAll("[data-ltp-lig]").forEach((img) => {
-      img.addEventListener(
-        "error",
-        function () {
-          this.remove();
-        },
-        { once: true },
-      );
-    });
-  }
-
-  // ── VISTA DE LIGAÇÕES ────────────────────────────────────────────────────
-  // O que se pode apanhar numa estação, e — quando o mapa está por perto — a
-  // possibilidade de abrir cada paragem lá.
-  let ligacoesRaw = null; // o JSON tal como veio, para os nomes das linhas
-
-  // Comparar nomes de estação sem depender de acentos, maiúsculas ou hífenes.
-  function normNome(v) {
-    return String(v == null ? "" : v)
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, " ")
-      .trim();
-  }
-
-  const LIG_ORDEM = ["cp", "metro", "mts", "cm", "carris", "tcb", "re"];
-
-  function linhasDe(entrada) {
-    return (entrada || []).map((x) => x && x.line).filter(Boolean);
-  }
-
-  // Paragens que se podem abrir no mapa a partir daqui. Só existem quando os
-  // módulos do mapa estão carregados — na página /estacao a lista é informativa.
-  function alvosNoMapa(tipo, nomeEstacao) {
-    const out = [];
-    if (tipo === "cm" && window.MapaCM && window.MapaCM.getStops) {
-      const alvo = normNome(nomeEstacao);
-      for (const st of window.MapaCM.getStops() || []) {
-        if (normNome(st.station || "") !== alvo) continue;
-        out.push({ label: st.name, run: () => window.MapaCM.open(st) });
-      }
-      return out;
-    }
-    if (window.GtfsHorarios && window.GtfsHorarios.interchangesFor) {
-      const op = tipo === "metro" ? "ml" : tipo;
-      for (const x of window.GtfsHorarios.interchangesFor(nomeEstacao)) {
-        if (x.op !== op) continue;
-        out.push({
-          label: x.name,
-          // recenter: o mapa aproxima-se da estação do outro operador.
-          run: () =>
-            x.stopId
-              ? window.GtfsHorarios.openStop(x.op, x.stopId, {
-                  name: x.name,
-                  recenter: true,
-                })
-              : window.GtfsHorarios.open(
-                  { name: x.name },
-                  { operator: x.op, recenter: true },
-                ),
-        });
-      }
-    }
-    return out;
-  }
-
-  function renderLigacoes(stationKey, nomeEstacao) {
-    const st = BY_KEY[stationKey];
-    const nome = nomeEstacao || (st ? st.name : "");
-    let id = null;
-    for (const k in ligacoesRaw || {}) {
-      if (normNome((ligacoesRaw[k] || {}).name || "") === normNome(nome)) {
-        id = k;
-        break;
-      }
-    }
-    const lig = (id && ligacoesRaw[id] && ligacoesRaw[id].ligacoes) || {};
-    const tipos = LIG_ORDEM.filter((t) => (lig[t] || []).length);
-
-    const blocos = tipos
-      .map((t, i) => {
-        const meta = LIG_LOGOS[t] || { nome: t, src: "" };
-        const linhas = linhasDe(lig[t]);
-        const alvos = alvosNoMapa(t, nome);
-        return `<div class="ltp-lg-bloco">
-          <div class="ltp-lg-cab">
-            ${meta.src ? `<img class="ltp-lig-logo" src="${esc(meta.src)}" alt="" data-ltp-lig>` : ""}
-            <span class="ltp-lg-op">${esc(meta.nome)}</span>
-          </div>
-          ${
-            linhas.length
-              ? `<p class="ltp-lg-linhas">${linhas.map(esc).join(" · ")}</p>`
-              : ""
-          }
-          ${alvos
-            .map(
-              (a, j) =>
-                `<button type="button" class="ltp-lg-alvo" data-ltp-lg-go="${i}:${j}">
-                   <span>${esc(a.label)}</span>
-                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="m9 18 6-6-6-6"/></svg>
-                 </button>`,
-            )
-            .join("")}
-        </div>`;
-      })
-      .join("");
-
-    return {
-      html: `
-        <div class="ltp-sh-head inline" style="position:relative">
-          <button class="ltp-back" data-ltp-lg-back>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="m15 18-6-6 6-6"/></svg>
-            <span>Percurso</span></button>
-          <p class="ltp-sh-title">${esc(nome)}</p>
-          <p class="ltp-sh-sub">Ligações nesta estação</p>
-        </div>
-        <div class="ltp-sh-body">
-          ${blocos || `<p style="font-size:11px;color:rgb(161,161,170)">Sem ligações registadas.</p>`}
-          ${
-            tipos.some((t) => alvosNoMapa(t, nome).length)
-              ? ""
-              : `<p class="ltp-lg-nota">Abre o mapa para ver estas paragens.</p>`
-          }
-        </div>`,
-      // A ordem das secções e dos alvos é a mesma do HTML: o índice "i:j" do
-      // botão devolve o alvo certo sem precisar de guardar nada no DOM.
-      alvos: tipos.map((t) => alvosNoMapa(t, nome)),
-    };
   }
 
   function resolveStationByApiId(id) {
@@ -838,8 +664,8 @@
    Na página da estação valem os valores por omissão. Dentro do painel de vidro
    do mapa, o mapa.html define --lt-ink…, e estes passam a usá-los: o mesmo
    CSS serve um fundo sólido e um fundo de vidro sem mexer na página. */
-.ltp-wrap,.ltp-sheet{--ltp-ink:var(--lt-ink,#18181b);--ltp-ink-2:var(--lt-ink-2,#3f3f46);--ltp-ink-3:var(--lt-ink-3,#71717a);--ltp-line:var(--lt-line,#e4e4e7);--ltp-card:var(--lt-card,rgba(255,255,255,.6));--ltp-card-line:var(--lt-card-line,#f4f4f5);--ltp-card-hover:var(--lt-line-strong,#d4d4d8);--ltp-soft:var(--lt-soft,rgba(244,244,245,.7))}
-html.dark .ltp-wrap,html.dark .ltp-sheet{--ltp-ink:var(--lt-ink,#fafafa);--ltp-ink-2:var(--lt-ink-2,#d4d4d8);--ltp-ink-3:var(--lt-ink-3,#a1a1aa);--ltp-line:var(--lt-line,#27272a);--ltp-card:var(--lt-card,rgba(24,24,27,.25));--ltp-card-line:var(--lt-card-line,#18181b);--ltp-card-hover:var(--lt-line-strong,#3f3f46);--ltp-soft:var(--lt-soft,rgba(24,24,27,.6))}
+.ltp-wrap{--ltp-ink:var(--lt-ink,#18181b);--ltp-ink-2:var(--lt-ink-2,#3f3f46);--ltp-ink-3:var(--lt-ink-3,#71717a);--ltp-line:var(--lt-line,#e4e4e7);--ltp-card:var(--lt-card,rgba(255,255,255,.6));--ltp-card-line:var(--lt-card-line,#f4f4f5);--ltp-card-hover:var(--lt-line-strong,#d4d4d8);--ltp-soft:var(--lt-soft,rgba(244,244,245,.7))}
+html.dark .ltp-wrap{--ltp-ink:var(--lt-ink,#fafafa);--ltp-ink-2:var(--lt-ink-2,#d4d4d8);--ltp-ink-3:var(--lt-ink-3,#a1a1aa);--ltp-line:var(--lt-line,#27272a);--ltp-card:var(--lt-card,rgba(24,24,27,.25));--ltp-card-line:var(--lt-card-line,#18181b);--ltp-card-hover:var(--lt-line-strong,#3f3f46);--ltp-soft:var(--lt-soft,rgba(24,24,27,.6))}
 
 .ltp-wrap{font-family:"Inter",-apple-system,BlinkMacSystemFont,sans-serif;-webkit-tap-highlight-color:transparent}
 .ltp-fade{animation:ltp-fade .4s ease both}
@@ -960,103 +786,6 @@ html.dark .ltp-empty-s{color:var(--ltp-ink-3)}
 html.dark .ltp-skel{background:linear-gradient(90deg,rgb(24,24,27) 0%,rgb(39,39,42) 50%,rgb(24,24,27) 100%);background-size:200% 100%}
 @keyframes ltp-skel{0%,100%{opacity:1}50%{opacity:.45}}
 
-/* ─── SHEET DE DETALHE (percurso) ─── */
-.ltp-bd{position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .3s ease}
-.ltp-bd.open{opacity:1;pointer-events:auto}
-.ltp-sheet{position:fixed;z-index:2147483001;left:0;right:0;bottom:0;max-height:88vh;background:#fff;border-radius:20px 20px 0 0;box-shadow:0 -10px 40px -12px rgba(0,0,0,.4);transform:translateY(100%);transition:transform .38s cubic-bezier(.22,.61,.36,1);display:flex;flex-direction:column;overflow:hidden;padding-bottom:env(safe-area-inset-bottom,0)}
-html.dark .ltp-sheet{background:#09090b}
-.ltp-sheet.open{transform:translateY(0)}
-@media(min-width:768px){.ltp-sheet{left:50%;right:auto;bottom:auto;top:50%;width:440px;max-height:82vh;border-radius:16px;transform:translate(-50%,-46%) scale(.98);opacity:0;transition:opacity .25s ease,transform .25s ease}.ltp-sheet.open{transform:translate(-50%,-50%) scale(1);opacity:1}}
-.ltp-grab{padding:.7rem 0 .2rem;display:flex;justify-content:center;flex-shrink:0;cursor:grab}
-@media(min-width:768px){.ltp-grab{display:none}}
-.ltp-grab span{width:36px;height:4px;border-radius:99px;background:rgb(212,212,216)}
-html.dark .ltp-grab span{background:rgb(63,63,70)}
-.ltp-sh-head{padding:.5rem 1.4rem 1.1rem;border-bottom:1px solid rgb(244,244,245);flex-shrink:0}
-/* No mesmo painel não há sheet: sem margens laterais próprias e com o botão de
-   voltar em vez da cruz. */
-.ltp-sh-head.inline{padding:0 0 1rem}
-.ltp-back{display:inline-flex;align-items:center;gap:6px;background:none;border:0;padding:0;margin-bottom:.7rem;font:inherit;font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--ltp-ink-3);cursor:pointer}
-.ltp-back:hover{color:rgb(9,9,11)}
-.ltp-sh-title{font-size:18px;font-weight:300;letter-spacing:-.02em;color:rgb(24,24,27)}
-html.dark .ltp-sh-title{color:#fff}
-.ltp-sh-sub{font-size:9px;font-weight:800;letter-spacing:.24em;text-transform:uppercase;color:var(--ltp-ink-3);margin-top:.3rem}
-.ltp-lg-bloco{padding:.85rem 0;border-bottom:1px solid rgb(244,244,245)}
-html.dark .ltp-lg-bloco{border-bottom-color:rgb(24,24,27)}
-.ltp-lg-bloco:last-child{border-bottom:0}
-.ltp-lg-cab{display:flex;align-items:center;gap:.5rem}
-.ltp-lg-op{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ltp-ink-2)}
-html.dark .ltp-lg-op{color:var(--ltp-ink-2)}
-.ltp-lg-linhas{font-size:12px;color:var(--ltp-ink-3);margin-top:.35rem;line-height:1.5}
-.ltp-lg-alvo{display:flex;align-items:center;justify-content:space-between;gap:.6rem;width:100%;margin-top:.5rem;padding:.55rem .7rem;border:1px solid rgb(228,228,231);border-radius:8px;background:none;font:inherit;font-size:13px;color:rgb(24,24,27);cursor:pointer}
-html.dark .ltp-lg-alvo{border-color:rgb(39,39,42);color:#fff}
-.ltp-lg-alvo:hover{background:rgba(0,0,0,.03)}
-html.dark .ltp-lg-alvo:hover{background:rgba(255,255,255,.05)}
-.ltp-lg-alvo svg{opacity:.4;flex-shrink:0}
-.ltp-lg-nota{font-size:10px;color:var(--ltp-ink-3);margin-top:.9rem}
-/* Cabeçalho da lista de paragens: título à esquerda, resumo à direita. */
-.ltp-pc-cab{display:flex;align-items:baseline;justify-content:space-between;gap:.75rem;margin-bottom:.35rem}
-.ltp-pc-tit{font-size:9px;font-weight:800;letter-spacing:.28em;text-transform:uppercase;color:var(--ltp-ink-3)}
-.ltp-pc-res{font-size:11px;color:var(--ltp-ink-3);font-variant-numeric:tabular-nums}
-.ltp-pc-dica{font-size:10px;color:var(--ltp-ink-3);margin-bottom:.75rem;line-height:1.4}
-/* A lista ganha respiro e uma linha de base para as horas alinharem. */
-.ltp-pc-lista{margin-top:.5rem}
-.ltp-stop-time{font-variant-numeric:tabular-nums;text-align:right}
-html.dark .ltp-back:hover{color:#fff}
-.ltp-route .ltp-sh-body{padding:1.2rem 0 .5rem;overflow:visible}
-html.dark .ltp-sh-head{border-bottom-color:rgb(24,24,27)}
-.ltp-sh-close{position:absolute;right:1rem;top:.9rem;width:38px;height:38px;display:flex;align-items:center;justify-content:center;color:var(--ltp-ink-3);background:transparent;border:0;cursor:pointer}
-.ltp-sh-body{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:1.2rem 1.4rem 2rem}
-.ltp-stop{display:grid;grid-template-columns:3.2rem 16px 1fr auto auto;align-items:center;gap:.75rem;padding:.5rem 0;position:relative}
-/* O trilho vive DENTRO da coluna do ponto, e não numa posição calculada à mão:
-   assim fica sempre alinhado com as bolas, seja qual for a largura das horas. */
-.ltp-stop-dot{position:relative;justify-self:center}
-.ltp-stop-dot::before{content:"";position:absolute;left:50%;top:-1.1rem;bottom:-1.1rem;width:2px;margin-left:-1px;background:rgb(228,228,231);z-index:-1}
-html.dark .ltp-stop-dot::before{background:rgb(39,39,42)}
-.ltp-stop.todo .ltp-stop-dot::before{background:var(--ltp-trip,#10b981)}
-.ltp-stop.first .ltp-stop-dot::before{top:50%}
-.ltp-stop.last .ltp-stop-dot::before{bottom:50%}
-.ltp-stop.todo .ltp-stop-dot{border-color:var(--ltp-trip,#10b981)}
-/* Origem e destino com mais peso: são as pontas da viagem. */
-.ltp-stop.first .ltp-stop-dot,.ltp-stop.last .ltp-stop-dot{width:11px;height:11px;border-width:2.5px}
-.ltp-stop.first .ltp-nm,.ltp-stop.last .ltp-nm{font-weight:600}
-/* Logótipos das ligações, à frente do nome. */
-/* Última coluna da linha: sempre no extremo direito, mesmo quando não há
-   atraso a mostrar na coluna anterior. */
-.ltp-lig{display:inline-flex;align-items:center;gap:4px;justify-self:end;padding:3px 5px 3px 6px;margin:0;border:1px solid rgb(228,228,231);background:#fff;cursor:pointer;border-radius:999px;color:var(--ltp-ink-3);transition:border-color .15s ease,box-shadow .15s ease,transform .1s ease}
-html.dark .ltp-lig{background:rgb(24,24,27);border-color:rgb(39,39,42)}
-.ltp-lig:hover{border-color:rgb(161,161,170);box-shadow:0 1px 6px rgba(0,0,0,.1)}
-.ltp-lig:active{transform:scale(.94)}
-.ltp-lig:focus-visible{outline:2px solid #3b82f6;outline-offset:2px}
-.ltp-lig-seta{flex-shrink:0;opacity:.55;margin-left:1px}
-.ltp-stop.past .ltp-lig{opacity:.5}
-.ltp-lig-logo{width:14px;height:14px;object-fit:contain;display:block;border-radius:3px;background:#fff;padding:1px;box-shadow:0 0 0 1px rgba(0,0,0,.12)}
-.ltp-stop.past .ltp-lig{opacity:.45}
-.ltp-stop-time{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:13px;font-variant-numeric:tabular-nums;color:var(--ltp-ink-2)}
-html.dark .ltp-stop-time{color:var(--ltp-ink-3)}
-.ltp-stop-dot{width:9px;height:9px;border-radius:50%;border:2px solid rgb(212,212,216);background:#fff;z-index:1}
-html.dark .ltp-stop-dot{background:#09090b;border-color:rgb(63,63,70)}
-.ltp-stop-name{font-size:13px;color:var(--ltp-ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-/* O risco é só no texto: sem isto, atravessava também os logótipos. */
-.ltp-stop.past .ltp-stop-name{text-decoration:none}
-.ltp-stop.past .ltp-stop-name>span.ltp-lig{text-decoration:none}
-html.dark .ltp-stop-name{color:var(--ltp-ink-2)}
-.ltp-stop-delay{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;font-weight:700}
-.ltp-stop.past .ltp-stop-time{color:var(--ltp-ink-3);text-decoration:line-through;text-decoration-thickness:.5px}
-.ltp-stop.past .ltp-stop-name{color:var(--ltp-ink-3)}
-.ltp-stop.past .ltp-stop-name .ltp-nm{text-decoration:line-through;text-decoration-thickness:.5px}
-html.dark .ltp-stop.past .ltp-stop-name,html.dark .ltp-stop.past .ltp-stop-time{color:var(--ltp-ink-3)}
-.ltp-stop.past .ltp-stop-dot{background:rgb(161,161,170);border-color:rgb(161,161,170)}
-.ltp-stop.cur .ltp-stop-dot{background:#10b981;border-color:#10b981;box-shadow:0 0 0 4px rgba(16,185,129,.18)}
-/* Depois da estação seleccionada: o resto do percurso de quem está a ler. */
-.ltp-stop.after .ltp-stop-dot{background:#3b82f6;border-color:#3b82f6}
-.ltp-stop.after .ltp-stop-name{color:rgb(24,24,27)}
-html.dark .ltp-stop.after .ltp-stop-name{color:var(--ltp-ink-2)}
-.ltp-stop.cur .ltp-stop-name{color:rgb(24,24,27);font-weight:700}
-html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
-.ltp-stop.skip{opacity:.85}
-.ltp-stop.skip .ltp-stop-time,.ltp-stop.skip .ltp-nm{color:var(--ltp-ink-3);text-decoration:line-through;text-decoration-color:rgba(245,158,11,.6)}
-.ltp-stop.skip .ltp-stop-dot{background:transparent;border-color:rgba(245,158,11,.6)}
-.ltp-stop-skip{font-size:8px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#f59e0b;white-space:nowrap}
 @media(prefers-reduced-motion:reduce){.ltp-live-dot.pulse,.ltp-skel{animation:none!important}}
 `;
     const tag = document.createElement("style");
@@ -1291,297 +1020,15 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
     }
   }
 
-  // ═══ SHEET DE DETALHE (singleton) ═══════════════════════════════════════════
-  let sheetEl = null,
-    bdEl = null,
-    sheetScrollY = 0;
-  function ensureSheet() {
-    if (sheetEl && bdEl) return;
-    bdEl = document.createElement("div");
-    bdEl.className = "ltp-bd";
-    sheetEl = document.createElement("div");
-    sheetEl.className = "ltp-sheet";
-    sheetEl.setAttribute("role", "dialog");
-    sheetEl.setAttribute("aria-modal", "true");
-    document.body.appendChild(bdEl);
-    document.body.appendChild(sheetEl);
-    bdEl.addEventListener("click", closeSheet);
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && sheetEl.classList.contains("open"))
-        closeSheet();
-    });
-  }
-  function lockScroll() {
-    sheetScrollY = window.scrollY || window.pageYOffset || 0;
-    const b = document.body.style;
-    b.position = "fixed";
-    b.top = `-${sheetScrollY}px`;
-    b.left = "0";
-    b.right = "0";
-    b.width = "100%";
-  }
-  function unlockScroll() {
-    const b = document.body.style;
-    b.position = "";
-    b.top = "";
-    b.left = "";
-    b.right = "";
-    b.width = "";
-    window.scrollTo(0, sheetScrollY);
-  }
-  function openSheet(html) {
-    ensureSheet();
-    sheetEl.innerHTML = html;
-    bdEl.classList.add("open");
-    requestAnimationFrame(() => sheetEl.classList.add("open"));
-    lockScroll();
-    sheetEl
-      .querySelectorAll("[data-ltp-sheet-close]")
-      .forEach((b) => b.addEventListener("click", closeSheet));
-    attachSheetSwipe();
-    if (window.lucide)
-      try {
-        window.lucide.createIcons();
-      } catch (_) {}
-  }
-  function closeSheet() {
-    if (!sheetEl) return;
-    sheetEl.classList.remove("open");
-    bdEl.classList.remove("open");
-    unlockScroll();
-    setTimeout(() => {
-      if (!sheetEl.classList.contains("open")) sheetEl.innerHTML = "";
-    }, 420);
-  }
-  function attachSheetSwipe() {
-    if (window.matchMedia("(min-width:768px)").matches) return;
-    let startY = null,
-      dragY = 0,
-      startT = 0,
-      allow = false;
-    const onStart = (e) => {
-      if (e.touches.length !== 1) return;
-      startY = e.touches[0].clientY;
-      startT = Date.now();
-      dragY = 0;
-      const body = sheetEl.querySelector(".ltp-sh-body");
-      allow = !body || body.scrollTop <= 0;
-      sheetEl.style.transition = "none";
-    };
-    const onMove = (e) => {
-      if (startY == null) return;
-      const dy = e.touches[0].clientY - startY;
-      if (dy < 0) {
-        dragY = dy / 5;
-      } else if (allow) {
-        dragY = dy;
-      } else return;
-      sheetEl.style.transform = `translateY(${dragY}px)`;
-      bdEl.style.opacity = String(Math.max(0, 1 - dragY / 400));
-    };
-    const onEnd = () => {
-      if (startY == null) return;
-      const dt = Math.max(1, Date.now() - startT);
-      sheetEl.style.transition = "";
-      bdEl.style.opacity = "";
-      if (dragY > 110 || dragY / dt > 0.5) {
-        sheetEl.style.transform = "";
-        closeSheet();
-      } else sheetEl.style.transform = "";
-      startY = null;
-    };
-    sheetEl.addEventListener("touchstart", onStart, { passive: true });
-    sheetEl.addEventListener("touchmove", onMove, { passive: true });
-    sheetEl.addEventListener("touchend", onEnd, { passive: true });
-    sheetEl.addEventListener("touchcancel", onEnd, { passive: true });
-  }
-
-  // Render do percurso (cases 2 e 3) numa sheet.
-  function renderRouteSheet(dep, nodes, station, inline) {
-    const noNet = !navigator.onLine;
-    const { bars, n, occ, isCode, label, labelColor } = carBars(dep, noNet);
-    const stationApiId = station ? String(station.apiId) : null;
-
-    // [TRAJETO ANORMAL] estações saltadas → intercalar na posição física da
-    // linha, riscadas (tal como na app). Funciona quer venham nos nodes (do
-    // horário) quer os nodes reais já as omitam (IP).
-    const dirOrder =
-      dep.direction === "margem"
-        ? ORDER_KEYS.slice().reverse()
-        : ORDER_KEYS.slice();
-    const orderIdx = (key) => dirOrder.indexOf(key);
-    const skips = (Array.isArray(dep.skipped) ? dep.skipped : [])
-      .map((sk) => {
-        const st =
-          sk && sk.key
-            ? BY_KEY[sk.key]
-            : resolveStationByApiName(sk && sk.nome);
-        const key = st ? st.key : sk && sk.key;
-        return {
-          key,
-          name: st ? st.name : (sk && (sk.nome || sk.key)) || "",
-          hora: (sk && sk.hora) || "--:--",
-          order: orderIdx(key),
-        };
-      })
-      .filter((s) => s.order >= 0)
-      .sort((a, b) => a.order - b.order);
-    const skipKeys = new Set(skips.map((s) => s.key));
-
-    const renderSkip = (s) =>
-      `<div class="ltp-stop skip">
-          <span class="ltp-stop-time">${esc(s.hora || "--:--")}</span>
-          <span class="ltp-stop-dot"></span>
-          <span class="ltp-stop-name"><span class="ltp-nm">${esc(s.name)}</span></span>
-          <span class="ltp-stop-skip">Não passa</span>
-        </div>`;
-
-    let skipPtr = 0;
-    let stops = "";
-    let restante = false; // já apanhámos a primeira estação por passar?
-    // Depois da estação onde a pessoa está, o que vem é a viagem DELA. Essas
-    // ficam com a bola azul: o trilho colorido diz o que falta ao comboio, a
-    // bola azul diz o que falta a quem o vai apanhar aqui.
-    let depoisDaMinha = false;
-    const listaNodes = nodes || [];
-    listaNodes.forEach((nd, idx) => {
-      const st = resolveStationByApiName(nd.NomeEstacao);
-      const servedOrder = st ? orderIdx(st.key) : -1;
-      // Intercalar saltadas (que não vêm nos nodes) ANTES desta servida.
-      while (
-        skipPtr < skips.length &&
-        servedOrder >= 0 &&
-        skips[skipPtr].order < servedOrder
-      ) {
-        stops += renderSkip(skips[skipPtr]);
-        skipPtr++;
-      }
-      // Se o próprio nó é uma estação saltada (veio do horário) → riscar.
-      if (st && skipKeys.has(st.key)) {
-        stops += renderSkip({
-          name: st.name,
-          hora: nodeTimeStr(nd) || "--:--",
-        });
-        if (skipPtr < skips.length && skips[skipPtr].key === st.key) skipPtr++;
-        return;
-      }
-      const time = nodeTimeStr(nd) || "--:--";
-      const past = !!nd.ComboioPassou;
-      const cur =
-        stationApiId && String(nd.EstacaoID) === stationApiId && !past;
-      const dly = nodeDelayMin(nd);
-      let dh = "";
-      if (!dep.suppressed && dly != null && dly >= 1)
-        dh = `<span class="ltp-stop-delay" style="color:#d97706">+${dly}</span>`;
-      else if (!dep.suppressed && dly != null && dly <= -1)
-        dh = `<span class="ltp-stop-delay" style="color:#059669">${dly}</span>`;
-      const nm = st ? st.name : (nd.NomeEstacao || "").replace(/-A$/, "");
-      // A cor acompanha o que FALTA fazer: assim que aparece a primeira
-      // estação por passar, o trilho acende até ao fim.
-      if (!past) restante = true;
-      const minhaViagem = depoisDaMinha;
-      if (cur) depoisDaMinha = true; // a partir da SEGUINTE
-      const ponta =
-        idx === 0 ? "first" : idx === listaNodes.length - 1 ? "last" : "";
-      stops += `<div class="ltp-stop ${past ? "past" : ""} ${cur ? "cur" : ""} ${
-        restante ? "todo" : ""
-      } ${minhaViagem ? "after" : ""} ${ponta}">
-          <span class="ltp-stop-time">${esc(time)}</span>
-          <span class="ltp-stop-dot"></span>
-          <span class="ltp-stop-name"><span class="ltp-nm">${esc(nm)}</span></span>
-          ${dh}
-          ${ligacoesHtml(st && st.key, nm)}
-        </div>`;
-    });
-    // Saltadas que sobram (cortadas no fim do trajeto).
-    while (skipPtr < skips.length) {
-      stops += renderSkip(skips[skipPtr]);
-      skipPtr++;
-    }
-
-    let bCls = "prog",
-      bTxt = "Programado";
-    if (dep.shortened) {
-      bCls = "sup";
-      bTxt = "Não para aqui";
-    } else if (dep.suppressed) {
-      bCls = "sup";
-      bTxt = "Suprimido";
-    } else if (dep.extra) {
-      bCls = "extra";
-      bTxt = "Extra";
-    } else if (dep.delayMin >= 1) {
-      bCls = "delay";
-      bTxt = `Atraso ${dep.delayMin} min`;
-    }
-
-    const ACCENT = {
-      green: "#10b981",
-      yellow: "#f59e0b",
-      orange: "#f97316",
-      red: "#ef4444",
-      gray: "#d4d4d8",
-    };
-    const cor = ACCENT[dep.dotStatus] || ACCENT.green;
-    // Resumo curto no topo da lista: quantas paragens e a que horas chega.
-    const nParagens = listaNodes.length;
-    const chegada = nParagens ? nodeTimeStr(listaNodes[nParagens - 1]) : null;
-    const resumo = nParagens
-      ? `${nParagens} ${nParagens === 1 ? "paragem" : "paragens"}${
-          chegada ? ` · chega às ${chegada}` : ""
-        }`
-      : "";
-    const temLigacoes = /data-ltp-lig-open/.test(stops);
-
-    return `
-      ${inline ? "" : `<div class="ltp-grab" data-ltp-grab><span></span></div>`}
-      <div class="ltp-sh-head ${inline ? "inline" : ""}" style="position:relative">
-        ${
-          inline
-            ? `<button class="ltp-back" data-ltp-route-back>
-                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="m15 18-6-6 6-6"/></svg>
-                 <span>Partidas</span></button>`
-            : `<button class="ltp-sh-close" data-ltp-sheet-close aria-label="Fechar">
-                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-               </button>`
-        }
-        <div style="display:flex;align-items:baseline;gap:.6rem;margin-bottom:.55rem">
-          <span class="ltp-num" style="font-size:11px;color:rgb(161,161,170)">#${esc(dep.numero || dep.id)}</span>
-          <span class="ltp-badge ${bCls}">${esc(bTxt)}</span>
-        </div>
-        <h2 style="font-size:1.35rem;font-weight:300;letter-spacing:-.02em;line-height:1.1;color:inherit">
-          ${esc(dep.origem || "—")} <span style="color:rgb(161,161,170);margin:0 .3rem">→</span> ${esc(dep.destino || "—")}
-        </h2>
-        <div class="ltp-cars" style="padding-left:0;margin-top:.9rem">
-          <div class="ltp-cars" style="padding-left:0;margin-top:.9rem">
-            <div class="ltp-cars-bar">${bars}</div>
-            <span class="ltp-cars-txt">${n} carr${occ == null ? " · Apenas dias úteis" : isCode ? ` · <b class="lt-occ" style="--occ:${labelColor}">${esc(label)}</b>` : ` · <b class="lt-occ" style="--occ:${labelColor}">${occ}% ocup.</b>`}</span>
-          </div>
-        </div>
-        ${warnHtml(dep)}
-      </div>
-      <div class="ltp-sh-body" style="--ltp-trip:${esc(cor)}">
-        <div class="ltp-pc-cab">
-          <span class="ltp-pc-tit">Percurso</span>
-          ${resumo ? `<span class="ltp-pc-res">${esc(resumo)}</span>` : ""}
-        </div>
-        ${
-          temLigacoes
-            ? `<p class="ltp-pc-dica">Toca nos logótipos para ver as ligações de cada estação.</p>`
-            : ""
-        }
-        <div class="ltp-pc-lista">
-          ${stops || `<p style="font-size:11px;color:rgb(161,161,170)">Sem paragens disponíveis.</p>`}
-        </div>
-      </div>`;
-  }
-
-  // Resolve o percurso completo conforme o caso (2 ou 3) e abre a sheet.
-  async function openTrainDetail(dep, station, onRoute) {
-    // 2) Extra não-vivo → /fertagus
-    // 3) Normal não-vivo → JSON de horários
+  // Percurso completo (NodesPassagemComboio) de uma partida:
+  //   ao vivo ou extra → /fertagus; normal (ou sem resposta) → JSON de horários.
+  // Também usado pelo painel de detalhes partilhado (detalhes-comboio.js).
+  async function loadTrainNodes(dep) {
+    try {
+      await ensureStatic(); // horários JSON (já em cache se a lista montou)
+    } catch (_) {}
     let nodes = null;
-    if (dep.extra) {
+    if (dep.live || dep.extra) {
       try {
         const r = await fetch(EP_FERTAGUS + "?t=" + Date.now(), {
           headers: { "x-api-key": API_KEY, Accept: "application/json" },
@@ -1624,32 +1071,33 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
       }
     }
     if (!nodes && dep.node) nodes = [dep.node];
-    // As ligações são precisas para desenhar os logótipos; se falharem, o
-    // percurso aparece na mesma, só sem eles.
-    await loadLigacoes();
-    const html = renderRouteSheet(dep, nodes || [], station, !!onRoute);
-    // Com callback, o percurso substitui o conteúdo do painel — como acontece
-    // no Metro, no MTS e na CP. Sem callback (quem ainda chame isto por fora),
-    // mantém-se a sheet antiga.
-    if (onRoute) onRoute(html);
-    else openSheet(html);
+    return nodes || [];
   }
 
-  // Ao trocar de vista, o painel tem de voltar ao topo. O elemento que faz
-  // scroll não é sempre o mesmo — no mapa é a sheet, na página /estacao é a
-  // própria janela, e o #details-panel também tem overflow próprio — por isso
-  // sobe-se a árvore a repor todos os que rolam.
-  function scrollAoTopo(el) {
-    let n = el;
-    let saltos = 0;
-    while (n && n.nodeType === 1 && saltos < 12) {
-      if (n.scrollTop > 0) n.scrollTop = 0;
-      n = n.parentElement;
-      saltos++;
-    }
+  // Comboio no formato do painel de detalhes partilhado (o mesmo do mapa),
+  // com o percurso completo. semMapa: não há marcador no mapa para ele, por
+  // isso o painel não oferece seguir nem foca o percurso.
+  async function loadTrain(dep) {
+    let nodes = [];
     try {
-      if (window.scrollY > 0) window.scrollTo({ top: 0, behavior: "auto" });
+      [nodes] = await Promise.all([loadTrainNodes(dep), loadLigacoes()]);
     } catch (_) {}
+    return {
+      id: String(dep.id),
+      numero: dep.numero || dep.id,
+      origem: dep.origem,
+      destino: dep.destino,
+      nodes: nodes || [],
+      carriages: dep.carriages,
+      occupancy: dep.occupancy,
+      dotStatus: dep.dotStatus || "gray",
+      statusText: dep.statusText || "",
+      live: !!dep.live,
+      isExtra: !!dep.extra,
+      isSuppressed: !!dep.suppressed,
+      isOffline: false,
+      semMapa: true,
+    };
   }
 
   // ═══ CONTROLLER / MOUNT ═════════════════════════════════════════════════════
@@ -1709,12 +1157,6 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
         typeof opts.fromTime === "number" && isFinite(opts.fromTime)
           ? opts.fromTime + TRANSFER_MARGIN_MIN * 60000
           : null,
-      // Percurso a ocupar o painel, em vez da lista de partidas.
-      routeHtml: null,
-      _routeBuilt: false,
-      // Ligações de uma estação do percurso, um nível acima deste.
-      ligacoes: null,
-      _ligBuilt: false,
       _timer: null,
       _destroyed: false,
       _built: false,
@@ -1722,90 +1164,14 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
     };
     container.classList.add("ltp-wrap");
 
-    function onLive(dep) {
-      if (typeof opts.onLiveTrain === "function") return opts.onLiveTrain(dep);
-      // Default (página): deep-link para o mapa.
-      window.location.href = `/mapa#${encodeURIComponent(dep.id)}`;
-    }
-
+    // Tocar numa partida abre o painel de detalhes partilhado
+    // (detalhes-comboio.js) — quem monta decide como, via opts.onOpenTrain.
+    // Sem isso, os comboios ao vivo abrem no mapa e os outros não fazem nada.
     function handleClick(dep) {
       if (!dep) return;
-      if (dep.live) return onLive(dep); // caso 1
-      // Casos 2/3: o percurso substitui a lista no MESMO painel, com um botão
-      // para voltar — em vez de abrir uma segunda sheet por cima.
-      return openTrainDetail(dep, station, showRoute);
-    }
-
-    function showRoute(html) {
-      if (ctrl._destroyed) return;
-      ctrl.routeHtml = html;
-      ctrl._built = false; // a lista vai ter de ser reconstruída ao voltar
-      paintRoute();
-    }
-
-    function backToList() {
-      ctrl.routeHtml = null;
-      ctrl._routeBuilt = false;
-      ctrl.ligacoes = null;
-      ctrl._ligBuilt = false;
-      paint();
-      scrollAoTopo(container);
-    }
-
-    function paintRoute() {
-      container.innerHTML = `<div class="ltp-wrap ltp-route">${ctrl.routeHtml}</div>`;
-      ctrl._routeBuilt = true;
-      const b = container.querySelector("[data-ltp-route-back]");
-      if (b) b.addEventListener("click", backToList);
-      // Logótipos de uma estação → lista de ligações dessa estação.
-      container.querySelectorAll("[data-ltp-lig-open]").forEach((btn) => {
-        btn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          abrirLigacoes(
-            btn.getAttribute("data-ltp-lig-open"),
-            btn.getAttribute("data-ltp-lig-name"),
-          );
-        });
-      });
-      bindLigacaoLogos(container);
-      scrollAoTopo(container);
-    }
-
-    function abrirLigacoes(stationKey, nome) {
-      const r = renderLigacoes(stationKey, nome);
-      ctrl.ligacoes = r;
-      ctrl._ligBuilt = false;
-      paintLigacoes();
-    }
-
-    function paintLigacoes() {
-      container.innerHTML = `<div class="ltp-wrap ltp-route">${ctrl.ligacoes.html}</div>`;
-      ctrl._ligBuilt = true;
-      const b = container.querySelector("[data-ltp-lg-back]");
-      if (b)
-        b.addEventListener("click", () => {
-          ctrl.ligacoes = null;
-          ctrl._ligBuilt = false;
-          ctrl._routeBuilt = false;
-          paint();
-        });
-      container.querySelectorAll("[data-ltp-lg-go]").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const [i, j] = btn
-            .getAttribute("data-ltp-lg-go")
-            .split(":")
-            .map(Number);
-          const alvo = ((ctrl.ligacoes.alvos || [])[i] || [])[j];
-          if (!alvo) return;
-          // Abrir a paragem no mapa fecha este painel: quem manda passa a ser
-          // a sheet do outro operador.
-          if (window.MapaStation && window.MapaStation.isOpen())
-            window.MapaStation.close({ silent: true });
-          setTimeout(() => alvo.run(), 140);
-        });
-      });
-      bindLigacaoLogos(container);
-      scrollAoTopo(container);
+      if (typeof opts.onOpenTrain === "function") return opts.onOpenTrain(dep);
+      if (dep.live)
+        window.location.href = `/mapa#${encodeURIComponent(dep.id)}`;
     }
 
     // Sequência desejada (lista única ordenada por hora, conforme filtro).
@@ -1991,14 +1357,6 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
 
     function paint() {
       if (ctrl._destroyed) return;
-      if (ctrl.ligacoes) {
-        if (!ctrl._ligBuilt) paintLigacoes();
-        return;
-      }
-      if (ctrl.routeHtml) {
-        if (!ctrl._routeBuilt) paintRoute();
-        return;
-      }
       if (ctrl.maintenanceMode) {
         if (!ctrl._maintBuilt) paintMaintenance();
         return;
@@ -2075,19 +1433,15 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
     if (autoMs > 0) {
       ctrl._timer = setInterval(() => {
         if (document.hidden) return;
-        // Com o percurso aberto, actualizar em silêncio: um repaint da lista
-        // por cima dele tirava a pessoa de onde estava.
-        if (ctrl.routeHtml || ctrl.ligacoes) return;
         refresh(false);
       }, autoMs);
     }
 
-    loadLigacoes(); // em paralelo: só é preciso ao abrir um percurso
+    loadLigacoes(); // em paralelo: só é preciso ao abrir um comboio
     buildShell();
     refresh(false);
 
     ctrl.refresh = refresh;
-    ctrl.backToList = backToList;
     ctrl.destroy = destroy;
     ctrl.paint = paint;
     ctrl.el = container;
@@ -2113,7 +1467,16 @@ html.dark .ltp-stop.cur .ltp-stop-name{color:#fff}
     resolveStationByApiName,
     resolveStationByName,
     listStations,
-    closeSheet,
+    loadTrainNodes,
+    loadTrain,
+    loadLigacoes,
+    // Tipos de ligação (metro, cm, cp, mts, …) de uma estação, depois de
+    // loadLigacoes() resolver. Aceita a chave ou o nome da estação.
+    ligacoesDe: (keyOrName) => {
+      if (!ligacoesPorEstacao) return [];
+      const st = BY_KEY[keyOrName] || resolveStationByName(keyOrName);
+      return st ? (ligacoesPorEstacao.get(st.key) || []).slice() : [];
+    },
     // utilitários expostos para testes/integração
     _fetchStationModel: fetchStationModel,
     _buildOfflineForStation: buildOfflineForStation,

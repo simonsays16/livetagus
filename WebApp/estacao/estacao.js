@@ -289,10 +289,64 @@
         context: "page",
         autoRefresh: 30000,
         detectMaintenance: true,
-        // Caso 1 (ao vivo) — default do Partidas: navega para /mapa#{id}.
+        // Todas as partidas (ao vivo, extra, programadas) abrem o painel de
+        // detalhes partilhado com o mapa (detalhes-comboio.js).
+        onOpenTrain: abrirDetalhes,
       });
     }
     if (window.lucide) window.lucide.createIcons();
+  }
+
+  // ═══ PAINEL DE DETALHES (módulo partilhado com o mapa) ═════════════════
+  // As ligações aparecem como no mapa, mas aqui ainda não abrem nada: ao
+  // tocar, um aviso diz que só estão disponíveis no mapa.
+  const LIG_OP = { metro: "ml", mts: "mts", cp: "cp", cm: "cm" };
+  let painelDetalhes = null;
+  let pedidoDetalhes = 0;
+
+  function getPainelDetalhes() {
+    if (painelDetalhes) return painelDetalhes;
+    if (!window.DetalhesComboio || !window.Partidas) return null;
+    const P = window.Partidas;
+    painelDetalhes = window.DetalhesComboio.create({
+      panelId: "details-panel",
+      backdropId: "details-backdrop",
+      autoMount: true,
+      zIndex: 60, // acima do cabeçalho fixo (z-50), abaixo do menu de horas
+      defaultState: "expanded",
+      stationName: (apiName) => {
+        const st = P.resolveStationByApiName(apiName);
+        return st ? st.name : String(apiName || "").replace(/-A$/, "");
+      },
+      // Só os comboios em circulação existem no mapa.
+      mapUrl: (t) => (t.live ? "/mapa#" + encodeURIComponent(t.id) : null),
+      shareUrl: (t) =>
+        t.live
+          ? `${window.location.origin}/mapa#${encodeURIComponent(t.id)}`
+          : window.location.href,
+      ligacoes: {
+        unavailable: true,
+        load: () => P.loadLigacoes(),
+        list: (nome) =>
+          P.ligacoesDe(nome)
+            .filter((t) => LIG_OP[t])
+            .map((t) => ({ op: LIG_OP[t], name: nome })),
+      },
+    });
+    return painelDetalhes;
+  }
+
+  async function abrirDetalhes(dep) {
+    const painel = getPainelDetalhes();
+    if (!painel) {
+      // Sem o módulo: comportamento antigo para os comboios ao vivo.
+      if (dep.live) window.location.href = `/mapa#${encodeURIComponent(dep.id)}`;
+      return;
+    }
+    const pedido = ++pedidoDetalhes;
+    const train = await window.Partidas.loadTrain(dep);
+    if (pedido !== pedidoDetalhes) return; // entretanto abriu-se outro
+    painel.open(train);
   }
 
   // ═══ RENDER: AVISOS (SLIDER) ══════════════════════════════════════════

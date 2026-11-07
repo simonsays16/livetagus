@@ -182,6 +182,24 @@
     }, 180);
   }
 
+  // Comboio que está no mapa (ao vivo ou estimado): painel completo do mapa.
+  // Os restantes (programados ainda sem marcador, extras): o mesmo painel,
+  // sem seguir nem foco do percurso. As ligações funcionam nos dois casos.
+  let pedidoDetalhes = 0;
+  async function onOpenTrain(dep) {
+    if (!dep) return;
+    const src = trainsSource && trainsSource();
+    const noMapa =
+      Array.isArray(src) && src.some((t) => String(t.id) === String(dep.id));
+    if (dep.live || noMapa) return onLiveTrain(dep);
+    if (!window.MapaDetails || !window.Partidas) return;
+    const pedido = ++pedidoDetalhes;
+    const train = await window.Partidas.loadTrain(dep);
+    if (pedido !== pedidoDetalhes || !currentStation) return;
+    close({ silent: true });
+    setTimeout(() => window.MapaDetails.open(train), 180);
+  }
+
   // ─── partidas.js A PEDIDO ─────────────────────────────────────────────
   // É o maior ficheiro do mapa (~15 KiB transferidos) e ~95% dele só serve
   // quando se abre uma estação. Deixou de estar no mapa.html: carrega em
@@ -242,7 +260,7 @@
       fromTime: currentFrom,
       autoRefresh: 0, // o mapa controla via refresh()
       detectMaintenance: true, // mostra aviso de manutenção se ativo
-      onLiveTrain,
+      onOpenTrain,
     });
   }
 
@@ -422,8 +440,6 @@
       } catch (_) {}
       partidasCtrl = null;
     }
-    if (window.Partidas && window.Partidas.closeSheet)
-      window.Partidas.closeSheet();
     // O filtro é de quem abriu esta vez: não pode sobreviver ao fecho.
     currentFrom = null;
 

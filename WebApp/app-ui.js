@@ -863,326 +863,203 @@ function updateAppState() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// MODAL DE DETALHES
+// PAINEL DE DETALHES — módulo partilhado (detalhes-comboio.js), o mesmo do
+// mapa e das páginas das estações. Aqui fica só a tradução do comboio da app
+// para o formato do painel.
 // ═══════════════════════════════════════════════════════════════════════
+
+const _normEst = (v) =>
+  String(v == null ? "" : v)
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toUpperCase()
+    .replace(/-A$/, "")
+    .trim();
+
+function _estacaoPorNome(nome) {
+  const n = _normEst(nome);
+  return FERTAGUS_STATIONS.find((s) => _normEst(s.name) === n) || null;
+}
+
+// "HH:MM" → minutos desde a meia-noite.
+function _minDe(hhmm) {
+  const [h, m] = String(hhmm || "")
+    .split(":")
+    .map(Number);
+  return isFinite(h) && isFinite(m) ? h * 60 + m : null;
+}
+
+// Percurso do comboio no formato da API (NodesPassagemComboio), com as
+// estações saltadas (trajeto anormal) intercaladas como NaoPassa.
+function _nosDoComboio(t) {
+  const dirOrder =
+    activeTab === "margem"
+      ? [...FERTAGUS_STATIONS].reverse()
+      : FERTAGUS_STATIONS;
+  const skips = (Array.isArray(t.skippedStations) ? t.skippedStations : [])
+    .map((sk) => {
+      const info = FERTAGUS_STATIONS.find((s) => s.key === sk.key);
+      return {
+        key: sk.key,
+        name: info ? info.name : sk.nome || sk.key,
+        hora: sk.hora || "",
+        order: dirOrder.findIndex((s) => s.key === sk.key),
+      };
+    })
+    .filter((s) => s.order >= 0)
+    .sort((a, b) => a.order - b.order);
+  const noSaltado = (sk, passou) => ({
+    NaoPassa: true,
+    ComboioPassou: !!passou,
+    HoraProgramada: sk.hora ? String(sk.hora).substring(0, 5) + ":00" : "",
+    HoraPrevista: "",
+    NomeEstacao: sk.name,
+  });
+
+  // 1) Com dados da API: o percurso real.
+  if (t.fullSchedule && t.fullSchedule.length) {
+    const out = [];
+    let p = 0;
+    let passouAnt = false;
+    t.fullSchedule.forEach((node) => {
+      const st = _estacaoPorNome(node.NomeEstacao);
+      const ordem = st ? dirOrder.findIndex((s) => s.key === st.key) : -1;
+      while (p < skips.length && ordem >= 0 && skips[p].order < ordem) {
+        out.push(noSaltado(skips[p++], passouAnt));
+      }
+      out.push(node);
+      passouAnt = !!node.ComboioPassou;
+    });
+    while (p < skips.length) out.push(noSaltado(skips[p++], passouAnt));
+    return out;
+  }
+
+  // 2) Sem API (offline ou comboio futuro): o horário dos JSON. "Já passou"
+  // conta a partir da hora na estação de origem escolhida (effectiveDate),
+  // o que também serve os comboios de outro dia do filtro de horas.
+  const currentDB = activeTab === "lisboa" ? DB_LISBOA : DB_MARGEM;
+  const trip =
+    currentDB && currentDB.trips
+      ? currentDB.trips.find((tr) => tr.id == t.id)
+      : null;
+  if (!trip) return [];
+  const skipKeys = new Map(skips.map((sk) => [sk.key, sk]));
+  const base =
+    t.effectiveDate instanceof Date ? t.effectiveDate.getTime() : null;
+  const baseMin = _minDe(trip[fertagusOrigin] || t.time);
+  const agora = Date.now();
+  const out = [];
+  dirOrder.forEach((st) => {
+    const hora = trip[st.key];
+    if (!hora) return;
+    let passou = false;
+    const m = _minDe(hora);
+    if (base != null && baseMin != null && m != null) {
+      let d = m - baseMin;
+      if (d < -720) d += 1440;
+      if (d > 720) d -= 1440;
+      passou = base + d * 60000 <= agora;
+    }
+    if (skipKeys.has(st.key)) {
+      out.push(noSaltado({ name: st.name, hora }, passou));
+      return;
+    }
+    out.push({
+      ComboioPassou: passou,
+      HoraProgramada: hora + ":00",
+      HoraReal: "HH:MM:SS",
+      AtrasoReal: 0,
+      HoraPrevista: hora + ":00",
+      EstacaoID: st.id,
+      NomeEstacao: st.name,
+    });
+  });
+  return out;
+}
+
+function _comboioParaPainel(t) {
+  if (!t) return null;
+  const nodes = _nosDoComboio(t);
+  const servidas = nodes.filter((n) => !n.NaoPassa);
+  const nomeDe = (n) => {
+    if (!n) return null;
+    const st = _estacaoPorNome(n.NomeEstacao);
+    return st ? st.name : n.NomeEstacao;
+  };
+  return {
+    id: String(t.id),
+    numero: t.num || t.id,
+    origem: nomeDe(servidas[0]) || t.trueOrigin || "—",
+    destino: nomeDe(servidas[servidas.length - 1]) || t.trueDest || t.dest,
+    nodes,
+    carriages: t.carriages || 4,
+    occupancy: t.occupancy,
+    dotStatus: t.isOffline ? "gray" : t.dotStatus || "gray",
+    statusText: t.status || "",
+    live: !!t.isLive,
+    isExtra: !!(t.isExtra || t.op === "EXTRA"),
+    isSuppressed: !!t.isSuppressed,
+    isOffline: !!t.isOffline,
+    semMapa: true,
+  };
+}
+
+let _painelDetalhes = null;
+
+function _getPainel() {
+  if (_painelDetalhes) return _painelDetalhes;
+  const DC = window.DetalhesComboio;
+  if (!DC) return null;
+  _painelDetalhes = DC.create({
+    panelId: "details-panel",
+    backdropId: "details-backdrop",
+    autoMount: true,
+    zIndex: 60, // acima do cabeçalho fixo (z-50), abaixo do modal iOS (z-100)
+    defaultState: "expanded",
+    stationName: (apiName) => {
+      const st = _estacaoPorNome(apiName);
+      return st ? st.name : String(apiName || "").replace(/-A$/, "");
+    },
+    // Só os comboios em circulação existem no mapa.
+    mapUrl: (tr) => (tr.live ? "/mapa#" + encodeURIComponent(tr.id) : null),
+    shareUrl: (tr) =>
+      tr.live
+        ? `${window.location.origin}/mapa#${encodeURIComponent(tr.id)}`
+        : window.location.href,
+    // A versão mais fresca do comboio, depois de cada actualização da lista.
+    getLiveTrain: (id) =>
+      _comboioParaPainel(
+        (currentTrainList || []).find((tr) => String(tr.id) === String(id)),
+      ),
+    // As ligações aparecem como no mapa; aqui ainda não abrem nada.
+    ligacoes: {
+      unavailable: true,
+      load: () => DC.carregarLigacoes(),
+      list: (nome) => DC.ligacoesDaEstacao(nome),
+    },
+  });
+  return _painelDetalhes;
+}
 
 function openDetails(trainId) {
   sa_event("open_details_train");
   const t = currentTrainList.find((tr) => tr.id == trainId);
   if (!t) return;
-
-  // ── Barras de ocupação ─────────────────────────────────────────────
-  let occCls = "text-emerald-500",
-    barCls = "bg-emerald-500";
-  if (t.occupancy > 85) {
-    occCls = "text-red-500";
-    barCls = "bg-red-500";
-  } else if (t.occupancy > 50) {
-    occCls = "text-yellow-500";
-    barCls = "bg-yellow-500";
-  }
-
-  const occMap = {
-    MB: {
-      label: "Muito Baixa",
-      textCls: "text-emerald-500",
-      bgCls: "bg-emerald-500",
-    },
-    B: { label: "Baixa", textCls: "text-green-500", bgCls: "bg-green-500" },
-    M: { label: "Média", textCls: "text-yellow-500", bgCls: "bg-yellow-500" },
-    A: {
-      label: "Média Alta",
-      textCls: "text-orange-500",
-      bgCls: "bg-orange-500",
-    },
-    MA: { label: "Muito Alta", textCls: "text-red-500", bgCls: "bg-red-500" },
-  };
-
-  // Verifica se t.occupancy é uma das siglas novas
-  const isCode = occMap.hasOwnProperty(t.occupancy);
-
-  const count = t.carriages || 4;
-  const filledCount = t.occupancy
-    ? Math.round((t.occupancy / 100) * count)
-    : count;
-  let carsHtml = "";
-  if (typeof t.occupancy != "string") {
-    for (let c = 0; c < count; c++) {
-      carsHtml += `<div class="h-2 flex-1 rounded-sm ${c < filledCount ? barCls : "bg-zinc-700/50"} transition-all"></div>`;
-    }
-  } else {
-    for (let c = 0; c < count; c++) {
-      carsHtml += `<div class="h-2 flex-1 rounded-sm bg-blue-500 border border-zinc-600/30"></div>`;
-    }
-  }
-
-  // ── Timeline ───────────────────────────────────────────────────────
-  let timelineHtml = "";
-
-  if (t.fullSchedule && t.fullSchedule.length > 0) {
-    // Modo online: dados reais da API
-
-    // [TRAJETO ANORMAL] Estações saltadas (do trajeto normal, omitidas pela
-    // IP), ordenadas pela ordem física da linha no sentido ativo, para
-    // intercalar na timeline na posição correta.
-    const dirOrder =
-      activeTab === "margem"
-        ? [...FERTAGUS_STATIONS].reverse()
-        : FERTAGUS_STATIONS;
-
-    const orderIdxOf = (name) => {
-      const up = (name || "").toUpperCase().replace(/-A$/, "");
-      return dirOrder.findIndex((s) => s.name.toUpperCase() === up);
-    };
-
-    const skips = (Array.isArray(t.skippedStations) ? t.skippedStations : [])
-      .map((sk) => {
-        const info = FERTAGUS_STATIONS.find((s) => s.key === sk.key);
-        return {
-          name: info ? info.name : sk.nome || sk.key,
-          hora: sk.hora,
-          order: dirOrder.findIndex((s) => s.key === sk.key),
-        };
-      })
-      .filter((s) => s.order >= 0)
-      .sort((a, b) => a.order - b.order);
-
-    let skipPtr = 0;
-    const renderSkip = (s) => {
-      timelineHtml += `
-        <div class="relative z-10 flex items-center mb-8 last:mb-0 opacity-80">
-          <div class="w-14 text-right mr-6 flex-shrink-0 flex flex-col items-end">
-            <span class="font-mono text-sm text-zinc-500 line-through decoration-orange-500/60 leading-none">${s.hora || "--:--"}</span>
-          </div>
-          <div class="w-3 h-3 rounded-full border-2 border-orange-500/60 bg-transparent flex-shrink-0 z-20 relative"></div>
-          <div class="ml-6 flex-1">
-            <h4 class="text-sm text-zinc-500 line-through decoration-orange-500/40">${s.name}</h4>
-            <span class="text-[9px] text-orange-500 uppercase tracking-wider font-bold block mt-0.5">Não Passa Nesta Estação</span>
-          </div>
-        </div>`;
-    };
-
-    t.fullSchedule.forEach((node, i) => {
-      // [TRAJETO ANORMAL] Intercalar estações saltadas ANTES desta servida.
-      const servedOrder = orderIdxOf(node.NomeEstacao);
-      while (
-        skipPtr < skips.length &&
-        servedOrder >= 0 &&
-        skips[skipPtr].order < servedOrder
-      ) {
-        renderSkip(skips[skipPtr]);
-        skipPtr++;
-      }
-
-      const passed = node.ComboioPassou;
-      const isNext =
-        !passed && (i === 0 || t.fullSchedule[i - 1].ComboioPassou);
-      const dotColor = passed
-        ? "bg-zinc-700 border-zinc-700"
-        : isNext
-          ? "bg-blue-500 border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.4)]"
-          : "bg-zinc-800 border-zinc-600";
-      const textColor = passed
-        ? "text-zinc-600 line-through"
-        : isNext
-          ? "text-zinc-600 font-bold dark:text-zinc-200"
-          : "text-zinc-500";
-      const timeColor = passed
-        ? "text-zinc-700"
-        : isNext
-          ? "text-blue-400 font-bold"
-          : "text-zinc-500";
-      const rawSched = node.HoraProgramada || node.HoraPrevista || "--:--";
-      const sched = rawSched.substring(0, 5);
-      const pred = node.HoraPrevista
-        ? node.HoraPrevista.substring(0, 5)
-        : sched;
-      const showTime = pred !== sched && !t.isSuppressed ? pred : sched;
-      const subTime = pred !== sched && !t.isSuppressed ? sched : "";
-      timelineHtml += `
-        <div class="relative z-10 flex items-center mb-8 last:mb-0 group">
-          <div class="w-14 text-right mr-6 flex-shrink-0 flex flex-col items-end">
-            <span class="font-mono text-sm ${timeColor} leading-none">${showTime}</span>
-            ${subTime ? `<span class="text-[9px] text-zinc-700 line-through decoration-zinc-700/50 mt-0.5">${subTime}</span>` : ""}
-          </div>
-          <div class="w-3 h-3 rounded-full border-2 ${dotColor} flex-shrink-0 transition-all group-hover:scale-110 z-20 relative"></div>
-          <div class="ml-6 flex-1">
-            <h4 class="text-sm ${textColor}">${node.NomeEstacao}</h4>
-            ${passed ? "" : isNext ? '<span class="text-[9px] text-blue-500 uppercase tracking-wider font-bold animate-pulse block mt-0.5">Próxima</span>' : ""}
-          </div>
-        </div>`;
-    });
-
-    // [TRAJETO ANORMAL] Estações saltadas no FIM (trajeto cortado no destino).
-    while (skipPtr < skips.length) {
-      renderSkip(skips[skipPtr]);
-      skipPtr++;
-    }
-  } else {
-    // Modo offline/Futuro: usa JSON local para a timeline
-    if (t.isOffline) {
-      timelineHtml += `
-        <div class="flex items-center gap-2 mb-6 px-3 py-2.5 rounded-xl bg-zinc-800/60 border border-white/5">
-          <span class="w-1.5 h-1.5 rounded-full bg-white dark:bg-zinc-500 shrink-0 animate-pulse"></span>
-          <p class="text-[10px] text-white dark:text-zinc-400 leading-relaxed">Horário programado. Estado em tempo real indisponível sem ligação à internet.</p>
-        </div>`;
-    }
-    const currentDB = activeTab === "lisboa" ? DB_LISBOA : DB_MARGEM;
-    const dbTrain = currentDB
-      ? currentDB.trips.find((tr) => tr.id == t.id)
-      : null;
-    if (dbTrain) {
-      const stations = FERTAGUS_STATIONS.filter((st) => dbTrain[st.key]);
-      const ordered =
-        activeTab === "margem" ? [...stations].reverse() : stations;
-
-      // [TRAJETO ANORMAL] Criar um mapa rápido das estações saltadas para pesquisa fácil
-      const skipsMap = new Map();
-      if (Array.isArray(t.skippedStations)) {
-        t.skippedStations.forEach((sk) => skipsMap.set(sk.key, sk));
-      }
-
-      ordered.forEach((st) => {
-        const time = dbTrain[st.key];
-        if (!time) return;
-
-        // [TRAJETO ANORMAL] Intercetar se a estação foi cortada
-        if (skipsMap.has(st.key)) {
-          timelineHtml += `
-            <div class="relative z-10 flex items-center mb-8 last:mb-0 opacity-80">
-              <div class="w-14 text-right mr-6 flex-shrink-0 flex flex-col items-end">
-                <span class="font-mono text-sm text-zinc-500 line-through decoration-orange-500/60 leading-none">${time}</span>
-              </div>
-              <div class="w-3 h-3 rounded-full border-2 border-orange-500/60 bg-transparent flex-shrink-0 z-20 relative"></div>
-              <div class="ml-6 flex-1">
-                <h4 class="text-sm text-zinc-500 line-through decoration-orange-500/40">${st.name}</h4>
-                <span class="text-[9px] text-orange-500 uppercase tracking-wider font-bold block mt-0.5">Não Passa Nesta Estação</span>
-              </div>
-            </div>`;
-          return; // Salta o render normal desta estação
-        }
-
-        const isOrigin = st.key === fertagusOrigin;
-        const isDest = st.key === fertagusDest;
-        const hlCls =
-          isOrigin || isDest ? "text-blue-400 font-bold" : "text-zinc-500";
-        const dotCls =
-          isOrigin || isDest
-            ? "bg-blue-500/30 border-blue-500/50"
-            : "bg-zinc-800 border-zinc-600";
-
-        timelineHtml += `
-          <div class="relative z-10 flex items-center mb-8 last:mb-0">
-            <div class="w-14 text-right mr-6 flex-shrink-0">
-              <span class="font-mono text-sm ${hlCls} leading-none">${time}</span>
-            </div>
-            <div class="w-3 h-3 rounded-full border-2 ${dotCls} flex-shrink-0 z-20 relative"></div>
-            <div class="ml-6 flex-1">
-              <h4 class="text-sm ${isDest || isOrigin ? "text-zinc-300" : "text-zinc-400"}">${st.name}</h4>
-              ${isOrigin ? '<span class="text-[9px] text-zinc-500 uppercase tracking-wider block mt-0.5">Partida</span>' : ""}
-              ${isDest ? '<span class="text-[9px] text-zinc-500 uppercase tracking-wider block mt-0.5">Chegada</span>' : ""}
-            </div>
-          </div>`;
-      });
-    }
-  }
-
-  // ── Dot do modal ───────────────────────────────────────────────────
-  const modalDot = t.isOffline
-    ? "bg-zinc-500"
-    : t.dotStatus === "green"
-      ? "bg-emerald-500"
-      : t.dotStatus === "yellow"
-        ? "bg-yellow-500"
-        : t.dotStatus === "orange"
-          ? "bg-orange-500"
-          : "bg-red-500";
-
-  const fullContent = `
-    <div class="flex flex-col h-full bg-[#09090b]">
-      <div class="relative z-20 backdrop-blur-md border-b border-white/5 pb-6 px-6 shadow-xl bg-zinc-50 dark:bg-zinc-900/65" style="padding-top: max(1.5rem, calc(0.5rem + env(safe-area-inset-top)));">
-        <button data-action="close-details" class="absolute right-5 p-2 bg-white/5 hover:bg-white/10 rounded-full text-zinc-400 hover:text-white transition-all" style="top: max(1.25rem, calc(0.25rem + env(safe-area-inset-top)));">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-        <div class="flex flex-col gap-6">
-          <div>
-            <div class="flex items-center gap-2 mb-2">
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase tracking-wider">Fertagus</span>
-              <span class="font-mono text-xs text-zinc-600 dark:text-zinc-400">#${t.num}</span>
-            </div>
-            <div class="flex justify-between items-end">
-              <h2 class="text-2xl font-bold tracking-tight leading-none text-zinc-900 dark:text-zinc-100">${t.dest}</h2>
-              <div class="text-right">
-                <span class="text-3xl font-mono font-bold tracking-tighter leading-none text-zinc-900 dark:text-zinc-100">${t.time}</span>
-                ${t.secTime ? `<span class="block text-xs text-zinc-600 dark:text-zinc-400 line-through text-right mt-0.5 font-mono">${t.secTime}</span>` : ""}
-              </div>
-            </div>
-            <div class="flex items-center justify-between mt-3">
-              <span class="text-xs text-zinc-500 dark:text-zinc-400">De <span class="font-medium text-zinc-400 dark:text-zinc-300">${t.op === "FERTAGUS" ? (activeTab === "lisboa" ? "Setúbal/Coina" : "Roma-Areeiro") : t.op}</span></span>
-              <div class="flex items-center gap-2 px-2 py-1 rounded-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5">
-                <div class="w-1.5 h-1.5 rounded-full ${modalDot} animate-pulse"></div>
-                <span class="text-[10px] font-bold uppercase text-zinc-500 dark:text-zinc-300 leading-none">${t.status}</span>
-              </div>
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div class="rounded-xl p-3 border border-black/5 dark:border-white/5 flex flex-col justify-between min-h-[70px] bg-white/50 dark:bg-zinc-800/40">
-              <span class="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Carruagens</span>
-              <div class="flex items-end gap-1 mt-1">
-                <span class="text-2xl font-mono font-bold leading-none text-zinc-900 dark:text-zinc-100">${t.carriages}</span>
-                <span class="text-[10px] text-zinc-500 mb-0.5">unid.</span>
-              </div>
-            </div>
-            <div class="rounded-xl p-3 border border-black/5 dark:border-white/5 flex flex-col justify-between min-h-[70px] bg-white/50 dark:bg-zinc-800/40">
-              <span class="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Ocupação</span>
-              <div class="flex items-end gap-1 mt-1">
-                ${
-                  t.occupancy == null
-                    ? `<span class="text-[11px] text-zinc-600 italic">Apenas Dias Úteis</span>`
-                    : isCode
-                      ? `<span class="text-lg font-bold ${occMap[t.occupancy].textCls} leading-none">${occMap[t.occupancy].label}</span>`
-                      : `<span class="text-2xl font-mono font-bold ${occCls} leading-none">${t.occupancy}%</span>`
-                }
-              </div>
-            </div>
-          </div>
-          ${t.occupancy != null ? `<div class="flex gap-1.5 w-full mt-1">${carsHtml}</div>` : ""}
-          <p style="margin-top:-14px" class="text-[9px] text-zinc-500 dark:text-zinc-400 leading-relaxed ${t.occupancy != null ? "" : "hidden"}">
-            Estimativa de Lotação! Baseados em estimativas <b>não</b> em tempo real.
-            <a class="underline" href="/sobre?tab=occ">Mais Informação.</a>
-          </p>
-        </div>
-      </div>
-      <div class="flex-grow overflow-y-auto px-6 py-8 relative bg-zinc-50 dark:bg-[#09090b]">
-        ${timelineHtml}
-        <button
-          data-action="close-details"
-          class="w-full mt-6 mb-2 py-3.5 flex items-center justify-center gap-2 text-sm font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 active:scale-[0.98] transition-all border border-zinc-200 dark:border-zinc-700 rounded-xs">
-          <i data-lucide="x" class="w-4 h-4"></i>
-          Fechar Detalhes
-        </button>
-        <div class="h-8"></div>
-      </div>
-    </div>
-  `;
-
-  const modal = document.getElementById("train-details-modal");
-  const backdrop = document.getElementById("modal-backdrop");
-  modal.style.transform = "";
-  modal.innerHTML = fullContent;
-  modal.classList.remove("translate-y-full");
-  backdrop.classList.remove("hidden");
-  setTimeout(() => backdrop.classList.remove("opacity-0"), 10);
-  if (window.lucide) lucide.createIcons();
+  const painel = _getPainel();
+  if (!painel) return;
+  painel.open(_comboioParaPainel(t));
 }
 
 function closeDetails() {
-  const modal = document.getElementById("train-details-modal");
-  const backdrop = document.getElementById("modal-backdrop");
-  modal.style.transform = "";
-  modal.classList.add("translate-y-full");
-  backdrop.classList.add("opacity-0");
-  setTimeout(() => backdrop.classList.add("hidden"), 300);
+  if (_painelDetalhes && _painelDetalhes.isOpen()) _painelDetalhes.close();
+}
+
+// Com o painel aberto, cada actualização da lista actualiza-o também.
+function _refrescarPainel() {
+  if (!_painelDetalhes || !_painelDetalhes.isOpen()) return;
+  const id = _painelDetalhes.getCurrentId();
+  const t = currentTrainList.find((tr) => String(tr.id) === String(id));
+  if (t) _painelDetalhes.refresh(_comboioParaPainel(t));
 }
 
 // POPUP "IP EM BAIXO" (+ossilel remover)
@@ -1331,83 +1208,10 @@ window.renderList = function (list) {
 
   // ── 8. Ícones Lucide ──────────────────────────────────────────────
   if (window.lucide) lucide.createIcons();
+
+  // ── 9. Painel de detalhes aberto acompanha a lista ─────────────────
+  _refrescarPainel();
 };
-
-(function initModalDrag() {
-  const modal = document.getElementById("train-details-modal");
-  if (!modal) return;
-
-  let startY = 0;
-  let currentY = 0;
-  let isDragging = false;
-  let isScrollingList = false;
-
-  modal.addEventListener(
-    "touchstart",
-    (e) => {
-      startY = e.touches[0].clientY;
-      isDragging = false;
-      isScrollingList = false;
-    },
-    { passive: true },
-  );
-
-  modal.addEventListener(
-    "touchmove",
-    (e) => {
-      const touchY = e.touches[0].clientY;
-      const deltaY = touchY - startY;
-
-      const scrollArea = modal.querySelector(".overflow-y-auto");
-      const isTouchInScrollArea = scrollArea && scrollArea.contains(e.target);
-
-      // Avalia a intenção no primeiro movimento
-      if (!isDragging && !isScrollingList) {
-        if (isTouchInScrollArea && scrollArea.scrollTop > 0) {
-          // A lista tem scroll e não está no topo -> deixa fazer scroll na lista
-          isScrollingList = true;
-        } else if (isTouchInScrollArea && deltaY < 0) {
-          // Está no topo da lista, mas a tentar ver o que está abaixo (swipe para cima)
-          isScrollingList = true;
-        } else if (deltaY > 0) {
-          // Está no cabeçalho ou no topo da lista a fazer swipe para baixo -> arrastar o modal
-          isDragging = true;
-          modal.style.transition = "none"; // Desliga a animação CSS para seguir o dedo
-        }
-      }
-
-      // Se estiver no modo de arrastar o modal
-      if (isDragging) {
-        if (deltaY > 0) {
-          currentY = deltaY;
-          modal.style.transform = `translateY(${deltaY}px)`;
-        }
-
-        // Previne o scroll da página enquanto arrastamos o modal
-        if (e.cancelable) e.preventDefault();
-      }
-    },
-    { passive: false },
-  );
-
-  modal.addEventListener("touchend", () => {
-    if (!isDragging) return;
-    isDragging = false;
-
-    // Devolve o controlo das transições ao CSS (tailwind classes)
-    modal.style.transition = "";
-
-    // Se o utilizador arrastou mais de 120px para baixo, fecha o modal
-    if (currentY > 120) {
-      if (typeof closeDetails === "function") closeDetails();
-    } else {
-      // Caso contrário, faz "snap" de volta à posição original
-      modal.style.transform = "";
-    }
-    currentY = 0;
-  });
-})();
-
 window.loadMore = function () {
   displayLimit += 10;
   renderList(currentTrainList);

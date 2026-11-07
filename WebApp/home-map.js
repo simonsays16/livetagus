@@ -25,7 +25,7 @@
     mapSel: "#home-map",
     skeletonSel: "#home-map-skeleton",
     positionsURL: "https://api.livetagus.pt/v2/fertagus/vehicle-positions",
-    lineURL: "/json/fertagus_line.json", // opcional (desenha a linha)
+    lineURL: "./data/geojson/fertagus_line.geojson",
     tileURL: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
     pollMs: 10000,
     glideMs: 1200,

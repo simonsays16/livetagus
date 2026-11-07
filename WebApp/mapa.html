@@ -1356,8 +1356,8 @@
 
       /* ═══ VIDRO DOS PAINÉIS ═══════════════════════════════════════════
          Um só vidro, definido aqui e só aqui, para todos os painéis que usam o
-         #details-panel (estação Fertagus, CP, Metro, MTS, Carris, comboio) e
-         para a folha de percurso do partidas.js. Os invólucros dos módulos são
+         #details-panel (estação Fertagus, CP, Metro, MTS, Carris, comboio).
+         Os invólucros dos módulos são
          transparentes. CSS simples, sem classes do Tailwind: não depende de
          recompilar o output.css.
 
@@ -1366,8 +1366,7 @@
          todo o texto cumpre WCAG AA (4,5:1; 3:1 no texto grande) nos dois
          temas. O partidas.js lê estas variáveis quando está aqui dentro; na
          página da estação usa as suas por omissão. */
-      #details-panel,
-      html:root body .ltp-sheet {
+      #details-panel {
         --lt-glass: rgba(250, 250, 251, 0.74);
         --lt-edge: rgba(255, 255, 255, 0.75);
         --lt-shadow: 0 -12px 40px -14px rgba(0, 0, 0, 0.28);
@@ -1384,8 +1383,7 @@
         --lt-ring: rgba(255, 255, 255, 0.95);
         color: var(--lt-ink);
       }
-      html.dark #details-panel,
-      html.dark:root body .ltp-sheet {
+      html.dark #details-panel {
         --lt-glass: rgba(20, 20, 24, 0.74);
         --lt-edge: rgba(255, 255, 255, 0.09);
         --lt-shadow: 0 -12px 40px -14px rgba(0, 0, 0, 0.7);
@@ -1406,27 +1404,22 @@
       @supports not (
         (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
       ) {
-        #details-panel,
-        html:root body .ltp-sheet {
+        #details-panel {
           --lt-glass: rgba(250, 250, 251, 0.97);
         }
-        html.dark #details-panel,
-        html.dark:root body .ltp-sheet {
+        html.dark #details-panel {
           --lt-glass: rgba(20, 20, 24, 0.97);
         }
       }
       @media (prefers-reduced-transparency: reduce) {
-        #details-panel,
-        html:root body .ltp-sheet {
+        #details-panel {
           --lt-glass: rgba(250, 250, 251, 0.97);
         }
-        html.dark #details-panel,
-        html.dark:root body .ltp-sheet {
+        html.dark #details-panel {
           --lt-glass: rgba(20, 20, 24, 0.97);
         }
       }
-      #details-panel.lt-glass,
-      html:root body .ltp-sheet {
+      #details-panel.lt-glass {
         background: var(--lt-glass);
         -webkit-backdrop-filter: var(--lt-blur);
         backdrop-filter: var(--lt-blur);
@@ -1904,6 +1897,7 @@
     <script src="./mapa-cp.js" defer></script>
     <script src="./mapa-gtfs-horarios.js" defer></script>
     <script src="./mapa-live.js" defer></script>
+    <script src="./detalhes-comboio.js" defer></script>
     <script src="./mapa-details.js" defer></script>
     <script src="./mapa-station.js" defer></script>
     <script src="./mapa-share.js" defer></script>

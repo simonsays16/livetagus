@@ -58,7 +58,13 @@ document.addEventListener("DOMContentLoaded", () => {
     String(v == null ? "" : v).replace(
       /[&<>"']/g,
       (c) =>
-        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
+        ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        })[c],
     );
 
   function luminancia(hex) {
@@ -80,7 +86,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // Texto da pill: o da Carris se tiver contraste, senão preto ou branco.
   function corTexto(bg, preferida) {
     if (preferida && contraste(bg, preferida) >= 4.5) return preferida;
-    return contraste(bg, "#09090b") >= contraste(bg, "#ffffff") ? "#09090b" : "#ffffff";
+    return contraste(bg, "#09090b") >= contraste(bg, "#ffffff")
+      ? "#09090b"
+      : "#ffffff";
   }
 
   function linhaInfo(stopId, lineId) {
@@ -228,10 +236,15 @@ document.addEventListener("DOMContentLoaded", () => {
     if (action === "toggle-departures") alternarPartidas(id);
     else if (action === "delete-stop") removeStop(id);
     else if (action === "move-up" && index > 0) P.move(index, index - 1);
-    else if (action === "move-down" && index > -1 && index < savedStops.length - 1)
+    else if (
+      action === "move-down" &&
+      index > -1 &&
+      index < savedStops.length - 1
+    )
       P.move(index, index + 1);
     else if (action === "edit-stop") toggleEditMode(id);
-    else if (action === "toggle-line") toggleLineVisibility(id, btn.dataset.line);
+    else if (action === "toggle-line")
+      toggleLineVisibility(id, btn.dataset.line);
     else if (action === "hide-all-lines") setAllLinesVisibility(id, false);
     else if (action === "show-all-lines") setAllLinesVisibility(id, true);
   });
@@ -358,7 +371,10 @@ document.addEventListener("DOMContentLoaded", () => {
   function cartaoHtml(stop, index) {
     const id = esc(stop.id);
     const d = detalhes.get(stop.id);
-    const oficial = d && d.name && d.name.toUpperCase() !== stop.name.toUpperCase() ? d.name : "";
+    const oficial =
+      d && d.name && d.name.toUpperCase() !== stop.name.toUpperCase()
+        ? d.name
+        : "";
     const linhas = linhasDe(stop);
     const aberta = abertas.has(stop.id);
 
@@ -419,7 +435,8 @@ document.addEventListener("DOMContentLoaded", () => {
       </article>`;
   }
 
-  const spinnerHtml = () => `<div class="pg-loading"><span class="pg-spin"></span></div>`;
+  const spinnerHtml = () =>
+    `<div class="pg-loading"><span class="pg-spin"></span></div>`;
 
   // ─── PARTIDAS (só com o desdobrável aberto) ───
 
@@ -431,7 +448,9 @@ document.addEventListener("DOMContentLoaded", () => {
   function abrirPartidas(id) {
     abertas.add(id);
     const box = document.getElementById(`results-${id}`);
-    const btn = container.querySelector(`[data-action="toggle-departures"][data-id="${CSS.escape(id)}"]`);
+    const btn = container.querySelector(
+      `[data-action="toggle-departures"][data-id="${CSS.escape(id)}"]`,
+    );
     if (btn) btn.setAttribute("aria-expanded", "true");
     if (box) {
       box.hidden = false;
@@ -446,7 +465,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (c) c.abort();
     pedidos.delete(id);
     const box = document.getElementById(`results-${id}`);
-    const btn = container.querySelector(`[data-action="toggle-departures"][data-id="${CSS.escape(id)}"]`);
+    const btn = container.querySelector(
+      `[data-action="toggle-departures"][data-id="${CSS.escape(id)}"]`,
+    );
     if (btn) btn.setAttribute("aria-expanded", "false");
     if (box) {
       box.hidden = true;
@@ -557,8 +578,8 @@ document.addEventListener("DOMContentLoaded", () => {
   async function fetchFertagusLine() {
     if (fertagusLineCache) return fertagusLineCache;
     try {
-      const res = await fetch("./json/fertagus_line.json");
-      if (!res.ok) throw new Error("fertagus_line.json não encontrado");
+      const res = await fetch("./data/geojson/fertagus_line.geojson");
+      if (!res.ok) throw new Error("fertagus_line.geojson não encontrado");
       fertagusLineCache = await res.json();
       return fertagusLineCache;
     } catch (error) {
@@ -608,7 +629,19 @@ document.addEventListener("DOMContentLoaded", () => {
         type: "circle",
         source: "fertagus-stations",
         paint: {
-          "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 4, 13, 9, 16, 12, 19, 20],
+          "circle-radius": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            10,
+            4,
+            13,
+            9,
+            16,
+            12,
+            19,
+            20,
+          ],
           "circle-color": "#ffffff",
           "circle-stroke-width": 2,
           "circle-stroke-color": "#000000",
@@ -628,8 +661,16 @@ document.addEventListener("DOMContentLoaded", () => {
           )
           .addTo(map);
       });
-      map.on("mouseenter", "fertagus-stations-layer", () => (map.getCanvas().style.cursor = "pointer"));
-      map.on("mouseleave", "fertagus-stations-layer", () => (map.getCanvas().style.cursor = ""));
+      map.on(
+        "mouseenter",
+        "fertagus-stations-layer",
+        () => (map.getCanvas().style.cursor = "pointer"),
+      );
+      map.on(
+        "mouseleave",
+        "fertagus-stations-layer",
+        () => (map.getCanvas().style.cursor = ""),
+      );
     }
   }
 
@@ -657,7 +698,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!res.ok) throw new Error("stops_cm.json não encontrado");
     const arr = await res.json();
     // Ids de linha limpos também no catálogo local (ver LTParagens.limparId).
-    for (const s of arr) if (Array.isArray(s.l)) s.l = s.l.map((l) => P.limparId(l));
+    for (const s of arr)
+      if (Array.isArray(s.l)) s.l = s.l.map((l) => P.limparId(l));
     cmStopsCache = arr;
     return cmStopsCache;
   }
@@ -675,7 +717,15 @@ document.addEventListener("DOMContentLoaded", () => {
             '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
         },
       },
-      layers: [{ id: "basemap-layer", type: "raster", source: "basemap", minzoom: 0, maxzoom: 22 }],
+      layers: [
+        {
+          id: "basemap-layer",
+          type: "raster",
+          source: "basemap",
+          minzoom: 0,
+          maxzoom: 22,
+        },
+      ],
     });
     mapInstance.once("styledata", () => {
       if (geojsonCache) drawStopsLayer();
@@ -696,9 +746,31 @@ document.addEventListener("DOMContentLoaded", () => {
         type: "circle",
         source: "stops",
         paint: {
-          "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 2, 13, 6, 16, 9, 19, 15],
+          "circle-radius": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            10,
+            2,
+            13,
+            6,
+            16,
+            9,
+            19,
+            15,
+          ],
           "circle-color": "#FFDD00",
-          "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 10, 1, 14, 2, 18, 3],
+          "circle-stroke-width": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            10,
+            1,
+            14,
+            2,
+            18,
+            3,
+          ],
           "circle-stroke-color": "#000000",
         },
       });
@@ -742,7 +814,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> | Dados: Carris Metropolitana · Infraestruturas de Portugal',
             },
           },
-          layers: [{ id: "basemap-layer", type: "raster", source: "basemap", minzoom: 0, maxzoom: 22 }],
+          layers: [
+            {
+              id: "basemap-layer",
+              type: "raster",
+              source: "basemap",
+              minzoom: 0,
+              maxzoom: 22,
+            },
+          ],
         },
         center: [-9.01, 38.65],
         zoom: 11,
@@ -753,12 +833,20 @@ document.addEventListener("DOMContentLoaded", () => {
         ],
       });
 
-      mapInstance.addControl(new maplibregl.NavigationControl(), "bottom-right");
+      mapInstance.addControl(
+        new maplibregl.NavigationControl(),
+        "bottom-right",
+      );
 
       mapInstance.on("load", async () => {
-        document.getElementById("map-loading")?.classList.add("opacity-0", "pointer-events-none");
+        document
+          .getElementById("map-loading")
+          ?.classList.add("opacity-0", "pointer-events-none");
         drawStopsLayer();
-        const [stationsData, lineData] = await Promise.all([fetchFertagusStops(), fetchFertagusLine()]);
+        const [stationsData, lineData] = await Promise.all([
+          fetchFertagusStops(),
+          fetchFertagusLine(),
+        ]);
         drawFertagusRoute(mapInstance, lineData);
         drawFertagusStations(mapInstance, stationsData);
       });
@@ -766,7 +854,8 @@ document.addEventListener("DOMContentLoaded", () => {
       mapInstance.on("click", "stops-layer", (e) => {
         const props = e.features[0].properties;
         const coords = e.features[0].geometry.coordinates.slice();
-        let linesHtml = '<p class="text-[9px] text-zinc-500 mt-1 mb-2">Sem carreiras disp.</p>';
+        let linesHtml =
+          '<p class="text-[9px] text-zinc-500 mt-1 mb-2">Sem carreiras disp.</p>';
         if (props.lines) {
           const linePills = props.lines
             .split(",")
@@ -798,8 +887,16 @@ document.addEventListener("DOMContentLoaded", () => {
           .addTo(mapInstance);
       });
 
-      mapInstance.on("mouseenter", "stops-layer", () => (mapInstance.getCanvas().style.cursor = "pointer"));
-      mapInstance.on("mouseleave", "stops-layer", () => (mapInstance.getCanvas().style.cursor = ""));
+      mapInstance.on(
+        "mouseenter",
+        "stops-layer",
+        () => (mapInstance.getCanvas().style.cursor = "pointer"),
+      );
+      mapInstance.on(
+        "mouseleave",
+        "stops-layer",
+        () => (mapInstance.getCanvas().style.cursor = ""),
+      );
     } catch (error) {
       console.error("Erro ao carregar mapa:", error);
       const loadingEl = document.getElementById("map-loading");

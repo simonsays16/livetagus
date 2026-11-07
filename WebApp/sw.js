@@ -1,11 +1,11 @@
 // --- BEGIN VERSIONS ---
-const GLOBAL_VERSION = "livetagus-v.rc53.31102026";
+const GLOBAL_VERSION = "livetagus-v.rc6.07112026";
 const ASSETS_VERSIONS = {
   "./index.html": "v.rc3.24102026",
   "./index.js": "v.rc3.21062026",
   "./index-home.js": "v.rc1.22062026",
-  "./home-map.js": "v.rc1.03102026",
-  "./app.html": "v.rc1.29102026",
+  "./home-map.js": "v.rc3.07112026",
+  "./app.html": "v.rc1.07112026",
   "./app-alerts.js": "v.rc3.13062026",
   "./app-config.js": "v.rc2.13092026",
   "./app-occupancy.js": "v.rc1.12092026",
@@ -14,7 +14,8 @@ const ASSETS_VERSIONS = {
   "./app-init.js": "v.rc1.29102026",
   "./app-settings.js": "v.rc1.29102026",
   "./app-trains.js": "v.rc3.28092026",
-  "./app-ui.js": "v.rc30.23102026",
+  "./app-ui.js": "v.rc1.07112026",
+  "./detalhes-comboio.js": "v.rc1.07112026",
   "./lucide-icons.js": "v.rc1.25062026",
   "./sudoku.html": "v.rc1.29102026",
   "./sudoku.js": "v.rc1.24052026",
