@@ -418,7 +418,50 @@
     return !v || (lat <= v.n && lat >= v.s && lng <= v.e && lng >= v.w);
   }
 
+  // Só mexe num comboio quando a mudança se vê. A 80 km/h um comboio anda
+  // ~22 m/s; na vista geral isso é menos de um píxel por segundo, e o ciclo
+  // reposicionava-o a cada frame do ecrã (120 vezes por segundo num ecrã de
+  // 120 Hz) — cada setLngLat ainda fazia o MapLibre pedir outro frame. Agora:
+  //   • um comboio só é reposicionado quando andou LIMIAR_PX píxeis no mundo
+  //     (ou rodou LIMIAR_RUMO graus) desde a última vez;
+  //   • o ciclo dorme até ao momento em que o comboio mais rápido à vista
+  //     andar LIMIAR_PX — na vista geral ~1 vez por segundo, com zoom alto
+  //     continua a cada frame. O comboio seguido corre sempre a cada frame.
+  // O fim de cada deslize aplica-se sempre, como antes.
+  // Para voltar ao comportamento antigo: SO_QUANDO_SE_NOTA = false.
+  const SO_QUANDO_SE_NOTA = true;
+  const LIMIAR_PX = 0.5;
+  const LIMIAR_RUMO = 1; // graus
+  const ESPERA_MAX_MS = 1000;
+  const FRAME_MS = 16;
+  let esperaId = null;
+
+  // Píxeis "do mundo" ao zoom actual (independente de onde está a câmara).
+  function mundoPx(lng, lat, escala) {
+    const m = maplibregl.MercatorCoordinate.fromLngLat([lng, lat]);
+    return { x: m.x * escala, y: m.y * escala };
+  }
+
+  function agendarCiclo(esperaMs) {
+    if (esperaMs <= FRAME_MS) {
+      animationFrameId = requestAnimationFrame(animateMarkers);
+      return;
+    }
+    // animationFrameId fica ocupado enquanto dorme, para ninguém arrancar
+    // um segundo ciclo; acordarCiclo() interrompe a espera.
+    animationFrameId = -1;
+    esperaId = setTimeout(() => {
+      esperaId = null;
+      animationFrameId = requestAnimationFrame(animateMarkers);
+    }, esperaMs);
+  }
+
   function acordarCiclo() {
+    if (esperaId) {
+      clearTimeout(esperaId);
+      esperaId = null;
+      animationFrameId = null;
+    }
     if (!animationFrameId)
       animationFrameId = requestAnimationFrame(animateMarkers);
   }
@@ -428,6 +471,14 @@
     let algumAMover = false;
     // Uma vez por frame, não uma por comboio.
     const vista = vistaComMargem();
+    const poupar =
+      SO_QUANDO_SE_NOTA && mainMap && typeof maplibregl !== "undefined";
+    const escala = poupar ? 512 * Math.pow(2, mainMap.getZoom()) : 0;
+    // Píxeis (ou graus) por milissegundo do comboio visível mais rápido: diz
+    // quando é que vale a pena voltar.
+    let pxPorMs = 0;
+    let rumoPorMs = 0;
+    let aCorrer = false; // comboio seguido: a cada frame
     for (const entry of markers.values()) {
       if (entry.startPos && entry.targetPos) {
         let t = (time - entry.animationStartTime) / glideMs;
@@ -459,6 +510,44 @@
             !naVista(vista, lng, lat)
           )
             continue;
+          if (poupar) {
+            if (followModeTrainId === entry.train.id) {
+              aCorrer = true;
+            } else {
+              const a = mundoPx(entry.startPos.lng, entry.startPos.lat, escala);
+              const b = mundoPx(
+                entry.targetPos.lng,
+                entry.targetPos.lat,
+                escala,
+              );
+              const v = Math.hypot(b.x - a.x, b.y - a.y) / glideMs;
+              if (v > pxPorMs) pxPorMs = v;
+              if (
+                entry.startBearing !== undefined &&
+                entry.targetBearing !== undefined
+              ) {
+                const vr =
+                  Math.abs(entry.targetBearing - entry.startBearing) / glideMs;
+                if (vr > rumoPorMs) rumoPorMs = vr;
+              }
+              // Mexeu-se o suficiente para se ver desde a última vez?
+              const aqui = mundoPx(lng, lat, escala);
+              const ult = entry._pxAplicado;
+              const rumoAgora =
+                entry.startBearing !== undefined &&
+                entry.targetBearing !== undefined
+                  ? lerp(entry.startBearing, entry.targetBearing, t)
+                  : entry.bearing || 0;
+              if (
+                ult &&
+                ult.escala === escala &&
+                Math.hypot(aqui.x - ult.x, aqui.y - ult.y) < LIMIAR_PX &&
+                Math.abs(rumoAgora - (entry.bearing || 0)) < LIMIAR_RUMO
+              )
+                continue;
+              entry._pxAplicado = { x: aqui.x, y: aqui.y, escala };
+            }
+          }
         }
         const enc = encaixarNaLinha(entry, lng, lat);
         if (enc) {
@@ -519,7 +608,17 @@
       animationFrameId = null;
       return;
     }
-    animationFrameId = requestAnimationFrame(animateMarkers);
+    if (!poupar || aCorrer) {
+      animationFrameId = requestAnimationFrame(animateMarkers);
+      return;
+    }
+    // Volta quando o comboio mais rápido à vista tiver andado LIMIAR_PX (ou
+    // rodado LIMIAR_RUMO). Sem nenhum à vista, uma vez por segundo chega para
+    // os que estão fora do ecrã acabarem o deslize.
+    let espera = ESPERA_MAX_MS;
+    if (pxPorMs > 0) espera = Math.min(espera, LIMIAR_PX / pxPorMs);
+    if (rumoPorMs > 0) espera = Math.min(espera, LIMIAR_RUMO / rumoPorMs);
+    agendarCiclo(espera);
   }
 
   // ─── ACESSIBILIDADE ──────────────────────────────────────────────────
@@ -2054,9 +2153,7 @@
       applyRotation(entry, position.bearing || 0);
       scaleCarriagesToRealWorld(entry, zoom);
 
-      if (!animationFrameId) {
-        animationFrameId = requestAnimationFrame(animateMarkers);
-      }
+      acordarCiclo();
 
       // Se este é o comboio focado, atualiza cards e foco
       if (routeFocusTrainId === train.id) {
@@ -2219,6 +2316,12 @@
         }
       }
     };
+    // Com mais zoom os comboios andam mais píxeis: o ciclo recalcula já em
+    // vez de esperar pelo fim da espera anterior.
+    mainMap.on("zoomend", acordarCiclo);
+    // Um comboio que entra no ecrã depois de arrastar o mapa é posto no sítio
+    // logo, sem esperar pelo fim da espera.
+    mainMap.on("moveend", acordarCiclo);
     mainMap.on("dragstart", detachIfUser);
     mainMap.on("touchstart", detachIfUser);
     mainMap.on("wheel", detachIfUser);
@@ -2269,7 +2372,9 @@
 
       mainMap.once("moveend", () => {
         isFlying = false; // liberta a flag e passa a ser atualizado frame-a-frame no jumpTo()
+        acordarCiclo();
       });
+      acordarCiclo();
       return true;
     }
   }

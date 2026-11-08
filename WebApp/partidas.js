@@ -151,8 +151,12 @@
   function loadLigacoes() {
     if (ligacoesPorEstacao) return Promise.resolve(ligacoesPorEstacao);
     if (ligacoesPromise) return ligacoesPromise;
-    ligacoesPromise = fetch(LIGACOES_JSON)
-      .then((r) => (r.ok ? r.json() : null))
+    // No mapa, o pedido é partilhado com os outros módulos (mapa-config.js).
+    ligacoesPromise = (
+      window.LTLigacoes
+        ? window.LTLigacoes()
+        : fetch(LIGACOES_JSON).then((r) => (r.ok ? r.json() : null))
+    )
       .then((data) => {
         const m = new Map();
         for (const id in data || {}) {

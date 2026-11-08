@@ -189,6 +189,14 @@ document.addEventListener("DOMContentLoaded", () => {
       // Mapa sempre plano: o estilo não tem 3D e assim o MapLibre nunca
       // desenha em perspetiva (mais tiles e mais trabalho por frame).
       maxPitch: 0,
+      // Os nomes aparecem de uma vez. Com o fade por omissão (300 ms), depois
+      // de cada gesto o mapa continuava a redesenhar-se inteiro só para os
+      // nomes acabarem de aparecer: ~16 frames/s medidos, sem nada a mexer.
+      fadeDuration: 0,
+      // Num ecrã 3x (a maioria dos telemóveis) o canvas tinha 9 vezes os
+      // píxeis de um ecrã normal. A 2x já não se distingue a nitidez e a GPU
+      // pinta menos de metade. Ecrãs até 2x não mudam.
+      pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
     });
     mapInstance.touchZoomRotate.disableRotation();
 

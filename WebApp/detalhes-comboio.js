@@ -358,8 +358,12 @@
   function carregarLigacoes() {
     if (ligMapa) return Promise.resolve(ligMapa);
     if (ligPromessa) return ligPromessa;
-    ligPromessa = fetch(LIGACOES_JSON)
-      .then((r) => (r.ok ? r.json() : null))
+    // No mapa, o pedido é partilhado com os outros módulos (mapa-config.js).
+    ligPromessa = (
+      window.LTLigacoes
+        ? window.LTLigacoes()
+        : fetch(LIGACOES_JSON).then((r) => (r.ok ? r.json() : null))
+    )
       .then((data) => {
         const m = new Map();
         for (const id in data || {}) {

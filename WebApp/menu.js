@@ -336,12 +336,17 @@ window.LTEstacoes = (function () {
   let ligacoes = null;
   function carregarLigacoes() {
     if (!ligacoes) {
-      ligacoes = fetch("/data/json/ligacoes_atualizado.json")
-        .then((r) => (r.ok ? r.json() : {}))
-        .catch(() => {
-          ligacoes = null;
-          return {};
-        });
+      // No mapa, o pedido é partilhado com os outros módulos (mapa-config.js).
+      ligacoes = (
+        window.LTLigacoes
+          ? window.LTLigacoes()
+          : fetch("/data/json/ligacoes_atualizado.json").then((r) =>
+              r.ok ? r.json() : {},
+            )
+      ).catch(() => {
+        ligacoes = null;
+        return {};
+      });
     }
     return ligacoes;
   }

@@ -166,9 +166,14 @@
   async function loadLigacoes() {
     if (ligacoesCache !== null) return ligacoesCache;
     try {
-      const res = await fetch(LIGACOES_JSON, { cache: "no-store" });
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      ligacoesCache = await res.json();
+      if (window.LTLigacoes) {
+        // Pedido partilhado com os outros módulos (mapa-config.js).
+        ligacoesCache = await window.LTLigacoes();
+      } else {
+        const res = await fetch(LIGACOES_JSON, { cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        ligacoesCache = await res.json();
+      }
     } catch (e) {
       console.warn("[MapaCM] ligacoes JSON indisponível:", e.message);
       ligacoesCache = {};

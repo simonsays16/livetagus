@@ -260,5 +260,33 @@
 
   if (typeof window !== "undefined") {
     window.MAPA = MAPA;
+
+    // Ligações intermodais (data/json/ligacoes_atualizado.json): UM pedido
+    // para todos os módulos do mapa. O mapa-cm, o mapa-gtfs-horarios, o
+    // partidas, o detalhes-comboio e o menu pediam-no cada um à sua maneira, e
+    // o mapa-cm com cache "no-store" — por isso o ficheiro vinha da rede duas
+    // vezes. "no-cache" revalida no servidor (304 se não mudou): continua
+    // sempre fresco, como o no-store garantia. Os dados são só lidos, nunca
+    // alterados, por isso podem ser partilhados. Nas páginas sem este ficheiro
+    // cada módulo continua a pedir o seu.
+    if (!window.LTLigacoes) {
+      let pedido = null;
+      window.LTLigacoes = function () {
+        if (!pedido) {
+          pedido = fetch("/data/json/ligacoes_atualizado.json", {
+            cache: "no-cache",
+          })
+            .then((r) => {
+              if (!r.ok) throw new Error("HTTP " + r.status);
+              return r.json();
+            })
+            .catch((e) => {
+              pedido = null; // a próxima chamada tenta outra vez
+              throw e;
+            });
+        }
+        return pedido;
+      };
+    }
   }
 })();

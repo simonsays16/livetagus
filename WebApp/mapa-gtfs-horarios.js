@@ -243,7 +243,10 @@
   function loadLigacoes() {
     if (ligacoes) return Promise.resolve(ligacoes);
     if (ligacoesPromise) return ligacoesPromise;
-    ligacoesPromise = getJSON(LIGACOES_JSON)
+    // Pedido partilhado com os outros módulos (mapa-config.js), se existir.
+    ligacoesPromise = (
+      window.LTLigacoes ? window.LTLigacoes() : getJSON(LIGACOES_JSON)
+    )
       .then((data) => {
         ligacoes = data || {};
         return ligacoes;

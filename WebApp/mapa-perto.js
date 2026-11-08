@@ -120,7 +120,9 @@
     return `${(m / 1000).toFixed(m < 10000 ? 1 : 0).replace(".", ",")} km`;
   }
   function fmtRange(m) {
-    return m < 1000 ? `${m} m` : `${(m / 1000).toFixed(1).replace(".0", "")} km`;
+    return m < 1000
+      ? `${m} m`
+      : `${(m / 1000).toFixed(1).replace(".0", "")} km`;
   }
   // ═══ ÍCONES ════════════════════════════════════════════════════════════
   const SVG_NEAR = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="19" height="19"><path d="M12 2v2m0 16v2M2 12h2m16 0h2"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg>`;
@@ -388,7 +390,10 @@
       features: [
         {
           type: "Feature",
-          geometry: { type: "Point", coordinates: [position.lng, position.lat] },
+          geometry: {
+            type: "Point",
+            coordinates: [position.lng, position.lat],
+          },
           properties: {},
         },
       ],
@@ -406,7 +411,15 @@
           type: "circle",
           source: SRC,
           paint: {
-            "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 12, 16, 22],
+            "circle-radius": [
+              "interpolate",
+              ["linear"],
+              ["zoom"],
+              10,
+              12,
+              16,
+              22,
+            ],
             "circle-color": "#3b82f6",
             "circle-opacity": 0.18,
             "circle-blur": 0.3,
@@ -468,14 +481,19 @@
         return;
     }
     if (foraDaArea()) {
-      console.info("[MapaPerto] fora da área servida; o mapa fica onde estava.");
+      console.info(
+        "[MapaPerto] fora da área servida; o mapa fica onde estava.",
+      );
       return;
     }
     try {
       if (manual && window.MapaRender && window.MapaRender.focusStation) {
         // Reaproveita o enquadramento das estações: já aproxima e já
         // compensa o espaço que o painel ocupa.
-        window.MapaRender.focusStation({ lat: position.lat, lng: position.lng });
+        window.MapaRender.focusStation({
+          lat: position.lat,
+          lng: position.lng,
+        });
         return;
       }
       map.easeTo({
@@ -573,14 +591,21 @@
         pushMe();
         // Silencioso é o de arranque; com o popup aberto foi um toque no botão.
         frameUser(!silent);
-        // As fontes assíncronas (MTS, Metro) podem ainda não estar prontas.
-        const ready =
-          window.MapaSearch && window.MapaSearch.ensureSources
-            ? window.MapaSearch.ensureSources()
-            : Promise.resolve();
-        ready.then(() => {
-          if (!silent) renderResults();
-        });
+        // O de arranque (silencioso) só aproxima o mapa: não precisa do índice
+        // nem do motor da pesquisa. Com o popup aberto, carrega-o se ainda não
+        // estiver (mapa-search.js) e espera pelas fontes assíncronas (MTS,
+        // Metro), que podem ainda não estar prontas.
+        if (silent) return;
+        garantirPesquisa()
+          .then(() =>
+            window.MapaSearch && window.MapaSearch.ensureSources
+              ? window.MapaSearch.ensureSources()
+              : null,
+          )
+          .catch(() => {})
+          .then(() => {
+            if (isOpen) renderResults();
+          });
       },
       (err) => {
         busy = false;
@@ -594,17 +619,29 @@
     );
   }
 
+  // O índice e os logótipos vêm do motor da pesquisa, que só é descarregado
+  // quando é preciso (mapa-search.js → window.LTPesquisa).
+  function garantirPesquisa() {
+    if (window.MapaSearch) return Promise.resolve(window.MapaSearch);
+    return window.LTPesquisa
+      ? window.LTPesquisa.carregar()
+      : Promise.resolve(null);
+  }
+
   // ═══ CÁLCULO DA LISTA ══════════════════════════════════════════════════
   // A Fertagus mais próxima entra sempre, mesmo fora do raio — é a espinha
   // dorsal da app e é a resposta que o utilizador quase sempre quer.
   function nearby() {
     if (!position) return { list: [], fertagus: null, withinCount: 0 };
     const index =
-      window.MapaSearch && window.MapaSearch.index ? window.MapaSearch.index() : [];
+      window.MapaSearch && window.MapaSearch.index
+        ? window.MapaSearch.index()
+        : [];
 
     const withDist = [];
     for (const item of index) {
-      if (typeof item.lat !== "number" || typeof item.lng !== "number") continue;
+      if (typeof item.lat !== "number" || typeof item.lng !== "number")
+        continue;
       const d = distance(position.lat, position.lng, item.lat, item.lng);
       withDist.push({ item, d });
     }
@@ -821,7 +858,8 @@
   // estado na mesma — não faz mal.
   function onSheetChange(e) {
     const el = e.target;
-    if (!el || !el.getAttribute || el.getAttribute("data-np") !== "auto") return;
+    if (!el || !el.getAttribute || el.getAttribute("data-np") !== "auto")
+      return;
     setPref(KEY_AUTO, el.checked ? "1" : "0");
     // Ligar com a autorização já dada e sem posição em memória: vai buscá-la
     // agora, para o efeito ser imediato em vez de só no próximo arranque.
@@ -871,8 +909,13 @@
     // aparece de imediato.
     if (!introDone()) renderIntro();
     else if (position) {
-      // Posição já em memória: mostra a lista de imediato e aproxima na mesma.
-      renderResults();
+      // Posição já em memória: mostra a lista (assim que o motor da pesquisa
+      // estiver carregado) e aproxima na mesma.
+      garantirPesquisa()
+        .catch(() => {})
+        .then(() => {
+          if (isOpen) renderResults();
+        });
       frameUser(true);
     } else locate();
   }
@@ -928,8 +971,9 @@
     const menu = document.getElementById("mapview-menu");
     if (eye && menu) {
       menu.style.top =
-        Math.round(parseFloat(eye.style.top || 0) + (eye.offsetHeight || 42) + 6) +
-        "px";
+        Math.round(
+          parseFloat(eye.style.top || 0) + (eye.offsetHeight || 42) + 6,
+        ) + "px";
     }
   }
 
