@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="LiveTagus v2 — mapa multimodal, painel de detalhes único, basemap próprio e um mapa mais rápido. Tudo o que mudou."
+      content="LiveTagus v2 — mapa multimodal, painel de detalhes único, basemap próprio e um mapa que gasta muito menos bateria. Tudo o que mudou."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://livetagus.pt/v2" />
     <meta property="og:title" content="LiveTagus v2 | O que há de novo" />
     <meta
       property="og:description"
-      content="Mapa multimodal, painel de detalhes único, basemap próprio e um mapa mais rápido."
+      content="Mapa multimodal, painel de detalhes único, basemap próprio e um mapa que gasta muito menos bateria."
     />
     <meta
       property="og:image"
@@ -806,17 +806,15 @@
           <h1 class="v2-title">
             Toda a rede.
             <br />
-            <b>Mais rápida.</b>
+            <b>Mais leve.</b>
           </h1>
           <p class="v2-lead">
             A LiveTagus deixou de ser só a Fertagus. A versão 2 junta
-            <b>cinco operadores num só mapa</b>
-            , um
-            <b>painel de detalhes igual</b>
-            em todo o lado e um mapa desenhado à medida. E apesar de fazer muito
-            mais, abre
-            <b>um terço mais depressa</b>
-            , num alojamento verde.
+            <b>cinco operadores num só mapa</b>, um
+            <b>painel de detalhes igual</b> em todo o lado e um mapa desenhado à
+            medida. E apesar de fazer muito mais, gasta
+            <b>um quarto da bateria</b> com o mapa aberto e pesa menos, num
+            alojamento verde.
           </p>
           <div class="v2-ops">
             <span class="v2-op">
@@ -849,7 +847,7 @@
           <div class="lt-section-head">
             <h2 class="lt-section-title">
               Mais coisas,
-              <b>mais rápido.</b>
+              <b>menos bateria.</b>
             </h2>
             <span class="lt-section-sub">O essencial</span>
           </div>
@@ -870,49 +868,52 @@
                     stroke-linecap="round"
                     stroke-linejoin="round"
                   >
-                    <circle cx="12" cy="13" r="8" />
-                    <path d="M12 9v4l2 2" />
-                    <path d="M5 3 2 6" />
-                    <path d="m22 6-3-3" />
-                    <path d="M12 5V3" />
+                    <rect width="16" height="10" x="2" y="7" rx="2" />
+                    <path d="M22 11v2" />
+                    <path d="M6 11v2" />
                   </svg>
                 </span>
                 <div>
-                  <h3>Tempo de carregamento</h3>
-                  <p>Primeira visita ao mapa</p>
+                  <h3>Bateria</h3>
+                  <p>Processador com o mapa aberto e parado</p>
                 </div>
               </div>
               <p class="lt-cell-body">
-                Com mais quatro operadores, um mapa novo, pesquisa e ligações
-                entre transportes, o mapa fica pronto
-                <b>um terço mais depressa</b>
-                do que na versão anterior.
+                Com o mapa aberto e os comboios a circular, a v2 usa
+                <b>menos de um quarto do processador</b> da versão anterior. Os
+                comboios só são redesenhados quando a mudança se vê, e o mapa
+                descansa quando nada se mexe. O telemóvel gasta menos e aquece
+                menos.
               </p>
-              <div class="lt-big accent">
-                −33
+              <div class="lt-big green">
+                −76
                 <small>%</small>
               </div>
               <div class="v2-bars">
                 <div class="v2-bar-row">
                   <span>v1</span>
                   <div class="v2-bar"><i style="--w: 1"></i></div>
-                  <span>1,29 s</span>
+                  <span>40,5%</span>
                 </div>
                 <div class="v2-bar-row">
                   <span>v2</span>
-                  <div class="v2-bar novo"><i style="--w: 0.674"></i></div>
-                  <span>0,87 s</span>
+                  <div class="v2-bar novo"><i style="--w: 0.237"></i></div>
+                  <span>9,6%</span>
                 </div>
               </div>
             </div>
 
             <div class="lt-cell lt-stat s2" data-reveal style="--d: 0.06s">
-              <span class="lt-stat-label">Bateria</span>
+              <span class="lt-stat-label">Dados móveis</span>
               <div>
-                <h3 class="lt-stat-h">Poupa mais bateria</h3>
+                <div class="lt-big accent">
+                  −94
+                  <small>%</small>
+                </div>
                 <p class="lt-stat-p">
-                  Quando nada se mexe, o mapa descansa. O telemóvel gasta menos
-                  e aquece menos.
+                  A explorar o mapa durante um minuto:
+                  <span class="mono">1476 → 85 kB</span>. O mapa reaproveita o
+                  que já descarregou.
                 </p>
               </div>
             </div>
@@ -952,11 +953,14 @@
             <div class="lt-cell lt-stat s2" data-reveal style="--d: 0.22s">
               <span class="lt-stat-label">Peso</span>
               <div>
-                <h3 class="lt-stat-h">Ligeiro aumento</h3>
+                <div class="lt-big">
+                  −7
+                  <small>%</small>
+                </div>
                 <p class="lt-stat-p">
-                  <span class="mono">620 → 737 kB</span>
-                  sem o fundo do mapa, com quatro operadores novos. No total, a
-                  visita fica igual: cerca de 1,2 MB.
+                  Primeira visita ao mapa:
+                  <span class="mono">1179 → 1091 kB</span>, mesmo com quatro
+                  operadores novos.
                 </p>
               </div>
             </div>
@@ -1010,8 +1014,7 @@
                 </li>
                 <li>
                   Cada estação com o
-                  <b>logótipo do operador</b>
-                  ; a que escolhes fica destacada a azul.
+                  <b>logótipo do operador</b>; a que escolhes fica destacada a azul.
                 </li>
                 <li>
                   As tuas
@@ -1051,18 +1054,15 @@
               <ul class="lt-list">
                 <li>
                   Em cada estação do percurso, vês
-                  <b>com que transportes há ligação</b>
-                  : Metro, MTS, CP e Carris.
+                  <b>com que transportes há ligação</b>: Metro, MTS, CP e Carris.
                 </li>
                 <li>
                   Um toque e abrem as partidas do outro transporte,
-                  <b>a partir da hora a que chegas</b>
-                  .
+                  <b>a partir da hora a que chegas</b>.
                 </li>
                 <li>
                   A Carris mostra
-                  <b>todas as paragens da estação numa lista só</b>
-                  , e podes filtrar por carreira.
+                  <b>todas as paragens da estação numa lista só</b>, e podes filtrar por carreira.
                 </li>
               </ul>
             </div>
@@ -1222,8 +1222,7 @@
                 </li>
                 <li>
                   Se o comboio
-                  <b>não passar numa estação</b>
-                  , aparece riscada e com aviso.
+                  <b>não passar numa estação</b>, aparece riscada e com aviso.
                 </li>
                 <li>
                   <b>Carruagens, lotação</b>
@@ -1345,8 +1344,7 @@
               <p class="lt-cell-body" style="margin-bottom: 18px">
                 Dois mapas desenhados de raiz para a LiveTagus. As estradas
                 ficam discretas para
-                <b>as linhas sobressaírem</b>
-                , a ferrovia aparece tracejada, os barcos do Tejo também lá
+                <b>as linhas sobressaírem</b>, a ferrovia aparece tracejada, os barcos do Tejo também lá
                 estão, e os nomes estão todos em português.
               </p>
               <div class="v2-swatches" aria-hidden="true">
@@ -1459,13 +1457,11 @@
               <ul class="lt-list">
                 <li>
                   Os painéis de partidas deixam ver o mapa por trás,
-                  <b>sem perder a leitura</b>
-                  .
+                  <b>sem perder a leitura</b>.
                 </li>
                 <li>
                   As cores das linhas escolhem sozinhas
-                  <b>texto preto ou branco</b>
-                  .
+                  <b>texto preto ou branco</b>.
                 </li>
                 <li>
                   Se preferires menos transparência no sistema, os painéis ficam
@@ -1497,8 +1493,7 @@
               <ul class="lt-list">
                 <li>
                   Os botões do fundo
-                  <b>ficam sempre no ecrã</b>
-                  , também com a app instalada.
+                  <b>ficam sempre no ecrã</b>, também com a app instalada.
                 </li>
                 <li>Legenda, avisos e zoom acima da barra de gestos.</li>
                 <li>
@@ -1551,8 +1546,7 @@
               <ul class="lt-list">
                 <li>
                   Vê os comboios de qualquer dia
-                  <b>até 90 dias</b>
-                  , a partir de uma hora ou para chegar a tempo.
+                  <b>até 90 dias</b>, a partir de uma hora ou para chegar a tempo.
                 </li>
                 <li>
                   <b>Partilha uma pesquisa</b>
@@ -1565,8 +1559,7 @@
                 </li>
                 <li>
                   Tempo real atualizado a cada
-                  <b>15 segundos</b>
-                  .
+                  <b>15 segundos</b>.
                 </li>
               </ul>
             </div>
@@ -1594,8 +1587,7 @@
               <ul class="lt-list">
                 <li>
                   Escolhe o destino:
-                  <b>Lisboa, Coina ou Setúbal</b>
-                  .
+                  <b>Lisboa, Coina ou Setúbal</b>.
                 </li>
                 <li>
                   <b>Contagem decrescente</b>
@@ -1603,8 +1595,7 @@
                 </li>
                 <li>
                   Estimativa de
-                  <b>lotação em todos os dias úteis</b>
-                  , não só na hora de ponta.
+                  <b>lotação em todos os dias úteis</b>, não só na hora de ponta.
                 </li>
                 <li>
                   Cartões mais arrumados, com o número do comboio junto ao
@@ -1630,8 +1621,8 @@
             <b>curiosos.</b>
           </h2>
           <p class="v2-lead">
-            Como é que um mapa com mais quatro operadores abre mais depressa e
-            gasta menos bateria. Os números e as decisões por trás.
+            Como é que um mapa com mais quatro operadores gasta menos bateria,
+            menos dados e pesa menos. Os números e as decisões por trás.
           </p>
         </div>
       </section>
@@ -1715,8 +1706,7 @@
                 </li>
                 <li>
                   Operadores escondidos
-                  <b>não carregam</b>
-                  . O Metro deixou de fazer 720 pedidos por hora a dados que
+                  <b>não carregam</b>. O Metro deixou de fazer 720 pedidos por hora a dados que
                   ninguém via.
                 </li>
                 <li>
@@ -1747,24 +1737,27 @@
                 </span>
                 <div>
                   <h3>Peso da visita</h3>
-                  <p>Primeira visita, sem cache</p>
+                  <p>Mediana de 5 visitas, sem cache</p>
                 </div>
               </div>
               <ul class="lt-list">
                 <li>
-                  Sem o basemap:
-                  <b>620 → 737 kB</b>
-                  , com quatro operadores, pesquisa e painéis novos.
+                  Visita completa ao mapa: <b>1179 → 1091 kB</b>, com quatro
+                  operadores, pesquisa e painéis novos.
                 </li>
                 <li>
-                  O basemap passou de tiles PNG (571 kB) para
-                  <b>vetoriais</b>
-                  (cerca de 600 kB), que se reaproveitam ao fazer zoom em vez de
-                  serem descarregados de novo.
+                  O basemap passou de tiles PNG (570 kB) para
+                  <b>vetoriais</b> (562 kB), que se reaproveitam ao fazer zoom
+                  em vez de serem descarregados de novo: a explorar o mapa,
+                  <b>1476 → 85 kB</b> num minuto.
                 </li>
                 <li>
-                  Fontes do mapa (Noto Sans) em blocos de glifos, pedidos só
-                  quando há nomes para escrever.
+                  Nomes do mapa numa só família de glifos (Noto Sans Bold):
+                  <b>89 → 46 kB</b>.
+                </li>
+                <li>
+                  A pesquisa só é descarregada quando é usada, e as ligações
+                  entre transportes são pedidas uma vez para todo o mapa.
                 </li>
               </ul>
             </div>
@@ -1788,13 +1781,14 @@
               <span class="lt-stat-label">Em repouso</span>
               <div>
                 <div class="lt-big green">
-                  0
-                  <small>fps</small>
+                  240→2
+                  <small>/s</small>
                 </div>
                 <p class="lt-stat-p">
-                  Com os comboios parados, o ciclo de animação dorme: 0 frames,
-                  0 setData, 0 escritas no DOM. Antes eram 60 frames por
-                  segundo, sempre.
+                  Pedidos de desenho com o mapa parado e comboios a circular.
+                  Um comboio só é redesenhado quando andou meio píxel; o ciclo
+                  dorme até lá (na vista geral, ~1 vez por segundo). Processador:
+                  40,5% → 9,6%.
                 </p>
               </div>
             </div>
@@ -1858,8 +1852,7 @@
                 <li>
                   A posição do GPS é a frente do comboio; as carruagens vão para
                   trás dela. Desvio máximo na curva mais fechada:
-                  <b>0,000 m</b>
-                  .
+                  <b>0,000 m</b>.
                 </li>
                 <li>
                   Motor de geometria próprio: projeção ponto→linha em 6 µs, 64
@@ -1891,8 +1884,7 @@
               <ul class="lt-list">
                 <li>
                   Os três painéis de detalhes (mapa, estações e app) passam a
-                  <b>um só módulo</b>
-                  , com ganchos para o que cada página tem.
+                  <b>um só módulo</b>, com ganchos para o que cada página tem.
                 </li>
                 <li>
                   No mapa, o HTML do painel ficou
@@ -2058,8 +2050,9 @@
                   <time>nov</time>
                   <h4>Um painel de detalhes para tudo</h4>
                   <p>
-                    O painel do mapa passa a servir as estações e a app. Hosting
-                    verde na Cloudflare.
+                    O painel do mapa passa a servir as estações e a app.
+                    Comboios só redesenhados quando se nota: menos 76% de
+                    processador. Hosting verde na Cloudflare.
                   </p>
                 </li>
               </ol>

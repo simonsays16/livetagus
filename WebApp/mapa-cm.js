@@ -2066,7 +2066,8 @@
   // O ETA por viagem só traz as paragens por onde o autocarro ainda não
   // passou, cada uma com a hora prevista. O endereço leva o trip_id com os
   // "|" codificados e os "[ ]" em claro, como o próprio exemplo da TML.
-  const TML_ETA_BASE = "https://go.tmlmobilidade.pt/hub/api/v1/eta/by-trip/";
+  const TML_ETA_BASE =
+    "https://go.tmlmobilidade.pt/hub/api/v1/0XJC9/eta/by-trip/";
   const PERCURSO_REFRESH_MS = 30_000;
 
   function urlEta(trip) {
