@@ -23,6 +23,9 @@
 require("dotenv").config();
 const fetch = require("node-fetch");
 const config = require("../../config.js");
+// [v7 SALTOS] Filtro de saltos de localização (ver jump-guard.js). Aplica-se
+// ao /mapa (cache abaixo) e ao payload entregue ao gtfs-geo (callback).
+const JumpGuard = require("./jump-guard.js");
 
 const AGENCY_ID = "7NTB1"; // Fertagus
 const POLL_INTERVAL_MS = 3000; // refresh de 3 s
@@ -88,20 +91,31 @@ const pollPositions = async () => {
     }
 
     const next = {};
-    for (const v of json.data) {
-      if (v.agency_id !== AGENCY_ID) continue;
+    const pollTs = Date.now();
+    // Payload para o gtfs-geo: os veículos Fertagus levam a posição já filtrada
+    // e a marca _ltJump (normal | held | jump_accepted | repeat). Os restantes
+    // seguem intactos (o gtfs-geo ignora-os de qualquer forma).
+    const guarded = json.data.map((v) => {
+      if (!v || v.agency_id !== AGENCY_ID) return v;
       if (typeof v.latitude !== "number" || typeof v.longitude !== "number") {
-        continue;
+        return v;
       }
 
       const id = stripAgencyPrefix(v.vehicle_id);
-      if (!id) continue;
+      if (!id) return v;
+
+      const fixTs =
+        typeof v.timestamp === "number" && v.timestamp > 0
+          ? v.timestamp * 1000
+          : pollTs;
+      const g = JumpGuard.check(id, v.latitude, v.longitude, fixTs);
 
       next[id] = {
-        latitude: v.latitude,
-        longitude: v.longitude,
+        latitude: g.lat,
+        longitude: g.lng,
       };
-    }
+      return { ...v, latitude: g.lat, longitude: g.lng, _ltJump: g.kind };
+    });
 
     // Substituição atómica do cache (reflete sempre o último estado da TML;
     // viaturas que desapareceram do feed deixam de constar).
@@ -110,7 +124,7 @@ const pollPositions = async () => {
 
     if (onPayloadCb) {
       try {
-        onPayloadCb(json.data, Date.now());
+        onPayloadCb(guarded, Date.now());
       } catch (e) {
         console.error("[MAPA/TML] Callback GTFS falhou:", e.message);
       }
@@ -146,4 +160,7 @@ const init = (onPayload) => {
 // Resposta a servir no endpoint /mapa.
 const getMapData = () => (IS_DOWN ? { erro: "down" } : LOCATION_CACHE);
 
-module.exports = { init, getMapData };
+// [v7] Reset diário (04:00): esquece o estado do filtro de saltos.
+const resetJumpGuard = () => JumpGuard.reset();
+
+module.exports = { init, getMapData, resetJumpGuard };

@@ -501,7 +501,7 @@ module.exports = function registerRoutes(app, ctx) {
   app.get("/", (req, res) =>
     res.json({
       status: "online",
-      version: "b6.2.5",
+      version: "7.0.0",
       aviso:
         "Pedimos que não uses o nosso endpoint diretamente! Verifica toda as informações e código no github.",
       operational: getOperationalInfo(),

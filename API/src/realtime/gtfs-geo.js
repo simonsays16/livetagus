@@ -301,6 +301,9 @@ const processPing = (p) => {
 
   try {
     const { trainId, latitude, longitude, receivedAt, direction, route } = p;
+    // [v7 SALTOS] O jump-guard (get-location) já confirmou este salto (2.º fix
+    // longe do último aceite) → re-ancora já, sem esperar por outliers.
+    const jumpAccepted = !!p.jumpAccepted;
     if (!trainId) return null;
 
     const v = (VEHICLES[trainId] = VEHICLES[trainId] || {
@@ -345,7 +348,18 @@ const processPing = (p) => {
       const impliedMps = movedM / dtS;
 
       // [EXCEÇÃO] Salto abrupto de coordenadas: fisicamente impossível.
-      if (impliedMps > OUTLIER_SPEED_MPS) {
+      if (jumpAccepted) {
+        // [v7 SALTOS] Salto confirmado pelo jump-guard: a posição nova é a
+        // verdadeira. Re-ancora sem herdar o salto como velocidade.
+        console.warn(
+          `[GTFS-GEO] Re-seed (${trainId}): salto confirmado no fix seguinte — ` +
+            `posição nova aceite.`,
+        );
+        isReseed = true;
+        v.outlierStreak = 0;
+        v.history = [];
+        v.speedMps = 0;
+      } else if (impliedMps > OUTLIER_SPEED_MPS) {
         if (!OUTLIER_FILTER_ENABLED) {
           // Filtro desligado: aceitar o ping como re-seed imediato — a posição
           // nova é mostrada já, mas o salto NÃO contamina a velocidade nem os
@@ -357,14 +371,13 @@ const processPing = (p) => {
         } else {
           v.outlierStreak = (v.outlierStreak || 0) + 1;
 
-          // RE-SEED: 3 fixes consecutivos "impossíveis" face ao último ponto
-          // aceite = o comboio ESTÁ mesmo na posição nova (re-aquisição de GPS
-          // à saída de túnel — Pragal/Campolide — ou gap longo do feed).
-          // Re-ancorar sem velocidade em vez de bloquear o tracking até o dt
-          // diluir (era a causa das caudas 3486→1905→...→210 km/h nos logs).
-          if (v.outlierStreak >= 3) {
+          // RE-SEED: [v7] 2 fixes consecutivos "impossíveis" face ao último
+          // ponto aceite = o comboio ESTÁ mesmo na posição nova (re-aquisição
+          // de GPS à saída de túnel ou gap longo do feed). Mesma regra do
+          // jump-guard: o 1.º salto é segurado, o 2.º confirma.
+          if (v.outlierStreak >= 2) {
             console.warn(
-              `[GTFS-GEO] Re-seed (${trainId}): 3 outliers consecutivos — ` +
+              `[GTFS-GEO] Re-seed (${trainId}): 2 outliers consecutivos — ` +
                 `a re-ancorar posição (${(impliedMps * 3.6).toFixed(0)} km/h implícitos).`,
             );
             isReseed = true;
@@ -408,19 +421,30 @@ const processPing = (p) => {
 
     v.lastPing = { ts: receivedAt, ...snap };
 
+    // [v7] Depois de um re-seed a posição saltou: a máquina de estados tem de
+    // se re-sincronizar SEM gerar chegadas/partidas falsas (as estações que
+    // ficaram para trás no salto não foram observadas).
+    if (isReseed && v.status) v.status.resync = true;
+
     // [SENTIDO POR ESTAÇÕES] Regista a estação MAIS PRÓXIMA da posição atual
     // se estiver dentro do raio de passagem. Guarda a SEQUÊNCIA ordenada de
     // estações distintas por onde passou (não o km bruto) — imune ao re-seed
     // do GPS no túnel da ponte, que só afeta o km instantâneo.
-    recordStationPass(v, snap);
+    recordStationPass(v, { ...snap, ts: receivedAt });
 
     // Máquina de estados GTFS-RT (gera eventos de chegada/partida).
+    // [v7] expectedSign: sinal do km no sentido de marcha DECLARADO (+1/-1,
+    // 0 = desconhecido). Usado só para a re-sincronização sem eventos.
+    const fwdLisboa = featureForwardIsLisboa[snap.featureIdx];
+    const expectedSign =
+      fwdLisboa == null ? 0 : (direction !== "margem") === fwdLisboa ? 1 : -1;
     const events = VehicleStatus.update(v.status, {
       km: snap.km,
       featureIdx: snap.featureIdx,
       speedMps: v.speedMps,
       ts: receivedAt,
       direction,
+      expectedSign,
     });
 
     // Eventos → motor de atrasos.
@@ -461,6 +485,9 @@ const ingestTmlPayload = (tmlData, resolveTrain, receivedAt = Date.now()) => {
       if (!veh || veh.agency_id !== AGENCY_ID) continue; // só Fertagus
       if (typeof veh.latitude !== "number" || typeof veh.longitude !== "number")
         continue;
+      // [v7 SALTOS] Salto por confirmar: não mexe no estado (a posição no
+      // feed v2 fica no último ponto real até ao fix seguinte decidir).
+      if (veh._ltJump === "held") continue;
 
       const meta = resolveTrain ? resolveTrain(veh) : null;
       if (!meta || !meta.trainId) continue;
@@ -473,6 +500,7 @@ const ingestTmlPayload = (tmlData, resolveTrain, receivedAt = Date.now()) => {
         receivedAt: veh.timestamp ? veh.timestamp * 1000 : receivedAt,
         direction: meta.direction,
         route: meta.route,
+        jumpAccepted: veh._ltJump === "jump_accepted",
       });
       if (r) out.push(r);
     } catch (e) {
@@ -539,6 +567,13 @@ const recordStationPass = (v, snap) => {
   if (v.passSeq[v.passSeq.length - 1] !== bestKey) {
     v.passSeq.push(bestKey);
     if (v.passSeq.length > 6) v.passSeq.shift(); // só precisamos do recente
+    // [v7] Sequência COMPLETA (sem corte) com horas: a 1.ª estação vista e a
+    // última hora em que o comboio ainda lá estava (≈ hora de partida).
+    v.passLog = v.passLog || [];
+    v.passLog.push({ key: bestKey, firstTs: snap.ts, lastTs: snap.ts });
+    if (v.passLog.length > 20) v.passLog.shift();
+  } else if (v.passLog && v.passLog.length) {
+    v.passLog[v.passLog.length - 1].lastTs = snap.ts;
   }
 };
 
@@ -560,6 +595,41 @@ const observedDirection = (trainId, now = Date.now()) => {
 
   // Índice sobe (sul→norte) = lisboa; desce = margem.
   return iLast > iPrev ? "lisboa" : "margem";
+};
+
+// [v7 SENTIDO POR ESTAÇÕES] Primeiro par de estações consecutivas distintas
+// por onde o comboio passou (ex: Coina → Fogueteiro). Pares com estações a
+// mais de 3 posições de distância na linha são ignorados (salto de GPS, não
+// passagem real). Devolve { fromKey, toKey, direction, fromDepartureTs } ou
+// null. fromDepartureTs = último instante em que ainda estava na 1.ª estação.
+// originKey: estação de ORIGEM do horário. Se o comboio passou por ela, só
+// conta o que fez A PARTIR dela: o que vem antes é o comboio a chegar para
+// começar o serviço (ex: vem de Sete Rios até Roma-Areeiro já com o número da
+// viagem seguinte), não uma inversão.
+const MAX_PAIR_GAP = 3;
+const observedFirstPair = (trainId, originKey = null) => {
+  const v = VEHICLES[trainId];
+  if (!v || !Array.isArray(v.passLog) || v.passLog.length < 2) return null;
+  let start = 0;
+  if (originKey) {
+    const j = v.passLog.findIndex((p) => p.key === originKey);
+    if (j >= 0) start = j;
+  }
+  for (let i = start; i + 1 < v.passLog.length; i++) {
+    const a = v.passLog[i];
+    const b = v.passLog[i + 1];
+    const ia = STATION_ORDER_IDX[a.key];
+    const ib = STATION_ORDER_IDX[b.key];
+    if (ia == null || ib == null || ia === ib) continue;
+    if (Math.abs(ib - ia) > MAX_PAIR_GAP) continue;
+    return {
+      fromKey: a.key,
+      toKey: b.key,
+      direction: ib > ia ? "lisboa" : "margem",
+      fromDepartureTs: a.lastTs,
+    };
+  }
+  return null;
 };
 
 // Nº de veículos com GPS fresco — 0 = feed TML vazio/em baixo.
@@ -594,6 +664,12 @@ const getVehicle = (trainId) => VEHICLES[trainId] || null;
 const removeVehicle = (trainId) => {
   delete VEHICLES[trainId];
 };
+// [v7] Reset diário (04:00): os números de comboio repetem-se todos os dias.
+// Sem isto, a máquina de estados de um nº ficava esgotada (percurso de ontem)
+// e nunca mais gerava chegadas/partidas até o servidor reiniciar.
+const resetAll = () => {
+  for (const k of Object.keys(VEHICLES)) delete VEHICLES[k];
+};
 
 module.exports = {
   init,
@@ -602,11 +678,13 @@ module.exports = {
   isGpsFresh,
   effectiveSpeedMps,
   observedDirection,
+  observedFirstPair,
   liveVehicleCount,
   liveVehicleIds,
   remainingDistanceM,
   getVehicle,
   removeVehicle,
+  resetAll,
   // expostos para testes
   _projectOnLine: projectOnLine,
   _tangentBearing: tangentBearing,

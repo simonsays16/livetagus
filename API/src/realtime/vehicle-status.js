@@ -86,6 +86,20 @@ const stationBounds = (stationKey, direction) => {
     highKm = fallback(1).km;
   }
 
+  // [v7] Perímetro degenerado (terminais: Roma-Areeiro e Setúbal têm as duas
+  // entradas projetadas no MESMO ponto, com o centro fora delas). Sem isto a
+  // entrada e a saída coincidiam: o comboio "chegava" à estação de origem no
+  // instante em que partia e "partia" do terminal no instante em que chegava,
+  // gerando eventos falsos. Alarga o perímetro para incluir a plataforma.
+  if (
+    center.km < lowKm ||
+    center.km > highKm ||
+    highKm - lowKm < DEFAULT_HALF_PLATFORM_KM / 3
+  ) {
+    lowKm = Math.min(lowKm, center.km - DEFAULT_HALF_PLATFORM_KM);
+    highKm = Math.max(highKm, center.km + DEFAULT_HALF_PLATFORM_KM);
+  }
+
   return {
     featureIdx: center.featureIdx,
     centerKm: center.km,
@@ -110,7 +124,49 @@ const createState = (direction, route) => ({
   stopKey: Array.isArray(route) && route[0] ? route[0].key : null,
   travelSign: 0, // +1 se km cresce no sentido de marcha, -1 caso contrário
   lastKm: null,
+  resync: true, // [v7] 1.ª amostra: sincronizar sem gerar eventos
 });
+
+/**
+ * [v7] RE-SINCRONIZAÇÃO SEM EVENTOS
+ * Na 1.ª amostra de um comboio (arranque do servidor a meio da viagem, comboio
+ * que só aparece no feed a meio) e depois de um salto de GPS confirmado, o
+ * comboio NÃO foi visto a chegar às estações que já ficaram para trás. Antes,
+ * a máquina "passava" essas estações uma a uma com a hora ATUAL, e isso gerava
+ * atrasos falsos enormes. Agora:
+ *   • estações já ultrapassadas → avançadas em silêncio (sem eventos);
+ *   • se a amostra está DENTRO de uma estação → STOPPED_AT nessa estação, sem
+ *     chegada (a hora real de chegada não foi vista); a PARTIDA, essa sim, é
+ *     medida quando ele sair.
+ * Precisa do sinal esperado do km no sentido declarado (s.expectedSign). Sem
+ * ele (0), não re-sincroniza e segue o fluxo normal.
+ */
+const resyncSilently = (state, s) => {
+  const sign = s.expectedSign;
+  if (sign !== 1 && sign !== -1) return false;
+  if (!state.travelSign) state.travelSign = sign;
+
+  while (state.routeIdx < state.route.length) {
+    const target = state.route[state.routeIdx];
+    const bounds = stationBounds(target.key, state.direction);
+    if (!bounds || bounds.featureIdx !== s.featureIdx) break;
+    const entryKm = sign > 0 ? bounds.lowKm : bounds.highKm;
+    const exitKm = sign > 0 ? bounds.highKm : bounds.lowKm;
+    const beyond = (km, ref) => (sign > 0 ? km > ref : km < ref);
+    const reached = (km, ref) => (sign > 0 ? km >= ref : km <= ref);
+
+    if (beyond(s.km, exitKm)) {
+      advance(state); // já passou: sem eventos
+      continue;
+    }
+    if (reached(s.km, entryKm)) {
+      state.current = "STOPPED_AT"; // dentro da estação: só mede a partida
+      state.stopKey = target.key;
+    }
+    break;
+  }
+  return true;
+};
 
 /** Sinal de progresso (km crescente ou decrescente) inferido das amostras. */
 const inferTravelSign = (state, km) => {
@@ -130,9 +186,43 @@ const update = (state, s) => {
   const events = [];
   if (!state || !s || typeof s.km !== "number") return events;
 
+  // [v7] 1.ª amostra / pós-salto: sincroniza sem eventos e termina aqui.
+  if (state.resync) {
+    state.resync = false;
+    const isFirst = state.lastKm == null;
+    state.lastKm = s.km;
+    if (resyncSilently(state, s)) return events;
+    if (!isFirst) return events;
+    // Sem sinal esperado na 1.ª amostra → fluxo antigo (abaixo).
+    state.lastKm = null;
+  }
+
   const sign = inferTravelSign(state, s.km);
   if (sign !== 0) state.travelSign = sign;
   state.lastKm = s.km;
+
+  // [v7] A andar CONTRA o sentido do horário (ex: a chegar à estação de
+  // origem para começar o serviço, ou ruído de GPS parado): não há chegadas
+  // nem partidas deste percurso. Se persistir (3 amostras), volta ao início
+  // do percurso e re-sincroniza quando retomar — assim a partida da estação
+  // onde inverteu é medida a sério.
+  const exp = s.expectedSign;
+  if (
+    (exp === 1 || exp === -1) &&
+    state.travelSign &&
+    state.travelSign !== exp
+  ) {
+    state.againstCount = (state.againstCount || 0) + 1;
+    if (state.againstCount >= 3) {
+      state.againstCount = 0;
+      state.routeIdx = 0;
+      state.current = "IN_TRANSIT_TO";
+      state.stopKey = state.route[0] ? state.route[0].key : null;
+      state.resync = true;
+    }
+    return events;
+  }
+  state.againstCount = 0;
 
   const target = state.route[state.routeIdx];
   if (!target) return events; // percurso esgotado (terminal alcançado)

@@ -253,17 +253,26 @@ const decorateTrain = (train, opts = {}) => {
     const gpsFresh = !!(_Geo && _Geo.isGpsFresh(trainId, nowMs));
     const veh = gpsFresh ? _Geo.getVehicle(trainId) : null;
 
-    // ── Atraso dinâmico em rota (cinemática pura) p/ os nós futuros ──
-    // Quando há GPS, o atraso projetado da PRÓXIMA estação substitui o atraso
-    // estático e propaga-se aos nós seguintes (mesma filosofia do motor
-    // legado, que arrasta currentDelay). Clamp a ≥0: nunca antes do horário.
+    // ── Atraso dinâmico p/ os nós futuros ──
+    // [v7.2] Com GPS, cada nó futuro recebe o atraso do último evento medido
+    // em estação (com a regra da paragem técnica de Coina) — o mesmo valor que
+    // o /fertagus e o /estacao usam. Clamp a ≥0: nunca antes do horário.
     let dynDelayS = null;
+    // [v7.1] Horário de CHEGADA por estação (o HoraProgramada dos nós é a
+    // hora de PARTIDA). Usado no arrival.time dos nós futuros.
+    const richForArr = _getRichById(trainId);
+    const routeForArr = richForArr
+      ? buildRouteFromRich(richForArr, trainId, now)
+      : null;
+    const arrSchedSByKey = {};
+    for (const e of routeForArr || []) {
+      arrSchedSByKey[e.key] = Math.floor(e.arrivalMs / 1000);
+    }
     if (gpsFresh && _DelaysRT && nextIdx >= 0) {
       const nextKey = nameToKey(
         String(nodes[nextIdx].NomeEstacao || "").replace(/-A$/, ""),
       );
-      const rich = _getRichById(trainId);
-      const route = rich ? buildRouteFromRich(rich, trainId, now) : null;
+      const route = routeForArr;
       if (route) {
         const ir = _DelaysRT.computeInRoute(trainId, {
           nextStationKey: nextKey,
@@ -293,14 +302,35 @@ const decorateTrain = (train, opts = {}) => {
       } else if (schedS != null) {
         // Nó futuro: dinâmico (GPS) ou estático (HoraPrevista legado).
         let delay;
-        if (dynDelayS != null) {
+        const nodeKey = nameToKey(
+          String(node.NomeEstacao || "").replace(/-A$/, ""),
+        );
+        const nodeDyn =
+          dynDelayS != null && routeForArr
+            ? _DelaysRT.computeEtaToStation(trainId, {
+                targetKey: nodeKey,
+                route: routeForArr,
+                now: nowMs,
+              })
+            : null;
+        if (nodeDyn && typeof nodeDyn.inRouteDelayS === "number") {
+          delay = Math.max(0, nodeDyn.inRouteDelayS);
+        } else if (dynDelayS != null) {
           delay = dynDelayS;
         } else {
           const prevS = toUnixS(node.HoraPrevista, now);
           delay = prevS != null ? Math.max(0, prevS - schedS) : 0;
         }
-        n.arrival = { delay, time: schedS + delay };
-        n.departure = { delay, time: schedS + delay + DWELL_S };
+        // [v7.1] schedS = HoraProgramada = PARTIDA programada. A chegada usa o
+        // horário de chegada (quando existe); a partida nunca fica antes da
+        // partida programada (antes somava +60 s à partida).
+        const arrSchedS = arrSchedSByKey[nodeKey];
+        const arrBaseS =
+          typeof arrSchedS === "number" && arrSchedS <= schedS
+            ? arrSchedS
+            : schedS;
+        n.arrival = { delay, time: arrBaseS + delay };
+        n.departure = { delay, time: schedS + delay };
       }
       return n;
     });

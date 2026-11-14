@@ -17,6 +17,7 @@ const EstacaoEndpoint = require("./src/output/estacao-endpoint.js");
 const GetLocation = require("./src/realtime/get-location.js");
 const Geo = require("./src/realtime/gtfs-geo.js");
 const DelaysRT = require("./src/realtime/delays-rt.js");
+const DelayBlock = require("./src/realtime/delay-block.js");
 const GtfsOutput = require("./src/output/gtfs-output.js");
 const ServiceDayManager = require("./src/schedule/serviceDayManager.js");
 
@@ -231,6 +232,65 @@ GhostManager.init(
   },
   Geo,
 );
+
+// [v7 SENTIDO INVERTIDO] Horários para ligar comboios invertidos a um horário
+// existente. Getters: as tabelas são recarregáveis (loadDataFiles).
+MapAuthority.init({
+  getRichSchedule: () => RICH_SCHEDULE,
+  getDepartureSchedule: () => DEPARTURE_SCHEDULE,
+  getRichById: (id) =>
+    RICH_SCHEDULE.find((t) => String(t.id) === String(id)) ||
+    DYNAMIC_EXTRA_SCHEDULE[String(id)] ||
+    null,
+  // Mesmo critério de dia do updateCycle (horario 0/1/2) + supressões
+  // programadas (changes.json).
+  runsToday: (t, nowObj) => {
+    const op = getOperationalInfo(nowObj);
+    if (VerifyManager.isSuppressed(String(t.id), op.operationalDateStr)) {
+      return false;
+    }
+    const hType = parseInt(t.horario);
+    return (
+      hType === 1 ||
+      (op.isWeekendOrHoliday && hType === 2) ||
+      (!op.isWeekendOrHoliday && hType === 0)
+    );
+  },
+});
+
+// --- [v7] RESET DIÁRIO DAS 04:00 (tempo real) ---
+// Os números de comboio repetem-se todos os dias. Às 04:00 (linha parada)
+// esquece-se tudo o que é do dia: lista de comboios sem cálculo de atraso,
+// medições de atraso em estação, máquinas de estado dos veículos, filtro de
+// saltos e decisões de sentido invertido.
+const runDailyRealtimeReset = () => {
+  const blocked = DelayBlock.reset();
+  DelaysRT.resetAll();
+  Geo.resetAll();
+  GetLocation.resetJumpGuard();
+  MapAuthority.resetDay();
+  console.log(
+    `[RESET 04:00] Estado diário de tempo real limpo ` +
+      `(${blocked} comboio(s) saíram da lista sem cálculo de atraso).`,
+  );
+};
+let DAILY_RESET_TIMER = null;
+const scheduleDailyRealtimeReset = () => {
+  const now = new Date();
+  const next = new Date(now.getTime());
+  next.setHours(4, 0, 0, 0);
+  if (next.getTime() <= now.getTime()) next.setDate(next.getDate() + 1);
+  if (DAILY_RESET_TIMER) clearTimeout(DAILY_RESET_TIMER);
+  DAILY_RESET_TIMER = setTimeout(() => {
+    try {
+      runDailyRealtimeReset();
+    } catch (e) {
+      console.error("[RESET 04:00] Falhou:", e.message);
+    }
+    scheduleDailyRealtimeReset();
+  }, next.getTime() - now.getTime());
+  if (DAILY_RESET_TIMER.unref) DAILY_RESET_TIMER.unref();
+};
 
 // --- TURNAROUND PREDICTION ---
 
@@ -954,6 +1014,20 @@ const processTrain = async (richInfo, originDateStr) => {
       delete OUTPUT_CACHE[trainId]; // o número errado não deve aparecer
       mem.lastResult = null;
       return ghostOut;
+    }
+    // [v7] Ligado a um horário existente: o comboio passa a viver com ESSE
+    // número (processado no ciclo como qualquer outro). O número errado não
+    // deve aparecer.
+    if (MapAuthority.isLinkedTrip(effectiveId)) {
+      delete OUTPUT_CACHE[trainId];
+      mem.lastResult = null;
+      // O horário ligado tinha um resultado em cache (ainda sem GPS): força a
+      // atualização no próximo ciclo em vez de esperar pelo cooldown.
+      if (!mem.linkKicked && TRAIN_MEMORY[effectiveId]) {
+        TRAIN_MEMORY[effectiveId].nextWakeUp = 0;
+        mem.linkKicked = true;
+      }
+      return null;
     }
   }
 
@@ -2020,7 +2094,7 @@ const wireRoutes = () =>
 
 const startServer = () =>
   app.listen(config.PORT, () => {
-    console.log(`LiveTagus API vb6.3.0 ativa na porta ${config.PORT}`);
+    console.log(`LiveTagus API v7.0.0 ativa na porta ${config.PORT}`);
     console.log(`Endpoint /fertagus protegido com API_KEY.`);
 
     // NÃO usar await aqui: checkOfflineTrains() faz station-poll com timeouts
@@ -2030,6 +2104,7 @@ const startServer = () =>
     checkOfflineTrains();
     updateCycle();
     scheduleNextTick();
+    scheduleDailyRealtimeReset(); // [v7] reset diário das 04:00
     try {
       Geo.init(
         path.join(__dirname, "/data/geo/fertagus_line_detailed.json"),
@@ -2069,9 +2144,9 @@ const startServer = () =>
         GtfsOutput.rememberTmlMeta(meta.trainId, meta.tml);
         // [SENTIDO INVERTIDO] Só desvia pings se a deteção estiver ATIVA. Com ela
         // desligada, o ping segue sempre com o número original (sem fantasmas).
+        // [v7] O ping desviado leva o sentido/percurso do ID de destino.
         if (DIRECTION_DETECTION_ENABLED) {
-          const rerouted = MapAuthority.getReversedId(meta.trainId);
-          if (rerouted) return { ...meta, trainId: rerouted };
+          return MapAuthority.rerouteMeta(meta);
         }
         return meta;
       });

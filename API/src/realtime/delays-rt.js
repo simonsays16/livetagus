@@ -2,25 +2,26 @@
  * delays-rt.js
  * Motor de cálculo de atrasos GTFS-RT para a LiveTagus API.
  *
- * TRÊS TIPOS DE ATRASO:
+ * [v7.0.0] O ATRASO SÓ É CALCULADO EM ESTAÇÃO — NUNCA DURANTE A VIAGEM:
  * ─────────────────────────────────────────────────────────────────────────────
- *  1. ARRIVAL DELAY    — no instante da transição p/ INCOMING_AT/STOPPED_AT,
+ *  1. ARRIVAL DELAY    — ao ENTRAR na estação (INCOMING_AT/STOPPED_AT):
  *                        received_at − hora programada de CHEGADA ao nó.
- *  2. DEPARTURE DELAY  — no instante da transição p/ IN_TRANSIT_TO (saída),
+ *  2. DEPARTURE DELAY  — ao SAIR da estação (IN_TRANSIT_TO):
  *                        received_at − hora programada de PARTIDA.
- *  3. IN-ROUTE DELAY   — ETA dinâmico via cinemática pura da UQE 3500 +
- *                        modelo de progresso proporcional do horário.
+ *  Em ambos: desconto fixo (DELAY_DISCOUNT_S) e nunca negativo.
  *
- * MODELO CINEMÁTICO (UQE 3500 — ficha técnica):
+ * [v7.2] NADA É CALCULADO ENTRE ESTAÇÕES:
  * ─────────────────────────────────────────────────────────────────────────────
- *   Vmax = 140 km/h (38.89 m/s) | a = 0.9 m/s² | d = 0.9 m/s² (serviço)
- *   Dwell técnico = 60 000 ms (fecho automático 1 min após abertura).
- *
- *   Sem limites de velocidade da via conhecidos, o ETA é o tempo FÍSICO
- *   mínimo: acelerar a 0.9 m/s², cruzar a Vmax se houver espaço, e travar a
- *   0.9 m/s² até parar no ponto zero da estação. Se a distância for curta,
- *   a curva é TRIANGULAR (trava antes de atingir Vmax); caso contrário é
- *   TRAPEZOIDAL.
+ *  • O atraso atual = o do ÚLTIMO evento medido em estação. Não muda enquanto
+ *    o comboio anda (sem velocidade, sem cinemática, sem distâncias).
+ *  • As estações futuras recebem esse MESMO atraso (já não há projeção de
+ *    "recuperação de folga" troço a troço — era um cálculo entre estações).
+ *  • ÚNICA exceção — PARAGEM TÉCNICA DE COINA: nos comboios Setúbal → Lisboa
+ *    o horário tem ~3 min de paragem técnica em Coina. Um comboio atrasado não
+ *    a cumpre e recupera até 3 min. Enquanto ainda não partiu de Coina, Coina
+ *    e as estações seguintes ficam com max(0, atraso − 3 min). Depois de
+ *    partir de Coina vale o atraso real medido nessa partida.
+ *  Comboios na lista delay-block.js (nº com horário errado) não têm cálculo.
  *
  * FALLBACK:
  * ─────────────────────────────────────────────────────────────────────────────
@@ -31,26 +32,18 @@
 
 "use strict";
 
-// ─── CONSTANTES DA FICHA TÉCNICA (UQE 3500) ─────────────────────────────────
+// [v7] Desconto fixo aplicado a TODOS os atrasos medidos em estação.
+const DELAY_DISCOUNT_S = 60;
 
-const VMAX_MPS = 140 / 3.6; // 38.888... m/s
-const ACCEL_MPS2 = 0.9; // 0 → 40 km/h (assumida constante p/ o modelo)
-const DECEL_MPS2 = 0.9; // frenagem de serviço
-const DWELL_MS = 60000; // tempo mínimo estacionário teórico na plataforma
+// [v7.2] Recuperação máxima na paragem técnica de Coina (Setúbal → Lisboa).
+const COINA_TECH_RECOVERY_S = 3 * 60;
 
-// ─── [TÚNEL DA PONTE] TROÇO SEM COBERTURA GPS ───────────────────────────────
-// Entre Campolide e Pragal o comboio atravessa o túnel/Ponte 25 de Abril, onde
-// o GPS deixa de atualizar. Sem pings novos, o motor lê velocidade ~0 e infla
-// o atraso (pensa que está parado). Neste troço NÃO calculamos atraso por GPS:
-// congelamos o último atraso conhecido até o comboio sair do túnel e voltar a
-// reportar posição. Aplica-se nos dois sentidos.
-const TUNNEL_SEGMENT = new Set(["campolide", "pragal"]);
-const isTunnelSegment = (fromKey, toKey) =>
-  TUNNEL_SEGMENT.has(fromKey) && TUNNEL_SEGMENT.has(toKey);
+const DelayBlock = require("./delay-block.js");
 
 // ─── ESTADO ──────────────────────────────────────────────────────────────────
 
-// { [trainId]: { arrivals:{key:{ts,delayS}}, departures:{...}, lastInRoute } }
+// { [trainId]: { arrivals:{key:{ts,rawS,delayS}}, departures:{...},
+//                last:{type,stationKey,ts,rawS,delayS}, lastInRoute } }
 const DELAYS = {};
 
 // Referências injetadas (evita dependência circular com gtfs-geo.js).
@@ -63,17 +56,21 @@ const ensure = (trainId) =>
   (DELAYS[trainId] = DELAYS[trainId] || {
     arrivals: {},
     departures: {},
+    last: null,
     lastInRoute: null,
   });
 
-// No congelamento do túnel, mantemos o atraso herdado mas projetamos um etaMs
-// simples: hora de chegada planeada + último atraso conhecido.
-const entryArrivalOr = (route, stationKey, lastInRoute, now) => {
-  const e = findRouteEntry(route, stationKey);
-  if (e && typeof e.arrivalMs === "number") {
-    return e.arrivalMs + lastInRoute.inRouteDelayS * 1000;
+// [v7] Regista uma medição em estação: desconto de 60 s, nunca negativo,
+// verificação "atraso_impossivel" e atualização do último evento.
+const storeEvent = (d, trainId, type, stationKey, receivedAt, schedMs) => {
+  const rawS = Math.round((receivedAt - schedMs) / 1000);
+  const delayS = Math.max(0, rawS - DELAY_DISCOUNT_S);
+  const ev = { ts: receivedAt, rawS, delayS };
+  DelayBlock.checkStationDelay(trainId, stationKey, rawS);
+  if (!d.last || receivedAt >= d.last.ts) {
+    d.last = { type, stationKey, ...ev };
   }
-  return lastInRoute.etaMs || now;
+  return ev;
 };
 
 const findRouteEntry = (route, stationKey) =>
@@ -86,16 +83,32 @@ const findRouteEntry = (route, stationKey) =>
  * Compara o timestamp do ping com a hora programada de chegada ao nó.
  * Idempotente por estação (o 1º evento — INCOMING_AT — fixa o valor).
  */
+// [v7.1] Paragem técnica de Coina: os comboios Setúbal → Lisboa param ~3 min
+// em Coina, mas o horário só tem a hora de partida (chegada = partida). Medir a
+// chegada daria um "adiantamento" falso de ~3 min. Só a PARTIDA conta.
+const isCoinaTechnicalStop = (stationKey, route) =>
+  stationKey === "coina" &&
+  Array.isArray(route) &&
+  route.length > 0 &&
+  route[0].key === "setubal"; // percurso sentido Lisboa com origem em Setúbal
+
 const recordArrival = (trainId, stationKey, receivedAt, route) => {
   try {
     const d = ensure(trainId);
     if (d.arrivals[stationKey]) return d.arrivals[stationKey]; // já medido
+    if (isCoinaTechnicalStop(stationKey, route)) return null;
 
     const entry = findRouteEntry(route, stationKey);
     if (!entry || typeof entry.arrivalMs !== "number") return null;
 
-    const delayS = Math.round((receivedAt - entry.arrivalMs) / 1000);
-    d.arrivals[stationKey] = { ts: receivedAt, delayS };
+    d.arrivals[stationKey] = storeEvent(
+      d,
+      trainId,
+      "arrival",
+      stationKey,
+      receivedAt,
+      entry.arrivalMs,
+    );
     return d.arrivals[stationKey];
   } catch (e) {
     console.error("[DELAYS-RT] recordArrival:", e.message);
@@ -121,8 +134,14 @@ const recordDeparture = (trainId, stationKey, receivedAt, route) => {
           : null;
     if (schedMs == null) return null;
 
-    const delayS = Math.round((receivedAt - schedMs) / 1000);
-    d.departures[stationKey] = { ts: receivedAt, delayS };
+    d.departures[stationKey] = storeEvent(
+      d,
+      trainId,
+      "departure",
+      stationKey,
+      receivedAt,
+      schedMs,
+    );
     return d.departures[stationKey];
   } catch (e) {
     console.error("[DELAYS-RT] recordDeparture:", e.message);
@@ -132,150 +151,69 @@ const recordDeparture = (trainId, stationKey, receivedAt, route) => {
 
 // ─── 3. CINEMÁTICA PURA: TEMPO MÍNIMO P/ PERCORRER D E PARAR ─────────────────
 
+// ─── 3. ATRASO ATUAL (último evento em estação) ─────────────────────────────
+
 /**
- * Tempo (s) para percorrer `distM` metros partindo a `v0` m/s e TERMINAR
- * PARADO (v=0) no destino, sob as leis da UQE 3500.
- *
- *   • Curva TRAPEZOIDAL: acelera até Vmax, cruza, trava a 0.9 m/s².
- *   • Curva TRIANGULAR: a distância não chega para atingir Vmax — o pico de
- *     velocidade vp resolve  (vp²−v0²)/2a + vp²/2d = D.
- *   • Se v0 já excede o que é travável em D, devolve a melhor aproximação
- *     (t = 2D / v0): o comboio vai "passar" o ponto — caso degenerado.
+ * [v7.2] Paragem técnica de Coina: aplica-se à estação `stationKey` se o
+ * comboio é Setúbal → Lisboa, a estação é Coina ou depois, e o comboio AINDA
+ * NÃO partiu de Coina (último evento medido antes de Coina).
  */
-const kinematicRunTimeS = (v0, distM) => {
-  const D = Math.max(0, distM);
-  if (D === 0) return 0;
-  const v = Math.min(Math.max(v0 || 0, 0), VMAX_MPS);
-  const a = ACCEL_MPS2;
-  const d = DECEL_MPS2;
-
-  // Espaço necessário para travar de v até 0.
-  const brakeFromV0 = (v * v) / (2 * d);
-  if (brakeFromV0 >= D) {
-    // Já dentro da curva de travagem — aproximação de velocidade média v/2.
-    return (2 * D) / Math.max(v, 0.1);
-  }
-
-  const dAccel = (VMAX_MPS * VMAX_MPS - v * v) / (2 * a); // v → Vmax
-  const dBrake = (VMAX_MPS * VMAX_MPS) / (2 * d); // Vmax → 0
-
-  if (dAccel + dBrake <= D) {
-    // TRAPEZOIDAL: há espaço para cruzar a Vmax.
-    const tAccel = (VMAX_MPS - v) / a;
-    const tCruise = (D - dAccel - dBrake) / VMAX_MPS;
-    const tBrake = VMAX_MPS / d;
-    return tAccel + tCruise + tBrake;
-  }
-
-  // TRIANGULAR: trava antes de atingir a velocidade de cruzeiro.
-  const vp = Math.sqrt((2 * a * d * D + d * v * v) / (a + d));
-  return (vp - v) / a + vp / d;
+const coinaRecoveryApplies = (d, route, stationKey) => {
+  if (!Array.isArray(route) || !route.length) return false;
+  if (route[0].key !== "setubal") return false; // só Setúbal → Lisboa
+  const ci = route.findIndex((r) => r.key === "coina");
+  if (ci < 0) return false;
+  const ti = route.findIndex((r) => r.key === stationKey);
+  if (ti < ci) return false; // estação antes de Coina
+  if (d.departures.coina) return false; // já partiu: vale o atraso real
+  const li = route.findIndex((r) => r.key === d.last.stationKey);
+  return li >= 0 && li < ci;
 };
 
-// ─── 3. ATRASO EM ROTA + ETA DINÂMICO ────────────────────────────────────────
+/**
+ * Atraso (s) de um comboio numa estação do percurso: o do último evento em
+ * estação, com a regra de Coina. Nada depende da posição entre estações.
+ * @returns {object|null} null = sem GPS fresco, comboio bloqueado, ou ainda
+ *   sem nenhum evento medido → o caller mantém o fallback, como antes.
+ */
+const delayAtStation = (trainId, stationKey, route, now) => {
+  if (!_geo) throw new Error("geo não injetado (init)");
+  if (!_geo.isGpsFresh(trainId, now)) return null; // → fallback estático
+  if (DelayBlock.isBlocked(trainId)) return null; // sem cálculo (lista)
+
+  const d = DELAYS[trainId];
+  if (!d || !d.last) return null; // ainda não passou nenhuma estação
+
+  const entry = findRouteEntry(route, stationKey);
+  if (!entry || typeof entry.arrivalMs !== "number") return null;
+
+  let delayS = d.last.delayS;
+  const coina = coinaRecoveryApplies(d, route, stationKey);
+  if (coina) delayS = Math.max(0, delayS - COINA_TECH_RECOVERY_S);
+
+  return {
+    etaMs: entry.arrivalMs + delayS * 1000,
+    inRouteDelayS: delayS,
+    source: coina ? "station_event_coina" : "station_event",
+    lastEventType: d.last.type,
+    lastEventStation: d.last.stationKey,
+  };
+};
 
 /**
- * Calcula o ETA dinâmico à próxima estação e o atraso em rota projetado.
- *
- * @param {string} trainId
- * @param {object} args {
- *   nextStationKey: string,
- *   route:          Array<{key, arrivalMs, departureMs}>,
- *   now:            number (ms)
- * }
- * @returns {object|null} {
- *   etaMs, etaKinematicMs, etaProportionalMs,
- *   inRouteDelayS, remainingM, effectiveSpeedMps, source
- * }
+ * Atraso para a PRÓXIMA estação. Mantém o nome/assinatura antigos (usado pelo
+ * gtfs-output e, através dele, pelo /estacao e pelo map-authority).
  */
 const computeInRoute = (
   trainId,
   { nextStationKey, route, now = Date.now() },
 ) => {
   try {
-    if (!_geo) throw new Error("geo não injetado (init)");
-    if (!_geo.isGpsFresh(trainId, now)) return null; // → fallback estático
-
-    // [TÚNEL DA PONTE] Se o troço atual é Campolide↔Pragal, não confiamos no
-    // GPS (sem cobertura no túnel). Congela o último atraso conhecido; nunca
-    // inventa atraso novo a partir de uma velocidade falsamente nula.
-    {
-      const idxNext = route
-        ? route.findIndex((r) => r.key === nextStationKey)
-        : -1;
-      const fromKey = idxNext > 0 ? route[idxNext - 1].key : null;
-      if (fromKey && isTunnelSegment(fromKey, nextStationKey)) {
-        const d = ensure(trainId);
-        if (d.lastInRoute && typeof d.lastInRoute.inRouteDelayS === "number") {
-          return {
-            ...d.lastInRoute,
-            etaMs: entryArrivalOr(route, nextStationKey, d.lastInRoute, now),
-            frozen: true, // sinaliza: atraso herdado, não recalculado
-            source: "tunnel_frozen",
-          };
-        }
-        return null; // sem histórico → cai no fallback estático (horário)
-      }
+    const r = delayAtStation(trainId, nextStationKey, route, now);
+    if (r && DELAYS[trainId]) {
+      DELAYS[trainId].lastInRoute = { ...r, ts: now, stationKey: nextStationKey };
     }
-
-    const remainingM = _geo.remainingDistanceM(trainId, nextStationKey);
-    if (remainingM == null) return null;
-
-    const entry = findRouteEntry(route, nextStationKey);
-    if (!entry || typeof entry.arrivalMs !== "number") return null;
-
-    // Velocidade Efetiva Recente — distância na linha entre os últimos pings
-    // válidos / tempo decorrido, capada ao teto físico (140 km/h).
-    const vEff = Math.min(_geo.effectiveSpeedMps(trainId, now), VMAX_MPS);
-
-    // (a) ETA FÍSICO — cinemática pura da UQE 3500 (curva trapezoidal ou
-    //     triangular, terminando parado no ponto zero da estação).
-    const etaKinematicMs = now + kinematicRunTimeS(vEff, remainingM) * 1000;
-
-    // (b) MODELO DE PROGRESSO PROPORCIONAL DO HORÁRIO — distância física real
-    //     percorrida vs tempo planeado consumido no troço atual. O ritmo
-    //     observado (pace) extrapola o tempo restante do troço.
-    let etaProportionalMs = null;
-    const d = ensure(trainId);
-    const idx = route ? route.findIndex((r) => r.key === nextStationKey) : -1;
-    const prev = idx > 0 ? route[idx - 1] : null;
-    const dep = prev ? d.departures[prev.key] : null;
-
-    if (prev && dep && typeof prev.departureMs === "number") {
-      const segSchedMs = entry.arrivalMs - prev.departureMs; // tempo planeado
-      const prevRemainM = _geo.remainingDistanceM(trainId, prev.key);
-      if (segSchedMs > 0 && prevRemainM != null) {
-        const segTotalM = prevRemainM + remainingM; // distância física do troço
-        if (segTotalM > 50) {
-          const fracDist = Math.min(Math.max(prevRemainM / segTotalM, 0.02), 1);
-          const elapsedMs = now - dep.ts;
-          const pace = elapsedMs / (fracDist * segSchedMs); // 1 = a horas
-          const remainPlannedMs = (1 - fracDist) * segSchedMs;
-          etaProportionalMs = now + remainPlannedMs * Math.max(pace, 0.5);
-        }
-      }
-    }
-
-    // ETA final: o cinemático é o LIMITE FÍSICO INFERIOR (nunca se chega mais
-    // depressa do que a física permite); o proporcional reflete o ritmo real.
-    const etaMs =
-      etaProportionalMs != null
-        ? Math.max(etaKinematicMs, etaProportionalMs)
-        : etaKinematicMs;
-
-    const inRouteDelayS = Math.round((etaMs - entry.arrivalMs) / 1000);
-
-    const result = {
-      etaMs,
-      etaKinematicMs,
-      etaProportionalMs,
-      inRouteDelayS,
-      remainingM,
-      effectiveSpeedMps: vEff,
-      source: "gps",
-    };
-    d.lastInRoute = { ...result, ts: now, stationKey: nextStationKey };
-    return result;
+    return r;
   } catch (e) {
     console.error("[DELAYS-RT] computeInRoute:", e.message);
     return null;
@@ -283,99 +221,15 @@ const computeInRoute = (
 };
 
 /**
- * ETA acumulado a uma estação MAIS À FRENTE no percurso: soma os troços
- * intermédios (cinemática a partir de paragem, v0=0) + dwell técnico de
- * 60 s por paragem intermédia.
+ * Atraso para uma estação MAIS À FRENTE: o mesmo atraso atual (sem projeções
+ * entre estações), com a regra de Coina.
  */
 const computeEtaToStation = (
   trainId,
   { targetKey, route, now = Date.now() },
 ) => {
   try {
-    if (!_geo || !Array.isArray(route)) return null;
-    const state = _geo.getVehicle(trainId);
-    if (!state || !state.status) return null;
-
-    const startIdx = state.status.routeIdx;
-    const targetIdx = route.findIndex((r) => r.key === targetKey);
-    if (targetIdx < startIdx || startIdx < 0) return null;
-
-    // Troço atual (com velocidade efetiva real).
-    const first = computeInRoute(trainId, {
-      nextStationKey: route[startIdx].key,
-      route,
-      now,
-    });
-    if (!first) return null;
-    // ── REGRA ANTI-ATRASO-FANTASMA ───────────────────────────────────────
-    // O atraso das estações futuras NÃO se calcula pela física teórica de cada
-    // troço (arranque parado + dwell), porque isso acumula um "atraso" fictício
-    // que não existe (ex: a horas no Pragal → +40 min em Penalva, do nada).
-    // Em vez disso: o atraso futuro PARTE do atraso REAL da próxima estação e
-    // só muda se houver uma razão real para agravar/recuperar.
-    //
-    // Atraso da PRÓXIMA estação (o troço atual, medido por GPS):
-    const nextDelayS =
-      typeof first.inRouteDelayS === "number" ? first.inRouteDelayS : 0;
-
-    // Se a próxima estação vem A HORAS (ou adiantada), as futuras herdam isso:
-    // sem atraso na próxima → sem atraso propagado. Só se a próxima JÁ tiver
-    // atraso é que faz sentido projetar como ele evolui mais à frente.
-    const NEXT_DELAY_THRESHOLD_S = 60; // < 1 min na próxima = considerar a horas
-
-    const entry = route[targetIdx];
-    if (typeof entry.arrivalMs !== "number") {
-      return { etaMs: first.etaMs, inRouteDelayS: null, source: "gps" };
-    }
-
-    if (nextDelayS <= NEXT_DELAY_THRESHOLD_S) {
-      // PRÓXIMA A HORAS → estação futura também a horas. ETA = horário planeado
-      // + o (pequeno) atraso atual herdado, sem inventar atraso por troço.
-      const etaMs = entry.arrivalMs + Math.max(nextDelayS, 0) * 1000;
-      return {
-        etaMs,
-        inRouteDelayS: Math.max(nextDelayS, 0),
-        source: "gps_inherited",
-      };
-    }
-
-    // PRÓXIMA COM ATRASO REAL → aí sim projetamos a evolução até à estação alvo.
-    // O atraso propaga-se a partir do atraso atual; entre paragens o comboio
-    // pode RECUPERAR parte da folga do horário (margem operacional), nunca
-    // criar atraso novo. Recuperação = diferença entre o tempo planeado do
-    // troço e o tempo físico mínimo (a folga existente no horário).
-    let carriedDelayMs = nextDelayS * 1000;
-
-    for (let i = startIdx; i < targetIdx; i++) {
-      const a = route[i];
-      const b = route[i + 1];
-      if (typeof a.arrivalMs !== "number" || typeof b.arrivalMs !== "number") {
-        continue; // sem horário do troço → mantém o atraso herdado, não inventa
-      }
-      const plannedSegMs = b.arrivalMs - a.arrivalMs; // tempo planeado do troço
-      if (plannedSegMs <= 0) continue;
-
-      const dA = _geo.remainingDistanceM(trainId, a.key);
-      const dB = _geo.remainingDistanceM(trainId, b.key);
-      if (dA == null || dB == null) continue;
-      const segM = Math.abs(dB - dA);
-
-      // Tempo físico mínimo do troço (a partir de parado). Se for MENOR que o
-      // planeado, há folga → o comboio pode recuperar parte do atraso aqui.
-      const physMinMs = DWELL_MS + kinematicRunTimeS(0, segM) * 1000;
-      const slackMs = plannedSegMs - physMinMs; // folga do horário neste troço
-      if (slackMs > 0 && carriedDelayMs > 0) {
-        // Recupera no máximo a folga disponível (não cria atraso se folga<0).
-        carriedDelayMs = Math.max(0, carriedDelayMs - slackMs);
-      }
-      // NB: troços sem folga (slack<=0) NÃO acrescentam atraso — o comboio já
-      // está atrasado e mantém o atraso; o horário é que é apertado, não é
-      // atraso novo.
-    }
-
-    const etaMs = entry.arrivalMs + carriedDelayMs;
-    const delayS = Math.round(carriedDelayMs / 1000);
-    return { etaMs, inRouteDelayS: delayS, source: "gps_projected" };
+    return delayAtStation(trainId, targetKey, route, now);
   } catch (e) {
     console.error("[DELAYS-RT] computeEtaToStation:", e.message);
     return null;
@@ -398,6 +252,11 @@ const getDelays = (trainId) => DELAYS[trainId] || null;
 const cleanupTrain = (trainId) => {
   delete DELAYS[trainId];
 };
+// [v7] Reset diário (04:00): medições de ontem não podem bloquear as de hoje
+// (as medições são idempotentes por estação — a 1.ª fica).
+const resetAll = () => {
+  for (const k of Object.keys(DELAYS)) delete DELAYS[k];
+};
 
 module.exports = {
   init,
@@ -408,9 +267,7 @@ module.exports = {
   shouldUseFallback,
   getDelays,
   cleanupTrain,
-  kinematicRunTimeS, // exposto para testes
-  VMAX_MPS,
-  ACCEL_MPS2,
-  DECEL_MPS2,
-  DWELL_MS,
+  resetAll,
+  DELAY_DISCOUNT_S,
+  COINA_TECH_RECOVERY_S,
 };

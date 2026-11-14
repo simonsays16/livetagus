@@ -192,7 +192,7 @@ const FETCH_HEADERS = {
 
 // --- [GPS AUTONOMY] / [SENTIDO INVERTIDO] FLAGS (partilhadas motor+rotas+mapa) ---
 const GPS_CALCULATIONS_ENABLED = true;
-const DIRECTION_DETECTION_ENABLED = false;
+const DIRECTION_DETECTION_ENABLED = true; // [v7] deteção por estações
 const GPS_AUTONOMOUS_MODE = true; // desligar quando IP
 
 module.exports = {
