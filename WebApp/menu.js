@@ -17,6 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initShareButton(); // partilha nativa no footer
   checkApiStatus(); // verificar estado
   updateAppVersion(); // versao sw.js
+  initFestive(); // decoração de Natal (neve no menu + luzes no logo)
   //initComingSoonPill();  botão brevemnte
 });
 
@@ -632,3 +633,322 @@ function initComingSoonPill() {
     }, 3000);
   });
 }*/
+
+/* ===== NATAL — DECORAÇÃO TEMPORÁRIA ===================================
+   Remover depois da época: apagar esta secção inteira + a chamada
+   initFestive() no DOMContentLoaded. Ativo automaticamente de 20 Nov a 6 Jan.
+   Override manual: ?natal=on  /  ?natal=off  (fica guardado no browser).
+   ===================================================================== */
+function isFestive() {
+  try {
+    const q = new URLSearchParams(location.search).get("natal");
+    if (q === "on" || q === "1") {
+      localStorage.setItem("lt_natal", "on");
+      return true;
+    }
+    if (q === "off" || q === "0") {
+      localStorage.setItem("lt_natal", "off");
+      return false;
+    }
+    const saved = localStorage.getItem("lt_natal");
+    if (saved === "on") return true;
+    if (saved === "off") return false;
+  } catch (_) {
+    /* localStorage/URL indisponível → cai na data */
+  }
+  const now = new Date();
+  const m = now.getMonth(); // 0 = Janeiro … 11 = Dezembro
+  const d = now.getDate();
+  // 20 Nov → 6 Jan
+  return (m === 10 && d >= 20) || m === 11 || (m === 0 && d <= 6);
+}
+
+function initFestive() {
+  if (!isFestive()) return;
+  injectFestiveStyles();
+  decorateHeaderLights();
+  setupWordmarkSwap();
+  setupMenuSnow();
+}
+
+function injectFestiveStyles() {
+  if (document.getElementById("xmas-style")) return;
+  const css = `
+    /* Luzes numa corda arqueada, de margem a margem do ecrã (fixa ao topo) */
+    .xmas-lights {
+      position: fixed;
+      left: 0; right: 0;
+      top: env(safe-area-inset-top, 0px);
+      height: 22px;
+      pointer-events: none;
+      z-index: 60; /* acima do header (z-50) para ser visível */
+    }
+    /* Caso especial do /mapa: só à volta do logo + texto (não mexe no flex do header flutuante) */
+    .xmas-anchor { position: relative; }
+    .xmas-lights--map {
+      position: absolute;
+      left: -6px; right: -10px; top: -14px; /* mais acima → não tapa o texto no mapa */
+      height: 22px;
+      z-index: 2;
+    }
+    .xmas-wire {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      overflow: visible;
+    }
+    .xmas-wire path {
+      fill: none;
+      stroke: rgba(130,130,130,0.5);
+      stroke-width: 1.3;
+      vector-effect: non-scaling-stroke;
+    }
+    .xmas-lights i {
+      position: absolute;
+      left: var(--x); top: var(--y);
+      margin-left: -2.5px;
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--c);
+      box-shadow: 0 0 5px var(--c), 0 0 9px var(--c);
+      animation: xmas-twinkle 1.8s ease-in-out infinite;
+      animation-delay: var(--d);
+    }
+    @keyframes xmas-twinkle {
+      0%, 100% { opacity: 1; filter: brightness(1.25); }
+      50%      { opacity: 0.35; filter: brightness(0.7); }
+    }
+
+    /* Neve dentro do menu (adaptação dos confetis do Mundial) */
+    .xmas-snow {
+      position: absolute; inset: 0;
+      overflow: hidden; pointer-events: none;
+      z-index: 0;
+    }
+    .xmas-flake {
+      position: absolute; top: -8%;
+      width: var(--sz); height: var(--sz);
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fff, rgba(255,255,255,0.6) 60%, rgba(255,255,255,0));
+      opacity: 0.85;
+      filter: blur(0.3px);
+      animation: xmas-fall var(--dur) linear infinite;
+      animation-delay: var(--delay);
+    }
+    .xmas-flake-glyph {
+      background: none; filter: none;
+      color: rgba(255,255,255,0.9);
+      font-size: calc(var(--sz) + 6px);
+      line-height: 1; text-align: center;
+    }
+    html:not(.dark) .xmas-flake {
+      background: radial-gradient(circle at 35% 35%, #cfe3ff, rgba(150,185,230,0.55) 60%, rgba(150,185,230,0));
+      opacity: 0.7;
+    }
+    html:not(.dark) .xmas-flake-glyph { color: rgba(110,150,205,0.85); }
+    @keyframes xmas-fall {
+      0%   { transform: translateY(0) translateX(0) rotate(0deg); }
+      100% { transform: translateY(115vh) translateX(var(--drift)) rotate(220deg); }
+    }
+    /* Só anima com o menu aberto (poupa bateria) */
+    #menu-overlay.translate-y-full .xmas-flake { animation-play-state: paused; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .xmas-snow { display: none; }
+      .xmas-lights i { animation: none; }
+    }
+  `;
+  const style = document.createElement("style");
+  style.id = "xmas-style";
+  style.textContent = css;
+  document.head.appendChild(style);
+}
+
+// Fio em curva (quadrática): preso nas pontas (y=3), a cair no meio.
+// A altura do arco é fixa (independente da largura).
+function buildLightsHtml(n) {
+  const cores = ["#ff5a5a", "#5ad17a"];
+  let html =
+    '<svg class="xmas-wire" viewBox="0 0 100 22" preserveAspectRatio="none" aria-hidden="true">' +
+    '<path d="M0,3 Q50,26 100,3" /></svg>';
+  for (let i = 0; i < n; i++) {
+    const t = n > 1 ? i / (n - 1) : 0.5;
+    const y = (1 - t) * (1 - t) * 3 + 2 * (1 - t) * t * 26 + t * t * 3;
+    const x = (t * 100).toFixed(2);
+    html += `<i style="--c:${cores[i % cores.length]};--d:${((i % 6) * 0.18).toFixed(2)}s;--x:${x}%;--y:${(y - 2.5).toFixed(2)}px"></i>`;
+  }
+  return html;
+}
+
+function decorateHeaderLights() {
+  if (document.querySelector(".xmas-lights")) return; // evita duplicados
+  const seg =
+    location.pathname.toLowerCase().replace(/\/+$/, "").split("/").pop() || "";
+  const isMap = seg === "mapa" || seg === "mapa.html";
+  if (isMap) {
+    decorateLogoLightsMap();
+  } else {
+    decorateFullWidthLights();
+  }
+}
+
+// Páginas normais: corda fixa, de margem a margem do ecrã.
+function decorateFullWidthLights() {
+  const strand = document.createElement("span");
+  strand.className = "xmas-lights";
+  strand.setAttribute("aria-hidden", "true");
+  const n = Math.max(12, Math.round((window.innerWidth || 390) / 48));
+  strand.innerHTML = buildLightsHtml(n);
+  document.body.appendChild(strand);
+}
+
+// /mapa: nav flutuante → luzes só à volta do logo + texto. O nav-tools.js cria
+// a #nav-logo-pill DEPOIS deste handler, por isso esperamos por ela (rAF) e
+// prendemos as luzes à PILL (que tem min-width e não encolhe) em vez do <a>,
+// que colapsa quando o texto desaparece.
+function decorateLogoLightsMap(tries) {
+  tries = tries || 0;
+  const pill = document.getElementById("nav-logo-pill");
+  if (!pill && tries < 30) {
+    requestAnimationFrame(function () {
+      decorateLogoLightsMap(tries + 1);
+    });
+    return;
+  }
+  const logo = document.getElementById("nav-logo");
+  const target = pill || (logo ? logo.closest("a") : null);
+  if (!target || target.querySelector(".xmas-lights")) return;
+
+  // 1) Garante que a corda é posicionada DENTRO da pill e não sobe para o
+  //    <header> (que é fixed e ocupa o ecrã todo).
+  if (getComputedStyle(target).position === "static") {
+    target.style.position = "relative";
+  }
+
+  // 2) Largura ESTÁVEL: o efeito de escrita (LIVETAGUS ⇄ BOAS FESTAS) muda a
+  //    largura do texto e, como a pill é dimensionada pelo conteúdo, fazia as
+  //    luzes abrir/fechar. Fixamos uma largura (medida uma vez, com folga para
+  //    a palavra mais longa) e, se a medição falhar, usamos um valor seguro.
+  const measured = Math.round(target.getBoundingClientRect().width);
+  const w = measured > 40 && measured < 400 ? measured + 28 : 170;
+
+  const strand = document.createElement("span");
+  strand.className = "xmas-lights xmas-lights--map";
+  strand.setAttribute("aria-hidden", "true");
+  // Posição totalmente inline → não depende de classes/ordem de CSS.
+  strand.style.position = "absolute";
+  strand.style.left = "-6px";
+  strand.style.right = "auto";
+  strand.style.top = "0px";
+  strand.style.height = "22px";
+  strand.style.width = w + "px";
+  strand.style.zIndex = "2";
+  strand.innerHTML = buildLightsHtml(9);
+  target.appendChild(strand);
+}
+
+function setupWordmarkSwap() {
+  const logo = document.getElementById("nav-logo");
+  const anchor = logo ? logo.closest("a") : null;
+  if (!anchor) return;
+  const el = Array.from(anchor.querySelectorAll("span")).find(
+    (s) => s.textContent.trim().toUpperCase() === "LIVETAGUS",
+  );
+  if (!el) return;
+  // Respeita quem prefere menos movimento → mantém "LIVETAGUS" estático.
+  if (
+    window.matchMedia &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  ) {
+    return;
+  }
+  startWordmarkCycle(el);
+}
+
+async function startWordmarkCycle(el) {
+  const RED = "#e23b3b";
+  const GREEN = "#2f9e44";
+  const typeMs = 95;
+  const delMs = 55;
+  const holdMs = 3500;
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  // Acessibilidade: leitores de ecrã anunciam sempre "LiveTagus".
+  el.setAttribute("aria-label", "LiveTagus");
+
+  function addLetter(ch, color) {
+    const s = document.createElement("span");
+    s.textContent = ch;
+    s.setAttribute("aria-hidden", "true");
+    if (color) s.style.color = color;
+    el.appendChild(s);
+    return s;
+  }
+
+  // Converte o texto inicial em letras-span (base para apagar/escrever).
+  const initial = el.textContent;
+  el.textContent = "";
+  for (const ch of initial) addLetter(ch, "");
+
+  async function erase() {
+    while (el.lastChild) {
+      el.removeChild(el.lastChild);
+      await wait(delMs);
+    }
+  }
+
+  async function write(str, colored) {
+    let visible = 0;
+    let lastColored = null;
+    for (const ch of str) {
+      let color = "";
+      if (colored && ch !== " ") {
+        color = visible % 2 === 0 ? RED : GREEN;
+        visible++;
+      }
+      const s = addLetter(ch, color);
+      if (color) {
+        // Assim que a letra seguinte surge, a anterior volta à cor normal.
+        if (lastColored) lastColored.style.color = "";
+        lastColored = s;
+      }
+      await wait(typeMs);
+    }
+    // A última letra colorida também regressa à cor normal.
+    if (lastColored) {
+      await wait(typeMs);
+      lastColored.style.color = "";
+    }
+  }
+
+  // Ciclo infinito: LIVETAGUS → BOAS FESTAS → LIVETAGUS → …
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    await wait(holdMs);
+    await erase();
+    await write("BOAS FESTAS", true);
+    await wait(holdMs);
+    await erase();
+    await write("LIVETAGUS", false);
+  }
+}
+
+function setupMenuSnow() {
+  const overlay = document.getElementById("menu-overlay");
+  if (!overlay || overlay.querySelector(".xmas-snow")) return;
+  const snow = document.createElement("div");
+  snow.className = "xmas-snow";
+  snow.setAttribute("aria-hidden", "true");
+  let html = "";
+  for (let i = 0; i < 18; i++) {
+    const left = (i * 53) % 100;
+    const size = 4 + (i % 4) * 2;
+    const dur = (6 + (i % 5) * 1.4).toFixed(1);
+    const delay = (-(i % 7) * 1.1).toFixed(1);
+    const drift = i % 3 === 0 ? 14 : i % 3 === 1 ? -10 : 6;
+    const glyph = i % 5 === 0 ? "❄" : "";
+    html += `<span class="xmas-flake${glyph ? " xmas-flake-glyph" : ""}" style="left:${left}%;--sz:${size}px;--dur:${dur}s;--delay:${delay}s;--drift:${drift}px;">${glyph}</span>`;
+  }
+  snow.innerHTML = html;
+  overlay.insertBefore(snow, overlay.firstChild);
+}
+/* ===== FIM NATAL ===================================================== */

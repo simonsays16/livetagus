@@ -406,7 +406,11 @@
   }
 
   function ringColor(train) {
-    return MAPA.STATUS_COLORS[train.dotStatus] || MAPA.STATUS_COLORS.gray;
+    // No mapa, atrasos de 1-2 min não pintam o anel (para não alarmar à primeira
+    // vista). O atraso real continua visível ao abrir o comboio (painel/cartões).
+    let status = train.dotStatus;
+    if (status === "yellow" && (train.delayMin || 0) < 3) status = "green";
+    return MAPA.STATUS_COLORS[status] || MAPA.STATUS_COLORS.gray;
   }
 
   function isPulsing(train) {
@@ -528,6 +532,7 @@
     map.on("click", "fertagus-stations-layer", (e) => {
       const f = e.features && e.features[0];
       if (!f) return;
+      if (window.sa_event) window.sa_event("map_station_clicked");
       const station = MAPA.STATIONS.find(
         (s) => s.name === f.properties.name || s.apiName === f.properties.name,
       );
@@ -913,6 +918,7 @@
 
       const onPress = (e) => {
         e.stopPropagation();
+        if (window.sa_event) window.sa_event("map_live_train_clicked");
         userOriginKey = null;
         userDestKey = null;
         if (typeof clickHandler === "function") {

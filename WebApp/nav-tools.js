@@ -366,6 +366,7 @@
           "bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-md",
           "border border-zinc-200/50 dark:border-white/5 shadow-sm",
         ].join(" ");
+        logoPill.style = ["min-width: 163px;"];
         logoEl.parentNode.insertBefore(logoPill, logoEl);
         logoPill.appendChild(logoEl);
       }
