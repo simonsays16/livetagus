@@ -801,10 +801,11 @@ function decorateFullWidthLights() {
   document.body.appendChild(strand);
 }
 
-// /mapa: nav flutuante → luzes só à volta do logo + texto. O nav-tools.js cria
-// a #nav-logo-pill DEPOIS deste handler, por isso esperamos por ela (rAF) e
-// prendemos as luzes à PILL (que tem min-width e não encolhe) em vez do <a>,
-// que colapsa quando o texto desaparece.
+// /mapa: luzes EM CIMA da linha da borda da #nav-logo-pill (retas + cantos
+// arredondados). O nav-tools.js cria a pill DEPOIS deste handler, por isso
+// esperamos por ela (rAF). As posições são calculadas a partir da geometria
+// real da borda (largura, altura, raio e espessura lidos do CSS) e refeitas
+// quando a pill muda de largura (efeito de escrita LIVETAGUS ⇄ BOAS FESTAS).
 function decorateLogoLightsMap(tries) {
   tries = tries || 0;
   const pill = document.getElementById("nav-logo-pill");
@@ -818,32 +819,121 @@ function decorateLogoLightsMap(tries) {
   const target = pill || (logo ? logo.closest("a") : null);
   if (!target || target.querySelector(".xmas-lights")) return;
 
-  // 1) Garante que a corda é posicionada DENTRO da pill e não sobe para o
-  //    <header> (que é fixed e ocupa o ecrã todo).
+  // A pill tem de ser o contexto de posicionamento da camada de luzes.
   if (getComputedStyle(target).position === "static") {
     target.style.position = "relative";
   }
 
-  // 2) Largura ESTÁVEL: o efeito de escrita (LIVETAGUS ⇄ BOAS FESTAS) muda a
-  //    largura do texto e, como a pill é dimensionada pelo conteúdo, fazia as
-  //    luzes abrir/fechar. Fixamos uma largura (medida uma vez, com folga para
-  //    a palavra mais longa) e, se a medição falhar, usamos um valor seguro.
-  const measured = Math.round(target.getBoundingClientRect().width);
-  const w = measured > 40 && measured < 400 ? measured + 28 : 170;
-
+  // A camada cobre a border-box (os filhos absolutos posicionam-se a partir
+  // da padding-box, por isso recuamos a espessura da borda).
+  const b = parseFloat(getComputedStyle(target).borderTopWidth) || 0;
   const strand = document.createElement("span");
   strand.className = "xmas-lights xmas-lights--map";
   strand.setAttribute("aria-hidden", "true");
-  // Posição totalmente inline → não depende de classes/ordem de CSS.
   strand.style.position = "absolute";
-  strand.style.left = "-6px";
-  strand.style.right = "auto";
-  strand.style.top = "0px";
-  strand.style.height = "22px";
-  strand.style.width = w + "px";
+  strand.style.left = -b + "px";
+  strand.style.top = -b + "px";
+  strand.style.right = -b + "px";
+  strand.style.bottom = -b + "px";
+  strand.style.width = "auto";
+  strand.style.height = "auto";
+  strand.style.pointerEvents = "none";
   strand.style.zIndex = "2";
-  strand.innerHTML = buildLightsHtml(9);
+
+  // Nº de lâmpadas fixo (≈1 a cada 18px de borda), calculado uma vez; ao
+  // redimensionar só se mexem as posições, para não reiniciar o piscar.
+  const SPACING = 18;
+  const cores = ["#ff5a5a", "#5ad17a"];
+  const n = Math.max(8, Math.round(pillBorderGeometry(target).L / SPACING));
+  const bulbs = [];
+  for (let i = 0; i < n; i++) {
+    const bulb = document.createElement("i");
+    bulb.style.setProperty("--c", cores[i % cores.length]);
+    bulb.style.transform = "translate(-50%,-50%)";
+    bulb.style.margin = "0";
+    bulb.style.animationDelay = ((i % 6) * 0.18).toFixed(2) + "s";
+    strand.appendChild(bulb);
+    bulbs.push(bulb);
+  }
+
+  function layout() {
+    const g = pillBorderGeometry(target);
+    for (let i = 0; i < n; i++) {
+      const p = pointOnBorder(g, (i * g.L) / n);
+      bulbs[i].style.left = p[0].toFixed(2) + "px";
+      bulbs[i].style.top = p[1].toFixed(2) + "px";
+    }
+  }
+
   target.appendChild(strand);
+  layout();
+
+  let pending = false;
+  const relayout = function () {
+    if (pending) return;
+    pending = true;
+    requestAnimationFrame(function () {
+      pending = false;
+      layout();
+    });
+  };
+  if (window.ResizeObserver) {
+    new ResizeObserver(relayout).observe(target);
+  } else {
+    window.addEventListener("resize", relayout);
+  }
+}
+
+// Geometria da linha central da borda, em coordenadas da border-box.
+function pillBorderGeometry(el) {
+  const cs = getComputedStyle(el);
+  const b = parseFloat(cs.borderTopWidth) || 0;
+  const W = el.offsetWidth;
+  const H = el.offsetHeight;
+  const R = parseFloat(cs.borderTopLeftRadius) || 0;
+  const x0 = b / 2;
+  const y0 = b / 2;
+  const x1 = W - b / 2;
+  const y1 = H - b / 2;
+  const r = Math.max(0, Math.min(R - b / 2, (x1 - x0) / 2, (y1 - y0) / 2));
+  const sw = x1 - x0 - 2 * r; // reta horizontal (cima/baixo)
+  const sh = y1 - y0 - 2 * r; // reta vertical (lados)
+  const qa = (Math.PI * r) / 2; // quarto de arco (canto)
+  return { x0, y0, x1, y1, r, sw, sh, qa, L: 2 * sw + 2 * sh + 4 * qa };
+}
+
+// Ponto à distância s ao longo da borda, no sentido horário, a começar no
+// topo logo a seguir ao canto superior esquerdo.
+function pointOnBorder(g, s) {
+  const { x0, y0, x1, y1, r, sw, sh, qa } = g;
+  if (g.L <= 0) return [x0, y0];
+  s = ((s % g.L) + g.L) % g.L;
+  if (s < sw) return [x0 + r + s, y0];
+  s -= sw;
+  if (s < qa) {
+    const a = -Math.PI / 2 + s / r;
+    return [x1 - r + r * Math.cos(a), y0 + r + r * Math.sin(a)];
+  }
+  s -= qa;
+  if (s < sh) return [x1, y0 + r + s];
+  s -= sh;
+  if (s < qa) {
+    const a = s / r;
+    return [x1 - r + r * Math.cos(a), y1 - r + r * Math.sin(a)];
+  }
+  s -= qa;
+  if (s < sw) return [x1 - r - s, y1];
+  s -= sw;
+  if (s < qa) {
+    const a = Math.PI / 2 + s / r;
+    return [x0 + r + r * Math.cos(a), y1 - r + r * Math.sin(a)];
+  }
+  s -= qa;
+  if (s < sh) return [x0, y1 - r - s];
+  s -= sh;
+  if (r <= 0) return [x0, y0];
+  const a = Math.PI + s / r;
+  return [x0 + r + r * Math.cos(a), y0 + r + r * Math.sin(a)];
 }
 
 function setupWordmarkSwap() {
