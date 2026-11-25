@@ -130,7 +130,7 @@ function _cardInnerHTML(t) {
     <div class="flex justify-between items-start mb-2">
       <div class="flex flex-col">
         <div class="flex items-center gap-2 mb-1">
-          <span data-field="op" class="text-[9px] font-bold px-2 py-0.5 rounded-full border border-black/5 dark:border-white/5 bg-black/5 dark:bg-white/5 text-zinc-500 dark:text-zinc-400 tracking-wider uppercase">${t.dest}</span>
+          <span data-field="op" class="text-[9px] font-bold px-2 py-0.5 rounded-full border border-black/5 dark:border-white/5 bg-black/5 dark:bg-white/5 text-zinc-500 dark:text-zinc-400 tracking-wider uppercase ${_opLabel(t) ? "" : "hidden"}">${_opLabel(t)}</span>
           <span class="text-[9px] font-mono text-zinc-400 dark:text-zinc-500">#${t.num}</span>
         </div>
         <div class="flex items-baseline gap-2">
@@ -176,6 +176,25 @@ function _cardInnerHTML(t) {
   `;
 }
 
+/**
+ * Etiqueta do ramal no cartão (data-field="op"): só "Coina" ou "Setúbal",
+ * conforme a origem ou o destino REAL do comboio seja um deles. Qualquer
+ * outra estação (Roma-Areeiro incluído) é ignorada e a etiqueta fica oculta.
+ */
+function _opLabel(t) {
+  const norm = (s) =>
+    String(s || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+  // Origem/destino reais quando existem (tempo real); senão o ramal do horário.
+  const reais = [norm(t.trueOrigin), norm(t.trueDest)].filter(Boolean);
+  const pontas = reais.length ? reais : [norm(t.op)];
+  if (pontas.some((p) => p.includes("setubal"))) return "Setúbal";
+  if (pontas.some((p) => p.includes("coina"))) return "Coina";
+  return "";
+}
+
 /** Cria um elemento DOM completo de cartão de comboio. */
 function _makeCard(t, isPassed) {
   const opCls = isPassed ? "opacity-60 grayscale-[0.5]" : "opacity-100";
@@ -205,7 +224,11 @@ function _patchCard(el, t, isPassed) {
   }
 
   const opEl = el.querySelector("[data-field='op']");
-  if (opEl) opEl.textContent = t.op;
+  if (opEl) {
+    const ramal = _opLabel(t);
+    opEl.textContent = ramal;
+    opEl.classList.toggle("hidden", !ramal);
+  }
 
   const destEl = el.querySelector("[data-field='dest']");
   if (destEl) destEl.textContent = t.dest;
@@ -303,6 +326,18 @@ function _makeItem(item) {
     return el;
   }
 
+  if (item.type === "passed-btn") {
+    // Mesmo corpo visual dos cartões (fundo, contorno, raio), em formato baixo.
+    const el = document.createElement("button");
+    el.type = "button";
+    el.dataset.key = "__passed__";
+    el.dataset.action = "show-passed";
+    el.className =
+      "w-full flex items-center justify-center gap-2 px-5 py-3 bg-white/90 dark:bg-zinc-800/40 backdrop-blur-sm border border-black/5 dark:border-white/5 shadow-sm rounded-2xl text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors";
+    el.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3 shrink-0" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg><span>Ver Comboios Anteriores</span>`;
+    return el;
+  }
+
   if (item.type === "alerts") {
     const html = AlertsManager.generateHTML(item.alerts);
     if (!html) {
@@ -329,7 +364,7 @@ function _makeItem(item) {
 
 /** Actualiza o conteúdo de um elemento existente. */
 function _updateItem(el, item) {
-  if (item.type === "divider") return; // estático
+  if (item.type === "divider" || item.type === "passed-btn") return; // estáticos
 
   if (item.type === "alerts") {
     const html = AlertsManager.generateHTML(item.alerts);
@@ -532,46 +567,34 @@ window.updateNextCountdown = function () {
 };
 
 /**
- * Estado da ligação, agora comunicado pela AURÉOLA à volta do botão de refresh
- * (o antigo ponto + "última atualização" deu lugar ao botão de filtro de hora):
- *   cinzenta → offline / horário estático
- *   verde    → dados em tempo real
- *   amarela  → a API respondeu com erro
- * A hora da última atualização passou para o tooltip do próprio botão.
+ * Estado da ligação, comunicado pelo TRAÇO que separa o menu da página
+ * (window.LTFlow, desenhado pelo menu.js):
+ *   pulso verde do centro para as pontas → atualização bem-sucedida
+ *   laranja fixo                         → problema a recarregar (erro da
+ *                                          API, sem rede, API em baixo)
+ *   neutro                               → horário estático (pesquisa ativa)
+ * A hora da última atualização fica no tooltip do botão de refresh do menu.
+ *
+ * @param {string}  s         "loading" | "offline" | "error" | "success"
+ * @param {boolean} problema  só com "offline": true quando o offline resulta
+ *                            de uma falha (e não de uma pesquisa ativa)
  */
-const AURA_COLORS = {
-  offline: { ring: "rgb(161,161,170)", glow: "transparent", live: false },
-  success: {
-    ring: "rgb(16,185,129)",
-    glow: "rgba(16,185,129,0.45)",
-    live: true,
-  },
-  error: {
-    ring: "rgb(245,158,11)",
-    glow: "rgba(245,158,11,0.45)",
-    live: false,
-  },
-};
-
-window.setStatus = function (s) {
+window.setStatus = function (s, problema) {
   const ping = document.getElementById("status-ping"); // legado (pode não existir)
   const icon = document.getElementById("refresh-icon-menu");
   const lastUpd = document.getElementById("last-updated"); // legado
   const btn = document.getElementById("btn-manual-refresh");
+  const flow = window.LTFlow;
 
-  const paintAura = (key, title) => {
+  const setTitle = (title) => {
     if (!btn) return;
-    const c = AURA_COLORS[key] || AURA_COLORS.offline;
-    btn.style.setProperty("--aura", c.ring);
-    btn.style.setProperty("--aura-glow", c.glow);
-    btn.classList.toggle("aura-live", c.live);
     btn.setAttribute("title", title);
     btn.setAttribute("aria-label", title);
   };
 
   if (s === "loading") {
     if (icon) icon.classList.add("animate-spin");
-    return; // mantém a cor anterior enquanto carrega
+    return; // mantém o estado anterior enquanto carrega
   }
 
   if (icon) icon.classList.remove("animate-spin");
@@ -581,9 +604,9 @@ window.setStatus = function (s) {
       ping.className =
         "relative inline-flex h-1.5 w-1.5 rounded-full bg-zinc-500";
     if (lastUpd) lastUpd.innerText = "Offline";
-    paintAura(
-      "offline",
-      typeof TimeFilter !== "undefined" && TimeFilter.isOtherDay()
+    if (flow) flow.problema(!!problema);
+    setTitle(
+      typeof TimeFilter !== "undefined" && TimeFilter.isActive()
         ? "Horário programado — sem tempo real"
         : "Offline — a mostrar horário programado",
     );
@@ -592,7 +615,8 @@ window.setStatus = function (s) {
       ping.className =
         "relative inline-flex h-1.5 w-1.5 rounded-full bg-red-500";
     if (lastUpd) lastUpd.innerText = "Offline";
-    paintAura("error", "A API devolveu um erro — toca para tentar de novo");
+    if (flow) flow.problema(true);
+    setTitle("Problema ao atualizar — toca para tentar de novo");
   } else {
     // success
     const hora = new Date().toLocaleTimeString("pt-PT").substring(0, 5);
@@ -600,7 +624,8 @@ window.setStatus = function (s) {
       ping.className =
         "relative inline-flex h-1.5 w-1.5 rounded-full bg-blue-500 dot-ping";
     if (lastUpd) lastUpd.innerText = hora;
-    paintAura("success", `Em tempo real · atualizado às ${hora}`);
+    if (flow) flow.pulso();
+    setTitle(`Em tempo real · atualizado às ${hora}`);
   }
 };
 
@@ -616,24 +641,24 @@ window.loadData = async function (silent = false) {
   // na API: ela só serve o dia operacional corrente em tempo real.
   // (Com o filtro INATIVO nada disto corre — caminho original intacto.)
   if (typeof TimeFilter !== "undefined" && TimeFilter.isActive()) {
-    // Outro dia: a API só serve o dia operacional corrente, por isso a lista
-    // vem do horário estático e o estado é forçado a offline.
-    if (TimeFilter.isOtherDay()) {
-      isLoading = true;
-      try {
-        renderList(TimeFilter.buildFiltered());
-        setStatus("offline");
-      } catch (e) {
-        console.error("[loadData/filtro]", e);
-        setStatus("error");
-      } finally {
-        isLoading = false;
-        if (window.lucide) lucide.createIcons();
-      }
-      return;
+    // Vale para QUALQUER dia, hoje incluído: enquanto houver uma pesquisa
+    // ativa não há pedidos à API. (Antes, "hoje" seguia para o tempo real e,
+    // se a hora pesquisada já tivesse passado, a lista saltava para os
+    // próximos comboios ao primeiro refresh.) O refresh automático não tem
+    // nada para fazer: a lista estática só muda quando a pesquisa muda.
+    if (silent) return;
+    isLoading = true;
+    try {
+      renderList(TimeFilter.buildFiltered());
+      setStatus("offline");
+    } catch (e) {
+      console.error("[loadData/filtro]", e);
+      setStatus("error");
+    } finally {
+      isLoading = false;
+      if (window.lucide) lucide.createIcons();
     }
-    // Hoje: segue o caminho normal (tempo real incluído) e só se reancora a
-    // lista à hora escolhida — não se perde estado nem atrasos em direto.
+    return;
   }
 
   isLoading = true;
@@ -643,40 +668,30 @@ window.loadData = async function (silent = false) {
     if (!silent) await new Promise((r) => setTimeout(r, 300));
     const data = await getTrains();
 
+    // Uma pesquisa aplicada enquanto este pedido estava a caminho ganha:
+    // a lista dela já está desenhada e não pode ser trocada pela do "agora".
+    if (typeof TimeFilter !== "undefined" && TimeFilter.isActive()) return;
+
     // erro de rede
     if (data === null) {
-      setStatus("offline");
-      renderList(
-        typeof TimeFilter !== "undefined" && TimeFilter.isActive()
-          ? TimeFilter.buildFiltered()
-          : buildOfflineTrainList(),
-      );
+      setStatus("offline", true);
+      renderList(buildOfflineTrainList());
       return;
     }
 
     // API marcada como em baixo → popup de aviso + lista offline
     if (window.apiIsDown) {
-      renderList(
-        typeof TimeFilter !== "undefined" && TimeFilter.isActive()
-          ? TimeFilter.buildFiltered()
-          : buildOfflineTrainList(),
-      );
-      setStatus("offline");
+      renderList(buildOfflineTrainList());
+      setStatus("offline", true);
       showIpDownPopup();
       return;
     }
 
     await updateAlertsSystem(data);
 
-    // Filtro para hoje: reancora a lista à hora escolhida, preservando os
-    // dados em tempo real (estado, atrasos, ocupação) de cada comboio.
-    const lista =
-      typeof TimeFilter !== "undefined" && TimeFilter.isActive()
-        ? TimeFilter.anchor(data)
-        : data;
-    renderList(lista);
+    renderList(data);
 
-    if (lista.length > 0) setStatus("success");
+    if (data.length > 0) setStatus("success");
     else setStatus("offline");
   } catch (e) {
     console.error("[loadData]", e);
@@ -685,6 +700,12 @@ window.loadData = async function (silent = false) {
     isLoading = false;
     if (window.lucide) lucide.createIcons();
   }
+};
+
+/** Mostra os comboios que já passaram (botão "Ver Comboios Anteriores"). */
+window.showPassed = function () {
+  window.showPassedTrains = true;
+  if (currentTrainList && currentTrainList.length) renderList(currentTrainList);
 };
 
 window.manualRefresh = function () {
@@ -718,6 +739,7 @@ window.switchTab = function (t) {
     container.querySelectorAll("[data-key]").forEach((el) => el.remove());
 
   window.hasScrolledNext = false;
+  window.showPassedTrains = false;
   // Só esconde com opacity (sem display:none → sem CLS)
   const pill = document.getElementById("next-countdown-pill");
   if (pill) pill.classList.add("opacity-0");
@@ -1172,13 +1194,24 @@ window.renderList = function (list) {
   // ── 4. Sequência desejada ──────────────────────────────────────────
   // O divisor e os alertas fazem SEMPRE parte da sequência, na posição correcta.
   // O reconciliador garante que elementos já existentes não são movidos.
+  // Os comboios que já passaram ficam escondidos por omissão: no lugar deles
+  // entra um botão "Ver Comboios Anteriores" (window.showPassedTrains).
+  // Um comboio SUPRIMIDO que ainda não chegou à sua hora não é "anterior":
+  // continua à vista, para o aviso de supressão não ficar escondido.
+  const agora = Date.now();
+  const jaPassou = (t, i) =>
+    i < nextIdx && !(t.isSuppressed && (t.rawTime || t.effectiveDate) > agora);
+  const hidePassed =
+    !window.showPassedTrains && visibleList.some((t, i) => jaPassou(t, i));
   const desired = [];
+  if (hidePassed) desired.push({ key: "__passed__", type: "passed-btn" });
   visibleList.forEach((t, i) => {
     if (i === nextIdx) {
       desired.push({ key: "__divider__", type: "divider" });
       // Inclui sempre o slot de alertas (mesmo vazio), para reservar a posição
       desired.push({ key: "__alerts__", type: "alerts", alerts: activeAlerts });
     }
+    if (hidePassed && jaPassou(t, i)) return;
     desired.push({
       key: `card-${t.id}`,
       type: "card",
@@ -1199,6 +1232,7 @@ window.renderList = function (list) {
   if (!window.hasScrolledNext && nextIdx !== -1) {
     setTimeout(() => {
       const target =
+        document.querySelector("[data-key='__passed__']") ||
         document.getElementById("alerts-dynamic-container") ||
         document.querySelector("[data-key='__divider__']");
       if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });

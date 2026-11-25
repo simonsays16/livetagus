@@ -19,6 +19,15 @@
  *     topo. A estação da Fertagus mais próxima aparece SEMPRE em primeiro
  *     lugar, mesmo que esteja fora do raio.
  *
+ * Com "localizar automaticamente" ligado, ao abrir o mapa a posição é obtida,
+ * o mapa aproxima-se e a lista abre sozinha (se nada de mais importante estiver
+ * a acontecer: link partilhado, mapa já mexido, outro painel aberto).
+ *
+ * O painel é uma bottom-sheet com o mesmo vidro do #details-panel: sobe de
+ * baixo, tem dois tamanhos (mini/expandido) e fecha-se a arrastar para baixo.
+ * Em mini o mapa continua utilizável por cima; em desktop fica no canto
+ * inferior direito, como os outros painéis.
+ *
  * As fontes de dados são as do mapa-search.js (window.MapaSearch.index()), por
  * isso cobre exactamente o que está no mapa: Fertagus, Metro de Lisboa, Metro
  * Sul do Tejo, as paragens Carris das ligações e as guardadas. Tocar num
@@ -66,6 +75,7 @@
   let position = null; // { lat, lng, accuracy } — só em memória
   let range = DEFAULT_RANGE;
   let lastFocus = null;
+  let sheetState = "mini"; // 'mini' | 'expanded' (só conta em mobile)
   // O enquadramento automático é uma cortesia de arranque, não um comando: só
   // acontece uma vez, e só se o utilizador ainda não tiver mexido no mapa.
   let autoFrameDone = false;
@@ -155,40 +165,100 @@
     .lt-near-btn.is-busy { color: #3b82f6; }
     .lt-near-btn.is-on { color: #16a34a; }
 
+    /* Fundo: transparente e sem apanhar toques enquanto a sheet está em
+       mini (o mapa por cima continua a funcionar, como no comboio em mini);
+       escurece e fecha ao toque quando expandida. */
+    /* z 35: por cima dos painéis do mapa (#details-panel, z 30) e por baixo
+       do menu (overlay z 40, cabeçalho z 50). */
     .lt-near-overlay {
-      position: fixed; inset: 0; z-index: 60;
-      background: rgba(9,9,11,.42);
-      -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
-      opacity: 0; pointer-events: none; transition: opacity .22s ease;
+      position: fixed; inset: 0; z-index: 35;
+      background: rgba(0,0,0,0); pointer-events: none;
+      transition: background .3s ease;
     }
-    .lt-near-overlay.lt-open { opacity: 1; pointer-events: auto; }
+    @media (max-width: 767.98px) {
+      .lt-near-overlay.lt-open[data-state="expanded"] {
+        background: rgba(0,0,0,.4); pointer-events: auto;
+      }
+    }
 
+    /* Bottom-sheet com o vidro do #details-panel (mesmos valores). */
     .lt-near-sheet {
-      position: absolute; top: 0; left: 0; right: 0;
+      --lt-glass: rgba(250,250,251,.74); --lt-edge: rgba(255,255,255,.75);
+      --lt-shadow: 0 -12px 40px -14px rgba(0,0,0,.28);
+      --lt-blur: blur(28px) saturate(175%);
+      --lt-line: rgba(9,9,11,.09); --lt-line-strong: rgba(9,9,11,.2);
+      --lt-card: rgba(255,255,255,.55); --lt-card-line: rgba(255,255,255,.85);
+      --lt-hover: rgba(9,9,11,.045);
+      position: absolute; left: 0; right: 0; bottom: 0;
       display: flex; flex-direction: column;
-      max-height: 88dvh; overflow: hidden;
-      background: #fff; border-radius: 0 0 16px 16px;
-      box-shadow: 0 24px 48px -12px rgba(0,0,0,.35);
-      padding-top: env(safe-area-inset-top, 0px);
-      transform: translateY(-14px); opacity: 0;
-      transition: transform .34s cubic-bezier(.16,1,.3,1), opacity .28s ease;
+      max-height: clamp(320px, 56dvh, 520px); overflow: hidden;
+      background: var(--lt-glass);
+      -webkit-backdrop-filter: var(--lt-blur); backdrop-filter: var(--lt-blur);
+      border-top: 1px solid var(--lt-edge);
+      border-radius: 20px 20px 0 0;
+      box-shadow: var(--lt-shadow);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      pointer-events: auto; visibility: hidden;
+      transform: translateY(100%);
+      transition: transform .36s cubic-bezier(.22,.61,.36,1),
+        max-height .32s cubic-bezier(.22,.61,.36,1), visibility 0s linear .36s;
+      will-change: transform;
     }
-    html.dark .lt-near-sheet { background: #09090b; }
-    .lt-near-overlay.lt-open .lt-near-sheet { transform: translateY(0); opacity: 1; }
+    html.dark .lt-near-sheet {
+      --lt-glass: rgba(20,20,24,.74); --lt-edge: rgba(255,255,255,.09);
+      --lt-shadow: 0 -12px 40px -14px rgba(0,0,0,.7);
+      --lt-blur: blur(28px) saturate(140%);
+      --lt-line: rgba(255,255,255,.08); --lt-line-strong: rgba(255,255,255,.22);
+      --lt-card: rgba(255,255,255,.045); --lt-card-line: rgba(255,255,255,.07);
+      --lt-hover: rgba(255,255,255,.05);
+    }
+    @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+      .lt-near-sheet { --lt-glass: rgba(250,250,251,.97); }
+      html.dark .lt-near-sheet { --lt-glass: rgba(20,20,24,.97); }
+    }
+    @media (prefers-reduced-transparency: reduce) {
+      .lt-near-sheet { --lt-glass: rgba(250,250,251,.97); }
+      html.dark .lt-near-sheet { --lt-glass: rgba(20,20,24,.97); }
+    }
+    .lt-near-overlay.lt-open .lt-near-sheet {
+      transform: translateY(0); visibility: visible;
+      transition: transform .36s cubic-bezier(.22,.61,.36,1),
+        max-height .32s cubic-bezier(.22,.61,.36,1), visibility 0s;
+    }
+    .lt-near-overlay[data-state="expanded"] .lt-near-sheet { max-height: 92dvh; }
+
+    /* Pega do topo (só mobile), igual à do painel de detalhes. */
+    .lt-np-handle {
+      flex: 0 0 auto; height: 22px; display: flex; align-items: center;
+      justify-content: center; cursor: grab; touch-action: none;
+      user-select: none; -webkit-user-select: none;
+    }
+    .lt-np-handle:active { cursor: grabbing; }
+    .lt-np-handle-pill {
+      width: 38px; height: 4px; border-radius: 999px;
+      background: var(--lt-line-strong);
+    }
+
     @media (min-width: 768px) {
       .lt-near-sheet {
-        top: 4.5rem; left: 50%; right: auto; width: 440px;
-        transform: translate(-50%, -12px); border-radius: 14px;
-        border: 1px solid rgb(228 228 231);
+        left: auto; right: 2rem; bottom: 2rem; width: 440px;
+        max-height: 80dvh; padding-bottom: 0;
+        border: 1px solid var(--lt-edge); border-radius: 18px;
+        box-shadow: 0 24px 60px -24px rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.06);
+        transform: translateY(calc(100% + 4rem));
       }
-      html.dark .lt-near-sheet { border-color: rgb(24 24 27); }
-      .lt-near-overlay.lt-open .lt-near-sheet { transform: translate(-50%, 0); }
+      html.dark .lt-near-sheet {
+        box-shadow: 0 24px 60px -20px rgba(0,0,0,.8), 0 2px 8px rgba(0,0,0,.4);
+      }
+      .lt-near-overlay[data-state="expanded"] .lt-near-sheet { max-height: 80dvh; }
+      .lt-np-handle { display: none; }
     }
 
     .lt-np-head {
       display: flex; align-items: flex-start; gap: .75rem;
-      padding: 1.15rem 1.25rem 1rem;
+      padding: .35rem 1.25rem 1rem; touch-action: none;
     }
+    @media (min-width: 768px) { .lt-np-head { padding-top: 1.15rem; touch-action: auto; } }
     .lt-np-head-main { flex: 1; min-width: 0; }
     .lt-np-kicker {
       font-size: 9px; font-weight: 800; letter-spacing: .3em;
@@ -215,10 +285,10 @@
     .lt-np-note {
       display: flex; gap: .7rem; align-items: flex-start;
       padding: .8rem .9rem; border-radius: 10px;
-      background: #fafafa; border: 1px solid rgb(244 244 245);
+      background: var(--lt-card); border: 1px solid var(--lt-card-line);
       font-size: 12px; line-height: 1.5; color: #52525b;
     }
-    html.dark .lt-np-note { background: #131316; border-color: rgb(24 24 27); color: #a1a1aa; }
+    html.dark .lt-np-note { color: #a1a1aa; }
     .lt-np-note svg { width: 18px; height: 18px; flex-shrink: 0; color: #16a34a; margin-top: 1px; }
     .lt-np-toggle {
       display: flex; align-items: center; gap: .65rem; margin-top: .9rem;
@@ -232,10 +302,9 @@
        forma de mudar de ideias. */
     .lt-np-toggle-foot {
       margin: .35rem 1.25rem 0; padding: .85rem .9rem;
-      border-radius: 10px; border: 1px solid rgb(244 244 245);
-      background: #fafafa; font-size: 12px; align-items: flex-start;
+      border-radius: 10px; border: 1px solid var(--lt-card-line);
+      background: var(--lt-card); font-size: 12px; align-items: flex-start;
     }
-    html.dark .lt-np-toggle-foot { background: #131316; border-color: rgb(24 24 27); }
     .lt-np-toggle-sub { color: #a1a1aa; font-size: 11px; }
     .lt-np-actions { display: flex; gap: .5rem; margin-top: .35rem; }
     .lt-np-btn {
@@ -255,9 +324,8 @@
 
     /* Passo 2 — slider do raio */
     .lt-np-range {
-      padding: 0 1.25rem 1rem; border-bottom: 1px solid rgb(244 244 245);
+      padding: 0 1.25rem 1rem; border-bottom: 1px solid var(--lt-line);
     }
-    html.dark .lt-np-range { border-bottom-color: rgb(24 24 27); }
     .lt-np-range-top {
       display: flex; align-items: baseline; justify-content: space-between;
       gap: .5rem; margin-bottom: .55rem;
@@ -293,24 +361,25 @@
       overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
     }
-    /* O cabeçalho, o cursor do raio, o interruptor e o rodapé ficam fixos. */
-    .lt-np-head, .lt-np-range, .lt-np-toggle-foot, .lt-np-foot { flex: 0 0 auto; }
+    /* O cabeçalho e o cursor do raio ficam fixos. O interruptor e o rodapé
+       vão dentro do scroll, a seguir à lista: na sheet mini não sobrava
+       altura para eles e para mais de duas paragens. */
+    .lt-np-head, .lt-np-range { flex: 0 0 auto; }
     .lt-np-row {
       display: flex; align-items: center; gap: .875rem; width: 100%; min-width: 0;
       padding: .8rem 1.25rem; cursor: pointer; text-align: left;
-      background: transparent; border: 0; border-bottom: 1px solid rgb(244 244 245);
+      background: transparent; border: 0; border-bottom: 1px solid var(--lt-line);
       font-family: inherit; color: inherit; transition: background .14s ease;
     }
-    html.dark .lt-np-row { border-bottom-color: rgb(24 24 27); }
-    .lt-np-row:hover { background: #fafafa; }
-    html.dark .lt-np-row:hover { background: #131316; }
+    .lt-np-row:hover { background: var(--lt-hover); }
     .lt-np-row:focus-visible { outline: 2px solid #3b82f6; outline-offset: -3px; }
     .lt-np-ic {
       position: relative; flex-shrink: 0; width: 38px; height: 38px;
       display: inline-flex; align-items: center; justify-content: center;
-      border-radius: 10px; background: #f4f4f5; color: #52525b;
+      border-radius: 10px; background: var(--lt-card); color: #52525b;
+      border: 1px solid var(--lt-card-line);
     }
-    html.dark .lt-np-ic { background: #18181b; color: #a1a1aa; }
+    html.dark .lt-np-ic { color: #a1a1aa; }
     .lt-np-ic img { width: 22px; height: 22px; object-fit: contain; display: block; }
     .lt-np-ic .lt-sr-glyph { display: none; }
     .lt-np-ic.is-fallback img { display: none; }
@@ -367,7 +436,7 @@
       font-size: 9px; line-height: 1.6; color: #a1a1aa; letter-spacing: .02em;
     }
     @media (prefers-reduced-motion: reduce) {
-      .lt-near-overlay, .lt-near-sheet, .lt-np-row { transition: none !important; }
+      .lt-near-overlay, .lt-near-overlay .lt-near-sheet, .lt-np-row { transition: none !important; }
       .lt-np-spin { animation-duration: 2s; }
     }`;
     const el = document.createElement("style");
@@ -462,24 +531,29 @@
   //
   // Em qualquer dos casos, fora da área servida não vale a pena: o mapa não tem
   // dados lá e mostrar um ecrã vazio é pior do que ficar onde se estava.
+  // Regras do arranque (uma só vez, e só se nada mais importante estiver a
+  // acontecer). Devolve true se o arranque pode mexer no mapa / abrir a lista.
+  function arranquePermitido() {
+    if (autoFrameDone || !autoOn()) return false;
+    autoFrameDone = true; // mesmo que desista abaixo: isto é de arranque
+    // Um deep link a um comboio ou estação manda mais do que a localização.
+    if (window.location.hash && window.location.hash.length > 1) return false;
+    // Se já mexeu no mapa, mexeu por alguma razão.
+    if (userMovedMap) return false;
+    // Uma sheet aberta significa que já está a ver outra coisa.
+    if (
+      (window.MapaStation && window.MapaStation.isOpen()) ||
+      (window.MapaDetails && window.MapaDetails.isOpen()) ||
+      (window.GtfsHorarios && window.GtfsHorarios.isOpen()) ||
+      (window.MapaCM && window.MapaCM.isOpen())
+    )
+      return false;
+    return !foraDaArea();
+  }
+
   function frameUser(manual) {
     if (!map || !position) return;
-    if (!manual) {
-      if (autoFrameDone || !autoOn()) return;
-      autoFrameDone = true; // mesmo que desista abaixo: isto é de arranque
-      // Um deep link a um comboio ou estação manda mais do que a localização.
-      if (window.location.hash && window.location.hash.length > 1) return;
-      // Se já mexeu no mapa, mexeu por alguma razão.
-      if (userMovedMap) return;
-      // Uma sheet aberta significa que já está a ver outra coisa.
-      if (
-        (window.MapaStation && window.MapaStation.isOpen()) ||
-        (window.MapaDetails && window.MapaDetails.isOpen()) ||
-        (window.GtfsHorarios && window.GtfsHorarios.isOpen()) ||
-        (window.MapaCM && window.MapaCM.isOpen())
-      )
-        return;
-    }
+    if (!manual && !arranquePermitido()) return;
     if (foraDaArea()) {
       console.info(
         "[MapaPerto] fora da área servida; o mapa fica onde estava.",
@@ -528,7 +602,7 @@
       // Auto: se o utilizador ligou, a posição é obtida ao abrir o mapa. Não
       // abre o popup — só deixa a resposta pronta e marca onde ele está.
       if (autoOn() && introDone()) {
-        setTimeout(() => locate({ silent: true }), 800);
+        setTimeout(() => locate({ silent: true, arranque: true }), 800);
       }
     };
     window.MapaRender._pertoPatched = true;
@@ -554,9 +628,12 @@
     };
   }
 
-  // opts.silent = não abre o popup (modo automático)
+  // opts.silent = não abre o popup por si (modo automático)
+  // opts.arranque = é o pedido feito ao abrir o mapa: se as regras do arranque
+  //   deixarem, abre a lista e aproxima o mapa (o open() trata das duas coisas)
   function locate(opts) {
     const silent = !!(opts && opts.silent);
+    const arranque = !!(opts && opts.arranque);
     if (!navigator.geolocation) {
       if (!silent)
         renderState(
@@ -589,7 +666,12 @@
         };
         syncButton();
         pushMe();
-        // Silencioso é o de arranque; com o popup aberto foi um toque no botão.
+        if (arranque) {
+          if (!isOpen && arranquePermitido()) open();
+          return;
+        }
+        // Silencioso sem arranque: o interruptor foi ligado com a lista aberta.
+        // Com o popup aberto e não silencioso foi um toque no botão.
         frameUser(!silent);
         // O de arranque (silencioso) só aproxima o mapa: não precisa do índice
         // nem do motor da pesquisa. Com o popup aberto, carrega-o se ainda não
@@ -697,13 +779,13 @@
       </div>`;
   }
 
-  function renderLoading() {
+  function renderLoading(title, msg, hint) {
     bodyEl.innerHTML =
-      headHtml("A obter a localização…", "") +
+      headHtml(title || "A obter a localização…", "") +
       `<div class="lt-np-state" role="status">
         <div class="lt-np-spin"></div>
-        <p>A pedir a posição ao dispositivo.</p>
-        <p>Em espaços fechados pode levar alguns segundos.</p>
+        <p>${escapeHtml(msg || "A pedir a posição ao dispositivo.")}</p>
+        ${hint === "" ? "" : `<p>${escapeHtml(hint || "Em espaços fechados pode levar alguns segundos.")}</p>`}
       </div>`;
   }
 
@@ -789,14 +871,14 @@
           aria-label="Raio de procura" aria-valuetext="${escapeHtml(fmtRange(range))}">
         <div class="lt-np-range-ends"><span>${fmtRange(RANGES[0])}</span><span>${fmtRange(RANGES[RANGES.length - 1])}</span></div>
       </div>
-      <div class="lt-np-list">${listHtml}</div>
+      <div class="lt-np-list"><div data-np-rows>${listHtml}</div>
       <label class="lt-np-toggle lt-np-toggle-foot">
         <input type="checkbox" data-np="auto" ${autoOn() ? "checked" : ""}>
         <span>Localizar automaticamente ao abrir o mapa<br>
-          <span class="lt-np-toggle-sub">Com isto ligado, o mapa abre já na tua zona.</span>
+          <span class="lt-np-toggle-sub">Com isto ligado, o mapa abre já na tua zona com esta lista.</span>
         </span>
       </label>
-      <p class="lt-np-foot">Distância em linha reta a partir do teu dispositivo${escapeHtml(accuracy)}. A localização não sai daqui.</p>`;
+      <p class="lt-np-foot">Distância em linha reta a partir do teu dispositivo${escapeHtml(accuracy)}. A localização não sai daqui.</p></div>`;
 
     if (window.MapaSearch && window.MapaSearch.hookLogos)
       window.MapaSearch.hookLogos(bodyEl);
@@ -819,7 +901,7 @@
         res.withinCount === 0 && res.fertagus
           ? "Nada por perto"
           : `${res.withinCount} ${res.withinCount === 1 ? "paragem" : "paragens"} à volta`;
-    const listEl = bodyEl.querySelector(".lt-np-list");
+    const listEl = bodyEl.querySelector("[data-np-rows]");
     if (listEl) {
       listEl.innerHTML = curList.length
         ? curList.map(rowHtml).join("")
@@ -879,10 +961,74 @@
   }
 
   // ═══ SHEET ═════════════════════════════════════════════════════════════
+  function setSheetState(s) {
+    sheetState = s;
+    if (overlay) overlay.dataset.state = s;
+  }
+
+  // ─── Arrasto (só mobile), com as regras do painel de detalhes ────────
+  // Pega ou cabeçalho: para cima expande; para baixo encolhe (expandida) ou
+  // fecha (mini). A lista em si faz scroll normal e nunca arrasta a sheet.
+  let drag = null;
+  const isDesktop = () => window.matchMedia("(min-width: 768px)").matches;
+  const pointerY = (e) =>
+    e.touches && e.touches[0]
+      ? e.touches[0].clientY
+      : e.changedTouches && e.changedTouches[0]
+        ? e.changedTouches[0].clientY
+        : e.clientY;
+  function onDragStart(e) {
+    if (!isOpen || isDesktop() || drag) return;
+    const t = e.target;
+    if (!t.closest || !t.closest(".lt-np-handle, .lt-np-head")) return;
+    if (t.closest("button, input, a, label")) return;
+    const y = pointerY(e);
+    drag = { y0: y, y: y, t0: Date.now(), moved: false };
+    sheet.style.transition = "none";
+  }
+  function onDragMove(e) {
+    if (!drag) return;
+    const y = pointerY(e);
+    if (typeof y !== "number") return;
+    drag.y = y;
+    const dy = y - drag.y0;
+    if (Math.abs(dy) > 4) drag.moved = true;
+    // Para baixo segue o dedo; para cima resiste (a expansão é no fim).
+    sheet.style.transform = `translateY(${dy > 0 ? dy : dy * 0.2}px)`;
+  }
+  function onDragEnd() {
+    if (!drag) return;
+    const dy = drag.y - drag.y0;
+    const dt = Date.now() - drag.t0;
+    const v = dt > 0 ? dy / dt : 0;
+    drag = null;
+    sheet.style.transition = "";
+    sheet.style.transform = "";
+    if (dy < -60 || v < -0.6) {
+      setSheetState("expanded");
+    } else if (dy > 110 || (v > 0.6 && dy > 40)) {
+      if (sheetState === "expanded" && dy < window.innerHeight * 0.45)
+        setSheetState("mini");
+      else close();
+    }
+  }
+
+  // Outro painel (estação, comboio, paragem…) a abrir por cima fecha esta
+  // sheet: todos usam o #details-panel, que fica por baixo dela.
+  function watchDetailsPanel() {
+    const dp = document.getElementById("details-panel");
+    if (!dp || dp._ltNearWatch || !window.MutationObserver) return;
+    dp._ltNearWatch = true;
+    new MutationObserver(() => {
+      const st = dp.getAttribute("data-state");
+      if (isOpen && st && st !== "closed") close();
+    }).observe(dp, { attributes: true, attributeFilter: ["data-state"] });
+  }
+
   function build() {
     overlay = document.createElement("div");
     overlay.className = "lt-near-overlay";
-    overlay.innerHTML = `<div class="lt-near-sheet" role="dialog" aria-modal="true" aria-label="Transportes perto de mim"><div data-np-body></div></div>`;
+    overlay.innerHTML = `<div class="lt-near-sheet" role="dialog" aria-modal="false" aria-label="Transportes perto de mim"><div class="lt-np-handle" aria-hidden="true"><div class="lt-np-handle-pill"></div></div><div data-np-body></div></div>`;
     document.body.appendChild(overlay);
     sheet = overlay.querySelector(".lt-near-sheet");
     bodyEl = overlay.querySelector("[data-np-body]");
@@ -892,6 +1038,19 @@
     sheet.addEventListener("click", onSheetClick);
     sheet.addEventListener("input", onSheetInput);
     sheet.addEventListener("change", onSheetChange);
+    sheet.addEventListener("touchstart", onDragStart, { passive: true });
+    sheet.addEventListener("touchmove", onDragMove, { passive: true });
+    sheet.addEventListener("touchend", onDragEnd, { passive: true });
+    sheet.addEventListener("touchcancel", onDragEnd, { passive: true });
+    sheet.addEventListener("pointerdown", (e) => {
+      if (e.pointerType !== "touch") onDragStart(e);
+    });
+    window.addEventListener("pointermove", (e) => {
+      if (drag && e.pointerType !== "touch") onDragMove(e);
+    });
+    window.addEventListener("pointerup", (e) => {
+      if (drag && e.pointerType !== "touch") onDragEnd(e);
+    });
   }
 
   function open() {
@@ -901,6 +1060,8 @@
     isOpen = true;
     lastFocus = document.activeElement;
     loadRange();
+    watchDetailsPanel();
+    setSheetState("mini");
     overlay.classList.add("lt-open");
     document.addEventListener("keydown", onKey);
     if (btnEl) btnEl.setAttribute("aria-expanded", "true");
@@ -910,8 +1071,18 @@
     if (!introDone()) renderIntro();
     else if (position) {
       // Posição já em memória: mostra a lista (assim que o motor da pesquisa
-      // estiver carregado) e aproxima na mesma.
+      // e as fontes assíncronas — Metro, MTS — estiverem prontos) e aproxima.
+      renderLoading(
+        "A procurar paragens…",
+        "A carregar as paragens do mapa.",
+        "",
+      );
       garantirPesquisa()
+        .then(() =>
+          window.MapaSearch && window.MapaSearch.ensureSources
+            ? window.MapaSearch.ensureSources()
+            : null,
+        )
         .catch(() => {})
         .then(() => {
           if (isOpen) renderResults();
@@ -923,6 +1094,11 @@
   function close() {
     if (!isOpen) return;
     isOpen = false;
+    drag = null;
+    if (sheet) {
+      sheet.style.transition = "";
+      sheet.style.transform = "";
+    }
     overlay.classList.remove("lt-open");
     document.removeEventListener("keydown", onKey);
     if (btnEl) btnEl.setAttribute("aria-expanded", "false");
@@ -954,17 +1130,28 @@
   const STACK = ["btn-mapview", "lt-near-btn", "lt-search-btn"];
   const STACK_GAP = 8;
 
+  // A pilha começa logo por baixo do botão do menu, à mesma distância que o
+  // separa do botão de partilha (o gap do #nav-actions), e os botões da pilha
+  // ficam com esse mesmo espaço entre si.
   function layoutStack() {
     const header = document.querySelector("#global-nav header");
     if (!header) return;
-    const r = header.getBoundingClientRect();
+    const trig = document.getElementById("menu-trigger");
+    const share = document.getElementById("nav-share-trigger");
+    const r = (trig || header).getBoundingClientRect();
     if (!r || r.bottom <= 0) return;
-    let top = r.bottom + 12;
+    let gap = STACK_GAP;
+    if (trig && share) {
+      const g =
+        trig.getBoundingClientRect().left - share.getBoundingClientRect().right;
+      if (g > 0 && g < 40) gap = g;
+    }
+    let top = trig ? r.bottom + gap : r.bottom + 12;
     for (const id of STACK) {
       const el = document.getElementById(id);
       if (!el) continue;
       el.style.top = Math.round(top) + "px";
-      top += (el.offsetHeight || 42) + STACK_GAP;
+      top += (el.offsetHeight || 42) + gap;
     }
     // O menu das camadas alinha por baixo do seu próprio botão.
     const eye = document.getElementById("btn-mapview");
@@ -1042,6 +1229,7 @@
     close,
     locate,
     isOpen: () => isOpen,
+    state: () => (isOpen ? sheetState : "closed"),
     // Devolve uma cópia, para nada de fora poder alterar a posição guardada.
     position: () => (position ? Object.assign({}, position) : null),
     // Esquece a posição e o marcador (sem tocar nas preferências).

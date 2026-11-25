@@ -154,42 +154,6 @@
         color: #000000;
       }
 
-      /* ── Auréola de estado à volta do botão de refresh ──
-         cinzenta = offline · verde = online · amarela = erro da API
-         A cor é definida por setStatus() em app-ui.js via --aura. */
-      .aura-ring {
-        position: relative;
-      }
-      .aura-ring::after {
-        content: "";
-        position: absolute;
-        inset: -4px;
-        border-radius: 9999px;
-        border: 1.5px solid var(--aura, rgb(161, 161, 170));
-        box-shadow: 0 0 8px -1px var(--aura-glow, transparent);
-        pointer-events: none;
-        transition:
-          border-color 0.5s ease,
-          box-shadow 0.5s ease;
-      }
-      @keyframes aura-breathe {
-        0%,
-        100% {
-          opacity: 1;
-        }
-        50% {
-          opacity: 0.45;
-        }
-      }
-      .aura-ring.aura-live::after {
-        animation: aura-breathe 2.4s ease-in-out infinite;
-      }
-      @media (prefers-reduced-motion: reduce) {
-        .aura-ring.aura-live::after {
-          animation: none;
-        }
-      }
-
       /* ── Painel do filtro de hora ── */
       .tf-native {
         position: absolute;
@@ -208,21 +172,105 @@
       #btn-time-filter.tf-on {
         color: rgb(59, 130, 246);
       }
-
-      /* Centra o refresh no eixo do botão de troca de sentido.
-         Usa um invólucro em flex em vez de left:50% + translate: não depende
-         da composição de transforms (o active:scale-90 fica livre) nem da
-         posição estática de um filho absoluto dentro de um flex container. */
-      .rf-center {
-        position: absolute;
-        inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        pointer-events: none;
+      /* ── Painel de pesquisa (searchbar partilhada, tema "app") ──
+         Afinações só desta página, presas ao #lt-searchbar para ganharem aos
+         estilos-base que o planear-searchbar.js injeta depois (eram eles que
+         deixavam o Partir/Chegar quadrado e branco no modo escuro).
+         Linguagem da página: pílulas zinc com contorno fino, azul só na ação. */
+      #lt-searchbar.lt-sb-app [data-lt="datetime"] {
+        margin-top: 0 !important; /* o espaço era para as estações, aqui ocultas */
       }
-      .rf-center > button {
-        pointer-events: auto;
+      #lt-searchbar.lt-sb-app .lt-sb-dt {
+        gap: 0.75rem !important;
+      }
+      /* "Hora" e "Data" não acrescentam nada: os controlos explicam-se. */
+      #lt-searchbar.lt-sb-app [data-lt="datetime"] .lt-sb-lbl {
+        display: none;
+      }
+      #lt-searchbar.lt-sb-app .lt-sb-row {
+        gap: 0.5rem;
+      }
+      /* Partir / Chegar: segmentado com o raio das pílulas do cabeçalho */
+      #lt-searchbar.lt-sb-app .lt-sb-toggle {
+        margin-bottom: 0.5rem;
+        padding: 3px;
+        border-radius: 0.5rem;
+        background-color: #f4f4f5;
+        border: 1px solid #e4e4e7;
+      }
+      html.dark #lt-searchbar.lt-sb-app .lt-sb-toggle {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.05);
+      }
+      #lt-searchbar.lt-sb-app .lt-sb-mode,
+      #lt-searchbar.lt-sb-app .lt-sb-mode:first-child,
+      #lt-searchbar.lt-sb-app .lt-sb-mode:last-child {
+        height: 32px;
+        margin: 0;
+        border: 0;
+        border-radius: 0.375rem;
+        background-color: transparent;
+        box-shadow: none;
+        color: #71717a;
+        transition:
+          background-color 0.2s ease,
+          color 0.2s ease;
+      }
+      html.dark #lt-searchbar.lt-sb-app .lt-sb-mode {
+        color: #a1a1aa;
+      }
+      #lt-searchbar.lt-sb-app .lt-sb-mode[aria-pressed="true"],
+      html.dark #lt-searchbar.lt-sb-app .lt-sb-mode[aria-pressed="true"] {
+        background-color: #3b82f6;
+        color: #fff;
+      }
+      /* Setas e +/-: discos sem contorno, como o botão de troca de sentido */
+      #lt-searchbar.lt-sb-app .lt-sb-step {
+        width: 36px;
+        height: 36px;
+        border: 0;
+        border-radius: 9999px;
+        background-color: #f4f4f5;
+        color: #71717a;
+      }
+      html.dark #lt-searchbar.lt-sb-app .lt-sb-step {
+        background-color: rgba(255, 255, 255, 0.05);
+        color: #a1a1aa;
+      }
+      #lt-searchbar.lt-sb-app .lt-sb-step:hover {
+        color: #3b82f6;
+      }
+      /* Data: uma pílula igual às do cabeçalho, em vez de dois riscos */
+      #lt-searchbar.lt-sb-app [data-lt="date-block"] .lt-sb-val {
+        height: 36px;
+        border: 1px solid #e4e4e7;
+        border-radius: 0.5rem;
+        background-color: #f4f4f5;
+      }
+      html.dark #lt-searchbar.lt-sb-app [data-lt="date-block"] .lt-sb-val {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.05);
+      }
+      /* Ações */
+      #lt-searchbar.lt-sb-app .lt-sb-actions {
+        margin-top: 1rem;
+      }
+      #lt-searchbar.lt-sb-app .lt-sb-reset,
+      #lt-searchbar.lt-sb-app .lt-sb-actions .lt-sb-cta {
+        padding: 0.7rem 1rem;
+        border-radius: 0.5rem;
+      }
+      html.dark #lt-searchbar.lt-sb-app .lt-sb-actions .lt-sb-cta {
+        background-color: #3b82f6;
+        color: #fff;
+      }
+      html.dark #lt-searchbar.lt-sb-app .lt-sb-actions .lt-sb-cta:hover {
+        background-color: #2563eb;
+      }
+
+      /* Mesma altura da pílula do countdown que substitui (a linha não mexe). */
+      #btn-ver-agora {
+        min-height: 27px;
       }
     </style>
     <script src="./lucide-icons.js"></script>
@@ -318,20 +366,33 @@
               </span>
             </div>
 
-            <!-- Refresh + auréola de estado (centrado, por baixo do swap) -->
-            <div class="rf-center">
-              <button
-                id="btn-manual-refresh"
-                class="aura-ring p-1.5 rounded-full bg-black/5 dark:bg-white/5 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors active:scale-90 group cursor-pointer outline-none"
-                aria-label="Atualizar estado"
+            <!-- Pesquisa ativa: substitui a pílula do countdown. Apaga os
+                 parâmetros de pesquisa e volta aos próximos comboios (ao vivo). -->
+            <button
+              id="btn-ver-agora"
+              type="button"
+              class="hidden flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/5 text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors active:scale-95"
+              aria-label="Ver agora: limpar a pesquisa e voltar aos próximos comboios"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="w-3 h-3 shrink-0"
+                aria-hidden="true"
               >
-                <i
-                  data-lucide="refresh-cw"
-                  id="refresh-icon-menu"
-                  class="w-3 h-3 transition-transform group-active:scale-90"
-                ></i>
-              </button>
-            </div>
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+              </svg>
+              <span
+                class="uppercase tracking-widest text-[9px] font-bold whitespace-nowrap"
+              >
+                Ver Agora
+              </span>
+            </button>
 
             <!-- Filtro de hora de partida / chegada -->
             <button

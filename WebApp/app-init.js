@@ -27,7 +27,6 @@ async function init() {
     history.scrollRestoration = "manual";
   }
 
-  setupPWA();
   loadSettings();
 
   const savedOrg = localStorage.getItem("ft_org");
@@ -40,9 +39,8 @@ async function init() {
   // para que o espaço esteja sempre reservado. Apenas opacity muda depois.
   // Isto elimina o CLS causado pelo header fixo que crescia ao aparecer.
   //
-  // O cabeçalho aloja agora o botão de refresh (com auréola de estado) e o
-  // botão de filtro de hora, que têm de estar SEMPRE visíveis. Por isso a
-  // opacidade aplica-se apenas à pílula do countdown.
+  // O cabeçalho aloja o botão de filtro de hora, que tem de estar SEMPRE
+  // visível. Por isso a opacidade aplica-se apenas à pílula do countdown.
   const nextHeader = document.getElementById("next-train-header");
   if (nextHeader) nextHeader.classList.remove("hidden");
 
@@ -56,7 +54,12 @@ async function init() {
   // que o resto do arranque decorre exatamente como antes.
   if (window.TimeFilter) TimeFilter.bind();
 
-  // Estado inicial da auréola: cinzenta até haver resposta.
+  // Botão de refresh no menu (à esquerda do de partilha). O menu.js já
+  // construiu o cabeçalho no DOMContentLoaded; o setTimeout abaixo repete a
+  // tentativa (a função é idempotente) caso ainda não exista.
+  if (typeof injectRefreshButton === "function") injectRefreshButton();
+
+  // Estado inicial: neutro até haver resposta.
   if (typeof setStatus === "function") setStatus("offline");
 
   // Aguarda que o menu.js construa o DOM do menu
@@ -167,10 +170,8 @@ window.onload = function () {
   const backdrop = document.getElementById("modal-backdrop");
   if (backdrop) backdrop.addEventListener("click", closeDetails);
 
-  // Refresh manual — o botão passou a ser estático no app.html (centrado por
-  // baixo do swap), já não é injetado pelo injectCustomMenuElements().
-  const refreshBtn = document.getElementById("btn-manual-refresh");
-  if (refreshBtn) refreshBtn.addEventListener("click", manualRefresh);
+  // Refresh manual — o botão vive no menu e é injetado (com o listener) por
+  // injectRefreshButton(), em app-settings.js.
 })();
 
 // ─── DELEGAÇÃO DE EVENTOS (elementos dinâmicos) ───────────────────────
@@ -187,6 +188,9 @@ document.body.addEventListener("click", function (e) {
     case "close-details":
       closeDetails();
       break;
+    case "show-passed":
+      showPassed();
+      break;
     case "dismiss-ip-popup":
       dismissIpDownPopup();
       break;
@@ -195,9 +199,6 @@ document.body.addEventListener("click", function (e) {
         parseInt(el.dataset.alertIndex, 10),
         el.dataset.alertId,
       );
-      break;
-    case "install-pwa":
-      installPWA();
       break;
     case "play-sudoku":
       sa_event("sudoku_started_alertbtn");

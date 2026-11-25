@@ -34,7 +34,6 @@ const FERTAGUS_STATIONS = [
 let DB_LISBOA = null;
 let DB_MARGEM = null;
 let FERIADOS_DB = {};
-let deferredPrompt;
 
 let activeTab = "lisboa";
 let isLoading = false;

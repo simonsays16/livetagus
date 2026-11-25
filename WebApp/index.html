@@ -212,32 +212,6 @@
         z-index: 2;
         max-width: 880px;
       }
-
-      .lt-eyebrow {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        font-family: "JetBrains Mono", monospace;
-        font-size: 11px;
-        font-weight: 500;
-        letter-spacing: 0.22em;
-        text-transform: uppercase;
-        color: var(--text-soft);
-        margin-bottom: 30px;
-      }
-      .lt-dot {
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: var(--accent);
-        box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 70%, transparent);
-        flex: none;
-      }
-      @media (prefers-reduced-motion: no-preference) {
-        .lt-dot {
-          animation: ping 2.4s var(--ease) infinite;
-        }
-      }
       @keyframes ping {
         0% {
           box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent);
@@ -371,9 +345,6 @@
       }
       .d2 {
         animation-delay: 0.62s;
-      }
-      .d3 {
-        animation-delay: 0.74s;
       }
 
       /* ---------- BOTÕES ---------- */
@@ -1150,11 +1121,6 @@
 
         <div class="lt-wrap">
           <div class="lt-hero-inner">
-            <!--<p class="lt-eyebrow lt-fade d1">
-              <span class="lt-dot"></span>
-              Fertagus &nbsp;·&nbsp; Margem Sul &nbsp;⇄&nbsp; Lisboa
-            </p>-->
-
             <h1 class="lt-title">
               <span class="lt-line">
                 <span class="lt-line__i">Fertagus em</span>
@@ -1169,7 +1135,7 @@
 
             <div class="lt-rule" aria-hidden="true"></div>
 
-            <p class="lt-lede lt-fade d2">
+            <p class="lt-lede lt-fade d1">
               Com a
               <b>LiveTagus</b>
               podes seguir cada comboio da Fertagus no mapa, em tempo real, com
@@ -1178,7 +1144,7 @@
               <!--e avisos de supressão-->
             </p>
 
-            <div class="lt-cta lt-fade d3">
+            <div class="lt-cta lt-fade d2">
               <!-- Botão contextual (PWA / Tempo Real) — controlado pelo index.js -->
               <button
                 id="main-btn"

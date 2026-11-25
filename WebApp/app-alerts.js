@@ -84,27 +84,6 @@ const AlertsManager = {
     return null;
   },
 
-  checkPWA: () => {
-    const isStandalone = window.matchMedia(
-      "(display-mode: standalone)",
-    ).matches;
-    const dismissed = sessionStorage.getItem("pwa_dismissed");
-
-    if (!isStandalone && !dismissed) {
-      // return none; // Desativação para maior partilha momentânea do jogo de sudoku
-      return {
-        id: "pwa-install",
-        tipo: "informacao",
-        nome: "Instalar App",
-        mensagem: "Para acesso rápido e direto. Disponível Iphone e Android!",
-        textolink: "Instalar",
-        isPWA: true,
-        icon: "download",
-      };
-    }
-    return null;
-  },
-
   // Gera o HTML do slider de alertas.
   generateHTML: (alerts) => {
     if (!alerts || alerts.length === 0) return "";
@@ -131,9 +110,7 @@ const AlertsManager = {
           : "info";
 
       let actionHtml = "";
-      if (alert.isPWA) {
-        actionHtml = `<button data-action="install-pwa" class="ml-auto shrink-0 text-[9px] font-bold uppercase tracking-wider text-white bg-blue-600 px-3 py-1.5 rounded transition-colors shadow-sm active:scale-95">Instalar</button>`;
-      } else if (alert.link && alert.link !== "#" && !alert.isSudoku) {
+      if (alert.link && alert.link !== "#" && !alert.isSudoku) {
         const txt = alert.textolink || "Ver";
         actionHtml = `<a href="${alert.link}" target="_blank" class="ml-auto shrink-0 text-[9px] font-bold uppercase tracking-wider text-blue-500 border border-blue-500/30 px-3 py-1.5 rounded transition-colors active:scale-95">${txt}</a>`;
       } else if (alert.isSudoku) {
@@ -184,7 +161,6 @@ const AlertsManager = {
   dismiss: (index, id) => {
     const el = document.getElementById(`alert-${index}`);
     if (el) el.remove();
-    if (id === "pwa-install") sessionStorage.setItem("pwa_dismissed", "true");
     const container = document.getElementById("alerts-slider");
     if (!container || container.children.length === 0) {
       const wrapper = document.getElementById("alerts-dynamic-container");
@@ -198,8 +174,8 @@ const AlertsManager = {
 
 async function updateAlertsSystem(trainList) {
   let tempAlerts = [];
-  const pwa = AlertsManager.checkPWA();
-  if (pwa) tempAlerts.push(pwa);
+  // O aviso "Instalar App" saiu daqui: a instalação passou para o módulo
+  // global do menu (window.LTInstall), na página inicial e no menu.
   const sudoku = AlertsManager.checkSudoku(trainList);
   if (sudoku) tempAlerts.push(sudoku);
   const { alerts, mode } = await AlertsManager.fetch();

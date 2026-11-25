@@ -16,6 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
   injectFooter(); // injetar footer
   initTheme(); // verificar tema escuro/claro/auto
   initMenuInteractions(); // interações menu (+ segundo nível "Estações")
+  if (window.LTInstall) window.LTInstall.refresh(); // botão "Instalar app" do menu
   initShareButton(); // partilha nativa no footer
   initHeaderShare(); // partilha da página atual no header
   checkApiStatus(); // verificar estado
@@ -91,6 +92,7 @@ function injectNavigation() {
                     <span class="w-6 h-[1.5px] bg-current transition-all duration-300 group-hover:w-10 pointer-events-none"></span>
                 </button>
             </div>
+            ${glass ? "" : '<div id="lt-flow" class="lt-flow" aria-hidden="true"><i></i><i></i></div>'}
         </header>
 
         <div id="menu-overlay" class="fixed inset-0 bg-white dark:bg-[#09090b] z-40 transform translate-y-full transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden" aria-hidden="true" inert>
@@ -104,14 +106,8 @@ function injectNavigation() {
                     <nav class="ltm-nav" aria-label="Menu principal">
                         <a href="/" class="menu-link ltm-big" data-page="home">Início</a>
                         <a href="/mapa" class="menu-link ltm-big" data-page="mapa">Mapa</a>
-                        <div class="ltm-group" role="group" aria-labelledby="ltm-label-comboios">
-                            <p class="ltm-label" id="ltm-label-comboios">Comboios</p>
-                            <div class="ltm-sub">
-                                <a href="/app" class="menu-link ltm-med" data-page="app">Trajetos</a>
-                                <span class="ltm-sep" aria-hidden="true">·</span>
-                                <a href="/horarios" class="menu-link ltm-med" data-page="horarios">Horários</a>
-                            </div>
-                        </div>
+                        <a href="/app" class="menu-link ltm-big" data-page="app">Trajetos</a>
+                        <a href="/horarios" class="menu-link ltm-big" data-page="horarios">Horários</a>
                         <button type="button" id="ltm-open-estacoes" class="menu-link ltm-big ltm-more" data-page="estacao" aria-expanded="false" aria-controls="ltm-estacoes">
                             <span>Estações</span>${SVG_CHEV}
                         </button>
@@ -127,6 +123,9 @@ function injectNavigation() {
                             <a href="/sudoku" class="menu-link ltm-small" data-page="sudoku">Sudoku</a>
                             <span class="ltm-sep" aria-hidden="true">·</span>
                             <a href="/paragens" class="menu-link ltm-small" data-page="paragens">Paragens</a>
+                            <span class="ltm-sep" aria-hidden="true" data-lt-install-sep hidden>·</span>
+                            <!-- Instalar: só aparece quando dá para instalar (window.LTInstall) -->
+                            <button type="button" class="ltm-small" data-lt-install hidden>Instalar app</button>
                         </div>
                         <div class="ltm-theme" role="group" aria-label="Aparência">
                             <button type="button" class="theme-btn ltm-theme-btn" data-mode="light">Light</button>
@@ -245,12 +244,50 @@ html.dark .ltm-cm-light,html:not(.dark) .ltm-cm-dark{display:none}
 @media (max-width:359px){#nav-beta{display:none}}
 @media (max-height:600px){.ltm-panel{padding-top:calc(5rem + env(safe-area-inset-top,0px))}.ltm-nav{gap:.25rem}.ltm-foot{margin-top:1.25rem;padding-top:1.25rem}}
 @media (prefers-reduced-motion:reduce){.ltm-track,.ltm-stn,.ltm-chev{transition:none}}
+/* ── Traço de atualização (window.LTFlow) ──────────────────────────────
+   Vive sobre a linha que separa o menu da página. Duas metades que crescem
+   do centro para as pontas (só transform + opacity): a ponta é a "luz", o
+   gradiente atrás dela é o rasto. .lt-flow-erro = laranja fixo. */
+.lt-flow{position:absolute;left:0;right:0;bottom:-1px;height:2px;pointer-events:none}
+.lt-flow i{position:absolute;top:0;bottom:0;width:50%;opacity:0;transform:scaleX(0);will-change:transform,opacity}
+.lt-flow i:first-child{left:0;transform-origin:100% 50%;background:linear-gradient(270deg,rgba(16,185,129,.12) 0%,rgba(16,185,129,.7) 72%,#6ee7b7 100%);box-shadow:0 0 8px rgba(16,185,129,.55)}
+.lt-flow i:last-child{right:0;transform-origin:0 50%;background:linear-gradient(90deg,rgba(16,185,129,.12) 0%,rgba(16,185,129,.7) 72%,#6ee7b7 100%);box-shadow:0 0 8px rgba(16,185,129,.55)}
+.lt-flow-go i{animation:lt-flow-go 1.5s cubic-bezier(.22,.61,.36,1) both}
+@keyframes lt-flow-go{0%{transform:scaleX(0);opacity:1}62%{transform:scaleX(1);opacity:1}100%{transform:scaleX(1);opacity:0}}
+.lt-flow.lt-flow-erro i{animation:none;transform:none;opacity:1;background:#f59e0b;box-shadow:0 0 8px rgba(245,158,11,.5);transition:opacity .4s ease}
+@media (prefers-reduced-motion:reduce){.lt-flow-go i{animation-name:lt-flow-fade}@keyframes lt-flow-fade{0%{transform:none;opacity:0}30%{transform:none;opacity:1}100%{transform:none;opacity:0}}}
 `;
   const tag = document.createElement("style");
   tag.id = "ltm-styles";
   tag.textContent = css;
   document.head.appendChild(tag);
 }
+
+// ─── TRAÇO DE ATUALIZAÇÃO (partilhado) ─────────────────────────────────
+// Forma única de uma página mostrar que atualizou: o traço que separa o
+// menu da página.
+//   LTFlow.pulso()        → luz verde do centro para as pontas (atualizou)
+//   LTFlow.problema(true) → laranja fixo até problema(false) ou pulso()
+// Sem o elemento (cabeçalho do mapa, menu por construir) não faz nada.
+window.LTFlow = (function () {
+  function el() {
+    return document.getElementById("lt-flow");
+  }
+  function problema(on) {
+    const f = el();
+    if (!f) return;
+    if (on) f.classList.remove("lt-flow-go");
+    f.classList.toggle("lt-flow-erro", !!on);
+  }
+  function pulso() {
+    const f = el();
+    if (!f) return;
+    f.classList.remove("lt-flow-erro", "lt-flow-go");
+    void f.offsetWidth; // reinicia a animação
+    f.classList.add("lt-flow-go");
+  }
+  return { pulso: pulso, problema: problema };
+})();
 
 // ─── ESTAÇÕES FERTAGUS (lista partilhada) ──────────────────────────────
 // Fonte única da lista: o "Estações ›" do menu e a página /estacao/
@@ -852,6 +889,413 @@ async function checkApiStatus() {
     setTimeout(checkApiStatus, 30000);
   }
 }
+
+// ─── INSTALAÇÃO DA WEBAPP (window.LTInstall) ───────────────────────────
+// Um só sítio decide se a app pode ser instalada, se já está instalada e
+// como se instala, em qualquer página que carregue o menu.js:
+//   Android / Windows (Chrome, Edge, Samsung Internet) → prompt nativo
+//     (beforeinstallprompt);
+//   iPhone / iPad → modal com os passos do Safari (o iOS não tem API).
+//
+// Estados (LTInstall.state()):
+//   "app"          a correr DENTRO da app instalada → nada a oferecer
+//   "pronta"       o browser deixa instalar agora → botão visível
+//   "ios"          iPhone/iPad no browser → botão abre as instruções
+//   "a-instalar"   aceitou o prompt, à espera do "appinstalled"
+//   "instalada"    instalada neste dispositivo, aberta no browser
+//   "indisponivel" o browser não instala (Firefox, Safari no Mac…) ou ainda
+//                  não disse nada
+//
+// Como se sabe se já está instalada (por ordem de confiança):
+//   1. display-mode standalone / navigator.standalone → estamos na app;
+//   2. beforeinstallprompt → o Chrome só o dispara se NÃO estiver instalada
+//      (e se chegar, apaga qualquer marca antiga: foi desinstalada);
+//   3. navigator.getInstalledRelatedApps() → Chrome (Android/Windows) com o
+//      related_applications do site.webmanifest;
+//   4. "appinstalled" → fica marcado em localStorage (lt_pwa_instalada).
+// No iOS nada disto existe fora da app (e a app tem armazenamento próprio),
+// por isso no browser o botão fica sempre disponível.
+//
+// Botões: qualquer elemento com [data-lt-install] fica escondido (atributo
+// hidden) quando não há nada a oferecer e chama LTInstall.install() ao toque.
+// Um [data-lt-install-sep] acompanha-o (o "·" do menu). Para outro
+// comportamento, usar LTInstall.onChange(fn) — ver index.js.
+(function initInstalacao() {
+  if (window.LTInstall) return;
+
+  const KEY = "lt_pwa_instalada";
+  const KEY_OLD = "pwa_installed"; // chave antiga do index.js
+  const ua = navigator.userAgent || "";
+  const isIOS =
+    /iPad|iPhone|iPod/.test(ua) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const isIPad =
+    /iPad/.test(ua) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const inApp = /FBAN|FBAV|Instagram|Line\/|TikTok|Twitter|LinkedInApp/i.test(
+    ua,
+  );
+
+  let prompt = null;
+  let state = "indisponivel";
+  let relacionada = false;
+  let aInstalar = false; // aceitou o prompt e ainda não chegou o "appinstalled"
+  const ouvintes = [];
+
+  function lerMarca() {
+    try {
+      return (
+        localStorage.getItem(KEY) === "1" ||
+        localStorage.getItem(KEY_OLD) === "true"
+      );
+    } catch (_) {
+      return false;
+    }
+  }
+  function marcar(on) {
+    try {
+      if (on) localStorage.setItem(KEY, "1");
+      else {
+        localStorage.removeItem(KEY);
+        localStorage.removeItem(KEY_OLD);
+      }
+    } catch (_) {}
+  }
+
+  function naApp() {
+    const mm = (q) => window.matchMedia && window.matchMedia(q).matches;
+    return (
+      mm("(display-mode: standalone)") ||
+      mm("(display-mode: fullscreen)") ||
+      mm("(display-mode: minimal-ui)") ||
+      mm("(display-mode: window-controls-overlay)") ||
+      window.navigator.standalone === true ||
+      document.referrer.indexOf("android-app://") === 0
+    );
+  }
+
+  function calcular() {
+    if (naApp()) return "app";
+    if (aInstalar) return "a-instalar";
+    if (prompt) return "pronta";
+    if (isIOS) return "ios";
+    if (relacionada || lerMarca()) return "instalada";
+    return "indisponivel";
+  }
+
+  function atualizar() {
+    const novo = calcular();
+    const mudou = novo !== state;
+    state = novo;
+    sincronizarBotoes();
+    if (mudou)
+      ouvintes.slice().forEach((fn) => {
+        try {
+          fn(state);
+        } catch (_) {}
+      });
+  }
+
+  function visivel() {
+    return state === "pronta" || state === "ios";
+  }
+
+  function sincronizarBotoes() {
+    const v = visivel();
+    document
+      .querySelectorAll("[data-lt-install], [data-lt-install-sep]")
+      .forEach((el) => {
+        el.hidden = !v;
+      });
+  }
+
+  // Liga os botões [data-lt-install] (por delegação: serve também para os
+  // que forem criados depois, como o do menu).
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest && e.target.closest("[data-lt-install]");
+    if (!b) return;
+    e.preventDefault();
+    install();
+  });
+
+  // Sem <link rel="manifest"> o Chrome nunca oferece a instalação nessa
+  // página. Só a página inicial o tinha; passa a haver em todas.
+  function garantirManifesto() {
+    if (document.querySelector('link[rel="manifest"]')) return;
+    const l = document.createElement("link");
+    l.rel = "manifest";
+    l.href = "/site.webmanifest";
+    document.head.appendChild(l);
+  }
+
+  // Tem de estar à escuta desde já (o evento pode chegar cedo).
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault(); // o botão é nosso; sem mini-barra do browser
+    prompt = e;
+    relacionada = false;
+    marcar(false); // se o Chrome deixa instalar, não está instalada
+    aInstalar = false;
+    atualizar();
+  });
+
+  window.addEventListener("appinstalled", () => {
+    prompt = null;
+    aInstalar = false;
+    marcar(true);
+    atualizar();
+    if (typeof window.sa_event === "function") window.sa_event("pwa_installed");
+  });
+
+  async function install() {
+    if (state === "ios") {
+      if (typeof window.sa_event === "function")
+        window.sa_event("pwa_install_ios_clicked");
+      abrirModalIOS();
+      return "ios";
+    }
+    if (!prompt) return "indisponivel";
+    if (typeof window.sa_event === "function")
+      window.sa_event("pwa_install_clicked");
+    const p = prompt;
+    prompt = null; // o prompt só se pode usar uma vez
+    let outcome = "dismissed";
+    try {
+      p.prompt();
+      const r = await p.userChoice;
+      outcome = (r && r.outcome) || "dismissed";
+    } catch (_) {}
+    if (outcome === "accepted") {
+      if (typeof window.sa_event === "function")
+        window.sa_event("pwa_install_accepted");
+      aInstalar = true;
+      // Rede de segurança: se o "appinstalled" não chegar, dá-se como
+      // instalada ao fim de 30 s (era a regra antiga da página inicial).
+      setTimeout(() => {
+        if (aInstalar) {
+          aInstalar = false;
+          marcar(true);
+          atualizar();
+        }
+      }, 30000);
+    }
+    atualizar();
+    return outcome;
+  }
+
+  // ── Modal do iOS ─────────────────────────────────────────────────────
+  const SVG_PART =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m8 7 4-4 4 4"/><path d="M8 11H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-2"/></svg>';
+  const SVG_MAIS =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8M8 12h8"/></svg>';
+  const SVG_OK =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+  const SVG_AVISO =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4M12 17h.01"/></svg>';
+  const SVG_X =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="18" height="18" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+
+  let modal = null;
+  let ultimoFoco = null;
+
+  function estilos() {
+    if (document.getElementById("lti-styles")) return;
+    const css = `
+.lti-ov{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,0);pointer-events:none;transition:background .3s ease}
+.lti-ov.lti-open{background:rgba(0,0,0,.45);pointer-events:auto}
+.lti-sheet{position:absolute;left:0;right:0;bottom:0;max-height:88dvh;overflow-y:auto;overscroll-behavior:contain;
+  background:#fff;color:#18181b;border-radius:24px 24px 0 0;border-top:1px solid rgba(0,0,0,.06);
+  box-shadow:0 -12px 40px -14px rgba(0,0,0,.35);padding:1.25rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom,0px));
+  transform:translateY(100%);visibility:hidden;font-family:inherit;
+  transition:transform .36s cubic-bezier(.22,.61,.36,1),visibility 0s linear .36s}
+html.dark .lti-sheet{background:#09090b;color:#fafafa;border-top-color:rgba(255,255,255,.08)}
+.lti-ov.lti-open .lti-sheet{transform:translateY(0);visibility:visible;transition:transform .36s cubic-bezier(.22,.61,.36,1),visibility 0s}
+@media (min-width:640px){.lti-sheet{left:50%;right:auto;bottom:2rem;width:420px;border-radius:20px;border:1px solid rgba(0,0,0,.08);
+  transform:translate(-50%,calc(100% + 3rem))}
+  html.dark .lti-sheet{border-color:rgba(255,255,255,.08)}
+  .lti-ov.lti-open .lti-sheet{transform:translate(-50%,0)}}
+.lti-handle{width:38px;height:4px;border-radius:999px;background:rgba(0,0,0,.15);margin:-.5rem auto .75rem}
+html.dark .lti-handle{background:rgba(255,255,255,.2)}
+@media (min-width:640px){.lti-handle{display:none}}
+.lti-head{display:flex;align-items:flex-start;gap:.75rem}
+.lti-head-main{flex:1;min-width:0}
+.lti-kicker{font-size:9px;font-weight:800;letter-spacing:.3em;text-transform:uppercase;color:#a1a1aa;margin:0}
+.lti-title{font-size:22px;font-weight:300;letter-spacing:-.02em;margin:.35rem 0 0;line-height:1.15}
+.lti-close{flex-shrink:0;width:34px;height:34px;border:0;padding:0;display:inline-flex;align-items:center;justify-content:center;
+  background:transparent;color:#a1a1aa;cursor:pointer;border-radius:999px}
+.lti-close:hover{color:inherit}
+.lti-warn{display:flex;gap:.65rem;align-items:flex-start;margin-top:1rem;padding:.75rem .85rem;border-radius:12px;
+  background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:#92400e;font-size:12px;line-height:1.5}
+html.dark .lti-warn{color:#fbbf24}
+.lti-warn svg{width:18px;height:18px;flex-shrink:0;margin-top:1px}
+.lti-steps{list-style:none;margin:1rem 0 0;padding:0;display:flex;flex-direction:column;gap:.6rem}
+.lti-step{display:flex;align-items:center;gap:.85rem;padding:.8rem .9rem;border-radius:12px;background:#f4f4f5;border:1px solid rgba(0,0,0,.04);
+  font-size:13px;line-height:1.4;color:#3f3f46}
+html.dark .lti-step{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.05);color:#d4d4d8}
+.lti-ic{width:34px;height:34px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;border-radius:9px;
+  background:#fff;border:1px solid rgba(0,0,0,.08);color:#3b82f6}
+html.dark .lti-ic{background:#27272a;border-color:rgba(255,255,255,.08)}
+.lti-ic svg{width:18px;height:18px}
+.lti-n{font-weight:700;color:#18181b;margin-right:.2rem}
+html.dark .lti-n{color:#fff}
+.lti-btn{display:block;width:100%;margin-top:1.1rem;height:46px;border:0;border-radius:12px;cursor:pointer;font-family:inherit;
+  font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;background:#18181b;color:#fff}
+html.dark .lti-btn{background:#fafafa;color:#18181b}
+.lti-btn:active{transform:scale(.98)}
+@media (prefers-reduced-motion:reduce){.lti-ov,.lti-sheet{transition:none!important}}`;
+    const el = document.createElement("style");
+    el.id = "lti-styles";
+    el.textContent = css;
+    document.head.appendChild(el);
+  }
+
+  function construirModal() {
+    estilos();
+    const dispositivo = isIPad ? "iPad" : "iPhone";
+    modal = document.createElement("div");
+    modal.className = "lti-ov";
+    modal.innerHTML = `
+      <div class="lti-sheet" role="dialog" aria-modal="true" aria-labelledby="lti-title">
+        <div class="lti-handle" aria-hidden="true"></div>
+        <div class="lti-head">
+          <div class="lti-head-main">
+            <p class="lti-kicker">Instalar a LiveTagus</p>
+            <h2 class="lti-title" id="lti-title">Adicionar ao ecrã principal do ${dispositivo}</h2>
+          </div>
+          <button type="button" class="lti-close" data-lti="close" aria-label="Fechar">${SVG_X}</button>
+        </div>
+        <div class="lti-warn">${SVG_AVISO}<span>${
+          inApp
+            ? "Estás dentro de outra app (Instagram, Facebook…). Abre esta página no <b>Safari</b>: daqui não é possível instalar."
+            : "Abre este site no <b>Safari</b>. Dentro de apps como o Instagram ou o Facebook não é possível instalar."
+        }</span></div>
+        <ol class="lti-steps">
+          <li class="lti-step"><span class="lti-ic">${SVG_PART}</span><span><span class="lti-n">1.</span>Toca no botão <b>Partilhar</b>, na barra do Safari (em baixo ou em cima, conforme a versão).</span></li>
+          <li class="lti-step"><span class="lti-ic">${SVG_MAIS}</span><span><span class="lti-n">2.</span>Escolhe <b>"Adicionar ao ecrã principal"</b>. Se não aparecer, desliza a lista ou procura em "Mais".</span></li>
+          <li class="lti-step"><span class="lti-ic">${SVG_OK}</span><span><span class="lti-n">3.</span>Confirma em <b>"Adicionar"</b>. A LiveTagus fica no ecrã principal, como uma app.</span></li>
+        </ol>
+        <button type="button" class="lti-btn" data-lti="close">Percebido</button>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener("click", (e) => {
+      if (
+        e.target === modal ||
+        (e.target.closest && e.target.closest('[data-lti="close"]'))
+      )
+        fecharModalIOS();
+    });
+    // Arrastar para baixo fecha (mobile), como os outros painéis.
+    const sheet = modal.querySelector(".lti-sheet");
+    let y0 = null;
+    let dy = 0;
+    sheet.addEventListener(
+      "touchstart",
+      (e) => {
+        if (sheet.scrollTop > 0) return;
+        y0 = e.touches[0].clientY;
+        dy = 0;
+        sheet.style.transition = "none";
+      },
+      { passive: true },
+    );
+    sheet.addEventListener(
+      "touchmove",
+      (e) => {
+        if (y0 == null) return;
+        dy = Math.max(0, e.touches[0].clientY - y0);
+        sheet.style.transform = `translateY(${dy}px)`;
+      },
+      { passive: true },
+    );
+    const fim = () => {
+      if (y0 == null) return;
+      y0 = null;
+      sheet.style.transition = "";
+      sheet.style.transform = "";
+      if (dy > 100) fecharModalIOS();
+    };
+    sheet.addEventListener("touchend", fim, { passive: true });
+    sheet.addEventListener("touchcancel", fim, { passive: true });
+  }
+
+  function onKey(e) {
+    if (e.key === "Escape") fecharModalIOS();
+  }
+
+  function abrirModalIOS() {
+    if (!modal) construirModal();
+    ultimoFoco = document.activeElement;
+    void modal.offsetWidth; // para a transição de entrada correr
+    modal.classList.add("lti-open");
+    document.addEventListener("keydown", onKey);
+    const b = modal.querySelector(".lti-btn");
+    if (b)
+      setTimeout(() => {
+        try {
+          b.focus({ preventScroll: true });
+        } catch (_) {}
+      }, 50);
+  }
+
+  function fecharModalIOS() {
+    if (!modal || !modal.classList.contains("lti-open")) return;
+    modal.classList.remove("lti-open");
+    document.removeEventListener("keydown", onKey);
+    if (ultimoFoco && ultimoFoco.focus) {
+      try {
+        ultimoFoco.focus({ preventScroll: true });
+      } catch (_) {}
+    }
+  }
+
+  // ── Arranque ─────────────────────────────────────────────────────────
+  function arrancar() {
+    garantirManifesto();
+    atualizar();
+    // Chrome (Android/Windows): pergunta ao sistema se a app já está
+    // instalada. Precisa do related_applications no manifesto.
+    if (
+      !naApp() &&
+      !isIOS &&
+      typeof navigator.getInstalledRelatedApps === "function"
+    ) {
+      navigator
+        .getInstalledRelatedApps()
+        .then((apps) => {
+          if (apps && apps.length && !prompt) {
+            relacionada = true;
+            atualizar();
+          }
+        })
+        .catch(() => {});
+    }
+    // Entrar/sair do modo app sem recarregar (ex.: "Abrir na app" no desktop).
+    if (window.matchMedia) {
+      const mq = window.matchMedia("(display-mode: standalone)");
+      if (mq.addEventListener) mq.addEventListener("change", atualizar);
+    }
+  }
+  if (document.readyState === "loading")
+    document.addEventListener("DOMContentLoaded", arrancar, { once: true });
+  else arrancar();
+
+  window.LTInstall = {
+    state: () => state,
+    canInstall: visivel,
+    install,
+    showIOSHelp: abrirModalIOS,
+    isStandalone: naApp,
+    // Chamado logo com o estado atual e depois a cada mudança.
+    onChange(fn) {
+      if (typeof fn !== "function") return;
+      ouvintes.push(fn);
+      try {
+        fn(state);
+      } catch (_) {}
+    },
+    // Para quem cria botões [data-lt-install] depois do arranque.
+    refresh: sincronizarBotoes,
+  };
+})();
 
 // INJEÇÃO DO SISTEMA OFFLINE
 (function initOfflineSystem() {

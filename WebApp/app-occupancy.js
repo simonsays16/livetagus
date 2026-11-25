@@ -14,6 +14,9 @@
  * ÂMBITO:
  *   Só no Sentido Lisboa e apenas a partir das estações onde a lotação é
  *   efetivamente um problema (SUGGEST_ORIGINS). Fora disso não há avisos.
+ *   Só com uma PESQUISA ativa (TimeFilter): no "agora" nunca há avisos.
+ *   Só contam ocupações com percentagem concreta (número). As qualitativas
+ *   do horário ("B", "M", "A"…) não geram aviso nem servem de alternativa.
  *
  * Uma alternativa que já partiu nunca é sugerida: só se propõem comboios que
  * o utilizador ainda consegue apanhar.
@@ -36,12 +39,17 @@
     "campolide",
   ]);
 
+  /** A ocupação é uma percentagem concreta (e não um nível qualitativo)? */
+  function isPct(occ) {
+    return typeof occ === "number" && isFinite(occ);
+  }
+
   /** Procura o primeiro comboio abaixo de COMFORT_MAX na direção dada. */
   function findComfort(list, fromIdx, step, now) {
     for (let i = fromIdx + step; i >= 0 && i < list.length; i += step) {
       const t = list[i];
       if (t.isSuppressed) continue;
-      if (t.occupancy == null || t.occupancy >= COMFORT_MAX) continue;
+      if (!isPct(t.occupancy) || t.occupancy >= COMFORT_MAX) continue;
       // Nunca sugerir um comboio que já partiu.
       if (t.effectiveDate && now && t.effectiveDate < now) continue;
       return i;
@@ -63,6 +71,11 @@
     // Limpa anotações anteriores (a lista pode ser reaproveitada).
     for (const t of list) if (t._occNote) delete t._occNote;
 
+    // No "agora" não há avisos: só quando o utilizador pesquisa uma hora.
+    if (typeof TimeFilter === "undefined" || !TimeFilter.isActive()) {
+      return empty;
+    }
+
     // Fora de âmbito: sentido ou estação de partida sem problema de lotação.
     if (activeTab !== "lisboa" || !SUGGEST_ORIGINS.has(fertagusOrigin)) {
       return empty;
@@ -70,7 +83,7 @@
 
     if (anchorIdx < 0 || anchorIdx >= list.length) return empty;
     const best = list[anchorIdx];
-    if (!best || best.occupancy == null || best.occupancy <= OCC_THRESHOLD) {
+    if (!best || !isPct(best.occupancy) || best.occupancy <= OCC_THRESHOLD) {
       return empty;
     }
 

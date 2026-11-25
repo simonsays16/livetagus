@@ -8,18 +8,36 @@
   "theme_color": "#0f172a",
   "orientation": "portrait",
   "categories": ["travel", "utilities"],
+  "related_applications": [
+    {
+      "platform": "webapp",
+      "url": "https://livetagus.pt/site.webmanifest"
+    }
+  ],
   "icons": [
     {
-      "src": "imagens/web-app-manifest-192x192.png",
+      "src": "imagens/app-icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "imagens/web-app-manifest-512x512.png",
+      "src": "imagens/app-icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "imagens/app-icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "imagens/app-icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

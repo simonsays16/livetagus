@@ -251,6 +251,31 @@
       );
       btn.classList.toggle("tf-on", state.active);
     }
+    // Com pesquisa ativa o countdown do "próximo" não faz sentido: dá lugar
+    // ao botão "Ver Agora" (troca feita só aqui, por ação do utilizador).
+    const pill = $("next-countdown-pill");
+    const agora = $("btn-ver-agora");
+    if (pill) pill.classList.toggle("hidden", state.active);
+    if (agora) agora.classList.toggle("hidden", !state.active);
+  }
+
+  /** Apaga do URL os parâmetros de pesquisa de um link partilhado. */
+  function clearHash() {
+    try {
+      if (/(^|[#&])(time|date|mode)=/.test(location.hash || ""))
+        history.replaceState(null, "", location.pathname + location.search);
+    } catch (e) {}
+  }
+
+  /**
+   * "Ver Agora": limpa a pesquisa e volta aos próximos comboios. Passa pelo
+   * botão "Agora" da searchbar para os campos dela também voltarem ao agora
+   * (emite lt:reset → reset()); sem searchbar, limpa diretamente.
+   */
+  function verAgora() {
+    const sbReset = document.querySelector('#lt-searchbar [data-lt="reset"]');
+    if (sbReset) sbReset.click();
+    else reset();
   }
 
   function openPanel() {
@@ -303,6 +328,7 @@
     state.mode = "dep";
     state.time = nowHM();
     state.dateStr = todayYMD();
+    clearHash();
     refreshButtonLabel();
     closePanel();
     if (typeof window.sa_event === "function")
@@ -316,6 +342,7 @@
    *  • filtro ativo    → lista estática do dia escolhido, estado "offline"
    */
   function rerender() {
+    window.showPassedTrains = false;
     if (!state.active) {
       window.hasScrolledNext = false;
       if (typeof loadData === "function") loadData(false);
@@ -340,6 +367,11 @@
     if (btn && !btn.dataset.tfBound) {
       btn.dataset.tfBound = "1";
       btn.addEventListener("click", togglePanel);
+    }
+    const agora = $("btn-ver-agora");
+    if (agora && !agora.dataset.tfBound) {
+      agora.dataset.tfBound = "1";
+      agora.addEventListener("click", verAgora);
     }
     refreshButtonLabel();
   }

@@ -1,9 +1,11 @@
 /* Filename: index.js */
 
 document.addEventListener("DOMContentLoaded", () => {
-  // === GESTOR PWA v8.0 (Lógica Estrita: 30s Wait) ===
+  // === BOTÃO PRINCIPAL (instalação) ===
+  // A decisão "dá para instalar / já está instalada / estamos na app" é do
+  // módulo global window.LTInstall (menu.js). Aqui só se traduz o estado no
+  // botão principal e nas mensagens desta página.
 
-  let deferredPrompt;
   const mainBtn = document.getElementById("main-btn");
   const mainBtnText = document.getElementById("main-btn-text");
   const installingMsg = document.getElementById("installing-msg");
@@ -18,33 +20,32 @@ document.addEventListener("DOMContentLoaded", () => {
   // App em baixo → esconde "Abrir App" em TODOS os estados (inclui iOS sem prompt)
   if (APP_OFFLINE && browserBtn) browserBtn.style.display = "none";
 
-  browserBtn.addEventListener("click", () => sa_event("app_on_browser"));
+  // O browser-btn está comentado no index.html: sem esta guarda, a linha
+  // rebentava e o resto do gestor (botão de instalar incluído) nunca corria.
+  if (browserBtn)
+    browserBtn.addEventListener("click", () => sa_event("app_on_browser"));
 
-  // 1. Deteção Inicial
-  const isStandalone =
-    window.matchMedia("(display-mode: standalone)").matches ||
-    window.navigator.standalone ||
-    document.referrer.includes("android-app://");
+  const LT = window.LTInstall;
+  const isStandalone = LT
+    ? LT.isStandalone()
+    : window.matchMedia("(display-mode: standalone)").matches ||
+      window.navigator.standalone;
 
   if (isStandalone) {
     // DENTRO DA APP: Botão "Ver Tempo Real"
     setupUIForApp();
-  } else if (localStorage.getItem("pwa_installed") === "true") {
-    // NO BROWSER (Instalada): Nota simples
-    setupUIForInstalled();
+    return;
   }
 
-  // 2. Evento de Prompt de Instalação
-  window.addEventListener("beforeinstallprompt", (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
+  let installClickBound = false;
+  if (LT) LT.onChange(applyState);
 
-    // Se o browser diz que pode instalar, mostramos o botão
-    if (!isStandalone) {
-      localStorage.removeItem("pwa_installed");
-      setupUIForInstall();
-    }
-  });
+  function applyState(state) {
+    if (state === "pronta" || state === "ios") setupUIForInstall();
+    else if (state === "a-instalar") setupUIForInstalling();
+    else if (state === "instalada") setupUIForInstalled();
+    else setupUIHidden();
+  }
 
   // --- SETUP DE UI ---
 
@@ -82,13 +83,24 @@ document.addEventListener("DOMContentLoaded", () => {
     if (mainBtn) {
       mainBtn.classList.remove("hidden");
       mainBtnText.textContent = "Instalar WebApp";
-      mainBtn.addEventListener("click", handleInstallClick);
+      if (!installClickBound) {
+        installClickBound = true;
+        mainBtn.addEventListener("click", () => {
+          if (window.LTInstall) window.LTInstall.install();
+        });
+      }
     }
 
     if (installedMsg) installedMsg.classList.add("hidden");
     if (installingMsg) installingMsg.classList.add("hidden");
-    if (browserBtn) browserBtn.style.display = "flex";
+    if (browserBtn && !APP_OFFLINE) browserBtn.style.display = "flex";
     if (webHint) webHint.style.display = "block";
+  }
+
+  function setupUIForInstalling() {
+    if (mainBtn) mainBtn.classList.add("hidden");
+    if (installedMsg) installedMsg.classList.add("hidden");
+    if (installingMsg) installingMsg.classList.remove("hidden");
   }
 
   function setupUIForInstalled() {
@@ -96,40 +108,15 @@ document.addEventListener("DOMContentLoaded", () => {
     if (installingMsg) installingMsg.classList.add("hidden");
     if (installedMsg) installedMsg.classList.remove("hidden");
 
-    if (browserBtn) browserBtn.style.display = "flex";
+    if (browserBtn && !APP_OFFLINE) browserBtn.style.display = "flex";
     if (webHint) webHint.style.display = "block";
   }
 
-  // --- LOGICA DE CLIQUE (ESTRITA 30s) ---
-
-  async function handleInstallClick() {
-    if (!deferredPrompt) {
-      alert(
-        "Para instalar: \niOS: Partilhar -> Ecrã Principal\nAndroid: Menu -> Instalar App",
-      );
-      return;
-    }
-
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-
-    if (outcome === "accepted") {
-      if (mainBtn) mainBtn.classList.add("hidden");
-      if (installingMsg) installingMsg.classList.remove("hidden");
-
-      setTimeout(() => {
-        finishInstallation();
-      }, 30000);
-    }
-
-    deferredPrompt = null;
-  }
-
-  function finishInstallation() {
-    localStorage.setItem("pwa_installed", "true");
+  // Browser que não instala (ou que ainda não respondeu): sem botão.
+  function setupUIHidden() {
+    if (mainBtn) mainBtn.classList.add("hidden");
     if (installingMsg) installingMsg.classList.add("hidden");
-    if (installedMsg) installedMsg.classList.remove("hidden");
-    sa_event("pwa_install_index");
+    if (installedMsg) installedMsg.classList.add("hidden");
   }
 });
 

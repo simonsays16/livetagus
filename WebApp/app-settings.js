@@ -924,153 +924,10 @@ function _saveAndApplySmart(container) {
 }
 
 // ─── PWA ──────────────────────────────────────────────────────────────────────
-
-window.setupPWA = function () {
-  const iconUrl = new URL("./imagens/icon.svg", window.location.href).href;
-  const link = document.createElement("link");
-  link.rel = "manifest";
-  link.href = URL.createObjectURL(
-    new Blob(
-      [
-        JSON.stringify({
-          name: "LiveTagus",
-          short_name: "LiveTagus",
-          display: "standalone",
-          background_color: "#09090b",
-          theme_color: "#09090b",
-          orientation: "portrait",
-          icons: [{ src: iconUrl, sizes: "512x512", type: "image/svg+xml" }],
-        }),
-      ],
-      { type: "application/json" },
-    ),
-  );
-  document.head.appendChild(link);
-
-  window.addEventListener("beforeinstallprompt", (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    updateAlertsSystem(currentTrainList).then(() => {
-      renderList(currentTrainList);
-    });
-  });
-};
-
-window.installPWA = async function () {
-  // é ios?
-  const isIOS =
-    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-
-  // ios apenas popup de como instalar
-  if (isIOS) {
-    sa_event("pwa_install_ios_clicked");
-    showIOSInstallModal();
-    AlertsManager.dismiss(null, "pwa-install");
-    return;
-  }
-
-  // normal para Android / Chrome
-  if (deferredPrompt) {
-    sa_event("pwa_install_clicked");
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    deferredPrompt = null;
-
-    if (outcome === "accepted") {
-      sa_event("pwa_install_accepted");
-    }
-
-    AlertsManager.dismiss(null, "pwa-install");
-  } else {
-    alert(
-      "Para instalar, usa as opções do teu navegador ('Adicionar ao Ecrã Principal').",
-    );
-    AlertsManager.dismiss(null, "pwa-install");
-  }
-};
-
-// ─── modal de como instalar em ios ──────────────────────────────────────────────
-function showIOSInstallModal() {
-  let modal = document.getElementById("ios-install-modal");
-  const backdrop = document.getElementById("modal-backdrop");
-
-  if (!modal) {
-    modal = document.createElement("div");
-    modal.id = "ios-install-modal";
-    modal.className =
-      "fixed inset-x-0 bottom-0 h-auto max-h-[85vh] bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-xl border-t border-black/5 dark:border-white/10 rounded-t-[2rem] z-[100] transform translate-y-full transition-transform duration-300 flex flex-col shadow-2xl p-6 pb-10";
-
-    modal.innerHTML = `
-      <div class="relative w-full">
-        <button id="close-ios-modal" class="absolute -top-2 right-0 p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full text-zinc-500 dark:text-zinc-400 transition-all">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-        
-        <div class="flex flex-col items-center mt-2">
-          <div class="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-4 border border-blue-500/20 shadow-inner">
-            <i data-lucide="download" class="w-8 h-8 text-blue-500"></i>
-          </div>
-          
-          <h2 class="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 mb-2">Instalar no iPhone</h2>
-          
-          <div class="w-full bg-amber-500/10 dark:bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 mb-5 flex items-start gap-3">
-            <i data-lucide="alert-triangle" class="w-5 h-5 shrink-0 text-amber-600 dark:text-amber-500 mt-0.5"></i>
-            <p class="text-xs text-amber-800 dark:text-amber-400 leading-relaxed font-medium">
-              Aviso: Tens de abrir este site no <b>Safari</b>. A instalação não funciona no Chrome, Instagram ou outras apps.
-            </p>
-          </div>
-
-          <div class="w-full space-y-4">
-            <div class="flex items-center gap-4 bg-zinc-100 dark:bg-zinc-800/50 p-3.5 rounded-xl border border-black/5 dark:border-white/5">
-              <div class="w-8 h-8 shrink-0 bg-white dark:bg-zinc-700 rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-600 flex items-center justify-center">
-                <i data-lucide="share" class="w-4 h-4 text-blue-500"></i>
-              </div>
-              <p class="text-sm font-medium text-zinc-700 dark:text-zinc-300 leading-tight">
-                1. Toca no botão <b>Partilhar</b> na barra inferior do Safari, ou superior dependendo da tua versão.
-              </p>
-            </div>
-            
-            <div class="flex items-center gap-4 bg-zinc-100 dark:bg-zinc-800/50 p-3.5 rounded-xl border border-black/5 dark:border-white/5">
-              <div class="w-8 h-8 shrink-0 bg-white dark:bg-zinc-700 rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-600 flex items-center justify-center">
-                <i data-lucide="square-plus" class="w-4 h-4 text-zinc-900 dark:text-white"></i>
-              </div>
-              <p class="text-sm font-medium text-zinc-700 dark:text-zinc-300 leading-tight">
-                2. Desliza para baixo e escolhe <b>"Adicionar ao Ecrã Principal"</b>. Esta pode estar escondida em "Mais Opções"!
-              </p>
-            </div>
-          </div>
-          
-          <button id="understood-ios-modal" class="w-full mt-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-bold tracking-widest uppercase transition-all shadow-md shadow-blue-500/20">
-            Percebido
-          </button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-
-    const closeModal = () => {
-      modal.classList.add("translate-y-full");
-      backdrop.classList.add("opacity-0");
-      setTimeout(() => backdrop.classList.add("hidden"), 300);
-    };
-
-    document
-      .getElementById("close-ios-modal")
-      .addEventListener("click", closeModal);
-    document
-      .getElementById("understood-ios-modal")
-      .addEventListener("click", closeModal);
-  }
-
-  if (window.lucide) lucide.createIcons();
-
-  if (backdrop) {
-    backdrop.classList.remove("hidden");
-    setTimeout(() => backdrop.classList.remove("opacity-0"), 10);
-  }
-  setTimeout(() => modal.classList.remove("translate-y-full"), 10);
-}
+// A instalação (Android/Windows e o modal do iOS) e o manifesto passaram para
+// o módulo global window.LTInstall, no menu.js. Esta página já não tem aviso
+// próprio nem manifesto em blob (dava à app instalada daqui uma identidade
+// diferente da instalada a partir da página inicial).
 
 // ─── INJEÇÃO NO MENU ──────────────────────────────────────────────────────────
 
@@ -1090,17 +947,44 @@ if (menuOverlay) {
   }
 }
 
+/**
+ * Injeta o botão de refresh no cabeçalho do menu, à esquerda do botão de
+ * partilha. Só a app.html carrega este ficheiro, por isso só ela o tem.
+ * Idempotente: se o botão já existir (ou o menu ainda não), não faz nada.
+ */
+function injectRefreshButton() {
+  if (document.getElementById("btn-manual-refresh")) return;
+  const share = document.getElementById("nav-share-trigger");
+  if (!share || !share.parentNode) return;
+
+  const btn = document.createElement("button");
+  btn.id = "btn-manual-refresh";
+  btn.type = "button";
+  // Mesmas classes do botão de partilha, para ficarem iguais lado a lado.
+  btn.className = share.className;
+  btn.setAttribute("aria-label", "Atualizar estado");
+  btn.innerHTML =
+    '<svg id="refresh-icon-menu" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>';
+  btn.addEventListener("click", function () {
+    if (typeof manualRefresh === "function") manualRefresh();
+  });
+  share.parentNode.insertBefore(btn, share);
+
+  // Se já houver um carregamento a decorrer, o ícone entra a rodar.
+  if (typeof isLoading !== "undefined" && isLoading) {
+    const icon = document.getElementById("refresh-icon-menu");
+    if (icon) icon.classList.add("animate-spin");
+  }
+}
+
 function injectCustomMenuElements() {
   // 1. O Horário Inteligente saiu do menu (vai para a futura página de
   //    Definições). A configuração guardada continua a ser aplicada ao abrir
   //    a app (_detectSmartTab); só deixou de haver onde a mudar por agora.
   //    renderSmartSection() fica disponível para quando essa página existir.
 
-  // 3. O botão de Refresh deixou de ser injetado aqui: passou a ser estático
-  //    no app.html, centrado por baixo do botão de troca de sentido e com a
-  //    auréola de estado (cinzenta/verde/amarela). O listener é ligado em
-  //    app-init.js. Mantém-se este bloco removido de propósito — reintroduzi-lo
-  //    criaria um segundo botão com o mesmo id.
+  // 3. Botão de Refresh: no menu, à esquerda do botão de partilha.
+  injectRefreshButton();
 
   if (window.lucide) lucide.createIcons();
 

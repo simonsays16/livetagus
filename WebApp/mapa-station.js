@@ -164,17 +164,34 @@
       </div>`;
   }
 
+  // Ao fechar o detalhe de um comboio aberto a partir daqui, volta-se a esta
+  // estação (com o mesmo filtro de hora), para se poderem ver vários
+  // comboios seguidos. Espera que o painel do comboio acabe de descer.
+  function voltarAEstacao() {
+    const estacao = currentStation;
+    const from = currentFrom;
+    return function () {
+      setTimeout(() => {
+        if (isOpen() || (window.MapaDetails && window.MapaDetails.isOpen()))
+          return; // entretanto abriu-se outra coisa
+        open(estacao, from != null ? { fromTime: from } : undefined);
+      }, 380);
+    };
+  }
+
   // ─── CLIQUE NUM COMBOIO AO VIVO (caso 1) ─────────────────────────────
   function onLiveTrain(dep) {
     const src = trainsSource && trainsSource();
     const full = Array.isArray(src)
       ? src.find((t) => String(t.id) === String(dep.id))
       : null;
-    // Fecha este modal em silêncio (sem recenter) — o MapaDetails aplica o seu foco.
+    // Fecha este modal em silêncio (sem recenter). O painel abre SEM foco do
+    // percurso: o mapa continua na estação e, ao fechar, volta-se a ela.
+    const aoFechar = voltarAEstacao();
     close({ silent: true });
     setTimeout(() => {
       if (full && window.MapaDetails) {
-        window.MapaDetails.open(full);
+        window.MapaDetails.open(full, { semFoco: true, onClose: aoFechar });
       } else {
         // Fallback: deep-link por hash (o mapa abre o comboio se existir).
         window.location.href = `/mapa#${encodeURIComponent(dep.id)}`;
@@ -196,8 +213,13 @@
     const pedido = ++pedidoDetalhes;
     const train = await window.Partidas.loadTrain(dep);
     if (pedido !== pedidoDetalhes || !currentStation) return;
+    const aoFechar = voltarAEstacao();
     close({ silent: true });
-    setTimeout(() => window.MapaDetails.open(train), 180);
+    setTimeout(
+      () =>
+        window.MapaDetails.open(train, { semFoco: true, onClose: aoFechar }),
+      180,
+    );
   }
 
   // ─── partidas.js A PEDIDO ─────────────────────────────────────────────

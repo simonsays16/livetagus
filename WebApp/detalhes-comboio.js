@@ -35,7 +35,11 @@
  *   zIndex                só com autoMount: camada do painel e do fundo
  *                         (ex.: acima de um cabeçalho fixo da página)
  *
- * API da instância: open(train, {state}) · close() · isOpen() · refresh(train)
+ * API da instância: open(train, {state, semFoco, onClose}) · close() · isOpen() · refresh(train)
+ *                   (semFoco: true → abre sem foco do percurso; o mapa não se mexe)
+ *                   (onClose: chamado só quando o UTILIZADOR fecha o painel — X,
+ *                    fundo, Escape ou arrasto; não num close() programático
+ *                    nem ao saltar para uma ligação)
  *                   getCurrentId() · getModalState() · setState(s)
  *
  * O "train" tem o formato do mapa: { id, numero, origem, destino, nodes
@@ -406,6 +410,7 @@
     let panel, backdrop;
     let currentTrainId = null;
     let currentState = "closed"; // 'closed' | 'mini' | 'expanded'
+    let aoFechar = null; // opts.onClose do open() em curso
     let dragActive = false;
     let dragStartY = 0;
     let dragLastY = 0;
@@ -955,7 +960,7 @@ ${positionHtml(train)}
         if (dy < -THRESH_TOGGLE) {
           setState("expanded");
         } else if (dy > THRESH_CLOSE) {
-          close();
+          fecharPeloUtilizador();
         } else {
           setState("mini"); // snap back
         }
@@ -963,7 +968,7 @@ ${positionHtml(train)}
         const vh = window.innerHeight;
         const totalSwipeDown = dy;
         if (totalSwipeDown > vh * 0.55) {
-          close();
+          fecharPeloUtilizador();
         } else if (totalSwipeDown > THRESH_TOGGLE) {
           setState("mini");
         } else {
@@ -1031,7 +1036,7 @@ ${positionHtml(train)}
       panel.querySelectorAll("[data-details-action='close']").forEach((b) => {
         b.addEventListener("click", (e) => {
           e.stopPropagation();
-          close();
+          fecharPeloUtilizador();
         });
       });
       panel.querySelectorAll("[data-details-action='share']").forEach((b) => {
@@ -1201,6 +1206,8 @@ ${positionHtml(train)}
       ensureElements();
       if (!panel || !backdrop || !train) return;
       currentTrainId = train.id;
+      aoFechar =
+        opts && typeof opts.onClose === "function" ? opts.onClose : null;
       const initialState = (opts && opts.state) || cfg.defaultState || "mini";
       panel.innerHTML = buildContent(train);
       panel.dataset.state = initialState;
@@ -1238,7 +1245,9 @@ ${positionHtml(train)}
       backdrop.addEventListener("click", onBackdropClick);
       document.addEventListener("keydown", onKey);
 
-      focar(train);
+      // semFoco: aberto a partir de outro painel (ex.: a estação no mapa) —
+      // a câmara fica onde está, para se poder voltar facilmente ao sítio.
+      if (!(opts && opts.semFoco)) focar(train);
 
       // Chevron / texto inicial
       setStateInternal(initialState);
@@ -1266,7 +1275,7 @@ ${positionHtml(train)}
     }
 
     function onBackdropClick() {
-      close();
+      fecharPeloUtilizador();
     }
 
     function close() {
@@ -1290,11 +1299,23 @@ ${positionHtml(train)}
       }, 360);
 
       currentTrainId = null;
+      aoFechar = null;
       desfocar();
     }
 
+    // Fecho pedido pelo utilizador: fecha e avisa quem abriu (onClose).
+    function fecharPeloUtilizador() {
+      const cb = aoFechar;
+      close();
+      if (cb) {
+        try {
+          cb();
+        } catch (_) {}
+      }
+    }
+
     function onKey(e) {
-      if (e.key === "Escape") close();
+      if (e.key === "Escape") fecharPeloUtilizador();
     }
 
     function isOpen() {
